@@ -1,0 +1,34 @@
+Some notes
+
+
+=== File formats ===
+
+Each puzzle set in Free Hero Mesh is stored as four files:
+*.xclass (Hamster archive) - Pictures and user sounds
+*.class (Text) - Class definitions (attributes and codes)
+*.level (Hamster archive) - Levels
+*.solution (Hamster archive) - Solutions to levels
+
+An idea is to use either Hamster archive or SQLite for the .level and
+.solution files. I decided to use Hamster archive, but here are some of
+the advantages and disadvantages of each approach:
+
+Advantages of using Hamster archive:
+* It is a simple file format.
+* You can use the "har" program to extract and alter lumps.
+* There will be less bugs because it is simpler than SQLite.
+
+Disadvantages of using Hamster archive:
+* It is necessary to rewrite the entire file when it changes.
+
+Advantages of using SQLite:
+* You can read parts of the file at a time.
+* You can alter records without having to rewrite everything.
+* SQL can now be used for user queries and user scripts.
+* You can use sqlite3 command shell to deal with the file.
+
+Disadvantages of using SQLite:
+* There will be extra overhead due to b-trees and other stuff.
+* It may be necessary to deal with untrusted database schemas (unsure).
+* Now SQLite must be included in this program.
+

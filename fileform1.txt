@@ -1,0 +1,589 @@
+** Hero Mesh File Format **
+
+This describes the file format of the Windows version of Hero Mesh. (Free
+Hero Mesh uses a different file format described in a different file.)
+
+All numbers are small-endian and unsigned. WORD is 16-bits, and DWORD is
+32-bits, and BYTE is 8-bits.
+
+
+=== Header ===
+
+At the beginning of the file is the following:
+
+Offset  Type      Description
+0       WORD      File version
+2       CHAR(4)   ASCII characters "MESH"
+6       DWORD     Puzzle set number
+10      WORD      Number of picture sizes
+12      WORD(8)   Picture sizes
+28      WORD      Number of words in picture allocation table
+
+File version is 15 for Hero Mesh version 1.1c, and is 16 for Hero Mesh
+version 2.0. Other versions (if any) are unknown. The rest of this
+document is applicable to file version 16 (differences, if any, are
+unknown; file version 15 does not seem to have any differences as far as
+I can tell).
+
+Puzzle set number is a number that can be read by the class codes but
+otherwise does nothing. It is used by the Hero Hearts puzzle sets to
+determine which puzzle set to link to after completing the last level.
+
+The picture sizes are all square; the numbers given are the width (which
+is equal to the height) of that picture size. For example, if it says 24
+then the pictures are 24x24.
+
+After this comes the picture allocation table, which specifies which
+pictures are allocated. The first word of the allocation table is for the
+first sixteen pictures; the low bit is for the first picture, and the high
+bit is for the sixteenth picture.
+
+
+=== Pictures ===
+
+Picture data comes next. The encoding is like this C code:
+
+  // nsizes = number of picture sizes (1 to 8; normally 3)
+  // nalloc = number of words in picture allocation table
+  // sizes[s] = width or height of picture size s (where s is 0 to 7)
+  for(s=0;s<nsizes;s++) {
+    for(i=0;i<nalloc;i++) {
+      for(y=0;y<sizes[s];y++) {
+        for(j=0;j<16;j++) {
+          @< Read (sizes[s]) bytes from file into
+             scanline y of size s of picture 16*i+j
+             (one byte per pixel; zero = transparent) @>
+        }
+      }
+    }
+  }
+  // Unallocated pictures are still read, even though they aren't used.
+
+(This may also be considered as one large picture per size; where the
+pictures are tile sets with sixteen tiles across.)
+
+Next comes the picture availability table, which controls which pictures
+are available for selection in the level editor. There are always 512
+bytes, one byte per picture. The byte value is 1 if it is available or 0
+if it is not available.
+
+
+=== User Message Table ===
+
+Next is the user message table. It starts with a WORD which is the number
+of user messages. User message numbers start with 20; messages 0 to 19 are
+the built-in messages. For each user message there is a BYTE giving the
+length of the message name, followed by the message name. (There seems to
+be always one extra message name at the end which is blank and is unused.
+The reason for this is currently unknown.) If the name is empty then that
+user message does not exist (it may have been deleted).
+
+The standard messages are as follows:
+ 0 = INIT
+ 1 = CREATE
+ 2 = DESTROY
+ 3 = BEGIN_TURN
+ 4 = ARRIVED
+ 5 = DEPARTED
+ 6 = LASTIMAGE
+ 7 = MOVED
+ 8 = JUMPED
+ 9 = KEY
+ 10 = MOVING
+ 11 = SUNK
+ 12 = FLOATED
+ 13 = PLAYERMOVING
+ 14 = HIT
+ 15 = HITBY
+ 16 = DESTROYED
+ 17 = CREATED
+ 18 = POSTINIT
+ 19 = END_TURN
+
+
+=== Classes ===
+
+After the user message table comes the classes. This starts with a WORD
+specifying the number of classes. Classes then follow.
+
+Each class consists of the following:
+
+* Name: A BYTE giving the length of the name, followed by the name.
+
+* ID number: A WORD giving the zero-based class ID number (class ID
+numbers are sometimes one-based, but here they are zero-based).
+
+* Description: One or three bytes for length, followed by the plain text
+(using CRLF for line endings). If length is less than 255 then it is one
+byte. Otherwise, the first byte is 255 and then a WORD follows which gives
+the length of the description. The description isn't null terminated. Any
+escapes in the description are interpreted at runtime; they are not stored
+with the control codes mentioned for special texts.
+
+* Attributes: See attribute table below.
+
+* Number of pictures (WORD)
+
+* List of pictures. Each is a WORD, and is a zero-based number of the
+picture from the picture area; after this, all further picture numbers in
+the file are zero-based indexing into this table.
+
+* Number of user variables (WORD)
+
+* User variable names; each is eight bytes long and is padded with nulls.
+(Variable names are actually limited to seven characters.)
+
+* Number of subroutine labels (WORD)
+
+* Label names; each is ten bytes long, and is a eight-byte null terminated
+string, with junk in the remaining bytes; the final two bytes are a word
+address into the sobroutine or message section.
+
+* Subroutine program codes
+
+* Number of message labels (WORD) (these aren't the message names; these
+are labels outside of the subroutine section).
+
+* Message label names; stored like the subroutine label names.
+
+* Message program codes
+
+Attribute Table
+     0    BYTE     ???
+     1    BYTE     Flag
+     2    WORD     Misc4
+     4    WORD     Misc5
+     6    WORD     Misc6
+     8    WORD     Misc7
+    10    WORD     Shovable
+    12    BYTE(5)  Arrivals
+    17    BYTE(5)  Departures
+    22    WORD     Density
+    24    WORD     Volume
+    26    WORD     Strength
+    28    WORD     Weight
+    30    WORD     HardE
+    32    WORD     HardN
+    34    WORD     HardW
+    36    WORD     HardS
+    38    WORD     SharpE
+    40    WORD     SharpN
+    42    WORD     SharpW
+    44    WORD     SharpS
+    46    WORD     Height
+    48    WORD     Climb
+    50    WORD     Temperature
+    52    WORD     Shape
+    54    WORD     ???
+    56    WORD     ???
+    58    WORD     ???
+    60    WORD     ???
+
+The flag byte has bit0 set for "receives keys" and has bit7 set for "is
+the player". Other flags (if any) are unknown, they appear to be unset.
+
+The arrivals and departures are stored each as five bytes, each byte for
+one row, with the first byte corresponding to the top row. In each byte,
+the rightmost column is the low bit; only the low 5-bits are used. (This
+is not the same as the representation used in class codes!)
+
+The last four attributes seem to have something to do with the program
+length, but it is unknown. However, it is not necessary to read these in
+order to figure out the program length (see below for details).
+
+
+=== Program ===
+
+Each class has program codes; this section describes how the program codes
+are encoded in the file.
+
+The first WORD of the subroutine section is the number of WORDs that make
+up the the subroutine section, including the count itself. After that one
+WORD header comes the instructions.
+
+Each message block in the message section then consists of the header and
+then the instructions. The header of each message block consists of two
+WORDs, the first being the message number, and the second being the length
+(in WORDs) of this message block, including the header.
+
+The program is terminated by a header with both WORDs zero.
+
+Program instructions are executed using a stack-based virtual machine.
+Each instruction is normally one WORD; see below section for the opcodes.
+
+
+=== Program Opcodes ===
+
+The first byte is opcode byte (the major code). The second byte is the
+minor code, the meaning depending on the opcode. In the descriptions
+below, if it says / and a number, it is how many taken from stack. If
+there is * then it pushes to stack, ! means end block, - means no effect
+on data stack.
+
+[1*] Local variables: 0=Class, 1=Temperature, 2=Shape, 4=Xloc, 5=Yloc,
+6=LastDir, 7=CurImage, 8=Inertia, 9=Misc1, 10=Misc2, 11=Misc3, 12=Misc4,
+13=Misc5, 14=Misc6, 15=Misc7, 16=Arrived, 17=Departed, 18=Arrivals,
+19=Departures, 32=Busy, 33=Invisible, 34=UserSignal, 35=UserState,
+36=KeyCleared, 37=IsPlayer, 38=Destroyed, 39=Stealthy, 40=VisualOnly,
+48=Msg, 49=MsgFrom, 50=MsgArg1, 51=MsgArg2, 64=Density, 65=Volume,
+66=Strength, 67=Weight, 68=Distance, 69=Height, 70=Climb, 72=HardE,
+73=HardN, 74=HardW, 75=HardS, 76=SharpE, 77=SharpN, 78=SharpW, 79=SharpS,
+80=ShapeE, 81=ShapeN, 82=ShapeW, 83=ShapeS, 84=Shovable
+
+[2*] Retrieve local variable from other object. Local variable numbers are
+the same as opcode 1.
+
+[3/1] Assignment to standard local variables of current object.
+
+[5*] User-defined local variable; the second byte is zero-based local
+variable number.
+
+[6/1] Assignment to user-defined variable; the second byte is the
+zero-based local variable number to write to.
+
+[7*] Short decimal constant; the second byte is the 8-bit value.
+
+[8*] Long decimal constant. The next two words are the small-endian 32-bit
+number that it represents.
+
+[9*] Short class constant; the second byte is a zero-based class number
+(the class number is one-based at runtime).
+
+[14*] Direction constant (0-7 for absolute, 8-15 for relative)
+
+[16/1*] Unary operator: 0=negative, 1=bitwise NOT, 2=logical NOT
+
+[17/2*] Binary operator: 0=multiply, 1=divide, 2=modulo
+
+[18/2*] Binary operator: 0=add, 1=subtract, 2=AND, 3=OR, 4=XOR
+
+[19/2*] Bit shift operator: 0=left, 1=right
+
+[20/2*] Comparison operator: 0=equal, 1=unequal, 2=less, 3=greater, 4=less
+or equal, 5=greater or equal
+
+[21/2*] Logical operator: 0=AND, 1=OR, 2=XOR (not short-circuiting)
+
+[32] ObjDir
+
+[34] ObjAbove
+
+[36] ObjBelow
+
+[38] 0=ObjTopAt, 1=ObjBottomAt, 2=VolumeAt, 3=HeightAt, 4=Delta
+
+[39*] Self
+
+[40] ObjClassAt
+
+[48*] Key
+
+[49*] Animation constant: 0=STOP, 1=ONCE, 2=LOOP, 8=OSC
+
+[50*] Keyboard constant: See section about key codes.
+
+[51*] Short hexadecimal constant; second byte is the 8-bit value.
+
+[52*] Long hexadecimal constant. Next two words are the small-endian
+32-bit number that it represents.
+
+[53*] Global variable: 0=Level, 1=LevelCount, 2=AltImage, 3=ExplainDeath,
+4=GlobalBool, 5=PuzzleSetNumber, 6=MoveNumber
+
+[54] XDir
+
+[56] YDir
+
+[58] 0=NewX, 1=NewY
+
+[59*] Bit constant 0-31; the second byte is the number 0-31, and at
+runtime it is replaced by the relevant 32-bit number.
+
+[60*] Sound constant (see section about user sounds)
+
+[61] 0=ClassCount/1* (I don't know what this does), 1=GetArray
+
+[68/1*] Move(Self, ...); minor code is 255
+
+[69/2*] Move; minor code is 255
+
+[80] SendMessage
+
+[82] Broadcast
+
+[84-] Move(Self, dir). The second byte is the direction to move. Unlike
+the normal Move() function, this one adds Strength to Inertia instead of
+setting Inertia equal to Strength (this seems to be a bug).
+
+[85/2] Move; minor code is 255
+
+[88] Create
+
+[96] Comment. Has one WORD giving length of the comment text (including
+the null terminator), and then the plain text of the comment (with CRLF
+line endings), null terminated.
+
+[97] Popup setting. Second byte is 0 for PopupColor or 1 for PopupLoc.
+
+[98] Destroy
+
+[100] CallSub
+
+[101] Goto
+
+[102] Return. Second byte is 0 for implicit end of SUBS block, 1 for
+return from a subroutine, 2 for the end of a message block.
+
+[103] Return short constant. Second byte is return value.
+
+[104/1] Return
+
+[105/1] If. Second byte is zero for block-if or one for inline-if. The
+next word is the number of words to skip (including the count itself) if
+the condition is false.
+
+[106] Else
+
+[107/3] ImageSeq (seems to do nothing?)
+
+[108/3] ImageLoop (seems to do nothing?)
+
+[109] PopUp
+
+[110] JumpTo
+
+[112] Sound
+
+[114] Array operations. Second byte: 0 = definition of an array, 1 =
+SetArray, 2 = InitArray.
+
+[126] Animate
+
+[127] Link
+
+[128] GotoLevel
+
+[129-] 0=WinLevel, 1=LocateMe, 2=IgnoreKey, 3=PopupMisc, 4=UpdateScreen
+(I don't know what UpdateScreen means?)
+
+[130] FlushClass
+
+[131] FlushObj
+
+[132] SetInventory
+
+[133] DelInventory
+
+[134] ForEachObjAt
+
+[240] Trace
+
+
+=== Levels ===
+
+After all classes are the levels. Before the levels comes:
+
+* Number of levels (WORD)
+
+* Two null bytes (meaing unknown)
+
+Each level consists of:
+
+* Zero-based level number (WORD)
+
+* Level description length, including the null terminator (WORD)
+
+* Level description; a null-terminated special text
+
+* Border colours, outer to inner (BYTE(32))
+
+* Background colour (BYTE)
+
+* Null byte (maybe the high byte of the background colour)
+
+* Number of objects (WORD)
+
+* Objects, in ordinary progressive television order; within each cell they
+go bottom to top. See information about object records below.
+
+* Number of level strings (WORD)
+
+* Level strings; each one WORD length (the length includes the null
+terminator), followed by the null-terminated special text.
+
+An object record is sixteen bytes long, and consists of:
+    0   WORD    Class (zero-based)
+    2   WORD    CurImage (zero-based)
+    4   BYTE    LastDir (zero-based; 0=east, 1=northeast, etc)
+    5   BYTE    Data types for Misc vars
+    6   WORD    X coordinate (one-based)
+    8   WORD    Y coordinate (one-based)
+   10   WORD    Misc1
+   12   WORD    Misc2
+   14   WORD    Misc3
+
+The data types are as follows:
+ 0 = Number
+ 1 = Class (one-based)
+ 2 = Message
+ 3 = String
+Data type for Misc1 is in bit1 and bit0, data type for Misc2 is in bit3
+and bit2, data type for Misc3 is in bit5 and bit4. Bit7 and bit6 are
+always zero.
+
+The data type is used only in the editor and is irrelevant at run time.
+
+
+=== Special Text ===
+
+Level data may contain special text. This is text using the following
+control codes (escapes have already been interpreted):
+
+1 = Black (\0)
+2 = Blue (\1)
+3 = Green (\2)
+4 = Cyan (\3)
+5 = Red (\4)
+6 = Purple (\5)
+7 = Yellow (\6)
+8 = White (\7)
+10 = Line break (\n)
+11 = Left (\l)
+12 = Center (\c)
+14 = Picture (\i); followed by two WORDs: zero-based class and image
+15 = Horizontal line (\b)
+16 = Quiz button (\q); followed by one byte key code
+
+
+=== Solutions ===
+
+After the levels come the solutions. There is first one WORD which is the
+number of solutions, and then the solutions. Each solution consists of:
+
+* Zero-based level number (WORD)
+
+* Number of keys in solution (WORD)
+
+* User name (BYTE(9)); the user name is null terminated, although there
+may be junk after the null terminator.
+
+* Key codes; one byte each.
+
+
+=== User Sounds ===
+
+Finally, the user sounds come last. One WORD gives the number of user
+sounds. And then each sound consists of:
+
+* Sound ID number (zero-based) (WORD)
+
+* Name length (BYTE)
+
+* Name (not terminated; length is given instead)
+
+* Data length (WORD)
+
+* Data (a RIFF WAVE file)
+
+The built-in sounds are as follows:
+ SPLASH
+ POUR
+ DOOR
+ GLASS
+ BANG
+ UNHH
+ UH_OH
+ FROG
+ THWIT
+ KLINKK
+ POWER
+ KLECK
+ CLICK
+ SMALL_POP
+ DINK
+ TICK
+ CHYEW
+ CHEEP
+ ANHH
+ BRRRT
+ BRRREEET
+ BWEEP
+ DRLRLRINK
+ FFFFTT
+ WAHOO
+ YEEHAW
+ OLDPHONE
+ RATTLE
+ BEEDEEP
+ THMP_thmp
+ BEDOINGNG
+ HEARTBEAT
+ LOCK
+ TAHTASHH
+ BOOOM
+ VACUUM
+ RATCHET2
+ DYUPE
+ UNCORK
+ BOUNCE
+ JAYAYAYNG
+ DEEP_POP
+ RATCHET1
+ GLISSANT
+ BUZZER
+ FAROUT
+ KEWEL
+ WHACK
+ STEAM
+ HAWK
+
+
+=== Key codes ===
+
+   8  BACK
+   9  TAB
+  12  CENTER (number pad 5 when numlock is off)
+  13  ENTER
+  16  SHIFT
+  17  CTRL
+  19  BREAK
+  20  CAPSLOCK
+  32  SPACE
+  33  PGUP
+  34  PGDN
+  35  END
+  36  HOME
+  37  LEFT
+  38  UP
+  39  RIGHT
+  40  DOWN
+  48  0 (the top row zero)
+  57  9 (the top row nine; 1-8 are in between 0 and 9)
+  65  A
+  90  Z (letters B-Y are in between A and Z)
+  96  NUMPAD0
+ 105  NUMPAD9 (number pad 1-8 are in between)
+ 106  MULTIPLY (the number pad "*" key)
+ 110  DECIMAL (the number pad "." key)
+ 111  DIVIDE (the number pad "/" key)
+ 120  F9
+ 121  F10
+ 122  F11
+ 123  F12
+ 144  NUMLOCK
+ 145  SCRLOCK
+ 186  SEMICOLON
+ 187  EQUALS
+ 188  COMMA
+ 189  MINUS
+ 190  PERIOD
+ 191  SLASH
+ 192  TILDE
+ 219  OBRACKET
+ 220  BACKSLASH
+ 221  CBRACKET
+ 222  QUOTE
+
+The number pad and main enter keys have the same key code. When num lock
+is off, the number pad keys have the same codes as the other arrow keys.
+The NUMPAD codes are only when numlock is on.
