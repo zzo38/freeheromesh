@@ -455,7 +455,9 @@ static void one_level(FILE*fp,int ord) {
   hamarc_begin(fp);
   fputc(0,fp); fputc(0,fp); // Level version
   fputc(ord,fp); fputc(ord>>8,fp); // Level code
-  fputc(29,fp); fputc(21,fp); // Width/height
+  fputc(28,fp); fputc(20,fp); // One less than width/height
+  // (Width/height can each be up to 64 (stored as 63). Bit6 and bit7 of
+  //  these numbers are extra header flags, currently unused.)
   i=fgetc(stdin);
   i|=fgetc(stdin)<<8;
   // fputc(17,fp); // Select proportional font

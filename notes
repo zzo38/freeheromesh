@@ -20,6 +20,7 @@ Advantages of using Hamster archive:
 
 Disadvantages of using Hamster archive:
 * It is necessary to rewrite the entire file when it changes.
+* It is necessary to read the entire file to find the lumps.
 
 Advantages of using SQLite:
 * You can read parts of the file at a time.
@@ -31,4 +32,20 @@ Disadvantages of using SQLite:
 * There will be extra overhead due to b-trees and other stuff.
 * It may be necessary to deal with untrusted database schemas (unsure).
 * Now SQLite must be included in this program.
+
+Another way would be a hybrid approach. Another file containing the user
+session data is a SQLite database, which is recreated if it was deleted or
+if the level or solution file is newer than it, and stores an index.
+
+Advantages of hybrid:
+* It is only necessary to create an index once.
+* SQL can now be used for user queries and user scripts.
+* User session data can be recorded.
+
+Disadvantages of hybrid:
+* SQLite must be included in this program.
+* Level/solution files must still be rewritten entirely when it changes.
+
+Hero Mesh will rewrite the puzzle set file only on exit, so it is possible
+to do the similar thing in this case, by using the session database.
 
