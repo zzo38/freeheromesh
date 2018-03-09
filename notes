@@ -47,5 +47,6 @@ Disadvantages of hybrid:
 * Level/solution files must still be rewritten entirely when it changes.
 
 Hero Mesh will rewrite the puzzle set file only on exit, so it is possible
-to do the similar thing in this case, by using the session database.
+to do the similar thing in this case, by using the session database. A way
+of incrementally storing and then "vacuuming" the file may also work.
 
