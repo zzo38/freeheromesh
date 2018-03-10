@@ -447,7 +447,7 @@ static inline void out_classes(void) {
 static void one_level(FILE*fp,int ord) {
   unsigned char buf[16];
   unsigned char mru[32];
-  int i,j,x,y,n,q;
+  int i,j,x,y,n,q,r;
   i=fgetc(stdin);
   i|=fgetc(stdin)<<8;
   levelid[ord]=i;
@@ -485,7 +485,7 @@ static void one_level(FILE*fp,int ord) {
   mru[0x04]=mru[0x14]=255;
   n=fgetc(stdin);
   n|=fgetc(stdin)<<8;
-  x=q=0;
+  x=q=r=0;
   y=1;
   // Free Hero Mesh level format for objects:
   //   * bit flags (or 0xFF for end):
@@ -493,8 +493,8 @@ static void one_level(FILE*fp,int ord) {
   //     bit6 = Next position
   //     bit5 = New X position
   //     bit4 = New Y position
-  //     bit3 = Has MiscVars
-  //     bit2-bit0 = LastDir (should be RLE in case of MRU?)
+  //     bit3 = Has MiscVars (RLE in case of MRU)
+  //     bit2-bit0 = LastDir (RLE in case of MRU)
   //   * new X if applicable
   //   * new Y if applicable
   //   * class (one-based; add 0x8000 for image 0) (two bytes)
@@ -522,9 +522,15 @@ static void one_level(FILE*fp,int ord) {
       if(buf[5] || memcmp(buf+10,"\0\0\0\0\0\0",6)) i|=0x08;
       if(q<32) memcpy(mru+q,buf,16);
     }
-    fputc(i,fp);
     x=buf[6];
     y=buf[8];
+    if(i==0xC0) {
+      if(++r==16) fputc(r+0xBF,fp),r=0;
+      continue;
+    } else if(r) {
+      fputc(r+0xBF,fp),r=0;
+    }
+    fputc(i,fp);
     if(i&0x20) fputc(x,fp);
     if(i&0x10) fputc(y,fp);
     if(i<0x80) {
@@ -567,6 +573,7 @@ static void one_level(FILE*fp,int ord) {
       }
     }
   }
+  if(r) fputc(r+0xBF,fp);
   fputc(255,fp); // End of objects
   n=fgetc(stdin);
   n|=fgetc(stdin)<<8;
