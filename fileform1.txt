@@ -230,10 +230,13 @@ on data stack.
 73=HardN, 74=HardW, 75=HardS, 76=SharpE, 77=SharpN, 78=SharpW, 79=SharpS,
 80=ShapeE, 81=ShapeN, 82=ShapeW, 83=ShapeS, 84=Shovable
 
-[2*] Retrieve local variable from other object. Local variable numbers are
-the same as opcode 1.
+[2/1*] Retrieve local variable from other object. Local variable numbers
+are the same as opcode 1.
 
 [3/1] Assignment to standard local variables of current object.
+
+[4/2] Assignment to standard local variable of other object (the first
+(top) value taken from the stack is the value, and second is the object).
 
 [5*] User-defined local variable; the second byte is zero-based local
 variable number.
@@ -248,6 +251,12 @@ number that it represents.
 
 [9*] Short class constant; the second byte is a zero-based class number
 (the class number is one-based at runtime).
+
+[11*] Message constant; the second byte is the message number.
+
+[13*] String literal. Follow by one WORD giving number of bytes of string
+(including null terminator, always even), and then null-terminated special
+text. There may be two null terminators if needed to make it even.
 
 [14*] Direction constant (0-7 for absolute, 8-15 for relative)
 
@@ -270,11 +279,11 @@ or equal, 5=greater or equal
 
 [36] ObjBelow
 
-[38] 0=ObjTopAt, 1=ObjBottomAt, 2=VolumeAt, 3=HeightAt, 4=Delta
+[38/2*] 0=ObjTopAt, 1=ObjBottomAt, 2=VolumeAt, 3=HeightAt, 4=Delta
 
 [39*] Self
 
-[40] ObjClassAt
+[40/3*] ObjClassAt
 
 [48*] Key
 
@@ -303,21 +312,49 @@ runtime it is replaced by the relevant 32-bit number.
 
 [61] 0=ClassCount/1* (I don't know what this does), 1=GetArray
 
-[68/1*] Move(Self, ...); minor code is 255
+[64/3*] SendMessage (to Self)
 
-[69/2*] Move; minor code is 255
+[65/4*] SendMessage
 
-[80] SendMessage
+[66/3*] Broadcast; second byte is zero-based class number
 
-[82] Broadcast
+[67/4*] Broadcast
 
-[84-] Move(Self, dir). The second byte is the direction to move. Unlike
+[68/1*] Move(Self, ...); minor code is 255 to take the value from the
+stack, or is another number for a direction constant (in this latter case
+the same bug occurs as with opcode 84).
+
+[69/2*] Move; minor code is same as opcode 68, but the bug with opcode 84
+does not occur, regardless of the minor code.
+
+[70/2*] JumpTo(Self, ...)
+
+[71/3*] JumpTo
+
+[72/5*] Create
+
+[74*] Destroy(Self)
+
+[75/1*] Destroy
+
+[80/3] SendMessage(Self, ...)
+
+[81/4] SendMessage
+
+[82/3] Broadcast; second byte is zero-based class number
+
+[83/4] Broadcast
+
+[84] Move(Self, dir). The second byte is the direction to move. Unlike
 the normal Move() function, this one adds Strength to Inertia instead of
-setting Inertia equal to Strength (this seems to be a bug).
+setting Inertia equal to Strength (this seems to be a bug). If the minor
+code is 255 then takes direction from stack and does not have this bug.
 
-[85/2] Move; minor code is 255
+[85] Move. The second byte is the same as for opcode 84; if 255 then it
+takes from the stack (before taking the object to move). In this case the
+bug mentioned above does not occur regardless of what the minor code is.
 
-[88] Create
+[88/5] Create
 
 [96] Comment. Has one WORD giving length of the comment text (including
 the null terminator), and then the plain text of the comment (with CRLF
@@ -325,16 +362,18 @@ line endings), null terminated.
 
 [97] Popup setting. Second byte is 0 for PopupColor or 1 for PopupLoc.
 
-[98] Destroy
+[98] Destroy(Self)
+
+[99/1] Destroy
 
 [100] CallSub
 
-[101] Goto
+[101-] Goto; next WORD is address to branch to unconditionally
 
 [102] Return. Second byte is 0 for implicit end of SUBS block, 1 for
 return from a subroutine, 2 for the end of a message block.
 
-[103] Return short constant. Second byte is return value.
+[103-] Return short constant. Second byte is return value.
 
 [104/1] Return
 
@@ -348,9 +387,11 @@ the condition is false.
 
 [108/3] ImageLoop (seems to do nothing?)
 
-[109] PopUp
+[109] PopUp. Values taken from the stack is one plus the minor code.
 
-[110] JumpTo
+[110/2] JumpTo(Self, ...)
+
+[111/3] JumpTo
 
 [112] Sound
 
@@ -381,11 +422,12 @@ SetArray, 2 = InitArray.
 
 === Levels ===
 
-After all classes are the levels. Before the levels comes:
+After all classes are the levels. Before the levels comes a header of four
+bytes that consists of:
 
 * Number of levels (WORD)
 
-* Two null bytes (meaing unknown)
+* Two null bytes with unknown meaning
 
 Each level consists of:
 
