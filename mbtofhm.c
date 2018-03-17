@@ -40,6 +40,7 @@ typedef struct {
   unsigned char*msgslbl;
   unsigned short nmsgs;
   unsigned char**msgscode;
+  short defpic;
 } ClassInfo;
 static int nusermsg;
 static char**usermsg;
@@ -281,11 +282,16 @@ static void read_one_class(void) {
   j=fgetc(stdin);
   j|=fgetc(stdin)<<8;
   class[id]->npic=j;
+  class[id]->defpic=256;
   for(i=0;i<j;i++) {
     k=fgetc(stdin);
     k|=fgetc(stdin)<<8;
-    if(i<128) class[id]->pic[i]=k;
+    if(i<128) {
+      class[id]->pic[i]=k;
+      if(k<512 && class[id]->defpic==256 && picavail[k]) class[id]->defpic=i;
+    }
   }
+  class[id]->defpic&=255;
   if(j>128) class[id]->npic=128;
   j=fgetc(stdin);
   j|=fgetc(stdin)<<8;
@@ -325,6 +331,82 @@ static inline void do_classes(void) {
   while(n--) read_one_class();
 }
 
+static void out_description(FILE*fp,const char*txt) {
+  // CLASS section
+  if(!strncmp("[CLASS]\r\n",txt,9)) txt+=9;
+  while(txt[0]=='\r' && txt[1]=='\n') txt+=2;
+  if(!strncmp("[LEVEL]\r\n",txt,9)) goto level_area;
+  if(!strncmp("[GAME]\r\n",txt,8)) goto game_area;
+  fprintf(fp,"  ; ");
+  for(;;) {
+    if(*txt=='\r') {
+      if(!strncmp("\r\n[LEVEL]\r\n",txt,11)) {
+        fputc('\n',fp);
+        txt+=11;
+        goto level_area;
+      } else if(!strncmp("\r\n[GAME]\r\n",txt,10)) {
+        fputc('\n',fp);
+        txt+=10;
+        goto game_area;
+      } else {
+        fprintf(fp,"\n  ; ");
+        txt+=2;
+      }
+    } else if(!*txt) {
+      fputc('\n',fp);
+      return;
+    } else {
+      fputc(*txt++,fp);
+    }
+  }
+  // LEVEL section
+  level_area:
+  if(!strncmp("[LEVEL]\r\n",txt,9)) txt+=9;
+  while(txt[0]=='\r' && txt[1]=='\n') txt+=2;
+  if(!strncmp("[GAME]\r\n",txt,8)) goto game_area;
+  fprintf(fp,"  (EditorHelp\n    \"");
+  for(;;) {
+    if(*txt=='\r') {
+      if(!strncmp("\r\n[GAME]\r\n",txt,10)) {
+        fprintf(fp,"\"\n  )\n");
+        txt+=10;
+        goto game_area;
+      } else {
+        fprintf(fp,"\"\n    \"");
+        txt+=2;
+      }
+    } else if(!*txt) {
+      fprintf(fp,"\"\n  )\n");
+      return;
+    } else {
+      if(*txt=='"') fputc('\\',fp);
+      fputc(*txt++,fp);
+    }
+  }
+  // GAME section
+  game_area:
+  if(!strncmp("[GAME]\r\n",txt,8)) txt+=8;
+  while(txt[0]=='\r' && txt[1]=='\n') txt+=2;
+  fprintf(fp,"  (Help\n    \"");
+  for(;;) {
+    if(*txt=='\r') {
+      if(txt[1]=='\n' && !txt[2]) {
+        fprintf(fp,"\"\n  )\n");
+        return;
+      } else {
+        fprintf(fp,"\"\n    \"");
+        txt+=2;
+      }
+    } else if(!*txt) {
+      fprintf(fp,"\"\n  )\n");
+      return;
+    } else {
+      if(*txt=='"') fputc('\\',fp);
+      fputc(*txt++,fp);
+    }
+  }
+}
+
 static inline void out_classes(void) {
   FILE*fp;
   ClassInfo*c;
@@ -334,7 +416,7 @@ static inline void out_classes(void) {
   if(!fp) fatal("Cannot open file '%s' for writing\n",nam);
   fprintf(fp,"; Note: This file was automatically converted.\n; Remove this notice if you have corrected it.\n");
   for(n=0;n<512;n++) if(c=class[n]) {
-    fprintf(fp,"\n($%s\n  Compatible",c->name);
+    fprintf(fp,"\n($%s Compatible",c->name);
     if(c->attr[1]&1) fprintf(fp," Input");
     if(c->attr[1]&128) fprintf(fp," Player");
     if(!strcmp(c->name,"Quiz")) fprintf(fp," Quiz");
@@ -351,7 +433,7 @@ static inline void out_classes(void) {
       for(i=0;i<c->npic;i++) if(picavail[c->pic[i]]) fprintf(fp," %d",i);
       fprintf(fp,")\n");
     }
-    //TODO: Description
+    out_description(fp,c->desc);
     if(c->attr[2] || c->attr[3]) fprintf(fp,"  (Misc4 0x%04X)\n",c->attr[2]|(c->attr[3]<<8));
     if(c->attr[4] || c->attr[5]) fprintf(fp,"  (Misc5 0x%04X)\n",c->attr[4]|(c->attr[5]<<8));
     if(c->attr[6] || c->attr[7]) fprintf(fp,"  (Misc6 0x%04X)\n",c->attr[6]|(c->attr[7]<<8));
@@ -402,7 +484,21 @@ static inline void out_classes(void) {
     if(c->attr[28] || c->attr[29]) fprintf(fp,"  (Weight %d)\n",c->attr[28]|(c->attr[29]<<8));
     if(c->attr[46] || c->attr[47]) fprintf(fp,"  (Height %d)\n",c->attr[46]|(c->attr[47]<<8));
     if(c->attr[48] || c->attr[49]) fprintf(fp,"  (Climb %d)\n",c->attr[48]|(c->attr[49]<<8));
-    //TODO: Shape
+    switch(i=c->attr[52]) {
+      case 0x00:
+        // Nothing
+        break;
+      case 0x55: case 0xAA: case 0xFF:
+        fprintf(fp,"  (Shape %d)\n",i&3);
+        break;
+      default:
+        fprintf(fp,"  (Shape");
+        if(i&0x03) fprintf(fp," (E %d)",(i>>0)&3);
+        if(i&0x0C) fprintf(fp," (N %d)",(i>>2)&3);
+        if(i&0x30) fprintf(fp," (W %d)",(i>>4)&3);
+        if(i&0xC0) fprintf(fp," (S %d)",(i>>6)&3);
+        fprintf(fp,")\n");
+    }
     if(memcmp(c->attr+30,"\0\0\0\0\0\0\0\0",8)) {
       if(memcmp(c->attr+30,c->attr+32,2) || memcmp(c->attr+30,c->attr+34,4)) {
         fprintf(fp,"  (Hard");
@@ -497,7 +593,7 @@ static void one_level(FILE*fp,int ord) {
   //     bit2-bit0 = LastDir (RLE in case of MRU)
   //   * new X if applicable
   //   * new Y if applicable
-  //   * class (one-based; add 0x8000 for image 0) (two bytes)
+  //   * class (one-based; add 0x8000 for default image) (two bytes)
   //   * image (one byte)
   //   * data types (if has MiscVars):
   //     bit7-bit6 = How many (0=has Misc2 and Misc3, not Misc1)
@@ -534,11 +630,13 @@ static void one_level(FILE*fp,int ord) {
     if(i&0x20) fputc(x,fp);
     if(i&0x10) fputc(y,fp);
     if(i<0x80) {
-      if(buf[2]) {
-        fwrite(buf,1,3,fp);
-      } else {
+      j=buf[0]|(buf[1]<<8);
+      if(!j || j>512 || !class[j-1]) fatal("Object of invalid class number %d found in level\n",j);
+      if(buf[2]==class[j-1]->defpic) {
         fputc(*buf,fp);
         fputc(buf[1]|0x80,fp);
+      } else {
+        fwrite(buf,1,3,fp);
       }
     }
     if(i&0x08) {
@@ -575,6 +673,8 @@ static void one_level(FILE*fp,int ord) {
   }
   if(r) fputc(r+0xBF,fp);
   fputc(255,fp); // End of objects
+  //TODO: Long alternating sequences of 0xC0 0x80 are common, so we should
+  // implement compression of this.
   n=fgetc(stdin);
   n|=fgetc(stdin)<<8;
   while(n--) {
