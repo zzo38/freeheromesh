@@ -413,7 +413,7 @@ static void out_description(FILE*fp,const char*txt) {
 #define SubOpcode(...) do{ static const char*const ss[]={__VA_ARGS__}; if(*op>=sizeof(ss)/sizeof(*ss)) goto unknown; fprintf(fp," %s",ss[*op]); }while(0)
 #define PushFlowControl() do{ flowblock[flowptr]=ofs+2+(op[1]<<1)+(op[2]<<9); if(++flowptr==64) fatal("Too many nested flow controls\n"); len+=2; ind+=2; }while(0)
 
-static int class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned char*lbl,int nlbl,const unsigned char*subs,int nsubs,unsigned char*vars) {
+static void class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned char*lbl,int nlbl,const unsigned char*subs,int nsubs,unsigned char*vars) {
   static const char*const stdvars[256]={
     [0]="Class","Temperature","Shape",
     [4]="Xloc","Yloc","Dir","Image","Inertia","Misc1","Misc2","Misc3","Misc4","Misc5","Misc6","Misc7",
@@ -427,25 +427,24 @@ static int class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned cha
   static const char*const direction[16]={"E","NE","N","NW","W","SW","S","SE","F","LF","L","LB","B","RB","R","RF"};
   int flowblock[64];
   int flowptr=0;
-  //int end=ofs+(op[-2]<<1)+(op[-1]<<9);
   int ind=3;
   int st=0;
   int lix=0;
   int remlbl=nlbl;
   int x,y,z,len;
+  while(remlbl && (lbl[lix+8]|(lbl[lix+9]<<8))<ofs>>1) {
+    remlbl--;
+    lix+=10;
+  }
   for(;;) {
     while(flowptr && flowblock[flowptr-1]==ofs) {
       --flowptr;
       fprintf(fp,"\n%*s then",ind-=2,"");
     }
-    if(*op==102 && op[1]!=1) return ofs+2;
+    if(*op==102 && op[1]!=1) return;
     if(!st) st=fprintf(fp,"\n%*s",ind,"");
-    //if(ofs>=end) {
-    //  fprintf(fp," (?\?\?)");
-    //  return ofs;
-    //}
     while(remlbl && (lbl[lix+8]|(lbl[lix+9]<<8))==ofs>>1) {
-      fprintf(fp," :%s",lbl+lix);
+      fprintf(fp," :%s\n%*s",lbl+lix,ind,"");
       remlbl--;
       lix+=10;
     }
@@ -493,8 +492,7 @@ static int class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned cha
           case 10: fprintf(fp,"\\n"); break;
           case 11: fprintf(fp,"\\l"); break;
           case 12: fprintf(fp,"\\c"); break;
-          //case 14: fprintf(fp,"\\i%s:%d\\",class[op[y+4]|(op[y+5]<<8)]->name,op[y+6]|(op[y+7]<<8)); y+=4; break;
-          case 14: fprintf(fp,"\\i%d:%d\\",op[y+4]|(op[y+5]<<8),op[y+6]|(op[y+7]<<8)); y+=4; break;
+          case 14: fprintf(fp,"\\i%s:%d\\",class[op[y+4]|(op[y+5]<<8)]->name,op[y+6]|(op[y+7]<<8)); y+=4; break;
           case 15: fprintf(fp,"\\b"); break;
           case 16: fprintf(fp,"\\q"); break;
           case 9: case 13: case 17 ... 31: case 127 ... 255: fprintf(fp,"\\x%02X",z); break;
@@ -735,7 +733,7 @@ static int class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned cha
         fprintf(fp," LoseLevel");
         st=0; break;
       case 129:
-        SubOpcode("WinLevel","LocateMe","IgnoreKey","Misc1 Misc2 Misc3 (PopUp 3)",";");
+        SubOpcode("WinLevel","LocateMe","IgnoreKey","Misc1 Misc2 Misc3 (PopUp 2)",";");
         st=0; break;
       case 130:
         fprintf(fp," FlushClass");
@@ -889,14 +887,15 @@ static inline void out_classes(void) {
       class_codes(fp,c->subscode+2,2,c->subslbl,c->nsubslbl,c->subslbl,c->nsubslbl,c->vars);
       fprintf(fp,"\n  )\n");
     }
-    o=0;
+    o=4;
     for(i=0;i<c->nmsgs;i++) {
       fprintf(fp,"  (");
       j=c->msgscode[i][0]|(c->msgscode[i][1]<<8);
       if(j<20) fprintf(fp,"%s",standard_message_names[j]);
       else if(j-20<nusermsg && usermsg[j-20]) fprintf(fp,"#%s",usermsg[j-20]);
       else fprintf(fp,"#???%d",j);
-      o=class_codes(fp,c->msgscode[i]+4,o+4,c->msgslbl,c->nmsgslbl,c->subslbl,c->nsubslbl,c->vars);
+      class_codes(fp,c->msgscode[i]+4,o,c->msgslbl,c->nmsgslbl,c->subslbl,c->nsubslbl,c->vars);
+      o+=(c->msgscode[i][2]<<1)|(c->msgscode[i][3]<<9);
       fprintf(fp,"\n  )\n");
     }
     fprintf(fp,")\n");
