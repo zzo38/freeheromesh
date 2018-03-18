@@ -59,6 +59,7 @@ static unsigned short*soundid;
 static char*basename;
 static char*nam;
 static unsigned long haroffs;
+static unsigned long puzzlesetnumber;
 
 static void*alloc(unsigned int s) {
   void*o=malloc(s);
@@ -94,6 +95,7 @@ static inline void read_header(void) {
   int i,s;
   fread(buf,1,30,stdin);
   if(memcmp("MESH",buf+2,4)) fatal("Unrecognized file format\n");
+  puzzlesetnumber=buf[6]|(buf[7]<<8)|(buf[8]<<16)|(buf[9]<<24);
   for(i=0;i<buf[10];i++) sizes[i]=buf[i+i+12]|(buf[i+i+13]<<8);
   npic=buf[28]|(buf[29]<<8);
   Allocate(picalloc,npic);
@@ -318,7 +320,8 @@ static void read_one_class(void) {
     k=buf[2]|(buf[3]<<8);
     if(!k) break;
     i=class[id]->nmsgs++;
-    Allocate(Reallocate(class[id]->msgscode,class[id]->nmsgs)[i],k<<1);
+    Reallocate(class[id]->msgscode,class[id]->nmsgs);
+    Allocate(class[id]->msgscode[i],k<<1);
     memcpy(class[id]->msgscode[i],buf,4);
     fread(class[id]->msgscode[i]+4,k-2,2,stdin);
   }
@@ -407,10 +410,368 @@ static void out_description(FILE*fp,const char*txt) {
   }
 }
 
+#define SubOpcode(...) do{ static const char*const ss[]={__VA_ARGS__}; if(*op>=sizeof(ss)/sizeof(*ss)) goto unknown; fprintf(fp," %s",ss[*op]); }while(0)
+#define PushFlowControl() do{ flowblock[flowptr]=ofs+2+(op[1]<<1)+(op[2]<<9); if(++flowptr==64) fatal("Too many nested flow controls\n"); len+=2; ind+=2; }while(0)
+
+static int class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned char*lbl,int nlbl,const unsigned char*subs,int nsubs,unsigned char*vars) {
+  static const char*const stdvars[256]={
+    [0]="Class","Temperature","Shape",
+    [4]="Xloc","Yloc","Dir","Image","Inertia","Misc1","Misc2","Misc3","Misc4","Misc5","Misc6","Misc7",
+    [16]="Arrived","Departed","Arrivals","Departures",
+    [32]="Busy","Invisible","UserSignal","UserState","KeyCleared","IsPlayer","Destroyed","Stealthy","VisualOnly",
+    [48]="Msg","From","Arg1","Arg2",
+    [64]="Density","Volume","Strength","Weight","Distance","Height","Climb",
+    [72]="Hard","Hard","Hard","Hard","Sharp","Sharp","Sharp","Sharp","ShapeDir","ShapeDir","ShapeDir","ShapeDir",
+    [84]="Shovable",
+  };
+  static const char*const direction[16]={"E","NE","N","NW","W","SW","S","SE","F","LF","L","LB","B","RB","R","RF"};
+  int flowblock[64];
+  int flowptr=0;
+  //int end=ofs+(op[-2]<<1)+(op[-1]<<9);
+  int ind=3;
+  int st=0;
+  int lix=0;
+  int remlbl=nlbl;
+  int x,y,z,len;
+  for(;;) {
+    while(flowptr && flowblock[flowptr-1]==ofs) {
+      --flowptr;
+      fprintf(fp,"\n%*s then",ind-=2,"");
+    }
+    if(*op==102 && op[1]!=1) return ofs+2;
+    if(!st) st=fprintf(fp,"\n%*s",ind,"");
+    //if(ofs>=end) {
+    //  fprintf(fp," (?\?\?)");
+    //  return ofs;
+    //}
+    while(remlbl && (lbl[lix+8]|(lbl[lix+9]<<8))==ofs>>1) {
+      fprintf(fp," :%s",lbl+lix);
+      remlbl--;
+      lix+=10;
+    }
+    len=1;
+    switch(*op++) {
+      case 1 ... 4:
+        if(!stdvars[*op]) goto unknown;
+        if(*op>=72 && *op<=83) fprintf(fp," %c","ENWSENWSENWS"[*op&3],stdvars[*op]);
+        fputc(' ',fp);
+        if(op[-1]>2) fputc('=',fp);
+        if(!(op[-1]&1)) fputc(',',fp);
+        fprintf(fp,"%s",stdvars[*op]);
+        if(op[-1]>2) st=0;
+        break;
+      case 5:
+        fprintf(fp," %%%s",vars+*op*8);
+        break;
+      case 6:
+        fprintf(fp," =%%%s",vars+*op*8);
+        st=0; break;
+      case 7:
+        fprintf(fp," %d",*op);
+        break;
+      case 8:
+        fprintf(fp," %u",op[1]|(op[2]<<8)|(op[3]<<16)|(op[4]<<24));
+        len+=4; break;
+      case 9:
+        if(!class[*op]) goto unknown;
+        fprintf(fp," $%s",class[*op]->name);
+        break;
+      case 11:
+        if(*op<20) {
+          fprintf(fp," %s",standard_message_names[*op]);
+        } else {
+          if(*op-20>=nusermsg || !usermsg[*op-20]) goto unknown;
+          fprintf(fp," #%s",usermsg[*op-20]);
+        }
+        break;
+      case 13:
+        fprintf(fp," \"");
+        len+=x=op[1]|(op[2]<<8);
+        for(y=0;y<x;y++) switch(z=op[y+3]) {
+          case 0: break; // do nothing
+          case 1 ... 8: fprintf(fp,"\\%c",z+'0'-1); break;
+          case 10: fprintf(fp,"\\n"); break;
+          case 11: fprintf(fp,"\\l"); break;
+          case 12: fprintf(fp,"\\c"); break;
+          //case 14: fprintf(fp,"\\i%s:%d\\",class[op[y+4]|(op[y+5]<<8)]->name,op[y+6]|(op[y+7]<<8)); y+=4; break;
+          case 14: fprintf(fp,"\\i%d:%d\\",op[y+4]|(op[y+5]<<8),op[y+6]|(op[y+7]<<8)); y+=4; break;
+          case 15: fprintf(fp,"\\b"); break;
+          case 16: fprintf(fp,"\\q"); break;
+          case 9: case 13: case 17 ... 31: case 127 ... 255: fprintf(fp,"\\x%02X",z); break;
+          case '\\': fputc(z,fp); //fallthrough
+          default: fputc(z,fp);
+        }
+        fputc('"',fp);
+        len+=2; break;
+      case 14:
+        if(*op<16) fprintf(fp," %s",direction[*op]);
+        else fprintf(fp," %d",*op);
+        break;
+      case 15:
+        for(x=0;x<nsounds;x++) {
+          if(soundid[x]==*op) {
+            fprintf(fp," !%s",sounds[x]);
+            break;
+          }
+        }
+        if(x==nsounds) goto unknown;
+        break;
+      case 16:
+        SubOpcode("neg","bnot","lnot");
+        break;
+      case 17:
+        SubOpcode("*","/","mod");
+        break;
+      case 18:
+        SubOpcode("+","-","band","bor","bxor");
+        break;
+      case 19:
+        SubOpcode("lsh","rsh");
+        break;
+      case 20:
+        SubOpcode("eq","ne","lt","gt","le","ge");
+        break;
+      case 21:
+        SubOpcode("land","lor","lxor");
+        break;
+      case 32:
+        if(*op==255) fprintf(fp," ObjDir");
+        else fprintf(fp," %s ObjDir",direction[*op]);
+        break;
+      case 33:
+        if(*op==255) fprintf(fp," ,ObjDir");
+        else fprintf(fp," %s ,ObjDir",direction[*op]);
+        break;
+      case 34:
+        fprintf(fp," ObjAbove");
+        break;
+      case 35:
+        fprintf(fp," ,ObjAbove");
+        break;
+      case 36:
+        fprintf(fp," ObjBelow");
+        break;
+      case 37:
+        fprintf(fp," ,ObjBelow");
+        break;
+      case 38:
+        SubOpcode("ObjTopAt","ObjBottomAt","VolumeAt","HeightAt","Delta");
+        break;
+      case 39:
+        fprintf(fp," Self");
+        break;
+      case 40:
+        fprintf(fp," ObjClassAt");
+        break;
+      case 48:
+        fprintf(fp," Key");
+        break;
+      case 49:
+        SubOpcode("STOP","ONCE","LOOP","3","4","5","6","7","OSC","9","OSCLOOP");
+        break;
+      case 50:
+        if(heromesh_key_names[*op]) fprintf(fp," '%s",heromesh_key_names[*op]);
+        else fprintf(fp," %d",*op);
+        break;
+      case 51:
+        fprintf(fp," 0x%02X",*op);
+        break;
+      case 52:
+        fprintf(fp," 0x%X",op[1]|(op[2]<<8)|(op[3]<<16)|(op[4]<<24));
+        len+=4; break;
+      case 53:
+        if(*op==5) fprintf(fp," %ld",puzzlesetnumber);
+        else SubOpcode("Level","-1","0","1","0","0","MoveNumber");
+        break;
+      case 54:
+        if(*op==255) fprintf(fp," XDir");
+        else fprintf(fp," %s XDir",direction[*op]);
+        break;
+      case 55:
+        if(*op==255) fprintf(fp," ,XDir");
+        else fprintf(fp," %s ,XDir",direction[*op]);
+        break;
+      case 56:
+        if(*op==255) fprintf(fp," YDir");
+        else fprintf(fp," %s YDir",direction[*op]);
+        break;
+      case 57:
+        if(*op==255) fprintf(fp," ,YDir");
+        else fprintf(fp," %s ,YDir",direction[*op]);
+        break;
+      case 58:
+        fprintf(fp," New%c",*op+'X');
+        break;
+      case 59:
+        fprintf(fp," bit%d",*op);
+        break;
+      case 60:
+        if(*op<50) fprintf(fp," %s",standard_sound_names[*op]);
+        else goto unknown;
+        break;
+      case 64:
+        fprintf(fp," Send");
+        break;
+      case 65:
+        fprintf(fp," ,Send");
+        break;
+      case 66:
+        fprintf(fp," (Broadcast $%s)",class[*op]->name);
+        break;
+      case 67:
+        fprintf(fp," Broadcast");
+        break;
+      case 68:
+        if(*op==255) fprintf(fp," Move");
+        else fprintf(fp," (Move %s)",direction[*op]);
+        break;
+      case 69:
+        if(*op==255) fprintf(fp," ,Move");
+        else fprintf(fp," %s ,Move",direction[*op]);
+        break;
+      case 70:
+        fprintf(fp," JumpTo");
+        break;
+      case 71:
+        fprintf(fp," ,JumpTo");
+        break;
+      case 72:
+        fprintf(fp," Create");
+        break;
+      case 74:
+        fprintf(fp," Destroy");
+        break;
+      case 75:
+        fprintf(fp," ,Destroy");
+        break;
+      case 80:
+        fprintf(fp," Send .");
+        st=0; break;
+      case 81:
+        fprintf(fp," ,Send .");
+        st=0; break;
+      case 82:
+        fprintf(fp," (Broadcast $%s) .",class[*op]->name);
+        st=0; break;
+      case 83:
+        fprintf(fp," Broadcast .");
+        st=0; break;
+      case 84:
+        if(*op==255) fprintf(fp," Move .");
+        else fprintf(fp," (Move %s) .",direction[*op]);
+        st=0; break;
+      case 85:
+        if(*op==255) fprintf(fp," ,Move .");
+        else fprintf(fp," %s ,Move .",direction[*op]);
+        st=0; break;
+      case 88:
+        fprintf(fp," Create .");
+        st=0; break;
+      case 96:
+        fprintf(fp," ;");
+        len+=x=op[1]|(op[2]<<8);
+        for(y=0;y<x;y++) switch(z=op[y+3]) {
+          case 0: case 13: break; // do nothing
+          case 10: fprintf(fp,"\n%*s ;",ind,""); break;
+          default: fputc(z,fp);
+        }
+        len+=2; st=0; break;
+      case 98:
+        fprintf(fp," Destroy .");
+        st=0; break;
+      case 99:
+        fprintf(fp," ,Destroy .");
+        st=0; break;
+      case 100:
+        z=-1;
+        for(x=0;x<nsubs;x++) {
+          if(op[1]==subs[x*10+8] && op[2]==subs[x*10+9]) {
+            z=x; break;
+          }
+        }
+        if(z==-1) fprintf(fp," ,???"); else fprintf(fp," ,:%s",subs+z*10);
+        len+=2; st=0; break;
+      case 101:
+        z=-1;
+        for(x=0;x<nlbl;x++) {
+          if(op[1]==lbl[x*10+8] && op[2]==lbl[x*10+9]) {
+            z=x; break;
+          }
+        }
+        if(z==-1) fprintf(fp," =???"); else fprintf(fp," =:%s",lbl+z*10);
+        len+=2; st=0; break;
+      case 102: case 104:
+        fprintf(fp," ret");
+        st=0; break;
+      case 103:
+        fprintf(fp," %d ret",*op);
+        st=0; break;
+      case 105:
+        fprintf(fp," if");
+        PushFlowControl();
+        st=0; break;
+      case 106:
+        fseek(fp,-1,SEEK_CUR);
+        fprintf(fp,"else");
+        if(flowptr) flowptr--,ind-=2;
+        PushFlowControl();
+        st=0; break;
+      case 109:
+        if(*op) fprintf(fp," (PopUp %d)",*op); else fprintf(fp," PopUp");
+        st=0; break;
+      case 110:
+        fprintf(fp," JumpTo .");
+        st=0; break;
+      case 111:
+        fprintf(fp," ,JumpTo .");
+        st=0; break;
+      case 112: case 113:
+        fprintf(fp," Sound");
+        st=0; break;
+      case 126:
+        fprintf(fp," Animate");
+        st=0; break;
+      case 127: case 128:
+        fprintf(fp," LoseLevel");
+        st=0; break;
+      case 129:
+        SubOpcode("WinLevel","LocateMe","IgnoreKey","Misc1 Misc2 Misc3 (PopUp 3)",";");
+        st=0; break;
+      case 130:
+        fprintf(fp," FlushClass");
+        st=0; break;
+      case 131:
+        fprintf(fp," FlushObj");
+        st=0; break;
+      case 132:
+        fprintf(fp," SetInventory 5 MaxInventory");
+        st=0; break;
+      case 133:
+        fprintf(fp," DelInventory");
+        st=0; break;
+      case 134:
+        fprintf(fp," (for %%%s)",vars+*op*8);
+        ind+=2; len+=2; st=0; break;
+      case 135:
+        fseek(fp,-1,SEEK_CUR);
+        fprintf(fp,"next");
+        ind-=2; len+=6; st=0; break;
+      case 240:
+        fprintf(fp," Trace");
+        st=0; break;
+      default: unknown:
+        fprintf(fp," (??? %d %d)",op[-1],op[0]);
+        st=0;
+    }
+    ofs+=len+1;
+    op+=len;
+  }
+}
+
 static inline void out_classes(void) {
   FILE*fp;
   ClassInfo*c;
-  int i,j,n;
+  int i,j,n,o;
   sprintf(nam,"%s.class",basename);
   fp=fopen(nam,"w");
   if(!fp) fatal("Cannot open file '%s' for writing\n",nam);
@@ -523,17 +884,20 @@ static inline void out_classes(void) {
         fprintf(fp,"  (Sharp %d)\n",c->attr[38]|(c->attr[39]<<8));
       }
     }
-    //TODO: Class codes
     if(c->subscode[1] || c->subscode[0]>2) {
-      fprintf(fp,"  (SUBS\n    ; Not implemented yet!\n  )\n");
+      fprintf(fp,"  (SUBS");
+      class_codes(fp,c->subscode+2,2,c->subslbl,c->nsubslbl,c->subslbl,c->nsubslbl,c->vars);
+      fprintf(fp,"\n  )\n");
     }
+    o=0;
     for(i=0;i<c->nmsgs;i++) {
       fprintf(fp,"  (");
       j=c->msgscode[i][0]|(c->msgscode[i][1]<<8);
       if(j<20) fprintf(fp,"%s",standard_message_names[j]);
       else if(j-20<nusermsg && usermsg[j-20]) fprintf(fp,"#%s",usermsg[j-20]);
-      else fprintf(fp,"#%d?",j);
-      fprintf(fp,"\n    ; Not implemented yet!\n  )\n");
+      else fprintf(fp,"#???%d",j);
+      o=class_codes(fp,c->msgscode[i]+4,o+4,c->msgslbl,c->nmsgslbl,c->subslbl,c->nsubslbl,c->vars);
+      fprintf(fp,"\n  )\n");
     }
     fprintf(fp,")\n");
   }
