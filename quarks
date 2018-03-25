@@ -1,0 +1,208 @@
+! Resource names for Free Hero Mesh.
+! This file is public domain.
+! Each line contains one name, is blank, or starts with ! for a comment.
+
+! Graphics/screen
+screenWidth
+screenHeight
+palette
+popupColors
+imageSize
+altImage
+editTitle
+gameTitle
+gamma
+screenFlags
+! SDL flags:
+!  '-' = no flags
+!  'd' = DOUBLEBUF
+!  'f' = FULLSCREEN
+!  'h' = HWSURFACE
+!  'n' = NOFRAME
+!  'p' = HWPALETTE
+!  'r' = RESIZABLE
+!  'y' = ASYNCBLIT
+!  'z' = NOPARACHUTE
+
+! Audio
+sfxVolume
+audioBuffer
+audioRate
+audioFormat
+musicVolume
+musicFile
+
+! Keyboard
+keyRepeat
+editKey
+gameKey
+
+! Key codes
+backspace
+tab
+clear
+return
+pause
+escape
+space
+exclaim
+quotedbl
+hash
+dollar
+ampersand
+quote
+leftparen
+rightparen
+asterisk
+plus
+comma
+minus
+period
+slash
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+colon
+semicolon
+less
+equals
+greater
+question
+at
+leftbracket
+rightbracket
+caret
+underscore
+backquote
+A
+B
+C
+D
+E
+F
+G
+H
+I
+J
+K
+L
+M
+N
+O
+P
+Q
+R
+S
+T
+U
+V
+W
+X
+Y
+Z
+delete
+kp0
+kp1
+kp2
+kp3
+kp4
+kp5
+kp6
+kp7
+kp8
+kp9
+kp_period
+kp_divide
+kp_multiply
+kp_minus
+kp_plus
+kp_enter
+kp_equals
+up
+down
+right
+left
+insert
+home
+end
+pageup
+pagedown
+f1
+f2
+f3
+f4
+f5
+f6
+f7
+f8
+f9
+f10
+f11
+f12
+f13
+f14
+f15
+numlock
+capslock
+scrollock
+rshift
+lshift
+rctrl
+lctrl
+ralt
+lalt
+rmeta
+lmeta
+lsuper
+rsuper
+mode
+help
+print
+sysreq
+break
+menu
+power
+euro
+
+! Key modifiers
+shift
+ctrl
+alt
+meta
+numLock
+
+! Mouse
+editClick
+gameClick
+allowMouseWarp
+middle
+! (left and right are listed with keys)
+! (the key modifiers are also valid here)
+
+! Class
+class
+quiz
+
+! Solutions
+saveSolutions
+solutionComment
+solutionTimestamp
+
+! SQL settings
+sqlInit
+sqlExtensions
+sqlMemStatus
+sqlSmallAllocations
+sqlCoveringIndexScan
+sqlPowerSafe
+
+! Miscellaneous
+followSymlinkNames
+
