@@ -24,7 +24,7 @@ static const char schema[]=
   "PRAGMA APPLICATION_ID(1296388936);"
   "PRAGMA RECURSIVE_TRIGGERS(1);"
   "CREATE TABLE IF NOT EXISTS `USERCACHEINDEX`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `LVLTIME` INT, `SOLTIME` INT, `VERSION` INT);"
-  "CREATE TEMPORARY TABLE `HEROMESH_PICTURES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `DATA` BLOB);"
+  "CREATE TEMPORARY TABLE `PICTURES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `OFFSET` INT);"
 ;
 
 static sqlite3*userdb;
@@ -142,13 +142,20 @@ static void draw_text(int x,int y,const unsigned char*t,int bg,int fg) {
   }
 }
 
+static Uint16 decide_picture_size(int nwantsize,const Uint8*wantsize,const Uint16*havesize) {
+  
+}
+
 static void load_pictures(void) {
+  sqlite3_stmt*st=0;
   FILE*fp;
   Uint8 wantsize[32];
-  Uint8 nwantsize;
+  Uint8 nwantsize=0;
   Uint8 altImage;
+  Uint16 havesize[256];
   char*nam=sqlite3_mprintf("%s.xclass",basefilename);
   const char*v;
+  int i,j,n;
   if(!nam) fatal("Allocation failed\n");
   fp=fopen(nam,"r");
   if(!fp) fatal("Failed to open xclass file (%m)\n");
@@ -157,8 +164,52 @@ static void load_pictures(void) {
   altImage=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"0",0,10);
   optionquery[1]=Q_imageSize;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
+  if(v) while(nwantsize<32) {
+    i=j=0;
+    sscanf(v," %d %n",&i,&j);
+    if(!j) break;
+    if(i<2 || i>255) fatal("Invalid picture size %d\n",i);
+    wantsize[nwantsize++]=i;
+    v+=j;
+  }
+  sqlite3_exec(userdb,"BEGIN;",0,0,0);
+  if(sqlite3_prepare(userdb,"INSERT INTO `PICTURES`(`ID`,`NAME`,`OFFSET`) VALUES(?1,?2,?3);",-1,&st,0))
+   fatal("Unable to prepare SQL statement while loading pictures: %s\n",sqlite3_errmsg(userdb));
+  nam=malloc(256);
+  if(!nam) fatal("Allocation failed\n");
+  n=0;
+  memset(havesize,0,256*sizeof(Uint16));
+  while(!feof(fp)) {
+    i=0;
+    while(j=fgetc(fp)) {
+      if(j==EOF) goto nomore1;
+      if(i<255) nam[i++]=j;
+    }
+    nam[i]=0;
+    if(n++==32768) fatal("Too many pictures\n");
+    sqlite3_reset(st);
+    sqlite3_bind_int(st,1,n);
+    sqlite3_bind_text(st,2,nam,i,SQLITE_TRANSIENT);
+    sqlite3_bind_int64(st,3,ftell(fp)+4);
+    while((i=sqlite3_step(st))==SQLITE_ROW);
+    if(i!=SQLITE_DONE) fatal("SQL error (%d): %s\n",i,sqlite3_errmsg(userdb));
+    i=fgetc(fp)<<16;
+    i|=fgetc(fp)<<24;
+    i|=fgetc(fp)<<0;
+    i|=fgetc(fp)<<8;
+    i-=j=fgetc(fp)&15;
+    while(j--) ++havesize[fgetc(fp)&255];
+    fseek(fp,i-1,SEEK_CUR);
+  }
+nomore1:
+  free(nam);
+  sqlite3_finalize(st);
+  rewind(fp);
+  for(i=0;i<256;i++) havesize[i]=(havesize[i]==n)?1:0;
+  picture_size=decide_picture_size(nwantsize,wantsize,havesize);
   
   fclose(fp);
+  sqlite3_exec(userdb,"COMMIT;",0,0,0);
 }
 
 static void set_cursor(int id) {
