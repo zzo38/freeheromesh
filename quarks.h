@@ -149,26 +149,28 @@
 #define Q_menu 150
 #define Q_power 151
 #define Q_euro 152
-#define Q_shift 153
-#define Q_ctrl 154
-#define Q_alt 155
-#define Q_meta 156
-#define Q_numLock 157
-#define Q_editClick 158
-#define Q_gameClick 159
-#define Q_allowMouseWarp 160
-#define Q_middle 161
-#define Q_class 162
-#define Q_quiz 163
-#define Q_saveSolutions 164
-#define Q_solutionComment 165
-#define Q_solutionTimestamp 166
-#define Q_sqlInit 167
-#define Q_sqlExtensions 168
-#define Q_sqlMemStatus 169
-#define Q_sqlSmallAllocations 170
-#define Q_sqlCoveringIndexScan 171
-#define Q_followSymlinkNames 172
+#define Q_compose 153
+#define Q_undo 154
+#define Q_shift 155
+#define Q_ctrl 156
+#define Q_alt 157
+#define Q_meta 158
+#define Q_numLock 159
+#define Q_editClick 160
+#define Q_gameClick 161
+#define Q_allowMouseWarp 162
+#define Q_middle 163
+#define Q_class 164
+#define Q_quiz 165
+#define Q_saveSolutions 166
+#define Q_solutionComment 167
+#define Q_solutionTimestamp 168
+#define Q_sqlInit 169
+#define Q_sqlExtensions 170
+#define Q_sqlMemStatus 171
+#define Q_sqlSmallAllocations 172
+#define Q_sqlCoveringIndexScan 173
+#define Q_sqlPowerSafe 174
 static const char*const global_quarks[]={
   "screenWidth",
   "screenHeight",
@@ -321,6 +323,8 @@ static const char*const global_quarks[]={
   "menu",
   "power",
   "euro",
+  "compose",
+  "undo",
   "shift",
   "ctrl",
   "alt",
@@ -340,5 +344,142 @@ static const char*const global_quarks[]={
   "sqlMemStatus",
   "sqlSmallAllocations",
   "sqlCoveringIndexScan",
-  "followSymlinkNames",
-0};
+  "sqlPowerSafe",
+0}; static const SDLKey quark_to_key[Q_undo+1-Q_backspace]={
+SDLK_BACKSPACE,
+SDLK_TAB,
+SDLK_CLEAR,
+SDLK_RETURN,
+SDLK_PAUSE,
+SDLK_ESCAPE,
+SDLK_SPACE,
+SDLK_EXCLAIM,
+SDLK_QUOTEDBL,
+SDLK_HASH,
+SDLK_DOLLAR,
+SDLK_AMPERSAND,
+SDLK_QUOTE,
+SDLK_LEFTPAREN,
+SDLK_RIGHTPAREN,
+SDLK_ASTERISK,
+SDLK_PLUS,
+SDLK_COMMA,
+SDLK_MINUS,
+SDLK_PERIOD,
+SDLK_SLASH,
+SDLK_0,
+SDLK_1,
+SDLK_2,
+SDLK_3,
+SDLK_4,
+SDLK_5,
+SDLK_6,
+SDLK_7,
+SDLK_8,
+SDLK_9,
+SDLK_COLON,
+SDLK_SEMICOLON,
+SDLK_LESS,
+SDLK_EQUALS,
+SDLK_GREATER,
+SDLK_QUESTION,
+SDLK_AT,
+SDLK_LEFTBRACKET,
+SDLK_RIGHTBRACKET,
+SDLK_CARET,
+SDLK_UNDERSCORE,
+SDLK_BACKQUOTE,
+SDLK_a,
+SDLK_b,
+SDLK_c,
+SDLK_d,
+SDLK_e,
+SDLK_f,
+SDLK_g,
+SDLK_h,
+SDLK_i,
+SDLK_j,
+SDLK_k,
+SDLK_l,
+SDLK_m,
+SDLK_n,
+SDLK_o,
+SDLK_p,
+SDLK_q,
+SDLK_r,
+SDLK_s,
+SDLK_t,
+SDLK_u,
+SDLK_v,
+SDLK_w,
+SDLK_x,
+SDLK_y,
+SDLK_z,
+SDLK_DELETE,
+SDLK_KP0,
+SDLK_KP1,
+SDLK_KP2,
+SDLK_KP3,
+SDLK_KP4,
+SDLK_KP5,
+SDLK_KP6,
+SDLK_KP7,
+SDLK_KP8,
+SDLK_KP9,
+SDLK_KP_PERIOD,
+SDLK_KP_DIVIDE,
+SDLK_KP_MULTIPLY,
+SDLK_KP_MINUS,
+SDLK_KP_PLUS,
+SDLK_KP_ENTER,
+SDLK_KP_EQUALS,
+SDLK_UP,
+SDLK_DOWN,
+SDLK_RIGHT,
+SDLK_LEFT,
+SDLK_INSERT,
+SDLK_HOME,
+SDLK_END,
+SDLK_PAGEUP,
+SDLK_PAGEDOWN,
+SDLK_F1,
+SDLK_F2,
+SDLK_F3,
+SDLK_F4,
+SDLK_F5,
+SDLK_F6,
+SDLK_F7,
+SDLK_F8,
+SDLK_F9,
+SDLK_F10,
+SDLK_F11,
+SDLK_F12,
+SDLK_F13,
+SDLK_F14,
+SDLK_F15,
+SDLK_NUMLOCK,
+SDLK_CAPSLOCK,
+SDLK_SCROLLOCK,
+SDLK_RSHIFT,
+SDLK_LSHIFT,
+SDLK_RCTRL,
+SDLK_LCTRL,
+SDLK_RALT,
+SDLK_LALT,
+SDLK_RMETA,
+SDLK_LMETA,
+SDLK_LSUPER,
+SDLK_RSUPER,
+SDLK_MODE,
+SDLK_HELP,
+SDLK_PRINT,
+SDLK_SYSREQ,
+SDLK_BREAK,
+SDLK_MENU,
+SDLK_POWER,
+SDLK_EURO,
+SDLK_COMPOSE,
+SDLK_UNDO,
+};
+#define FirstKeyQuark Q_backspace
+#define LastKeyQuark Q_undo

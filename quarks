@@ -170,6 +170,8 @@ break
 menu
 power
 euro
+compose
+undo
 
 ! Key modifiers
 shift
@@ -202,7 +204,4 @@ sqlMemStatus
 sqlSmallAllocations
 sqlCoveringIndexScan
 sqlPowerSafe
-
-! Miscellaneous
-followSymlinkNames
 
