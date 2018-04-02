@@ -58,10 +58,10 @@ static void init_palette(void) {
   SDL_Color pal[256];
   FILE*fp=0;
   const char*v;
-  optionquery[2]=Q_gamma;
+  optionquery[1]=Q_gamma;
   gamma=strtod(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"0",0);
   if(gamma<=0.0 || gamma==1.0) usegamma=0;
-  optionquery[2]=Q_palette;
+  optionquery[1]=Q_palette;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
   if(v && *v) {
     fp=fopen(v,"r");
@@ -270,7 +270,7 @@ nomore1:
   picture_size=decide_picture_size(nwantsize,wantsize,havesize);
   if(sqlite3_prepare_v2(userdb,"SELECT `ID`, `OFFSET` FROM `PICTURES`;",-1,&st,0))
    fatal("Unable to prepare SQL statement while loading pictures: %s\n",sqlite3_errmsg(userdb));
-  optionquery[2]=Q_screenFlags;
+  optionquery[1]=Q_screenFlags;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
   i=v&&strchr(v,'h');
   picts=SDL_CreateRGBSurface((i?SDL_HWSURFACE:SDL_SWSURFACE)|SDL_SRCCOLORKEY,picture_size<<4,picture_size*((n+15)>>4),8,0,0,0,0);
