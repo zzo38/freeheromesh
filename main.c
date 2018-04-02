@@ -1,5 +1,5 @@
 #if 0
-gcc -s -O2 -o ~/bin/heromesh main.c smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread
+gcc -s -O2 -o ~/bin/heromesh main.c picture.o smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread
 exit
 #endif
 
@@ -8,6 +8,7 @@ exit
 */
 
 #define _BSD_SOURCE
+#define HEROMESH_MAIN
 #include "SDL.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,7 +19,7 @@ exit
 #include "names.h"
 #include "quarks.h"
 #include "cursorshapes.h"
-#include "pcfont.h"
+#include "heromesh.h"
 
 typedef struct {
   char cmd;
@@ -45,21 +46,21 @@ static const char schema[]=
   "CREATE TEMPORARY TABLE `PICTURES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `OFFSET` INT);"
 ;
 
-static sqlite3*userdb;
-static SDL_Cursor*cursor[77];
-static xrm_db*resourcedb;
-static SDL_Surface*screen;
-static const char*basefilename;
+sqlite3*userdb;
+xrm_db*resourcedb;
+const char*basefilename;
+xrm_quark optionquery[16];
+
 static const char*globalclassname;
+static SDL_Cursor*cursor[77];
 static FILE*levelfp;
 static FILE*solutionfp;
-static xrm_quark optionquery[16];
 static FILE*hamarc_fp;
 static long hamarc_pos;
-static Uint16 picture_size;
-static SDL_Surface*picture_surface;
 static KeyBinding*editor_bindings[SDLK_LAST];
 static KeyBinding*game_bindings[SDLK_LAST];
+static KeyBinding*editor_mouse_bindings[4];
+static KeyBinding*game_mouse_bindings[4];
 
 #define fatal(...) do{ fprintf(stderr,__VA_ARGS__); exit(1); }while(0)
 #define boolxrm(a,b) (*a=='1'||*a=='y'||*a=='t'||*a=='Y'||*a=='T'?1:*a=='0'||*a=='n'||*a=='f'||*a=='N'||*a=='F'?0:b)
@@ -130,121 +131,6 @@ static void init_sql(void) {
   optionquery[1]=Q_sqlInit;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
   if(v && sqlite3_exec(userdb,v,0,0,&s)) fatal("Failed to execute user-defined SQL statements (%s)\n",s?:"unknown error");
-}
-
-static void draw_picture(int x,int y,Uint16 img) {
-  // To be called only when screen is unlocked!
-  SDL_Rect src={(img&15)*picture_size,(img>>4)*picture_size,picture_size,picture_size};
-  SDL_Rect dst={x,y,picture_size,picture_size};
-  SDL_BlitSurface(picture_surface,&src,screen,&dst);
-}
-
-static void draw_text(int x,int y,const unsigned char*t,int bg,int fg) {
-  // To be called only when screen is locked!
-  int len=strlen(t);
-  Uint8*pix=screen->pixels;
-  Uint8*p;
-  Uint16 pitch=screen->pitch;
-  int xx,yy;
-  const unsigned char*f;
-  if(x+8*len>screen->w) len=(screen->w-x)>>3;
-  if(len<=0 || y+8>screen->h) return;
-  pix+=y*pitch+x;
-  while(*t) {
-    f=fontdata+(*t<<3);
-    for(yy=0;yy<8;yy++) {
-      for(xx=0;xx<8;xx++) p[xx]=(*f<<xx)&128?fg:bg;
-      p+=pitch;
-      ++f;
-    }
-    t++;
-    if(!--len) return;
-  }
-}
-
-static Uint16 decide_picture_size(int nwantsize,const Uint8*wantsize,const Uint16*havesize) {
-  int i,j;
-  if(!nwantsize) fatal("Unable to determine what picture size is wanted\n");
-  for(i=0;i<nwantsize;i++) if(havesize[j=wantsize[i]]) return j;
-  for(i=0;i<nwantsize;i++) for(j=2;j<wantsize[i];j++) if(wantsize[i]%j==0 && havesize[wantsize[i]/j]) return wantsize[i];
-  for(i=*wantsize;i;i--) for(j=1;j<i;j++) if(i%j==0 && havesize[i/j]) return i;
-  fatal("Unable to determine what picture size is wanted\n");
-}
-
-static void load_pictures(void) {
-  sqlite3_stmt*st=0;
-  FILE*fp;
-  Uint8 wantsize[32];
-  Uint8 nwantsize=0;
-  Uint8 altImage;
-  Uint16 havesize[256];
-  char*nam=sqlite3_mprintf("%s.xclass",basefilename);
-  const char*v;
-  int i,j,n;
-  if(!nam) fatal("Allocation failed\n");
-  fp=fopen(nam,"r");
-  if(!fp) fatal("Failed to open xclass file (%m)\n");
-  sqlite3_free(nam);
-  optionquery[1]=Q_altImage;
-  altImage=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"0",0,10);
-  optionquery[1]=Q_imageSize;
-  v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
-  if(v) while(nwantsize<32) {
-    i=j=0;
-    sscanf(v," %d %n",&i,&j);
-    if(!j) break;
-    if(i<2 || i>255) fatal("Invalid picture size %d\n",i);
-    wantsize[nwantsize++]=i;
-    v+=j;
-  }
-  sqlite3_exec(userdb,"BEGIN;",0,0,0);
-  if(sqlite3_prepare(userdb,"INSERT INTO `PICTURES`(`ID`,`NAME`,`OFFSET`) VALUES(?1,?2,?3);",-1,&st,0))
-   fatal("Unable to prepare SQL statement while loading pictures: %s\n",sqlite3_errmsg(userdb));
-  nam=malloc(256);
-  if(!nam) fatal("Allocation failed\n");
-  n=0;
-  memset(havesize,0,256*sizeof(Uint16));
-  while(!feof(fp)) {
-    i=0;
-    while(j=fgetc(fp)) {
-      if(j==EOF) goto nomore1;
-      if(i<255) nam[i++]=j;
-    }
-    nam[i]=0;
-    if(i>4 && !memcmp(".IMG",nam+i-4,4)) {
-      j=1;
-      if(n++==32768) fatal("Too many pictures\n");
-      sqlite3_reset(st);
-      sqlite3_bind_int(st,1,n);
-      sqlite3_bind_text(st,2,nam,i,SQLITE_TRANSIENT);
-      sqlite3_bind_int64(st,3,ftell(fp)+4);
-      while((i=sqlite3_step(st))==SQLITE_ROW);
-      if(i!=SQLITE_DONE) fatal("SQL error (%d): %s\n",i,sqlite3_errmsg(userdb));
-    } else {
-      j=0;
-    }
-    i=fgetc(fp)<<16;
-    i|=fgetc(fp)<<24;
-    i|=fgetc(fp)<<0;
-    i|=fgetc(fp)<<8;
-    if(j) {
-      i-=j=fgetc(fp)&15;
-      while(j--) ++havesize[fgetc(fp)&255];
-      fseek(fp,i-1,SEEK_CUR);
-    } else {
-      fseek(fp,i,SEEK_CUR);
-    }
-  }
-nomore1:
-  if(!n) fatal("Cannot find any pictures in this puzzle set\n");
-  free(nam);
-  sqlite3_finalize(st);
-  rewind(fp);
-  for(i=0;i<256;i++) havesize[i]=(havesize[i]==n)?1:0;
-  picture_size=decide_picture_size(nwantsize,wantsize,havesize);
-  
-  fclose(fp);
-  sqlite3_exec(userdb,"COMMIT;",0,0,0);
 }
 
 static void set_cursor(int id) {
@@ -328,6 +214,12 @@ static void set_key_binding(KeyBinding**pkb,int mod,const char*txt) {
   optionquery[1]=Q_gameKey; \
   if(s=xrm_get_resource(resourcedb,optionquery,optionquery,n)) set_key_binding(game_bindings+quark_to_key[q-FirstKeyQuark],m,s); \
 } while(0)
+#define SetMouseBinding(o,n,m) do { \
+  optionquery[1]=Q_editClick; \
+  if(s=xrm_get_resource(resourcedb,optionquery,optionquery,n)) set_key_binding(editor_mouse_bindings+o,m,s); \
+  optionquery[1]=Q_gameClick; \
+  if(s=xrm_get_resource(resourcedb,optionquery,optionquery,n)) set_key_binding(game_mouse_bindings+o,m,s); \
+} while(0)
 static void load_key_bindings(void) {
   xrm_quark q;
   const char*s;
@@ -355,6 +247,36 @@ static void load_key_bindings(void) {
     SetKeyBinding(5,MOD_META|MOD_SHIFT);
 #endif
   }
+  optionquery[2]=optionquery[3]=Q_left;
+  SetMouseBinding(SDL_BUTTON_LEFT,3,0);
+  optionquery[2]=Q_shift;
+  SetMouseBinding(SDL_BUTTON_LEFT,4,MOD_SHIFT);
+  optionquery[2]=Q_ctrl;
+  SetMouseBinding(SDL_BUTTON_LEFT,4,MOD_CTRL);
+  optionquery[2]=Q_alt;
+  SetMouseBinding(SDL_BUTTON_LEFT,4,MOD_ALT);
+  optionquery[2]=Q_meta;
+  SetMouseBinding(SDL_BUTTON_LEFT,4,MOD_META);
+  optionquery[2]=optionquery[3]=Q_middle;
+  SetMouseBinding(SDL_BUTTON_MIDDLE,3,0);
+  optionquery[2]=Q_shift;
+  SetMouseBinding(SDL_BUTTON_MIDDLE,4,MOD_SHIFT);
+  optionquery[2]=Q_ctrl;
+  SetMouseBinding(SDL_BUTTON_MIDDLE,4,MOD_CTRL);
+  optionquery[2]=Q_alt;
+  SetMouseBinding(SDL_BUTTON_MIDDLE,4,MOD_ALT);
+  optionquery[2]=Q_meta;
+  SetMouseBinding(SDL_BUTTON_MIDDLE,4,MOD_META);
+  optionquery[2]=optionquery[3]=Q_right;
+  SetMouseBinding(SDL_BUTTON_RIGHT,3,0);
+  optionquery[2]=Q_shift;
+  SetMouseBinding(SDL_BUTTON_RIGHT,4,MOD_SHIFT);
+  optionquery[2]=Q_ctrl;
+  SetMouseBinding(SDL_BUTTON_RIGHT,4,MOD_CTRL);
+  optionquery[2]=Q_alt;
+  SetMouseBinding(SDL_BUTTON_RIGHT,4,MOD_ALT);
+  optionquery[2]=Q_meta;
+  SetMouseBinding(SDL_BUTTON_RIGHT,4,MOD_META);
 }
 
 int main(int argc,char**argv) {

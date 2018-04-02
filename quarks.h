@@ -345,7 +345,9 @@ static const char*const global_quarks[]={
   "sqlSmallAllocations",
   "sqlCoveringIndexScan",
   "sqlPowerSafe",
-0}; static const SDLKey quark_to_key[Q_undo+1-Q_backspace]={
+0};
+#ifdef HEROMESH_MAIN
+static const SDLKey quark_to_key[Q_undo+1-Q_backspace]={
 SDLK_BACKSPACE,
 SDLK_TAB,
 SDLK_CLEAR,
@@ -483,3 +485,4 @@ SDLK_UNDO,
 };
 #define FirstKeyQuark Q_backspace
 #define LastKeyQuark Q_undo
+#endif
