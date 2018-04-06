@@ -161,33 +161,45 @@ static void load_one_picture_sub(FILE*fp,int size,int meth) {
 }
 
 static void load_one_picture(FILE*fp,Uint16 img,int alt) {
-  int i,j,k,pitch,which,meth,size;
+  int h,i,j,k,pitch,which,meth,size,psize,zoom;
   Uint8 buf[32];
   Uint8*pix;
   *buf=fgetc(fp);
   j=*buf&15;
   fread(buf+1,1,j+(j>>1),fp);
   k=0;
+  zoom=1;
   for(i=1;i<=j;i++) if(buf[i]==picture_size) ++k;
+  if(k) {
+    psize=picture_size;
+  } else {
+    for(zoom=2;zoom<=picture_size;zoom++) if(!(picture_size%zoom)) {
+      psize=picture_size/zoom;
+      for(i=1;i<=j;i++) if(buf[i]==psize) ++k;
+      if(k) break;
+    }
+  }
   alt%=k;
-  for(i=1;i<=j;i++) if(buf[i]==picture_size && !alt--) break;
+  for(i=1;i<=j;i++) if(buf[i]==psize && !alt--) break;
   which=i;
   i=1;
   while(which--) load_one_picture_sub(fp,size=buf[i],meth=(i==1?*buf>>4:buf[(*buf&15)+1+((i-2)>>1)]>>(i&1?4:0))&15),i++;
   if(meth==5 || meth==6) meth^=3;
+  if(meth==15) meth=0;
   SDL_LockSurface(picts);
   pitch=picts->pitch;
   pix=picts->pixels+((img&15)+pitch*(img>>4))*picture_size;
-  if(meth==15) meth=0;
   for(i=0;i<size;i++) {
-    for(j=0;j<size;j++) {
-      if(meth&1) j=size-j-1;
-      if(meth&2) i=size-i-1;
-      *pix++=curpic[meth&4?j*size+i:i*size+j];
-      if(meth&1) j=size-j-1;
-      if(meth&2) i=size-i-1;
+    for(h=0;h<zoom;h++) {
+      for(j=0;j<size;j++) {
+        if(meth&1) j=size-j-1;
+        if(meth&2) i=size-i-1;
+        for(k=0;k<zoom;k++) *pix++=curpic[meth&4?j*size+i:i*size+j];
+        if(meth&1) j=size-j-1;
+        if(meth&2) i=size-i-1;
+      }
+      pix+=pitch-picture_size;
     }
-    pix+=pitch-size;
   }
   SDL_UnlockSurface(picts);
 }
@@ -287,3 +299,28 @@ nomore1:
   SDL_SetColorKey(picts,SDL_SRCCOLORKEY|SDL_RLEACCEL,0);
 }
 
+void init_screen(void) {
+  const char*v;
+  int w,h,i;
+  optionquery[1]=Q_screenWidth;
+  w=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"800",0,10);
+  optionquery[1]=Q_screenHeight;
+  h=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"600",0,10);
+  optionquery[1]=Q_screenFlags;
+  v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
+  if(SDL_Init(SDL_INIT_VIDEO|(strchr(v,'z')?SDL_INIT_NOPARACHUTE:0))) fatal("Error initializing SDL: %s\n",SDL_GetError());
+  atexit(SDL_Quit);
+  i=0;
+  while(*v) switch(*v++) {
+    case 'd': i|=SDL_DOUBLEBUF; break;
+    case 'f': i|=SDL_FULLSCREEN; break;
+    case 'h': i|=SDL_HWSURFACE; break;
+    case 'n': i|=SDL_NOFRAME; break;
+    case 'p': i|=SDL_HWPALETTE; break;
+    case 'r': i|=SDL_RESIZABLE; break;
+    case 'y': i|=SDL_ASYNCBLIT; break;
+  }
+  if(!(i&SDL_HWSURFACE)) i|=SDL_SWSURFACE;
+  screen=SDL_SetVideoMode(w,h,8,i);
+  if(!screen) fatal("Failed to initialize screen mode: %s\n",SDL_GetError());
+}

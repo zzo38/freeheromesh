@@ -297,10 +297,7 @@ int main(int argc,char**argv) {
   if(argc>2) read_options(argc-2,argv+2);
   *optionquery=xrm_make_quark(globalclassname,0)?:xrm_anyq;
   init_sql();
-  
-  //set_cursor(XC_arrow);
-  
-  //atexit(SDL_Quit);
+  init_screen();
   
   return 0;
 }
