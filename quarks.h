@@ -171,6 +171,7 @@
 #define Q_sqlSmallAllocations 172
 #define Q_sqlCoveringIndexScan 173
 #define Q_sqlPowerSafe 174
+#define Q_level 175
 static const char*const global_quarks[]={
   "screenWidth",
   "screenHeight",
@@ -345,6 +346,7 @@ static const char*const global_quarks[]={
   "sqlSmallAllocations",
   "sqlCoveringIndexScan",
   "sqlPowerSafe",
+  "level",
 0};
 #ifdef HEROMESH_MAIN
 static const SDLKey quark_to_key[Q_undo+1-Q_backspace]={

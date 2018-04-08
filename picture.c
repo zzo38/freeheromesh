@@ -19,8 +19,6 @@ exit
 #include "quarks.h"
 #include "heromesh.h"
 
-#define fatal(...) do{ fprintf(stderr,__VA_ARGS__); exit(1); }while(0)
-
 SDL_Surface*screen;
 Uint16 picture_size;
 
@@ -104,6 +102,7 @@ void draw_text(int x,int y,const unsigned char*t,int bg,int fg) {
   pix+=y*pitch+x;
   while(*t) {
     f=fontdata+(*t<<3);
+    p=pix;
     for(yy=0;yy<8;yy++) {
       for(xx=0;xx<8;xx++) p[xx]=(*f<<xx)&128?fg:bg;
       p+=pitch;
@@ -111,6 +110,7 @@ void draw_text(int x,int y,const unsigned char*t,int bg,int fg) {
     }
     t++;
     if(!--len) return;
+    pix+=8;
   }
 }
 
@@ -249,7 +249,7 @@ void load_pictures(void) {
       if(n++==32768) fatal("Too many pictures\n");
       sqlite3_reset(st);
       sqlite3_bind_int(st,1,n);
-      sqlite3_bind_text(st,2,nam,i,SQLITE_TRANSIENT);
+      sqlite3_bind_text(st,2,nam,i-4,SQLITE_TRANSIENT);
       sqlite3_bind_int64(st,3,ftell(fp)+4);
       while((i=sqlite3_step(st))==SQLITE_ROW);
       if(i!=SQLITE_DONE) fatal("SQL error (%d): %s\n",i,sqlite3_errmsg(userdb));
@@ -323,4 +323,12 @@ void init_screen(void) {
   if(!(i&SDL_HWSURFACE)) i|=SDL_SWSURFACE;
   screen=SDL_SetVideoMode(w,h,8,i);
   if(!screen) fatal("Failed to initialize screen mode: %s\n",SDL_GetError());
+  optionquery[1]=Q_keyRepeat;
+  if(v=xrm_get_resource(resourcedb,optionquery,optionquery,2)) {
+    w=strtol(v,(void*)&v,10);
+    h=strtol(v,0,10);
+    SDL_EnableKeyRepeat(w,h);
+  } else {
+    SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY,SDL_DEFAULT_REPEAT_INTERVAL);
+  }
 }

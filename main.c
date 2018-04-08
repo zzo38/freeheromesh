@@ -40,16 +40,19 @@ typedef struct {
 } KeyBinding;
 
 static const char schema[]=
+  "BEGIN;"
   "PRAGMA APPLICATION_ID(1296388936);"
   "PRAGMA RECURSIVE_TRIGGERS(1);"
   "CREATE TABLE IF NOT EXISTS `USERCACHEINDEX`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `TIME` INT);"
   "CREATE TEMPORARY TABLE `PICTURES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `OFFSET` INT);"
+  "COMMIT;"
 ;
 
 sqlite3*userdb;
 xrm_db*resourcedb;
 const char*basefilename;
 xrm_quark optionquery[16];
+Uint32 generation_number;
 
 static const char*globalclassname;
 static SDL_Cursor*cursor[77];
@@ -57,13 +60,11 @@ static FILE*levelfp;
 static FILE*solutionfp;
 static FILE*hamarc_fp;
 static long hamarc_pos;
+static char main_options[128];
 static KeyBinding*editor_bindings[SDLK_LAST];
 static KeyBinding*game_bindings[SDLK_LAST];
 static KeyBinding*editor_mouse_bindings[4];
 static KeyBinding*game_mouse_bindings[4];
-
-#define fatal(...) do{ fprintf(stderr,__VA_ARGS__); exit(1); }while(0)
-#define boolxrm(a,b) (*a=='1'||*a=='y'||*a=='t'||*a=='Y'||*a=='T'?1:*a=='0'||*a=='n'||*a=='f'||*a=='N'||*a=='F'?0:b)
 
 static void hamarc_begin(FILE*fp,const char*name) {
   while(*name) fputc(*name++,fp);
@@ -133,7 +134,7 @@ static void init_sql(void) {
   if(v && sqlite3_exec(userdb,v,0,0,&s)) fatal("Failed to execute user-defined SQL statements (%s)\n",s?:"unknown error");
 }
 
-static void set_cursor(int id) {
+void set_cursor(int id) {
   id>>=1;
   if(!cursor[id]) cursor[id]=SDL_CreateCursor((void*)cursorimg+(id<<6),(void*)cursorimg+(id<<6)+32,16,16,cursorhot[id]>>4,cursorhot[id]&15);
   SDL_SetCursor(cursor[id]);
@@ -279,25 +280,93 @@ static void load_key_bindings(void) {
   SetMouseBinding(SDL_BUTTON_RIGHT,4,MOD_META);
 }
 
+static int test_sql_callback(void*usr,int argc,char**argv,char**name) {
+  int i;
+  if(argc) printf("%s",*argv);
+  for(i=1;i<argc;i++) printf("|%s",argv[i]);
+  putchar('\n');
+  return 0;
+}
+
+static void test_mode(void) {
+  Uint32 n=0;
+  SDL_Event ev;
+  char buf[32];
+  set_cursor(XC_tcross);
+  SDL_LockSurface(screen);
+  draw_text(0,0,"Hello, World!",0xF0,0xFF);
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) switch(ev.type) {
+    case SDL_KEYDOWN:
+      switch(ev.key.keysym.sym) {
+        case SDLK_BACKSPACE:
+          n/=10;
+          snprintf(buf,30,"%u",n);
+          SDL_WM_SetCaption(buf,buf);
+          break;
+        case SDLK_SPACE:
+          n=0;
+          SDL_WM_SetCaption("0","0");
+          break;
+        case SDLK_0 ... SDLK_9:
+          n=10*n+ev.key.keysym.sym-SDLK_0;
+          snprintf(buf,30,"%u",n);
+          SDL_WM_SetCaption(buf,buf);
+          break;
+        case SDLK_c:
+          SDL_FillRect(screen,0,n);
+          SDL_Flip(screen);
+          break;
+        case SDLK_p:
+          sqlite3_exec(userdb,"SELECT * FROM `PICTURES`;",test_sql_callback,0,0);
+          break;
+        case SDLK_q:
+          exit(0);
+          break;
+      }
+      break;
+    case SDL_MOUSEBUTTONDOWN:
+      draw_picture(ev.button.x,ev.button.y,n);
+      SDL_Flip(screen);
+      break;
+    case SDL_QUIT:
+      exit(0);
+      break;
+  }
+  fatal("An error occurred waiting for events.\n");
+}
+
 int main(int argc,char**argv) {
-  if(argc<2) fatal("usage: %s basename [options...]\n",argc?argv[0]:"heromesh");
+  int optind=1;
+  while(argc>optind && argv[optind][0]=='-') {
+    int i;
+    const char*s=argv[optind++];
+    if(s[1]=='-' && !s[2]) break;
+    for(i=1;s[i];i++) main_options[s[i]&127]=1;
+  }
+  if(argc<=optind) fatal("usage: %s [switches] [--] basename [options...]\n",argc?argv[0]:"heromesh");
   if(xrm_init(realloc)) fatal("Failed to initialize resource manager\n");
   if(xrm_init_quarks(global_quarks)) fatal("Failed to initialize resource manager\n");
   resourcedb=xrm_create();
   if(!resourcedb) fatal("Allocation of resource database failed\n");
-  basefilename=argv[1];
-  if(argc>2 && argv[1][0]=='=') {
-    globalclassname=argv[2]+1;
-    ++argv; --argc;
+  basefilename=argv[optind++];
+  if(argc>optind && argv[1][0]=='=') {
+    globalclassname=argv[optind++]+1;
   } else if(find_globalclassname()) {
     globalclassname=strrchr(basefilename,'/');
     globalclassname=globalclassname?globalclassname+1:basefilename;
   }
   load_options();
-  if(argc>2) read_options(argc-2,argv+2);
+  if(argc>optind) read_options(argc-optind,argv+optind);
   *optionquery=xrm_make_quark(globalclassname,0)?:xrm_anyq;
   init_sql();
   init_screen();
+  load_pictures();
+  if(main_options['T']) {
+    test_mode();
+    return 0;
+  }
   
   return 0;
 }
