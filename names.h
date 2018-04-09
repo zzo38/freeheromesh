@@ -20,7 +20,7 @@
 #define MSG_POSTINIT 18
 #define MSG_END_TURN 19
 #define MSG_CLEANUP 20
-static const char*const standard_message_names[]={
+const char*const standard_message_names[]={
  "INIT",
  "CREATE",
  "DESTROY",
@@ -93,7 +93,7 @@ static const char*const standard_message_names[]={
 #define SND_WHACK 47
 #define SND_STEAM 48
 #define SND_HAWK 49
-static const char*const standard_sound_names[]={
+const char*const standard_sound_names[]={
  "SPLASH",
  "POUR",
  "DOOR",
@@ -145,7 +145,7 @@ static const char*const standard_sound_names[]={
  "STEAM",
  "HAWK",
 };
-static const char*const heromesh_key_names[256]={
+const char*const heromesh_key_names[256]={
  [8]="BACK",
  [9]="TAB",
  [12]="CENTER",

@@ -1,5 +1,5 @@
 #if 0
-gcc -s -O2 -o ~/bin/heromesh main.c picture.o smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread
+gcc -s -O2 -o ~/bin/heromesh main.c picture.o bindings.o smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread
 exit
 #endif
 
@@ -20,24 +20,6 @@ exit
 #include "quarks.h"
 #include "cursorshapes.h"
 #include "heromesh.h"
-
-typedef struct {
-  char cmd;
-  union {
-    int n;
-    sqlite3_stmt*stmt;
-    const char*txt;
-  };
-} UserCommand;
-
-#define MOD_SHIFT 1
-#define MOD_CTRL 2
-#define MOD_ALT 4
-#define MOD_META 8
-#define MOD_NUMLOCK 14
-typedef struct {
-  UserCommand m[16];
-} KeyBinding;
 
 static const char schema[]=
   "BEGIN;"
@@ -61,10 +43,6 @@ static FILE*solutionfp;
 static FILE*hamarc_fp;
 static long hamarc_pos;
 static char main_options[128];
-static KeyBinding*editor_bindings[SDLK_LAST];
-static KeyBinding*game_bindings[SDLK_LAST];
-static KeyBinding*editor_mouse_bindings[4];
-static KeyBinding*game_mouse_bindings[4];
 
 static void hamarc_begin(FILE*fp,const char*name) {
   while(*name) fputc(*name++,fp);
@@ -172,114 +150,6 @@ static int find_globalclassname(void) {
   return !*s;
 }
 
-static void set_key_binding(KeyBinding**pkb,int mod,const char*txt) {
-  int i;
-  KeyBinding*kb=*pkb;
-  UserCommand*uc;
-  if(!*txt) return;
-  if(!kb) kb=*pkb=calloc(1,sizeof(KeyBinding));
-  uc=kb->m+mod;
-  switch(*txt) {
-    case '^': // Miscellaneous
-      uc->cmd='^';
-      uc->n=txt[1];
-      break;
-    case '=': case '-': case '+': // Restart, rewind, advance
-      uc->cmd=*txt;
-      uc->n=strtol(txt+1,0,0);
-      break;
-    case '\'': // Input move
-      uc->cmd='\'';
-      for(i=1;i<256;i++) if(heromesh_key_names[i] && !strcmp(txt+1,heromesh_key_names[i])) {
-        uc->n=i;
-        return;
-      }
-      fatal("Error in key binding:  %s\nInvalid Hero Mesh key name\n",txt);
-      break;
-    case '!': // System command
-      uc->cmd='!';
-      uc->txt=txt+1;
-      break;
-    case 'A' ... 'Z': case 'a' ... 'z': // Execute SQL statement
-      uc->cmd='s';
-      if(i=sqlite3_prepare_v3(userdb,txt+1,-1,SQLITE_PREPARE_PERSISTENT,&uc->stmt,0)) fatal("Error in key binding:  %s\n%s\n",txt,sqlite3_errmsg(userdb));
-      break;
-    default:
-      fatal("Error in key binding:  %s\nUnrecognized character\n",txt);
-  }
-}
-
-#define SetKeyBinding(n,m) do { \
-  optionquery[1]=Q_editKey; \
-  if(s=xrm_get_resource(resourcedb,optionquery,optionquery,n)) set_key_binding(editor_bindings+quark_to_key[q-FirstKeyQuark],m,s); \
-  optionquery[1]=Q_gameKey; \
-  if(s=xrm_get_resource(resourcedb,optionquery,optionquery,n)) set_key_binding(game_bindings+quark_to_key[q-FirstKeyQuark],m,s); \
-} while(0)
-#define SetMouseBinding(o,n,m) do { \
-  optionquery[1]=Q_editClick; \
-  if(s=xrm_get_resource(resourcedb,optionquery,optionquery,n)) set_key_binding(editor_mouse_bindings+o,m,s); \
-  optionquery[1]=Q_gameClick; \
-  if(s=xrm_get_resource(resourcedb,optionquery,optionquery,n)) set_key_binding(game_mouse_bindings+o,m,s); \
-} while(0)
-static void load_key_bindings(void) {
-  xrm_quark q;
-  const char*s;
-  for(q=FirstKeyQuark;q<=LastKeyQuark;q++) {
-    optionquery[2]=optionquery[3]=optionquery[4]=q;
-    SetKeyBinding(3,0);
-    optionquery[2]=Q_shift;
-    SetKeyBinding(4,MOD_SHIFT);
-    optionquery[2]=Q_ctrl;
-    SetKeyBinding(4,MOD_CTRL);
-    optionquery[2]=Q_alt;
-    SetKeyBinding(4,MOD_ALT);
-    optionquery[2]=Q_meta;
-    SetKeyBinding(4,MOD_META);
-    optionquery[2]=Q_numLock;
-    SetKeyBinding(4,MOD_NUMLOCK);
-    optionquery[3]=Q_shift;
-    SetKeyBinding(5,MOD_NUMLOCK|MOD_SHIFT);
-#if 0
-    optionquery[2]=Q_alt;
-    SetKeyBinding(5,MOD_ALT|MOD_SHIFT);
-    optionquery[2]=Q_ctrl;
-    SetKeyBinding(5,MOD_CTRL|MOD_SHIFT);
-    optionquery[2]=Q_meta;
-    SetKeyBinding(5,MOD_META|MOD_SHIFT);
-#endif
-  }
-  optionquery[2]=optionquery[3]=Q_left;
-  SetMouseBinding(SDL_BUTTON_LEFT,3,0);
-  optionquery[2]=Q_shift;
-  SetMouseBinding(SDL_BUTTON_LEFT,4,MOD_SHIFT);
-  optionquery[2]=Q_ctrl;
-  SetMouseBinding(SDL_BUTTON_LEFT,4,MOD_CTRL);
-  optionquery[2]=Q_alt;
-  SetMouseBinding(SDL_BUTTON_LEFT,4,MOD_ALT);
-  optionquery[2]=Q_meta;
-  SetMouseBinding(SDL_BUTTON_LEFT,4,MOD_META);
-  optionquery[2]=optionquery[3]=Q_middle;
-  SetMouseBinding(SDL_BUTTON_MIDDLE,3,0);
-  optionquery[2]=Q_shift;
-  SetMouseBinding(SDL_BUTTON_MIDDLE,4,MOD_SHIFT);
-  optionquery[2]=Q_ctrl;
-  SetMouseBinding(SDL_BUTTON_MIDDLE,4,MOD_CTRL);
-  optionquery[2]=Q_alt;
-  SetMouseBinding(SDL_BUTTON_MIDDLE,4,MOD_ALT);
-  optionquery[2]=Q_meta;
-  SetMouseBinding(SDL_BUTTON_MIDDLE,4,MOD_META);
-  optionquery[2]=optionquery[3]=Q_right;
-  SetMouseBinding(SDL_BUTTON_RIGHT,3,0);
-  optionquery[2]=Q_shift;
-  SetMouseBinding(SDL_BUTTON_RIGHT,4,MOD_SHIFT);
-  optionquery[2]=Q_ctrl;
-  SetMouseBinding(SDL_BUTTON_RIGHT,4,MOD_CTRL);
-  optionquery[2]=Q_alt;
-  SetMouseBinding(SDL_BUTTON_RIGHT,4,MOD_ALT);
-  optionquery[2]=Q_meta;
-  SetMouseBinding(SDL_BUTTON_RIGHT,4,MOD_META);
-}
-
 static int test_sql_callback(void*usr,int argc,char**argv,char**name) {
   int i;
   if(argc) printf("%s",*argv);
@@ -290,8 +160,10 @@ static int test_sql_callback(void*usr,int argc,char**argv,char**name) {
 
 static void test_mode(void) {
   Uint32 n=0;
+  SDLKey k;
   SDL_Event ev;
   char buf[32];
+  const UserCommand*uc;
   set_cursor(XC_tcross);
   SDL_LockSurface(screen);
   draw_text(0,0,"Hello, World!",0xF0,0xFF);
@@ -318,6 +190,12 @@ static void test_mode(void) {
           SDL_FillRect(screen,0,n);
           SDL_Flip(screen);
           break;
+        case SDLK_e:
+          n=1;
+          goto keytest;
+        case SDLK_g:
+          n=0;
+          goto keytest;
         case SDLK_p:
           sqlite3_exec(userdb,"SELECT * FROM `PICTURES`;",test_sql_callback,0,0);
           break;
@@ -335,10 +213,43 @@ static void test_mode(void) {
       break;
   }
   fatal("An error occurred waiting for events.\n");
+keytest:
+  SDL_FillRect(screen,0,0xF0);
+  SDL_LockSurface(screen);
+  draw_text(1,5,n?"Edit Key":"Game Key",0xF1,0xF7);
+  SDL_UnlockSurface(screen);
+  SDL_EnableUNICODE(1);
+  SDL_Flip(screen);
+  set_cursor(XC_arrow);
+  while(SDL_WaitEvent(&ev)) switch(ev.type) {
+    case SDL_KEYDOWN:
+      printf("[%d %d %d %d] ",ev.key.keysym.scancode,ev.key.keysym.sym,ev.key.keysym.mod,ev.key.keysym.unicode);
+      goto bindingtest;
+    case SDL_MOUSEBUTTONDOWN:
+      printf("[%d %d %d] ",ev.button.x,ev.button.y,ev.button.button);
+    bindingtest:
+      uc=find_key_binding(&ev,n);
+      switch(uc->cmd) {
+        case 0: printf("<Unbound>\n"); break;
+        case '^': printf("<Misc> %c\n",uc->n); break;
+        case '=': printf("<Reset> %d\n",uc->n); break;
+        case '-': printf("<Rewind> %d\n",uc->n); break;
+        case '+': printf("<Advance> %d\n",uc->n); break;
+        case '\'': printf("<Play> %s (%d)\n",heromesh_key_names[uc->n],uc->n); break;
+        case '!': printf("<System> %s",uc->txt); break;
+        case 's': printf("<SQL> %s",sqlite3_sql(uc->stmt)); break;
+        default: printf("<Unknown>\n");
+      }
+      break;
+    case SDL_QUIT:
+      exit(0);
+      break;
+  }
 }
 
 int main(int argc,char**argv) {
   int optind=1;
+  fprintf(stderr,"FREE HERO MESH\n");
   while(argc>optind && argv[optind][0]=='-') {
     int i;
     const char*s=argv[optind++];
@@ -361,6 +272,7 @@ int main(int argc,char**argv) {
   if(argc>optind) read_options(argc-optind,argv+optind);
   *optionquery=xrm_make_quark(globalclassname,0)?:xrm_anyq;
   init_sql();
+  load_key_bindings();
   init_screen();
   load_pictures();
   if(main_options['T']) {

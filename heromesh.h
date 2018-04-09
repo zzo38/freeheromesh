@@ -24,6 +24,10 @@ typedef struct {
   Uint32 t; // Type 0-15, or a generation_number of an object
 } Value;
 
+extern const char*const standard_message_names[];
+extern const char*const standard_sound_names[];
+extern const char*const heromesh_key_names[256];
+
 extern sqlite3*userdb;
 extern xrm_db*resourcedb;
 extern const char*basefilename;
@@ -81,4 +85,18 @@ extern Class*classes[0x4000]; // 0 isn't used
 extern const char*messages[0x4000]; // index is 256 less than message number
 extern int max_animation; // max steps in animation queue
 extern Sint32 max_volume; // max total volume to allow moving diagonally (default 10000)
+
+// == bindings ==
+
+typedef struct {
+  char cmd;
+  union {
+    int n;
+    sqlite3_stmt*stmt;
+    const char*txt;
+  };
+} UserCommand;
+
+void load_key_bindings(void);
+const UserCommand*find_key_binding(SDL_Event*ev,int editing);
 

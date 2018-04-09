@@ -105,8 +105,8 @@ void*xrm_enumerate(xrm_db*db,void*(*cb)(xrm_db*,void*,int,xrm_quark),void*usr) {
   int i;
   void*r;
   if(!db) return 0;
-  for(i=0;i<db->l.n;i++) if(r=cb(db,usr,1,db->l.p[i].k)) return r;
   for(i=0;i<db->t.n;i++) if(r=cb(db,usr,0,db->t.p[i].k)) return r;
+  for(i=0;i<db->l.n;i++) if(r=cb(db,usr,1,db->l.p[i].k)) return r;
   return 0;
 }
 

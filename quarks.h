@@ -348,7 +348,7 @@ static const char*const global_quarks[]={
   "sqlPowerSafe",
   "level",
 0};
-#ifdef HEROMESH_MAIN
+#ifdef HEROMESH_BINDINGS
 static const SDLKey quark_to_key[Q_undo+1-Q_backspace]={
 SDLK_BACKSPACE,
 SDLK_TAB,
