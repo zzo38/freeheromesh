@@ -114,12 +114,11 @@ void draw_text(int x,int y,const unsigned char*t,int bg,int fg) {
   }
 }
 
-static Uint16 decide_picture_size(int nwantsize,const Uint8*wantsize,const Uint16*havesize) {
+static Uint16 decide_picture_size(int nwantsize,const Uint8*wantsize,const Uint16*havesize,int n) {
   int i,j;
   if(!nwantsize) fatal("Unable to determine what picture size is wanted\n");
-  for(i=0;i<nwantsize;i++) if(havesize[j=wantsize[i]]) return j;
-  for(i=0;i<nwantsize;i++) for(j=2;j<wantsize[i];j++) if(wantsize[i]%j==0 && havesize[wantsize[i]/j]) return wantsize[i];
-  for(i=*wantsize;i;i--) for(j=1;j<i;j++) if(i%j==0 && havesize[i/j]) return i;
+  for(i=0;i<nwantsize;i++) if(havesize[j=wantsize[i]]==n) return j;
+  for(i=*wantsize;i;--i) if(havesize[i]) return i;
   fatal("Unable to determine what picture size is wanted\n");
 }
 
@@ -210,6 +209,7 @@ void load_pictures(void) {
   Uint8 wantsize[32];
   Uint8 nwantsize=0;
   Uint8 altImage;
+  Uint8 havesize1[256];
   Uint16 havesize[256];
   char*nam=sqlite3_mprintf("%s.xclass",basefilename);
   const char*v;
@@ -262,9 +262,12 @@ void load_pictures(void) {
     i|=fgetc(fp)<<0;
     i|=fgetc(fp)<<8;
     if(j) {
+      memset(havesize1,0,256);
       i-=j=fgetc(fp)&15;
-      while(j--) ++havesize[fgetc(fp)&255];
+      while(j--) havesize1[fgetc(fp)&255]=1;
       fseek(fp,i-1,SEEK_CUR);
+      for(i=1;i<256;i++) if(havesize1[j]) for(j=i+i;j<256;j+=i) havesize1[j]=1;
+      for(j=1;j<256;j++) havesize[j]+=havesize1[j];
     } else {
       fseek(fp,i,SEEK_CUR);
     }
@@ -279,8 +282,7 @@ nomore1:
     break;
   }
   if(!curpic) fatal("Allocation failed\n");
-  for(i=0;i<256;i++) havesize[i]=(havesize[i]==n)?1:0;
-  picture_size=decide_picture_size(nwantsize,wantsize,havesize);
+  picture_size=decide_picture_size(nwantsize,wantsize,havesize,n);
   if(sqlite3_prepare_v2(userdb,"SELECT `ID`, `OFFSET` FROM `PICTURES`;",-1,&st,0))
    fatal("Unable to prepare SQL statement while loading pictures: %s\n",sqlite3_errmsg(userdb));
   optionquery[1]=Q_screenFlags;
