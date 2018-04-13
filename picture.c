@@ -72,9 +72,9 @@ static void init_palette(void) {
       sscanf(default_palette+i*7,"%2hhX%2hhX%2hhX ",&pal[i].r,&pal[i].g,&pal[i].b);
     }
     if(usegamma) {
-      j=(int)pow(pal[i].r+0.3,gamma); pal[i].r=j<0?0:j>255?255:j;
-      j=(int)pow(pal[i].g+0.3,gamma); pal[i].g=j<0?0:j>255?255:j;
-      j=(int)pow(pal[i].b+0.3,gamma); pal[i].b=j<0?0:j>255?255:j;
+      j=(int)(255.0*pow(pal[i].r/255.0,gamma)+0.2); pal[i].r=j<0?0:j>255?255:j;
+      j=(int)(255.0*pow(pal[i].g/255.0,gamma)+0.2); pal[i].g=j<0?0:j>255?255:j;
+      j=(int)(255.0*pow(pal[i].b/255.0,gamma)+0.2); pal[i].b=j<0?0:j>255?255:j;
     }
   }
   if(fp) fclose(fp);

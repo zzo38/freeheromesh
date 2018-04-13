@@ -165,13 +165,14 @@
 #define Q_saveSolutions 166
 #define Q_solutionComment 167
 #define Q_solutionTimestamp 168
-#define Q_sqlInit 169
-#define Q_sqlExtensions 170
-#define Q_sqlMemStatus 171
-#define Q_sqlSmallAllocations 172
-#define Q_sqlCoveringIndexScan 173
-#define Q_sqlPowerSafe 174
-#define Q_level 175
+#define Q_sqlFile 169
+#define Q_sqlInit 170
+#define Q_sqlExtensions 171
+#define Q_sqlMemStatus 172
+#define Q_sqlSmallAllocations 173
+#define Q_sqlCoveringIndexScan 174
+#define Q_sqlPowerSafe 175
+#define Q_level 176
 static const char*const global_quarks[]={
   "screenWidth",
   "screenHeight",
@@ -340,6 +341,7 @@ static const char*const global_quarks[]={
   "saveSolutions",
   "solutionComment",
   "solutionTimestamp",
+  "sqlFile",
   "sqlInit",
   "sqlExtensions",
   "sqlMemStatus",

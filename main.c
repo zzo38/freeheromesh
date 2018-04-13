@@ -26,6 +26,8 @@ static const char schema[]=
   "PRAGMA APPLICATION_ID(1296388936);"
   "PRAGMA RECURSIVE_TRIGGERS(1);"
   "CREATE TABLE IF NOT EXISTS `USERCACHEINDEX`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `TIME` INT);"
+  "CREATE TABLE IF NOT EXISTS `USERCACHEDATA`(`ID` INTEGER PRIMARY KEY, `FILE` INT, `LEVEL` INT, `NAME` TEXT, `OFFSET` INT, `DATA` BLOB, `USERSTATE` BLOB);"
+  "CREATE INDEX IF NOT EXISTS `USERCACHEDATA_I1` ON `USERCACHEDATA`(`FILE`, `LEVEL`) WHERE `LEVEL` IS NOT NULL;"
   "CREATE TEMPORARY TABLE `PICTURES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `OFFSET` INT);"
   "COMMIT;"
 ;
@@ -77,8 +79,14 @@ static void init_sql(void) {
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
   sqlite3_config(SQLITE_CONFIG_COVERING_INDEX_SCAN,(int)boolxrm(v,1));
   if(sqlite3_initialize()) fatal("Failure to initialize SQLite.\n");
-  v=getenv("HOME")?:".";
-  s=sqlite3_mprintf("%s%s.heromeshsession",v,v[strlen(v)-1]=='/'?"":"/");
+  optionquery[1]=Q_sqlFile;
+  v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
+  if(v && *v) {
+    s=sqlite3_mprintf("%s",v);
+  } else {
+    v=getenv("HOME")?:".";
+    s=sqlite3_mprintf("%s%s.heromeshsession",v,v[strlen(v)-1]=='/'?"":"/");
+  }
   if(!s) fatal("Allocation failed\n");
   if(z=sqlite3_open(s,&userdb)) fatal("Failed to open user database %s (%s)\n",s,userdb?sqlite3_errmsg(userdb):sqlite3_errstr(z));
   sqlite3_free(s);
