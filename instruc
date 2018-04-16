@@ -1,0 +1,169 @@
+; File with list of instruction opcodes
+; Also other words used in the .class files
+
+; This file is part of Free Hero Mesh and is public domain.
+
+; Directions
+(0000)
+#+E
+#+NE
+#+N
+#+NW
+#+W
+#+SW
+#+S
+#+SE
+#+F
+#+LF
+#+L
+#+LB
+#+B
+#+RB
+#+R
+#+RF
+
+; Bit constants
+#bit0 (0001)
+#bit1 (0002)
+#bit2 (0004)
+#bit3 (0008)
+#bit4 (0010)
+#bit5 (0020)
+#bit6 (0040)
+#bit7 (0080)
+(87E8)
+bitconstant "bit8"
+#bit9
+#bit10
+#bit11
+#bit12
+#bit13
+#bit14
+#bit15
+#bit16
+#bit17
+#bit18
+#bit19
+#bit20
+#bit21
+#bit22
+#bit23
+#bit24
+#bit25
+#bit26
+#bit27
+#bit28
+#bit29
+#bit30
+#bit31
+
+(8000)
+
+; Stack ops
+drop "."
+,dup
+swap
+nip
+tuck
+
+; Flow controls
+-if
+-else
+-then
+-el
+-begin
+-again
+-until
+-while
+-repeat
+*goto
+*CallSub
+ret
+
+; Arithmetic
+add "+"
+sub "-"
+,mul "*"
+,div "/"
+,mod
+neg
+
+; Bitwise
+lsh
+,rsh
+band
+bor
+bxor
+bnot
+-bit
+
+; Logical
+land
+lor
+lxor
+lnot
+
+; Comparison
+eq
+ne
+,gt
+,lt
+,ge
+,le
+is
+
+; Standard variables
+,Class
+,=!Temperature
+,=Shape
+,Xloc
+,Yloc
+,=Dir
+,=Image
+,=!Inertia
+,=!Distance
+,=!Density
+,=!Volume
+,=!Weight
+,=!Height
+,=!Climb
+,=!Strength
+,=Hard
+,=Sharp
+,=ShapeDir
+,=Shovable
+,=!Misc1
+,=!Misc2
+,=!Misc3
+,=!Misc4
+,=!Misc5
+,=!Misc6
+,=!Misc7
+,=Arrived
+,=Departed
+,=Arrivals
+,=Departures
+,=Busy
+,=Invisible
+,=KeyCleared
+,=UserSignal
+,=VisualOnly
+,=Stealthy
+,IsPlayer
+,Compatible
+,Msg
+,From
+,=Arg1
+,=Arg2
+,=Arg3
+,MoveNumber
+,Level
+
+; Class definitions
+-Quiz
+-InPlace
+-DefaultImage
+-Help
+-EditorHelp
+-SUBS
+
