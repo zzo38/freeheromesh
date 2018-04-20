@@ -57,10 +57,17 @@ bitconstant "bit8"
 #bit30
 #bit31
 
+; Animation constants
+STOP (0000)
+ONCE (0001)
+LOOP (0002)
+OSC (0008)
+OSCLOOP (000A)
+
 (8000)
 
 ; Stack ops
-drop "."
+.drop "."
 ,dup
 swap
 nip
@@ -76,6 +83,8 @@ tuck
 -until
 -while
 -repeat
+-for
+-next
 *goto
 *CallSub
 ret
@@ -149,15 +158,18 @@ is
 ,=UserSignal
 ,=VisualOnly
 ,=Stealthy
+,=Moved
 ,IsPlayer
 ,Compatible
-,Msg
-,From
-,=Arg1
-,=Arg2
-,=Arg3
-,MoveNumber
-,Level
+Self
+Msg
+From
+=Arg1
+=Arg2
+=Arg3
+MoveNumber
+Level
+Key
 
 ; Class definitions
 -Quiz
@@ -166,4 +178,54 @@ is
 -Help
 -EditorHelp
 -SUBS
+
+; Main operations
+Animate
+,Assassinate
+.Broadcast
+*BroadcastClass
+.BroadcastEx
+BroadcastSum
+BroadcastSumEx
+.Create
+DelInventory
+Delta
+.,Destroy
+FlushClass
+FlushObj
+GetInventory
+HeightAt
+IgnoreKey
+.,IntMove
+,JumpTo
+,Loc
+LocateMe
+LoseLevel
+MaxInventory
+.,Move
+.,MovePlus "Move+"
+.,MoveTo
+NewX
+NewY
+,ObjAbove
+ObjClassAt
+,ObjBelow
+,ObjDir
+PopUp
+*PopUpArgs
+.,Send
+.,SendEx
+SetInventory
+Sound
+Trace
+VolumeAt
+WinLevel
+,XDir
+,YDir
+
+; Specials
+*Function
+*Local
+*Label
+*String
 

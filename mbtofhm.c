@@ -621,7 +621,7 @@ static void class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned ch
         break;
       case 68:
         if(*op==255) fprintf(fp," Move");
-        else fprintf(fp," (Move %s)",direction[*op]);
+        else fprintf(fp," %s Move+",direction[*op]);
         break;
       case 69:
         if(*op==255) fprintf(fp," ,Move");
@@ -656,7 +656,7 @@ static void class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned ch
         st=0; break;
       case 84:
         if(*op==255) fprintf(fp," Move .");
-        else fprintf(fp," (Move %s) .",direction[*op]);
+        else fprintf(fp," %s Move+ .",direction[*op]);
         st=0; break;
       case 85:
         if(*op==255) fprintf(fp," ,Move .");
