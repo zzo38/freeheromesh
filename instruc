@@ -181,11 +181,11 @@ Key
 
 ; Main operations
 Animate
-,Assassinate
+,Assassinate ; destroy without sending any messages
 .Broadcast
-*BroadcastClass
-.BroadcastEx
-BroadcastSum
+*BroadcastClass ; for (Broadcast [class])
+.BroadcastEx ; broadcast with three arguments
+BroadcastSum ; Broadcast, but result is sum of return values
 BroadcastSumEx
 .Create
 DelInventory
@@ -196,15 +196,15 @@ FlushObj
 GetInventory
 HeightAt
 IgnoreKey
-.,IntMove
+.,IntMove ; move without initializing Inertia
 ,JumpTo
-,Loc
+,Loc ; same as: Xloc Yloc
 LocateMe
 LoseLevel
-MaxInventory
+MaxInventory ; error if more than that many slots in inventory
 .,Move
-.,MovePlus "Move+"
-.,MoveTo
+.,MovePlus "Move+" ; obj.Inertia+=Strength instead of obj.Inertia=Strength
+.,MoveTo ; the internal MoveTo() function
 NewX
 NewY
 ,ObjAbove
@@ -212,9 +212,10 @@ ObjClassAt
 ,ObjBelow
 ,ObjDir
 PopUp
-*PopUpArgs
+*PopUpArgs ; for (PopUp [number])
+QueueTurn ; queue another turn that automatically occurs after this one
 .,Send
-.,SendEx
+.,SendEx ; send with three arguments
 SetInventory
 Sound
 Trace

@@ -310,27 +310,28 @@
 #define OP_OBJDIR_C 34959
 #define OP_POPUP 32912
 #define OP_POPUPARGS 32913
-#define OP_SEND 32914
-#define OP_SEND_C 34962
-#define OP_SEND_D 41106
-#define OP_SEND_CD 43154
-#define OP_SENDEX 32915
-#define OP_SENDEX_C 34963
-#define OP_SENDEX_D 41107
-#define OP_SENDEX_CD 43155
-#define OP_SETINVENTORY 32916
-#define OP_SOUND 32917
-#define OP_TRACE 32918
-#define OP_VOLUMEAT 32919
-#define OP_WINLEVEL 32920
-#define OP_XDIR 32921
-#define OP_XDIR_C 34969
-#define OP_YDIR 32922
-#define OP_YDIR_C 34970
-#define OP_FUNCTION 32923
-#define OP_LOCAL 32924
-#define OP_LABEL 32925
-#define OP_STRING 32926
+#define OP_QUEUETURN 32914
+#define OP_SEND 32915
+#define OP_SEND_C 34963
+#define OP_SEND_D 41107
+#define OP_SEND_CD 43155
+#define OP_SENDEX 32916
+#define OP_SENDEX_C 34964
+#define OP_SENDEX_D 41108
+#define OP_SENDEX_CD 43156
+#define OP_SETINVENTORY 32917
+#define OP_SOUND 32918
+#define OP_TRACE 32919
+#define OP_VOLUMEAT 32920
+#define OP_WINLEVEL 32921
+#define OP_XDIR 32922
+#define OP_XDIR_C 34970
+#define OP_YDIR 32923
+#define OP_YDIR_C 34971
+#define OP_FUNCTION 32924
+#define OP_LOCAL 32925
+#define OP_LABEL 32926
+#define OP_STRING 32927
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486933},
@@ -475,6 +476,7 @@ static const Op_Names op_names[]={
 {"POUR",8389377},
 {"POWER",8389386},
 {"PopUp",8421520},
+{"QueueTurn",8421522},
 {"Quiz",8683627},
 {"R",9437198},
 {"RATCHET1",8389418},
@@ -492,14 +494,14 @@ static const Op_Names op_names[]={
 {"SUNK",8389131},
 {"SW",9437189},
 {"Self",8421474},
-{"Send",10584210},
-{"SendEx",10584211},
-{"SetInventory",8421524},
+{"Send",10584211},
+{"SendEx",10584212},
+{"SetInventory",8421525},
 {"Shape",8618030},
 {"ShapeDir",8618053},
 {"Sharp",8618052},
 {"Shovable",8618054},
-{"Sound",8421525},
+{"Sound",8421526},
 {"Stealthy",8618078},
 {"Strength",9142337},
 {"TAHTASHH",8389409},
@@ -507,7 +509,7 @@ static const Op_Names op_names[]={
 {"THWIT",8389384},
 {"TICK",8389391},
 {"Temperature",9142316},
-{"Trace",8421526},
+{"Trace",8421527},
 {"UH_OH",8389382},
 {"UNCORK",8389414},
 {"UNHH",8389381},
@@ -515,15 +517,15 @@ static const Op_Names op_names[]={
 {"VACUUM",8389411},
 {"VisualOnly",8618077},
 {"Volume",9142329},
-{"VolumeAt",8421527},
+{"VolumeAt",8421528},
 {"W",9437188},
 {"WAHOO",8389400},
 {"WHACK",8389423},
 {"Weight",9142331},
-{"WinLevel",8421528},
-{"XDir",8487065},
+{"WinLevel",8421529},
+{"XDir",8487066},
 {"Xloc",8486959},
-{"YDir",8487066},
+{"YDir",8487067},
 {"YEEHAW",8389401},
 {"Yloc",8486960},
 {"again",8683530},
@@ -595,5 +597,5 @@ static const Op_Names op_names[]={
 {"until",8683531},
 {"while",8683532},
 };
-#define N_OP_NAMES 261
+#define N_OP_NAMES 262
 #endif

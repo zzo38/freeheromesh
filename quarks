@@ -208,4 +208,5 @@ sqlPowerSafe
 
 ! Miscellaneous
 level
+tracePrefix
 

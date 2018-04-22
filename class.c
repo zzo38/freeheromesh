@@ -24,7 +24,6 @@ exit
 #define TF_DROP 0x0020
 #define TF_NAME 0x0080
 #define TF_KEY 0x0100
-#define TF_STRING 0x0200
 #define TF_OPEN 0x0400
 #define TF_CLOSE 0x0800
 #define TF_INT 0x1000
@@ -35,6 +34,7 @@ typedef struct {
   Uint32 num;
 } Op_Names;
 #include "instruc.h"
+#define Tokenf(x) (tokent&(x))
 
 Class*classes[0x4000];
 const char*messages[0x4000];
@@ -112,6 +112,59 @@ static int name_compar(const void*a,const void*b) {
   return strcmp(x->txt,y->txt);
 }
 
+static Class*initialize_class(int n,int f,const char*name) {
+  Class*cl;
+  if(classes[n]) fatal("Duplicate class number %d\n",n);
+  cl=classes[n]=malloc(sizeof(Class));
+  if(!cl) fatal("Allocation failed\n");
+  cl->name=strdup(name);
+  if(!cl->name) fatal("Allocation failed\n");
+  cl->edithelp=cl->gamehelp=0;
+  cl->codes=cl->messages=cl->images=0;
+  cl->height=cl->weight=cl->climb=cl->density=cl->volume=cl->strength=cl->arrivals=cl->departures=0;
+  cl->temperature=cl->misc4=cl->misc5=cl->misc6=cl->misc7=0;
+  cl->uservars=cl->hard[0]=cl->hard[1]=cl->hard[2]=cl->hard[3]=0;
+  cl->oflags=cl->sharp[0]=cl->sharp[1]=cl->sharp[2]=cl->sharp[3]=0;
+  cl->shape=cl->shovable=cl->collisionLayers=cl->nimages=0;
+  cl->cflags=f;
+  if(undef_class<=n) undef_class=n+1;
+}
+
+static int look_class_name(void) {
+  int i;
+  int u=undef_class;
+  for(i=1;i<undef_class;i++) {
+    if(classes[i]) {
+      if(!strcmp(classes[i]->name,tokenstr)) {
+        if(classes[i]->cflags&CF_NOCLASS2) classes[i]->cflags|=CF_NOCLASS1;
+        return i;
+      }
+    } else {
+      u=i;
+    }
+  }
+  if(u==0x4000) ParseError("Too many class names; cannot add $%s\n",tokenstr);
+  initialize_class(u,CF_NOCLASS1,tokenstr);
+  return u;
+}
+
+static int look_message_name(void) {
+  int i;
+  int u=undef_message;
+  for(i=0;i<undef_message;i++) {
+    if(messages[i]) {
+      if(!strcmp(messages[i],tokenstr)) return i;
+    } else {
+      u=i;
+    }
+  }
+  if(u==0x4000) ParseError("Too many message names; cannot add #%s",tokenstr);
+  if(u==undef_message) ++undef_message;
+  messages[u]=strdup(tokenstr);
+  if(!messages[u]) fatal("Allocation failed\n");
+  return u;
+}
+
 #define ReturnToken(x,y) do{ tokent=x; tokenv=y; return; }while(0)
 static void nxttok(void) {
   int c,i;
@@ -135,7 +188,8 @@ again:
   if(c=='(') ReturnToken(TF_OPEN,0);
   if(c==')') ReturnToken(TF_CLOSE,0);
   if(c=='"') {
-    tokent=TF_STRING;
+    tokent=TF_NAME|TF_ABNORMAL;
+    tokenv=OP_STRING;
     read_quoted_string();
     return;
   }
@@ -171,7 +225,7 @@ again:
         if(c=='-' || c=='+') n=1; else n=0;
         if(n && !tokenstr[1]) goto norm;
         tokent=TF_INT;
-        if(fl) ParseError("Invalid use of , and = in a numeric token\n");
+        if(fl) ParseError("Invalid use of , and = in token\n");
         if(c=='0' && tokenstr[1]=='x') {
           tokenv=strtol(tokenstr+2,&e,16);
         } else if(c=='0' && tokenstr[1]=='o') {
@@ -190,39 +244,60 @@ again:
         tokenv=op->num&0xFFFF;
         tokent=op->num>>16;
         if(fl&~tokent) ParseError("Invalid use of , and = in token: %s\n",tokenstr);
-        
+        if(fl&TF_COMMA) tokenv+=0x0800;
+        if(fl&TF_EQUAL) tokenv+=0x1000;
+        tokent&=fl|~(TF_COMMA|TF_EQUAL);
       }
       break;
     case '$':
-      
+      if(fl) ParseError("Invalid use of , and = in token\n");
+      tokent=TF_NAME;
+      tokenv=look_class_name()+0x4000;
       break;
     case '!':
       // Just ignore sounds for now
-      if(fl) ParseError("Invalid use of , and = in user sound token\n");
+      if(fl) ParseError("Invalid use of , and = in token\n");
       tokent=TF_NAME;
       tokenv=0x0400;
       break;
     case '%':
-      
+      if(fl&TF_COMMA) ParseError("Invalid use of , in token\n");
+      tokent=TF_NAME|fl;
+      tokenv=OP_LOCAL;
       break;
     case '@':
+      if(fl&TF_COMMA) ParseError("Invalid use of , in token\n");
+      tokent=TF_NAME|fl;
       
       break;
     case '#':
-      
+      if(fl) ParseError("Invalid use of , and = in token\n");
+      tokent=TF_NAME;
+      tokenv=look_message_name()+0xC000;
       break;
     case ':':
-      
+      tokent=TF_NAME|TF_ABNORMAL|fl;
+      tokenv=OP_LABEL;
       break;
     case '&':
       
       break;
     case '\'':
-      
+      if(fl) ParseError("Invalid use of , and = in token\n");
+      tokent=TF_NAME|TF_KEY;
+      for(i=8;i<256;i++) {
+        if(heromesh_key_names[i] && !strcmp(heromesh_key_names[i],tokenstr)) {
+          tokenv=i;
+          return;
+        }
+      }
+      ParseError("Invalid Hero Mesh key name: %s\n",tokenstr);
       break;
   }
 }
 
 void load_classes(void) {
+  int i;
   
+  for(i=1;i<undef_class;i++) if(classes[i] && (classes[i]->cflags&CF_NOCLASS1)) fatal("Class $%s mentioned but not defined",classes[i]->name);
 }
