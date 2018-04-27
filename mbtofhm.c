@@ -418,7 +418,7 @@ static void class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned ch
     [0]="Class","Temperature","Shape",
     [4]="Xloc","Yloc","Dir","Image","Inertia","Misc1","Misc2","Misc3","Misc4","Misc5","Misc6","Misc7",
     [16]="Arrived","Departed","Arrivals","Departures",
-    [32]="Busy","Invisible","UserSignal","UserState","KeyCleared","IsPlayer","Destroyed","Stealthy","VisualOnly",
+    [32]="Busy","Invisible","UserSignal","UserState","KeyCleared","Player","Destroyed","Stealthy","VisualOnly",
     [48]="Msg","From","Arg1","Arg2",
     [64]="Density","Volume","Strength","Weight","Distance","Height","Climb",
     [72]="Hard","Hard","Hard","Hard","Sharp","Sharp","Sharp","Sharp","ShapeDir","ShapeDir","ShapeDir","ShapeDir",

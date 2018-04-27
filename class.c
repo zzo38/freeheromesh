@@ -16,19 +16,20 @@ exit
 #include "smallxrm.h"
 #include "heromesh.h"
 
-#define TF_COMMA 0x0001
-#define TF_EQUAL 0x0002
-#define TF_ABNORMAL 0x0004
-#define TF_COMPAT 0x0008
-#define TF_DIR 0x0010
-#define TF_DROP 0x0020
-#define TF_NAME 0x0080
-#define TF_KEY 0x0100
-#define TF_OPEN 0x0400
-#define TF_CLOSE 0x0800
-#define TF_INT 0x1000
-#define TF_MACRO 0x4000
-#define TF_EOF 0x8000
+#define TF_COMMA 0x0001 // has a comma modifier
+#define TF_EQUAL 0x0002 // has an equal sign modifier
+#define TF_ABNORMAL 0x0004 // with TF_NAME, not directly an opcode
+#define TF_COMPAT 0x0008 // add 1 to opcode in compatibility mode
+#define TF_DIR 0x0010 // token is a direction
+#define TF_DROP 0x0020 // add 0x2000 to opcode if followed by OP_DROP
+#define TF_NAME 0x0080 // token is a name or opcode
+#define TF_KEY 0x0100 // token is a Hero Mesh key name
+#define TF_OPEN 0x0400 // token is (
+#define TF_CLOSE 0x0800 // token is )
+#define TF_INT 0x1000 // token is a number
+#define TF_FUNCTION 0x2000 // token is a user function
+#define TF_MACRO 0x4000 // token is a macro; never returned by nxttok()
+#define TF_EOF 0x8000 // end of file
 typedef struct {
   const char*txt;
   Uint32 num;
@@ -38,8 +39,16 @@ typedef struct {
 
 Class*classes[0x4000];
 const char*messages[0x4000];
+Uint16 functions[0x4000];
 int max_animation=32;
 Sint32 max_volume=10000;
+
+#define HASH_SIZE 8888
+#define LOCAL_HASH_SIZE 5555
+typedef struct {
+  Uint16 id;
+  char*txt;
+} Hash;
 
 static FILE*classfp;
 static Uint16 tokent;
@@ -48,6 +57,9 @@ static int linenum=1;
 static char tokenstr[0x2000];
 static int undef_class=1;
 static int undef_message=0;
+static int num_globals=0;
+static int num_functions=0;
+static Hash*glohash;
 
 #define ParseError(a,...) fatal("On line %d: " a,linenum,##__VA_ARGS__)
 
@@ -56,6 +68,9 @@ static const unsigned char chkind[256]={
   ['0'...'9']=2, ['-']=2, ['+']=2,
   ['A'...'Z']=3, ['a'...'z']=3, ['_']=3, ['?']=3, ['.']=3, ['*']=3, ['/']=3,
 };
+
+#define MIN_VERSION 0
+#define MAX_VERSION 0
 
 static void read_quoted_string(void) {
   int c,i,n;
@@ -165,12 +180,28 @@ static int look_message_name(void) {
   return u;
 }
 
+static Uint16 look_hash(Hash*tbl,int size,Uint16 minv,Uint16 maxv,Uint16 newv,const char*err) {
+  int h,i,m;
+  for(h=i=0;tokenstr[i];i++) h=(13*h+tokenstr[i])%size;
+  m=h;
+  for(;;) {
+    if(tbl[h].id>=minv && tbl[h].id<=maxv && !strcmp(tokenstr,tbl[h].txt)) return tbl[h].id;
+    if(!tbl[h].id) {
+      if(newv>maxv) ParseError("Too many %s\n",err);
+      tbl[h].txt=strdup(tokenstr);
+      if(!tbl[h].txt) ParseError("Out of string space in hash table\n");
+      tbl[h].id=newv;
+      return 0;
+    }
+    h=(h+1)%size;
+    if(h==m) ParseError("Hash table full\n");
+  }
+}
+
 #define ReturnToken(x,y) do{ tokent=x; tokenv=y; return; }while(0)
 static void nxttok(void) {
-  int c,i;
-  int fl=0;
-  int n=0;
-  int pr=0;
+  int c,i,fl,n,pr;
+  fl=n=pr=0;
   tokent=tokenv=0;
   *tokenstr=0;
 again:
@@ -262,13 +293,13 @@ again:
       break;
     case '%':
       if(fl&TF_COMMA) ParseError("Invalid use of , in token\n");
-      tokent=TF_NAME|fl;
+      tokent=TF_NAME|TF_ABNORMAL|fl;
       tokenv=OP_LOCAL;
       break;
     case '@':
       if(fl&TF_COMMA) ParseError("Invalid use of , in token\n");
       tokent=TF_NAME|fl;
-      
+      tokenv=look_hash(glohash,HASH_SIZE,0x2800,0x2FFF,num_globals+0x2800,"user global variables")?:(num_globals++)+0x2800;
       break;
     case '#':
       if(fl) ParseError("Invalid use of , and = in token\n");
@@ -280,7 +311,9 @@ again:
       tokenv=OP_LABEL;
       break;
     case '&':
-      
+      if(fl) ParseError("Invalid use of , and = in token\n");
+      tokent=TF_FUNCTION|TF_ABNORMAL;
+      tokenv=look_hash(glohash,HASH_SIZE,0x8000,0xBFFF,num_functions,"user functions")?:(num_functions++)+0x8000;
       break;
     case '\'':
       if(fl) ParseError("Invalid use of , and = in token\n");
@@ -298,6 +331,29 @@ again:
 
 void load_classes(void) {
   int i;
+  char*nam=sqlite3_mprintf("%s.class",basefilename);
+  if(!nam) fatal("Allocation failed\n");
+  classfp=fopen(nam,"r");
+  sqlite3_free(nam);
+  if(!classfp) fatal("Cannot open class file '%s': %m\n",nam);
+  glohash=calloc(HASH_SIZE,sizeof(Hash));
+  if(!glohash) fatal("Allocation failed\n");
+  if(main_options['L']) {
+    for(;;) {
+      nxttok();
+      printf("** %5d %04X %08X \"",linenum,tokent,tokenv);
+      for(i=0;tokenstr[i];i++) {
+        if(tokenstr[i]<32 || tokenstr[i]>126) printf("<%02X>",tokenstr[i]&255);
+        else putchar(tokenstr[i]);
+      }
+      printf("\"\n");
+      if(Tokenf(TF_EOF)) goto done;
+    }
+  }
   
+  done:
+  fclose(classfp);
+  for(i=0;i<HASH_SIZE;i++) free(glohash[i].txt);
+  free(glohash);
   for(i=1;i<undef_class;i++) if(classes[i] && (classes[i]->cflags&CF_NOCLASS1)) fatal("Class $%s mentioned but not defined",classes[i]->name);
 }

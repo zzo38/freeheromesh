@@ -37,6 +37,7 @@ xrm_db*resourcedb;
 const char*basefilename;
 xrm_quark optionquery[16];
 Uint32 generation_number;
+char main_options[128];
 
 static const char*globalclassname;
 static SDL_Cursor*cursor[77];
@@ -44,7 +45,6 @@ static FILE*levelfp;
 static FILE*solutionfp;
 static FILE*hamarc_fp;
 static long hamarc_pos;
-static char main_options[128];
 
 static void hamarc_begin(FILE*fp,const char*name) {
   while(*name) fputc(*name++,fp);
@@ -287,6 +287,7 @@ int main(int argc,char**argv) {
     test_mode();
     return 0;
   }
+  load_classes();
   
   return 0;
 }

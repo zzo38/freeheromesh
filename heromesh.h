@@ -33,6 +33,7 @@ extern xrm_db*resourcedb;
 extern const char*basefilename;
 extern xrm_quark optionquery[16];
 extern Uint32 generation_number;
+extern char main_options[128];
 
 void set_cursor(int id);
 

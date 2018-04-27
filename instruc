@@ -159,7 +159,7 @@ is
 ,=VisualOnly
 ,=Stealthy
 ,=Moved
-,IsPlayer
+,Player
 ,Compatible
 Self
 Msg
@@ -172,6 +172,7 @@ Level
 Key
 
 ; Class definitions
+-Input
 -Quiz
 -InPlace
 -DefaultImage
