@@ -257,13 +257,13 @@ keytest:
 
 int main(int argc,char**argv) {
   int optind=1;
-  fprintf(stderr,"FREE HERO MESH\n");
   while(argc>optind && argv[optind][0]=='-') {
     int i;
     const char*s=argv[optind++];
     if(s[1]=='-' && !s[2]) break;
     for(i=1;s[i];i++) main_options[s[i]&127]=1;
   }
+  if(!main_options['c']) fprintf(stderr,"FREE HERO MESH\n");
   if(argc<=optind) fatal("usage: %s [switches] [--] basename [options...]\n",argc?argv[0]:"heromesh");
   if(xrm_init(realloc)) fatal("Failed to initialize resource manager\n");
   if(xrm_init_quarks(global_quarks)) fatal("Failed to initialize resource manager\n");
@@ -275,6 +275,10 @@ int main(int argc,char**argv) {
   } else if(find_globalclassname()) {
     globalclassname=strrchr(basefilename,'/');
     globalclassname=globalclassname?globalclassname+1:basefilename;
+  }
+  if(main_options['c']) {
+    load_classes();
+    return 0;
   }
   load_options();
   if(argc>optind) read_options(argc-optind,argv+optind);

@@ -28,7 +28,7 @@ exit
 #define TF_CLOSE 0x0800 // token is )
 #define TF_INT 0x1000 // token is a number
 #define TF_FUNCTION 0x2000 // token is a user function
-#define TF_MACRO 0x4000 // token is a macro; never returned by nxttok()
+#define TF_MACRO 0x4000 // token is a macro
 #define TF_EOF 0x8000 // end of file
 typedef struct {
   const char*txt;
@@ -42,6 +42,7 @@ const char*messages[0x4000];
 Uint16 functions[0x4000];
 int max_animation=32;
 Sint32 max_volume=10000;
+Uint8 back_color=1;
 
 #define HASH_SIZE 8888
 #define LOCAL_HASH_SIZE 5555
@@ -49,6 +50,27 @@ typedef struct {
   Uint16 id;
   char*txt;
 } Hash;
+
+typedef struct InputStack {
+  FILE*classfp;
+  int linenum;
+  struct InputStack*next;
+} InputStack;
+
+typedef struct TokenList {
+  Uint16 t;
+  Uint32 v;
+  char*str;
+  Uint16 ref;
+  struct TokenList*next;
+} TokenList;
+
+typedef struct MacroStack {
+  TokenList*tok;
+  Sint16 n;
+  TokenList**args;
+  struct MacroStack*next;
+} MacroStack;
 
 static FILE*classfp;
 static Uint16 tokent;
@@ -60,6 +82,9 @@ static int undef_message=0;
 static int num_globals=0;
 static int num_functions=0;
 static Hash*glohash;
+static InputStack*inpstack;
+static MacroStack*macstack;
+static TokenList**macros;
 
 #define ParseError(a,...) fatal("On line %d: " a,linenum,##__VA_ARGS__)
 
@@ -71,6 +96,64 @@ static const unsigned char chkind[256]={
 
 #define MIN_VERSION 0
 #define MAX_VERSION 0
+
+#define MAX_MACRO 0x3FC0
+
+#define MAC_ADD 0xFFC0
+#define MAC_SUB 0xFFC1
+#define MAC_MUL 0xFFC2
+#define MAC_DIV 0xFFC3
+#define MAC_MOD 0xFFC4
+#define MAC_BAND 0xFFC5
+#define MAC_BOR 0xFFC6
+#define MAC_BXOR 0xFFC7
+#define MAC_BNOT 0xFFC8
+#define MAC_CAT 0xFFC9
+#define MAC_VERSION 0xFFE0
+#define MAC_DEFINE 0xFFE1
+#define MAC_INCLUDE 0xFFE2
+#define MAC_CALL 0xFFE3
+#define MAC_UNDEFINED 0xFFFF
+
+static TokenList*add_macro(void) {
+  TokenList*o=malloc(sizeof(TokenList));
+  if(!o) fatal("Allocation failed\n");
+  o->t=tokent;
+  o->v=tokenv;
+  o->str=0;
+  o->ref=0;
+  o->next=0;
+  if(*tokenstr) {
+    o->str=strdup(tokenstr);
+    if(!o->str) fatal("Allocation failed\n");
+  }
+  return o;
+}
+
+static void ref_macro(TokenList*o) {
+  while(o) {
+    if(++o->ref==65000) ParseError("Reference count of macro token list overflowed\n");
+    o=o->next;
+  }
+}
+
+static void free_macro(TokenList*o) {
+  TokenList*p;
+  while(o && !o->ref--) {
+    free(o->str);
+    o=(p=o)->next;
+    free(p);
+  }
+}
+
+static inline TokenList*step_macro(TokenList*o) {
+  TokenList*p=o->next;
+  if(!o->ref--) {
+    free(o->str);
+    free(o);
+  }
+  return p;
+}
 
 static void read_quoted_string(void) {
   int c,i,n;
@@ -198,13 +281,70 @@ static Uint16 look_hash(Hash*tbl,int size,Uint16 minv,Uint16 maxv,Uint16 newv,co
   }
 }
 
+static Uint16 look_hash_mac(void) {
+  int h,i,m;
+  for(h=i=0;tokenstr[i];i++) h=(13*h+tokenstr[i])%HASH_SIZE;
+  m=h;
+  for(;;) {
+    if(glohash[h].id>=0xC000 && !strcmp(tokenstr,glohash[h].txt)) return h;
+    if(!glohash[h].id) {
+      glohash[h].txt=strdup(tokenstr);
+      if(!glohash[h].txt) ParseError("Out of string space in hash table\n");
+      glohash[h].id=0xFFFF;
+      return h;
+    }
+    h=(h+1)%HASH_SIZE;
+    if(h==m) ParseError("Hash table full\n");
+  }
+}
+
 #define ReturnToken(x,y) do{ tokent=x; tokenv=y; return; }while(0)
-static void nxttok(void) {
+
+static void nxttok1(void) {
   int c,i,fl,n,pr;
+  magain: if(macstack) {
+    TokenList*tl=0;
+    pr=0;
+    tokent=macstack->tok->t;
+    if(tokent&TF_EOF) ParseError("Unexpected end of file in macro expansion\n");
+    tokenv=macstack->tok->v;
+    *tokenstr=0;
+    if(macstack->tok->str) strcpy(tokenstr,macstack->tok->str);
+    if(tokent==TF_MACRO+TF_INT && macstack->n>=0) {
+      if(tokenv&~0xFF) {
+        tokenv-=0x100;
+      } else {
+        if(tokenv<macstack->n) tl=macstack->args[tokenv];
+        if(tl) ref_macro(tl);
+        pr=1;
+      }
+    }
+    macstack->tok=step_macro(macstack->tok);
+    if(!macstack->tok) {
+      MacroStack*ms=macstack->next;
+      for(i=0;i<macstack->n;i++) free_macro(macstack->args[i]);
+      free(macstack->args);
+      free(macstack);
+      macstack=ms;
+    }
+    if(pr) {
+      if(tl) {
+        MacroStack*ms=malloc(sizeof(MacroStack));
+        if(!ms) fatal("Allocation failed\n");
+        ms->tok=tl;
+        ms->n=-1;
+        ms->args=0;
+        ms->next=macstack;
+        macstack=ms;
+      }
+      goto magain;
+    }
+    return;
+  }
   fl=n=pr=0;
   tokent=tokenv=0;
   *tokenstr=0;
-again:
+  again:
   c=fgetc(classfp);
   while(c==' ' || c=='\t' || c=='\r' || c=='\n') {
     if(c=='\n') ++linenum;
@@ -231,6 +371,39 @@ again:
   if(c==',') {
     fl|=TF_COMMA;
     c=fgetc(classfp);
+  }
+  if(c=='{') {
+    c=fgetc(classfp);
+    while(c==' ' || c=='\t' || c=='\r' || c=='\n') {
+      if(c=='\n') ++linenum;
+      c=fgetc(classfp);
+    }
+    while(c>0 && (chkind[c]&2)) {
+      if(n==256) {
+        tokenstr[256]=0;
+        ParseError("Identifier too long: %s\n",tokenstr);
+      }
+      tokenstr[n++]=c;
+      c=fgetc(classfp);
+    }
+    tokenstr[n]=0;
+    if(!n) fatal("Expected macro name\n");
+    if(c!=EOF) ungetc(c,classfp);
+    ReturnToken(TF_MACRO|TF_OPEN,look_hash_mac());
+  }
+  if(c=='}') ReturnToken(TF_MACRO|TF_CLOSE,0);
+  if(c=='|') ReturnToken(TF_MACRO,1);
+  if(c=='\\') {
+    i=0;
+    while((c=fgetc(classfp))=='\\') i+=0x100;
+    tokenv=0;
+    for(;c>='0' && c<='9';c=fgetc(classfp)) tokenv=10*tokenv+c-'0';
+    --tokenv;
+    if(tokenv&~255) ParseError("Macro parameter reference out of range\n");
+    if(c!=EOF) ungetc(c,classfp);
+    tokent=TF_MACRO|TF_INT;
+    tokenv|=i;
+    return;
   }
   if(c==EOF) ParseError("Unexpected end of file\n");
   if(chkind[c]==1) {
@@ -329,6 +502,280 @@ again:
   }
 }
 
+static void define_macro(Uint16 name) {
+  int i;
+  TokenList**t;
+  if(glohash[name].id<0xC000) fatal("Confusion\n");
+  if(glohash[name].id<MAX_MACRO+0xC000) {
+    free_macro(macros[i=glohash[name].id-0xC000]);
+    macros[i]=0;
+  } else {
+    for(i=0;i<MAX_MACRO;i++) if(!macros[i]) break;
+    if(i==MAX_MACRO) ParseError("Too many macro definitions\n");
+  }
+  glohash[name].id=i+0xC000;
+  t=macros+i;
+  i=1;
+  for(;;) {
+    nxttok1();
+    if(tokent==TF_MACRO+TF_OPEN && ++i>65000) ParseError("Too much macro nesting\n");
+    if(tokent==TF_MACRO+TF_CLOSE && !--i) break;
+    *t=add_macro();
+    t=&(*t)->next;
+  }
+}
+
+static void begin_include_file(const char*name) {
+  InputStack*nxt=inpstack;
+  inpstack=malloc(sizeof(InputStack));
+  if(!inpstack) fatal("Allocation failed\n");
+  inpstack->classfp=classfp;
+  inpstack->linenum=linenum;
+  inpstack->next=nxt;
+  linenum=1;
+  //TODO: Use the correct directory to load the include file
+  classfp=fopen(name,"r");
+  if(!classfp) ParseError("Cannot open include file \"%s\": %m\n",name);
+}
+
+static void begin_macro(TokenList*mac) {
+  MacroStack*ms=malloc(sizeof(MacroStack));
+  TokenList**ap=0;
+  int a=0;
+  int b=0;
+  int c=0;
+  ref_macro(mac);
+  if(!ms) fatal("Allocation failed\n");
+  ms->tok=mac;
+  ms->n=0;
+  ms->args=0;
+  for(;;) {
+    nxttok1();
+    if(tokent&TF_EOF) ParseError("Unexpected end of file in macro argument\n");
+    if(tokent&TF_OPEN) {
+      ++a;
+      if(tokent&TF_MACRO) ++c;
+    }
+    if(tokent&TF_CLOSE) {
+      --a;
+      if(tokent&TF_MACRO) --c;
+    }
+    if(c==-1) {
+      if(a!=-1 && !b) ParseError("Misnested macro argument\n");
+      ms->next=macstack;
+      macstack=ms;
+      return;
+    } else if(a==-1 && !b) {
+      ParseError("Misnested macro argument\n");
+    } else if(tokent==TF_MACRO && tokenv==1 && !a && !b) {
+      if(c) ParseError("Misnested macro argument\n");
+      b=1;
+      ms->args=realloc(ms->args,++ms->n*sizeof(TokenList*));
+      if(!ms->args) fatal("Allocation failed\n");
+      ap=ms->args+ms->n-1;
+      *ap=0;
+    } else {
+      if(!b && !(tokent&TF_CLOSE) && a==(tokent&TF_OPEN?1:0)) {
+        ms->args=realloc(ms->args,++ms->n*sizeof(TokenList*));
+        if(!ms->args) fatal("Allocation failed\n");
+        ap=ms->args+ms->n-1;
+        *ap=0;
+      }
+      *ap=add_macro();
+      ap=&((*ap)->next);
+    }
+  }
+}
+
+static void nxttok(void) {
+  again:
+  nxttok1();
+  if(tokent&TF_EOF) {
+    if(inpstack) {
+      InputStack s=*inpstack;
+      free(inpstack);
+      fclose(classfp);
+      classfp=s.classfp;
+      linenum=s.linenum;
+      inpstack=s.next;
+      goto again;
+    }
+  } else if(tokent&TF_MACRO) {
+    Uint32 n;
+    char*s;
+    if(tokent&TF_OPEN) {
+      call:
+      switch(glohash[tokenv].id) {
+        case 0xC000 ... MAX_MACRO+0xC000-1:
+          begin_macro(macros[glohash[tokenv].id-0xC000]);
+          goto again;
+        case MAC_ADD:
+          n=0;
+          for(;;) {
+            nxttok();
+            if(tokent==TF_MACRO+TF_CLOSE) break;
+            if(tokent!=TF_INT) ParseError("Number expected\n");
+            n+=tokenv;
+          }
+          tokent=TF_INT;
+          tokenv=n;
+          break;
+        case MAC_SUB:
+          nxttok();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          n=tokenv;
+          nxttok();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          n-=tokenv;
+          nxttok();
+          if(tokent!=TF_MACRO+TF_CLOSE) ParseError("Too many macro arguments\n");
+          tokent=TF_INT;
+          tokenv=n;
+          break;
+        case MAC_MUL:
+          n=1;
+          for(;;) {
+            nxttok();
+            if(tokent==TF_MACRO+TF_CLOSE) break;
+            if(tokent!=TF_INT) ParseError("Number expected\n");
+            n*=tokenv;
+          }
+          tokent=TF_INT;
+          tokenv=n;
+          break;
+        case MAC_DIV:
+          nxttok();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          n=tokenv;
+          nxttok();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          if(!tokenv) ParseError("Division by zero\n");
+          n/=tokenv;
+          nxttok();
+          if(tokent!=TF_MACRO+TF_CLOSE) ParseError("Too many macro arguments\n");
+          tokent=TF_INT;
+          tokenv=n;
+          break;
+        case MAC_MOD:
+          nxttok();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          n=tokenv;
+          nxttok();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          if(!tokenv) ParseError("Division by zero\n");
+          n%=tokenv;
+          nxttok();
+          if(tokent!=TF_MACRO+TF_CLOSE) ParseError("Too many macro arguments\n");
+          tokent=TF_INT;
+          tokenv=n;
+          break;
+        case MAC_BAND:
+          n=-1;
+          for(;;) {
+            nxttok();
+            if(tokent==TF_MACRO+TF_CLOSE) break;
+            if(tokent!=TF_INT) ParseError("Number expected\n");
+            n&=tokenv;
+          }
+          tokent=TF_INT;
+          tokenv=n;
+          break;
+        case MAC_BOR:
+          n=0;
+          for(;;) {
+            nxttok();
+            if(tokent==TF_MACRO+TF_CLOSE) break;
+            if(tokent!=TF_INT) ParseError("Number expected\n");
+            n|=tokenv;
+          }
+          tokent=TF_INT;
+          tokenv=n;
+          break;
+        case MAC_BXOR:
+          n=0;
+          for(;;) {
+            nxttok();
+            if(tokent==TF_MACRO+TF_CLOSE) break;
+            if(tokent!=TF_INT) ParseError("Number expected\n");
+            n^=tokenv;
+          }
+          tokent=TF_INT;
+          tokenv=n;
+          break;
+        case MAC_BNOT:
+          nxttok();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          n=~tokenv;
+          nxttok();
+          if(tokent!=TF_MACRO+TF_CLOSE) ParseError("Too many macro arguments\n");
+          tokent=TF_INT;
+          tokenv=n;
+          break;
+        case MAC_CAT:
+          s=malloc(0x2000);
+          if(!s) fatal("Allocation failed\n");
+          n=0;
+          for(;;) {
+            nxttok();
+            if(tokent==TF_MACRO+TF_CLOSE) {
+              break;
+            } else if(tokent==TF_INT) {
+              sprintf(tokenstr,"%d",tokenv);
+              goto isname;
+            } else if(tokent&TF_NAME) {
+              isname:
+              if(strlen(tokenstr)+n>=0x1FFE) ParseError("Concatenated string too long\n");
+              strcpy(s+n,tokenstr);
+              n+=strlen(tokenstr);
+            } else if(tokent!=TF_MACRO || tokenv!=1) {
+              ParseError("Number or string or name expected\n");
+            }
+          }
+          s[n]=0;
+          strcpy(tokenstr,s);
+          free(s);
+          ReturnToken(TF_NAME|TF_ABNORMAL,OP_STRING);
+        case MAC_VERSION:
+          nxttok1();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          if(tokenv<MIN_VERSION || tokenv>MAX_VERSION) ParseError("Version number out of range\n");
+          nxttok1();
+          if(tokent!=TF_MACRO+TF_CLOSE) ParseError("Too many macro arguments\n");
+          goto again;
+        case MAC_DEFINE:
+          if(!macros) {
+            macros=calloc(MAX_MACRO,sizeof(TokenList*));
+            if(!macros) fatal("Allocation failed\n");
+          }
+          nxttok();
+          if(!(tokent&TF_NAME) || tokenv!=OP_STRING) ParseError("String literal expected\n");
+          define_macro(look_hash_mac());
+          goto again;
+        case MAC_INCLUDE:
+          if(macstack) ParseError("Cannot use {include} inside of a macro\n");
+          nxttok1();
+          if(tokent==TF_MACRO && tokenv==1) ReturnToken(TF_EOF,0);
+          if(!(tokent&TF_NAME) || tokenv!=OP_STRING) ParseError("String literal expected\n");
+          n=look_hash_mac();
+          nxttok1();
+          if(tokent!=TF_MACRO+TF_CLOSE) ParseError("Too many macro arguments\n");
+          begin_include_file(glohash[n].txt);
+          goto again;
+        case MAC_CALL:
+          nxttok();
+          if(!(tokent&TF_NAME) || tokenv!=OP_STRING) ParseError("String literal expected\n");
+          tokenv=look_hash_mac();
+          goto call;
+        case MAC_UNDEFINED:
+          ParseError("Undefined macro: {%s}\n",tokenstr);
+          break;
+        default:
+          ParseError("Strange macro token: 0x%04X\n",glohash[tokenv].id);
+      }
+    }
+  }
+}
+
 void load_classes(void) {
   int i;
   char*nam=sqlite3_mprintf("%s.class",basefilename);
@@ -338,6 +785,20 @@ void load_classes(void) {
   if(!classfp) fatal("Cannot open class file '%s': %m\n",nam);
   glohash=calloc(HASH_SIZE,sizeof(Hash));
   if(!glohash) fatal("Allocation failed\n");
+  strcpy(tokenstr,"+"); glohash[look_hash_mac()].id=MAC_ADD;
+  strcpy(tokenstr,"-"); glohash[look_hash_mac()].id=MAC_SUB;
+  strcpy(tokenstr,"*"); glohash[look_hash_mac()].id=MAC_MUL;
+  strcpy(tokenstr,"/"); glohash[look_hash_mac()].id=MAC_DIV;
+  strcpy(tokenstr,"mod"); glohash[look_hash_mac()].id=MAC_MOD;
+  strcpy(tokenstr,"band"); glohash[look_hash_mac()].id=MAC_BAND;
+  strcpy(tokenstr,"bor"); glohash[look_hash_mac()].id=MAC_BOR;
+  strcpy(tokenstr,"bxor"); glohash[look_hash_mac()].id=MAC_BXOR;
+  strcpy(tokenstr,"bnot"); glohash[look_hash_mac()].id=MAC_BNOT;
+  strcpy(tokenstr,"cat"); glohash[look_hash_mac()].id=MAC_CAT;
+  strcpy(tokenstr,"version"); glohash[look_hash_mac()].id=MAC_VERSION;
+  strcpy(tokenstr,"define"); glohash[look_hash_mac()].id=MAC_DEFINE;
+  strcpy(tokenstr,"include"); glohash[look_hash_mac()].id=MAC_INCLUDE;
+  strcpy(tokenstr,"call"); glohash[look_hash_mac()].id=MAC_CALL;
   if(main_options['L']) {
     for(;;) {
       nxttok();
@@ -353,7 +814,12 @@ void load_classes(void) {
   
   done:
   fclose(classfp);
+  if(main_options['H']) {
+    for(i=0;i<HASH_SIZE;i++) if(glohash[i].id) printf("\"%s\": %04X\n",glohash[i].txt,glohash[i].id);
+  }
   for(i=0;i<HASH_SIZE;i++) free(glohash[i].txt);
   free(glohash);
-  for(i=1;i<undef_class;i++) if(classes[i] && (classes[i]->cflags&CF_NOCLASS1)) fatal("Class $%s mentioned but not defined",classes[i]->name);
+  for(i=1;i<undef_class;i++) if(classes[i] && (classes[i]->cflags&CF_NOCLASS1)) fatal("Class $%s mentioned but not defined\n",classes[i]->name);
+  if(macros) for(i=0;i<MAX_MACRO;i++) if(macros[i]) free_macro(macros[i]);
+  free(macros);
 }

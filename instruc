@@ -156,9 +156,11 @@ is
 ,=Invisible
 ,=KeyCleared
 ,=UserSignal
+,=UserState
 ,=VisualOnly
 ,=Stealthy
 ,=Moved
+,Destroyed
 ,Player
 ,Compatible
 Self
@@ -172,6 +174,7 @@ Level
 Key
 
 ; Class definitions
+-Background ; used at top level only; not in a class
 -Input
 -Quiz
 -InPlace
@@ -209,9 +212,11 @@ MaxInventory ; error if more than that many slots in inventory
 NewX
 NewY
 ,ObjAbove
-ObjClassAt
 ,ObjBelow
+ObjBottomAt
+ObjClassAt
 ,ObjDir
+ObjTopAt
 PopUp
 *PopUpArgs ; for (PopUp [number])
 QueueTurn ; queue another turn that automatically occurs after this one
