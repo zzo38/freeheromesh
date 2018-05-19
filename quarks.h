@@ -173,6 +173,7 @@
 #define Q_sqlCoveringIndexScan 174
 #define Q_sqlPowerSafe 175
 #define Q_level 176
+#define Q_tracePrefix 177
 static const char*const global_quarks[]={
   "screenWidth",
   "screenHeight",
@@ -349,6 +350,7 @@ static const char*const global_quarks[]={
   "sqlCoveringIndexScan",
   "sqlPowerSafe",
   "level",
+  "tracePrefix",
 0};
 #ifdef HEROMESH_BINDINGS
 static const SDLKey quark_to_key[Q_undo+1-Q_backspace]={

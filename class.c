@@ -1,5 +1,5 @@
 #if 0
-gcc -s -O2 -c -Wno-unused-result class.c `sdl-config --cflags`
+gcc ${CFLAGS:--s -O2} -c -Wno-unused-result class.c `sdl-config --cflags`
 exit
 #endif
 
@@ -819,6 +819,11 @@ static Value parse_constant_value(void) {
 #define AddInst(x) (cl->codes[ptr++]=(x),prflag=0)
 #define AddInst2(x,y) (cl->codes[ptr++]=(x),cl->codes[ptr++]=(y),prflag=0,peep=ptr)
 #define AddInstF(x,y) (cl->codes[ptr++]=(x),prflag=(y))
+#define ChangeInst(x) (cl->codes[ptr-1]x,prflag=0)
+#define InstFlag(x) (peep<ptr && (prflag&(x)))
+#define Inst7bit() (peep<ptr && cl->codes[ptr-1]<0x0080)
+#define Inst8bit() (peep<ptr && cl->codes[ptr-1]<0x0100)
+#define AbbrevOp(x,y) case x: if(Inst7bit()) ChangeInst(+=0x1000|((y)<<4)); else AddInstF(x,tokent); break
 static int parse_instructions(int cla,int ptr,Hash*hash) {
   int peep=ptr;
   int prflag=0;
@@ -832,7 +837,34 @@ static int parse_instructions(int cla,int ptr,Hash*hash) {
       
     } else if(Tokenf(TF_NAME)) {
       switch(tokenv) {
-        
+        AbbrevOp(OP_ADD,0x00);
+        AbbrevOp(OP_SUB,0x08);
+        AbbrevOp(OP_MUL,0x10);
+        AbbrevOp(OP_DIV,0x18);
+        AbbrevOp(OP_MOD,0x20);
+        AbbrevOp(OP_MUL_C,0x28);
+        AbbrevOp(OP_DIV_C,0x30);
+        AbbrevOp(OP_MOD_C,0x38);
+        AbbrevOp(OP_BAND,0x40);
+        AbbrevOp(OP_BOR,0x48);
+        AbbrevOp(OP_BXOR,0x50);
+        AbbrevOp(OP_LSH,0x58);
+        AbbrevOp(OP_RSH,0x60);
+        AbbrevOp(OP_RSH_C,0x68);
+        AbbrevOp(OP_EQ,0x70);
+        AbbrevOp(OP_NE,0x78);
+        AbbrevOp(OP_LT,0x80);
+        AbbrevOp(OP_GT,0x88);
+        AbbrevOp(OP_LE,0x90);
+        AbbrevOp(OP_GE,0x98);
+        AbbrevOp(OP_LT_C,0xA0);
+        AbbrevOp(OP_GT_C,0xA8);
+        AbbrevOp(OP_LE_C,0xB0);
+        AbbrevOp(OP_GE_C,0xB8);
+        case OP_DROP:
+          if(InstFlag(TF_DROP)) ChangeInst(+=0x2000);
+          else AddInst(OP_DROP);
+          break;
         default:
           if(Tokenf(TF_ABNORMAL)) ParseError("Invalid instruction token\n");
           AddInstF(tokenv,tokent);
@@ -849,7 +881,7 @@ static int parse_instructions(int cla,int ptr,Hash*hash) {
       }
     } else if(tokent==TF_CLOSE) {
       
-      if(peep<ptr && cl->codes[ptr-1]<0x0100) cl->codes[ptr-1]+=0x1E00;
+      if(Inst8bit()) ChangeInst(+=0x1E00);
       else AddInst(OP_RET);
       break;
     } else {

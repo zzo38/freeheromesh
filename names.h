@@ -20,6 +20,8 @@
 #define MSG_POSTINIT 18
 #define MSG_END_TURN 19
 #define MSG_CLEANUP 20
+#define MSG_COLLIDING 21
+#define MSG_COLLIDE 22
 const char*const standard_message_names[]={
  "INIT",
  "CREATE",
@@ -42,6 +44,8 @@ const char*const standard_message_names[]={
  "POSTINIT",
  "END_TURN",
  "CLEANUP",
+ "COLLIDING",
+ "COLLIDE",
 };
 #define SND_SPLASH 0
 #define SND_POUR 1
