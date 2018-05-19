@@ -1,4 +1,5 @@
 #define OP_BITCONSTANT 34792
+#define OP_BITCONSTANT_LAST 34815
 #define OP_STOP 0
 #define OP_ONCE 1
 #define OP_LOOP 2
@@ -342,6 +343,8 @@
 #define OP_LOCAL 32931
 #define OP_LABEL 32932
 #define OP_STRING 32933
+#define OP_INT16 32934
+#define OP_INT32 32935
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486933},

@@ -37,12 +37,15 @@ typedef struct {
 #include "instruc.h"
 #define Tokenf(x) (tokent&(x))
 
+Value globals[0x800];
+Value initglobals[0x800];
 Class*classes[0x4000];
 const char*messages[0x4000];
 Uint16 functions[0x4000];
 int max_animation=32;
 Sint32 max_volume=10000;
 Uint8 back_color=1;
+char**stringpool;
 
 #define HASH_SIZE 8888
 #define LOCAL_HASH_SIZE 5555
@@ -81,6 +84,8 @@ static int undef_class=1;
 static int undef_message=0;
 static int num_globals=0;
 static int num_functions=0;
+static int num_strings=0;
+static char pushback=0;
 static Hash*glohash;
 static InputStack*inpstack;
 static MacroStack*macstack;
@@ -221,7 +226,7 @@ static Class*initialize_class(int n,int f,const char*name) {
   cl->codes=cl->messages=cl->images=0;
   cl->height=cl->weight=cl->climb=cl->density=cl->volume=cl->strength=cl->arrivals=cl->departures=0;
   cl->temperature=cl->misc4=cl->misc5=cl->misc6=cl->misc7=0;
-  cl->uservars=cl->hard[0]=cl->hard[1]=cl->hard[2]=cl->hard[3]=0;
+  cl->uservars=cl->hard[0]=cl->hard[1]=cl->hard[2]=cl->hard[3]=cl->nmsg=0;
   cl->oflags=cl->sharp[0]=cl->sharp[1]=cl->sharp[2]=cl->sharp[3]=0;
   cl->shape=cl->shovable=cl->collisionLayers=cl->nimages=0;
   cl->cflags=f;
@@ -588,6 +593,10 @@ static void begin_macro(TokenList*mac) {
 }
 
 static void nxttok(void) {
+  if(pushback) {
+    pushback=0;
+    return;
+  }
   again:
   nxttok1();
   if(tokent&TF_EOF) {
@@ -776,8 +785,86 @@ static void nxttok(void) {
   }
 }
 
+static int pool_string(const char*s) {
+  int i;
+  for(i=0;i<num_strings;i++) if(!strcmp(s,stringpool[i])) return i;
+  i=num_strings++;
+  if(i>32768) ParseError("Too many string literals\n");
+  stringpool=realloc(stringpool,num_strings*sizeof(stringpool));
+  if(!stringpool) fatal("Allocation failed\n");
+  stringpool[i]=strdup(s);
+  if(!stringpool[i]) fatal("Allocation failed\n");
+  return i;
+}
+
+static Value parse_constant_value(void) {
+  if(tokent==TF_INT) {
+    return NVALUE(tokenv);
+  } else if(Tokenf(TF_NAME)) {
+    switch(tokenv) {
+      case 0x0000 ... 0x00FF: return NVALUE(tokenv);
+      case 0x0100 ... 0x01FF: return NVALUE(tokenv-0x0200);
+      case 0x0200 ... 0x02FF: return MVALUE(tokenv&255);
+      case 0x0300 ... 0x03FF: return UVALUE(0,TY_SOUND);
+      case 0x0400 ... 0x04FF: return UVALUE(0,TY_USOUND);
+      case 0x4000 ... 0x7FFF: return CVALUE(tokenv-0x4000);
+      case OP_STRING: return UVALUE(pool_string(tokenstr),TY_STRING);
+      case OP_BITCONSTANT ... OP_BITCONSTANT_LAST: return NVALUE(1<<(tokenv&31));
+      case 0xC000 ... 0xFFFF: return MVALUE(tokenv-0xBF00);
+    }
+  }
+  ParseError("Constant value expected\n");
+}
+
+#define AddInst(x) (cl->codes[ptr++]=(x),prflag=0)
+#define AddInst2(x,y) (cl->codes[ptr++]=(x),cl->codes[ptr++]=(y),prflag=0,peep=ptr)
+#define AddInstF(x,y) (cl->codes[ptr++]=(x),prflag=(y))
+static int parse_instructions(int cla,int ptr,Hash*hash) {
+  int peep=ptr;
+  int prflag=0;
+  Class*cl=classes[cla];
+  cl->codes=realloc(cl->codes,0x10000*sizeof(Uint16));
+  if(!cl->codes) fatal("Allocation failed\n");
+  for(;;) {
+    nxttok();
+    if(Tokenf(TF_MACRO)) ParseError("Unexpected macro\n");
+    if(Tokenf(TF_INT)) {
+      
+    } else if(Tokenf(TF_NAME)) {
+      switch(tokenv) {
+        
+        default:
+          if(Tokenf(TF_ABNORMAL)) ParseError("Invalid instruction token\n");
+          AddInstF(tokenv,tokent);
+      }
+    } else if(Tokenf(TF_FUNCTION)) {
+      AddInst2(OP_FUNCTION,tokenv&0x3FFF);
+    } else if(tokent==TF_OPEN) {
+      nxttok();
+      if(Tokenf(TF_MACRO) || !Tokenf(TF_NAME)) ParseError("Invalid parenthesized instruction\n");
+      switch(tokenv) {
+        
+        default:
+          ParseError("Invalid parenthesized instruction\n");
+      }
+    } else if(tokent==TF_CLOSE) {
+      
+      if(peep<ptr && cl->codes[ptr-1]<0x0100) cl->codes[ptr-1]+=0x1E00;
+      else AddInst(OP_RET);
+      break;
+    } else {
+      ParseError("Invalid instruction token\n");
+    }
+    if(ptr>=0xFFEF) ParseError("Out of code space\n");
+  }
+  cl->codes=realloc(cl->codes,ptr*sizeof(Uint16))?:cl->codes;
+  return ptr;
+}
+
 void load_classes(void) {
   int i;
+  int gloptr=0;
+  Hash*glolocalhash;
   char*nam=sqlite3_mprintf("%s.class",basefilename);
   if(!nam) fatal("Allocation failed\n");
   classfp=fopen(nam,"r");
@@ -785,6 +872,8 @@ void load_classes(void) {
   if(!classfp) fatal("Cannot open class file '%s': %m\n",nam);
   glohash=calloc(HASH_SIZE,sizeof(Hash));
   if(!glohash) fatal("Allocation failed\n");
+  glolocalhash=calloc(LOCAL_HASH_SIZE,sizeof(Hash));
+  if(!glolocalhash) fatal("Allocation failed\n");
   strcpy(tokenstr,"+"); glohash[look_hash_mac()].id=MAC_ADD;
   strcpy(tokenstr,"-"); glohash[look_hash_mac()].id=MAC_SUB;
   strcpy(tokenstr,"*"); glohash[look_hash_mac()].id=MAC_MUL;
@@ -811,11 +900,76 @@ void load_classes(void) {
       if(Tokenf(TF_EOF)) goto done;
     }
   }
-  
+  *classes=malloc(sizeof(Class));
+  if(!*classes) fatal("Allocation failed\n");
+  classes[0]->name=classes[0]->edithelp=classes[0]->gamehelp=0;
+  classes[0]->codes=classes[0]->messages=classes[0]->images=0;
+  classes[0]->nmsg=0;
+  memset(functions,-1,sizeof(functions));
+  for(;;) {
+    nxttok();
+    if(tokent==TF_EOF) goto done;
+    if(tokent!=TF_OPEN) ParseError("Expected open parenthesis\n");
+    nxttok();
+    if(Tokenf(TF_FUNCTION)) {
+      
+    } else if(Tokenf(TF_NAME)) {
+      switch(tokenv) {
+        case 0x4000 ... 0x7FFF: // Class definition
+          
+          break;
+        case 0x0200 ... 0x02FF: case 0xC000 ... 0xFFFF: // Default message handler
+          
+          break;
+        case 0x2800 ... 0x2FFF: // Define initial values of global variables
+          i=tokenv-0x2800;
+          nxttok();
+          if(tokent==TF_CLOSE) break;
+          initglobals[i]=parse_constant_value();
+          nxttok();
+          if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
+          break;
+        case OP_BACKGROUND:
+          nxttok();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          if(tokenv&~255) ParseError("Background color out of range\n");
+          back_color=tokenv;
+          nxttok();
+          if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
+          break;
+        case OP_ANIMATE:
+          nxttok();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          if(tokenv<1 || tokenv>256) ParseError("Number of max animation steps out of range\n");
+          max_animation=tokenv;
+          nxttok();
+          if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
+          break;
+        case OP_VOLUME:
+          nxttok();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          max_volume=tokenv;
+          nxttok();
+          if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
+          break;
+        default:
+          ParseError("Invalid top level definition: %s\n",tokenstr);
+      }
+    } else {
+      ParseError("Invalid top level definition\n");
+    }
+  }
   done:
   fclose(classfp);
   if(main_options['H']) {
     for(i=0;i<HASH_SIZE;i++) if(glohash[i].id) printf("\"%s\": %04X\n",glohash[i].txt,glohash[i].id);
+  }
+  for(i=0;i<LOCAL_HASH_SIZE;i++) free(glolocalhash[i].txt);
+  free(glolocalhash);
+  for(i=0;i<num_functions;i++) if(functions[i]==0xFFFF) {
+    int j;
+    for(j=0;j<HASH_SIZE;j++) if(glohash[j].id==i+0x8000) fatal("Function &%s mentioned but not defined\n",glohash[j].txt);
+    fatal("Function mentioned but not defined\n");
   }
   for(i=0;i<HASH_SIZE;i++) free(glohash[i].txt);
   free(glohash);

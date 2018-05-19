@@ -55,7 +55,7 @@ bitconstant "bit8"
 #bit28
 #bit29
 #bit30
-#bit31
+bitconstant_last "bit31"
 
 ; Animation constants
 STOP (0000)
@@ -235,4 +235,6 @@ WinLevel
 *Local
 *Label
 *String
+*Int16
+*Int32
 

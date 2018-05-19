@@ -23,6 +23,12 @@ typedef struct {
   };
   Uint32 t; // Type 0-15, or a generation_number of an object
 } Value;
+#define UVALUE(x,y) ((Value){.u=x,.t=y})
+#define SVALUE(x,y) ((Value){.s=x,.t=y})
+#define NVALUE(x) SVALUE(x,TY_NUMBER)
+#define CVALUE(x) UVALUE(x,TY_CLASS)
+#define MVALUE(x) UVALUE(x,TY_MESSAGE)
+#define ZVALUE(x) UVALUE(x,TY_STRING)
 
 extern const char*const standard_message_names[];
 extern const char*const standard_sound_names[];
@@ -76,18 +82,21 @@ typedef struct {
   Uint16*images; // high bit is set if available to editor; not present if CF_GROUP
   Sint32 height,weight,climb,density,volume,strength,arrivals,departures;
   Sint32 temperature,misc4,misc5,misc6,misc7;
-  Uint16 uservars,oflags;
+  Uint16 uservars,oflags,nmsg;
   Uint16 sharp[4];
   Uint16 hard[4];
   Uint8 cflags,shape,shovable,collisionLayers,nimages;
 } Class;
 
+extern Value globals[0x800];
+extern Value initglobals[0x800];
 extern Class*classes[0x4000]; // 0 isn't a real class
 extern const char*messages[0x4000]; // index is 256 less than message number
 extern Uint16 functions[0x4000];
 extern int max_animation; // max steps in animation queue (default 32)
 extern Sint32 max_volume; // max total volume to allow moving diagonally (default 10000)
 extern Uint8 back_color;
+extern char**stringpool;
 
 void load_classes(void);
 
