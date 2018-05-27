@@ -98,6 +98,7 @@ extern Sint32 max_volume; // max total volume to allow moving diagonally (defaul
 extern Uint8 back_color;
 extern char**stringpool;
 
+Uint16 get_message_ptr(int c,int m);
 void load_classes(void);
 
 // == bindings ==
