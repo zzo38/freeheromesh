@@ -41,7 +41,13 @@ extern xrm_quark optionquery[16];
 extern Uint32 generation_number;
 extern char main_options[128];
 
+unsigned char*read_lump(int sol,int lvl,long*sz,sqlite3_value**us);
 void set_cursor(int id);
+
+#define FIL_SOLUTION 1
+#define FIL_LEVEL 0
+#define LUMP_LEVEL_IDX (-1)
+#define LUMP_CLASS_DEF (-2)
 
 // == picture ==
 

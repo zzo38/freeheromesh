@@ -748,7 +748,7 @@ static void class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned ch
         fprintf(fp," DelInventory");
         st=0; break;
       case 134:
-        fprintf(fp," (for %%%s)",vars+*op*8);
+        fprintf(fp," for =%%%s",vars+*op*8);
         ind+=2; len+=2; st=0; break;
       case 135:
         fseek(fp,-1,SEEK_CUR);

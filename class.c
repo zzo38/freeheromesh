@@ -877,7 +877,7 @@ static void end_label_stack(Uint16*codes,Hash*hash) {
 #define AbbrevOp(x,y) case x: if(Inst7bit()) ChangeInst(+=0x1000|((y)<<4)); else AddInstF(x,tokent); break
 #define FlowPush(x) do{ if(flowdepth==64) ParseError("Too much flow control nesting\n"); flowop[flowdepth]=x; flowptr[flowdepth++]=ptr; }while(0)
 #define FlowPop(x) do{ if(!flowdepth || flowop[--flowdepth]!=(x)) ParseError("Flow control mismatch\n"); }while(0)
-static int parse_instructions(int cla,int ptr,Hash*hash) {
+static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
   int peep=ptr;
   int prflag=0;
   Class*cl=classes[cla];
@@ -1007,6 +1007,13 @@ static int parse_instructions(int cla,int ptr,Hash*hash) {
           AddInst2(OP_GOTO,flowptr[flowdepth]);
           cl->codes[x]=ptr;
           break;
+        case OP_FOR:
+          if(cl->uservars>=0x07FF || num_globals>=0x07FF) ParseError("Too many user variables\n");
+          if(cla) x=cl->uservars++|0x2000; else x=num_globals++|0x2800;
+          AddInst2(OP_FOR,x);
+          FlowPush(OP_FOR);
+          peep=++ptr;
+          break;
         case OP_NEXT:
           FlowPop(OP_FOR);
           AddInst(OP_NEXT);
@@ -1014,6 +1021,7 @@ static int parse_instructions(int cla,int ptr,Hash*hash) {
           break;
         default:
           if(Tokenf(TF_ABNORMAL)) ParseError("Invalid instruction token\n");
+          if(compat && Tokenf(TF_COMPAT)) ++tokenv;
           AddInstF(tokenv,tokent);
       }
     } else if(Tokenf(TF_FUNCTION)) {
@@ -1022,21 +1030,6 @@ static int parse_instructions(int cla,int ptr,Hash*hash) {
       nxttok();
       if(Tokenf(TF_MACRO) || !Tokenf(TF_NAME)) ParseError("Invalid parenthesized instruction\n");
       switch(tokenv) {
-        case OP_FOR:
-          nxttok();
-          if(Tokenf(TF_MACRO|TF_EQUAL) || !Tokenf(TF_NAME)) ParseError("Global or local variable expected\n");
-          if(tokenv==OP_LOCAL) {
-            if(!cla) ParseError("Cannot use local variable in a global definition\n");
-            tokenv=look_hash(hash,LOCAL_HASH_SIZE,0x2000,0x27FF,cl->uservars+0x2000,"user local variables")?:(cl->uservars++)+0x2000;
-          } else if(tokenv<0x2000 || tokenv>0x2FFF) {
-            ParseError("Global or local variable expected\n");
-          }
-          AddInst2(OP_FOR,tokenv);
-          FlowPush(OP_FOR);
-          peep=++ptr;
-          nxttok();
-          if(tokent!=TF_CLOSE) ParseError("Unterminated (for)\n");
-          break;
         case OP_POPUP:
           nxttok();
           if(tokent!=TF_INT || tokenv<0 || tokenv>32) ParseError("Expected number from 0 to 32");
@@ -1081,8 +1074,98 @@ static int parse_instructions(int cla,int ptr,Hash*hash) {
   return ptr;
 }
 
+static void dump_class(int cla,int endptr,const Hash*hash) {
+  const Class*cl=classes[cla];
+  int i,j;
+  if(!cl) return;
+  printf("<<<Class %d>>>\n",cla);
+  printf("  Name: %c%s\n",cla?'$':'(',cla?cl->name:"Global)");
+  printf("  Flags: 0x%02X 0x%04X\n",cl->cflags,cl->oflags);
+  printf("  Ht=%d Wt=%d Clm=%d Den=%d Vol=%d Str=%d Arr=%d Dep=%d\n",cl->height,cl->weight,cl->climb,cl->density,cl->volume,cl->strength,cl->arrivals,cl->departures);
+  printf("  Temp=%d M4=%d M5=%d M6=%d M7=%d Shape=%d Shov=%d Coll=%d Img=%d\n",cl->temperature,cl->misc4,cl->misc5,cl->misc6,cl->misc7,cl->shape,cl->shovable,cl->collisionLayers,cl->nimages);
+  printf("  Hard: %d %d %d %d\n",cl->hard[0],cl->hard[1],cl->hard[2],cl->hard[3]);
+  printf("  Sharp: %d %d %d %d\n",cl->sharp[0],cl->sharp[1],cl->sharp[2],cl->sharp[3]);
+  if(cl->nimages && cl->images) {
+    printf("  Images:");
+    for(i=0;i<cl->nimages;i++) printf(" %d%c",cl->images[i]&0x7FFF,cl->images[i]&0x8000?'*':'.');
+    putchar('\n');
+  }
+  if(cl->nmsg && cl->messages) {
+    printf("  Messages:\n");
+    for(i=0;i<cl->nmsg;i++) {
+      if(cl->messages[i]!=0xFFFF) {
+        if(i<256) printf("    %s: 0x%04X\n",standard_message_names[i],cl->messages[i]);
+        else printf("    #%s: 0x%04X\n",messages[i-256],cl->messages[i]);
+      }
+    }
+  }
+  if(hash && cl->uservars) {
+    printf("  Variables:\n");
+    for(i=0;i<LOCAL_HASH_SIZE;i++) {
+      if(hash[i].id>=0x2000 && hash[i].id<0x3000) printf("    %%%s = 0x%04X\n",hash[i].txt,hash[i].id);
+    }
+  }
+  if(endptr && cl->codes) {
+    printf("  Codes:\n");
+    for(i=0;i<endptr;i++) {
+      if(!(i&16)) printf("    [%04X]",i);
+      printf(" %04X",cl->codes[i]);
+    }
+    putchar('\n');
+  }
+  printf("---\n\n");
+}
+
 static void class_definition(int cla) {
-  
+  Hash*hash=calloc(LOCAL_HASH_SIZE,sizeof(Hash));
+  Class*cl=classes[cla];
+  int ptr=0;
+  int compat=0;
+  int i;
+  if(!hash) fatal("Allocation failed\n");
+  if(!cl) fatal("Confusion of class definition somehow\n");
+  if(cl->cflags&(CF_NOCLASS1|CF_NOCLASS2)) {
+    cl->cflags=0;
+  } else {
+    ParseError("Duplicate definition of class $%s\n",cl->name);
+  }
+  begin_label_stack();
+  for(;;) {
+    nxttok();
+    if(Tokenf(TF_EOF)) {
+      ParseError("Unexpected end of file\n");
+    } else if(Tokenf(TF_MACRO)) {
+      ParseError("Unexpected macro token\n");
+    } else if(Tokenf(TF_CLOSE)) {
+      break;
+    } else if(Tokenf(TF_OPEN)) {
+      nxttok();
+      
+    } else if(Tokenf(TF_NAME)) {
+      switch(tokenv) {
+        case OP_PLAYER: cl->cflags|=CF_PLAYER; break;
+        case OP_INPUT: cl->cflags|=CF_INPUT; break;
+        case OP_COMPATIBLE: cl->cflags|=CF_COMPATIBLE; compat=1; break;
+        case OP_COMPATIBLE_C: cl->cflags|=CF_COMPATIBLE; break;
+        case OP_QUIZ: cl->cflags|=CF_QUIZ; break;
+        case OP_INVISIBLE: cl->oflags|=OF_INVISIBLE; break;
+        case OP_VISUALONLY: cl->oflags|=OF_VISUALONLY; break;
+        case OP_STEALTHY: cl->oflags|=OF_STEALTHY; break;
+        case OP_USERSTATE: cl->oflags|=OF_USERSTATE; break;
+        case OP_SHOVABLE: cl->shovable=0x55; break;
+        default: ParseError("Invalid directly inside of a class definition\n");
+      }
+    } else {
+      ParseError("Invalid directly inside of a class definition\n");
+    }
+  }
+  end_label_stack(classes[0]->codes,hash);
+  if(main_options['C']) dump_class(cla,ptr,hash);
+  if(main_options['H']) {
+    for(i=0;i<LOCAL_HASH_SIZE;i++) if(hash[i].id) printf(" \"%s\": %04X\n",hash[i].txt,hash[i].id);
+  }
+  for(i=0;i<LOCAL_HASH_SIZE;i++) free(hash[i].txt);
+  free(hash);
 }
 
 void load_classes(void) {
@@ -1138,7 +1221,7 @@ void load_classes(void) {
     if(Tokenf(TF_FUNCTION)) {
       functions[tokenv&0x3FFF]=gloptr;
       begin_label_stack();
-      gloptr=parse_instructions(0,gloptr,glolocalhash);
+      gloptr=parse_instructions(0,gloptr,glolocalhash,0);
       end_label_stack(classes[0]->codes,glolocalhash);
     } else if(Tokenf(TF_NAME)) {
       switch(tokenv) {
@@ -1148,7 +1231,7 @@ void load_classes(void) {
         case 0x0200 ... 0x02FF: case 0xC000 ... 0xFFFF: // Default message handler
           begin_label_stack();
           set_message_ptr(0,tokenv&0x8000?(tokenv&0x3FFF)+256:tokenv-0x0200,gloptr);
-          gloptr=parse_instructions(0,gloptr,glolocalhash);
+          gloptr=parse_instructions(0,gloptr,glolocalhash,0);
           end_label_stack(classes[0]->codes,glolocalhash);
           break;
         case 0x2800 ... 0x2FFF: // Define initial values of global variables
@@ -1191,8 +1274,10 @@ void load_classes(void) {
   }
   done:
   fclose(classfp);
+  if(main_options['C']) dump_class(0,gloptr,glolocalhash);
   if(main_options['H']) {
     for(i=0;i<HASH_SIZE;i++) if(glohash[i].id) printf("\"%s\": %04X\n",glohash[i].txt,glohash[i].id);
+    for(i=0;i<LOCAL_HASH_SIZE;i++) if(glolocalhash[i].id) printf(" \"%s\": %04X\n",glolocalhash[i].txt,glolocalhash[i].id);
   }
   for(i=0;i<LOCAL_HASH_SIZE;i++) free(glolocalhash[i].txt);
   free(glolocalhash);

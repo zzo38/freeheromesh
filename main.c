@@ -10,9 +10,13 @@ exit
 #define _BSD_SOURCE
 #define HEROMESH_MAIN
 #include "SDL.h"
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/file.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include "sqlite3.h"
 #include "smallxrm.h"
@@ -27,8 +31,9 @@ static const char schema[]=
   "PRAGMA RECURSIVE_TRIGGERS(1);"
   "CREATE TABLE IF NOT EXISTS `USERCACHEINDEX`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `TIME` INT);"
   "CREATE TABLE IF NOT EXISTS `USERCACHEDATA`(`ID` INTEGER PRIMARY KEY, `FILE` INT, `LEVEL` INT, `NAME` TEXT, `OFFSET` INT, `DATA` BLOB, `USERSTATE` BLOB);"
-  "CREATE INDEX IF NOT EXISTS `USERCACHEDATA_I1` ON `USERCACHEDATA`(`FILE`, `LEVEL`) WHERE `LEVEL` IS NOT NULL;"
+  "CREATE INDEX IF NOT EXISTS `USERCACHEDATA_I1` ON `USERCACHEDATA`(`FILE`, `LEVEL`);"
   "CREATE TEMPORARY TABLE `PICTURES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `OFFSET` INT);"
+  "CREATE TEMPORARY TABLE `VARIABLES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT);"
   "COMMIT;"
 ;
 
@@ -43,8 +48,10 @@ static const char*globalclassname;
 static SDL_Cursor*cursor[77];
 static FILE*levelfp;
 static FILE*solutionfp;
+static sqlite3_int64 leveluc,solutionuc;
 static FILE*hamarc_fp;
 static long hamarc_pos;
+static sqlite3_stmt*readusercachest;
 
 static void hamarc_begin(FILE*fp,const char*name) {
   while(*name) fputc(*name++,fp);
@@ -61,6 +68,167 @@ static long hamarc_end(void) {
   fputc(len>>0,hamarc_fp);
   fputc(len>>8,hamarc_fp);
   fseek(hamarc_fp,end,SEEK_SET);
+}
+
+static sqlite3_int64 reset_usercache(FILE*fp,const char*nam,struct stat*stats,const char*suffix) {
+  sqlite3_stmt*st;
+  sqlite3_int64 t,id;
+  char buf[128];
+  int i,z;
+  if(z=sqlite3_exec(userdb,"BEGIN;",0,0,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  if(z=sqlite3_prepare_v2(userdb,"DELETE FROM `USERCACHEDATA` WHERE `FILE` = (SELECT `ID` FROM `USERCACHEINDEX` WHERE `NAME` = ?1);",-1,&st,0)) {
+    fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  }
+  sqlite3_bind_text(st,1,nam,-1,0);
+  while((z=sqlite3_step(st))==SQLITE_ROW);
+  if(z!=SQLITE_DONE) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  sqlite3_finalize(st);
+  if(z=sqlite3_prepare_v2(userdb,"DELETE FROM `USERCACHEINDEX` WHERE `NAME` = ?1;",-1,&st,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  sqlite3_bind_text(st,1,nam,-1,0);
+  while((z=sqlite3_step(st))==SQLITE_ROW);
+  if(z!=SQLITE_DONE) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  sqlite3_finalize(st);
+  t=stats->st_mtime;
+  if(stats->st_ctime>t) t=stats->st_ctime;
+  if(z=sqlite3_prepare_v2(userdb,"INSERT INTO `USERCACHEINDEX`(`NAME`,`TIME`) VALUES(?1,?2);",-1,&st,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  sqlite3_bind_text(st,1,nam,-1,0);
+  sqlite3_bind_int64(st,2,t);
+  while((z=sqlite3_step(st))==SQLITE_ROW);
+  if(z!=SQLITE_DONE) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  id=sqlite3_last_insert_rowid(userdb);
+  sqlite3_finalize(st);
+  if(z=sqlite3_prepare_v2(userdb,"INSERT INTO `USERCACHEDATA`(`FILE`,`LEVEL`,`NAME`,`OFFSET`) VALUES(?1,?2,?3,?4);",-1,&st,0)) {
+    fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  }
+  sqlite3_bind_int64(st,1,id);
+  rewind(fp);
+  for(;;) {
+    sqlite3_reset(st);
+    sqlite3_bind_null(st,3);
+    i=0;
+    for(;;) {
+      z=fgetc(fp);
+      if(z==EOF) goto done;
+      buf[i]=z;
+      if(!z) break;
+      ++i;
+      if(i==127) fatal("Found a long lump name; maybe this is not a real Hamster archive\n");
+    }
+    t=fgetc(fp)<<16; t|=fgetc(fp)<<24; t|=fgetc(fp); t|=fgetc(fp)<<8;
+    if(feof(fp)) fatal("Invalid Hamster archive\n");
+    sqlite3_bind_text(st,3,buf,i,0);
+    sqlite3_bind_int64(st,4,ftell(fp));
+    if(i>4 && i<10 && !sqlite3_stricmp(buf+i-4,suffix)) {
+      for(z=0;z<i-4;z++) if(buf[z]<'0' || buf[z]>'9') goto nomatch;
+      if(*buf=='0' && i!=5) goto nomatch;
+      sqlite3_bind_int(st,2,strtol(buf,0,10));
+    } else if(i==9 && !sqlite3_stricmp(buf,"CLASS.DEF")) {
+      sqlite3_bind_int(st,2,LUMP_CLASS_DEF);
+    } else if(i==9 && !sqlite3_stricmp(buf,"LEVEL.IDX")) {
+      sqlite3_bind_int(st,2,LUMP_LEVEL_IDX);
+    } else {
+      nomatch: sqlite3_bind_null(st,2);
+    }
+  }
+  done:
+  sqlite3_finalize(st);
+  if(z=sqlite3_exec(userdb,"COMMIT;",0,0,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  return id;
+}
+
+unsigned char*read_lump(int sol,int lvl,long*sz,sqlite3_value**us) {
+  // Returns a pointer to the data; must be freed using free().
+  // If there is no data, returns null and sets *sz and *us to zero.
+  // Third argument is a pointer to a variable to store the data size (must be not null).
+  // Fourth argument may be null, and is user state (use sqlite3_value_free() to free it).
+  unsigned char*buf=0;
+  sqlite3_reset(readusercachest);
+  sqlite3_bind_int64(readusercachest,1,sol?solutionuc:leveluc);
+  sqlite3_bind_int(readusercachest,2,lvl);
+  if(sqlite3_step(readusercachest)==SQLITE_ROW) {
+    if(us) *us=sqlite3_value_dup(sqlite3_column_value(readusercachest,6));
+    if(sqlite3_column_type(readusercachest,5)==SQLITE_BLOB) {
+      const unsigned char*con=sqlite3_column_blob(readusercachest,5);
+      *sz=sqlite3_column_bytes(readusercachest,5);
+      buf=malloc(*sz);
+      if(*sz && !buf) fatal("Allocation failed");
+      memcpy(buf,con,*sz);
+    } else {
+      FILE*fp=sol?solutionfp:levelfp;
+      rewind(fp);
+      fseek(fp,sqlite3_column_int64(readusercachest,4)-4,SEEK_SET);
+      *sz=fgetc(fp)<<16; *sz|=fgetc(fp)<<24; *sz|=fgetc(fp); *sz|=fgetc(fp)<<8;
+      if(feof(fp) || *sz<0) fatal("Invalid Hamster archive\n");
+      buf=malloc(*sz);
+      if(!buf) fatal("Allocation failed\n");
+      if(!fread(buf,1,*sz,fp)) fatal("Unable to read data\n");
+      rewind(fp);
+    }
+  } else {
+    *sz=0;
+    if(us) *us=0;
+  }
+  sqlite3_reset(readusercachest);
+  return buf;
+}
+
+static void init_usercache(void) {
+  sqlite3_stmt*st;
+  int z;
+  sqlite3_int64 t1,t2;
+  char*nam1;
+  char*nam2;
+  char*nam3;
+  struct stat fst;
+  if(z=sqlite3_prepare_v2(userdb,"SELECT `ID`, `TIME` FROM `USERCACHEINDEX` WHERE `NAME` = ?1;",-1,&st,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  nam1=sqlite3_mprintf("%s.level",basefilename);
+  if(!nam1) fatal("Allocation failed\n");
+  nam2=realpath(nam1,0);
+  if(!nam2) fatal("Cannot find real path of '%s': %m\n",nam1);
+  levelfp=fopen(nam2,"r");
+  if(!levelfp) fatal("Cannot open '%s' for reading: %m\n",nam2);
+  sqlite3_free(nam1);
+  sqlite3_bind_text(st,1,nam2,-1,0);
+  z=sqlite3_step(st);
+  if(z==SQLITE_ROW) {
+    leveluc=sqlite3_column_int64(st,0);
+    t1=sqlite3_column_int64(st,1);
+  } else if(z==SQLITE_DONE) {
+    leveluc=t1=-1;
+  } else {
+    fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  }
+  sqlite3_reset(st);
+  nam1=sqlite3_mprintf("%s.solution",basefilename);
+  if(!nam1) fatal("Allocation failed\n");
+  nam3=realpath(nam1,0);
+  if(!nam3) fatal("Cannot find real path of '%s': %m\n",nam1);
+  if(!strcmp(nam2,nam3)) fatal("Level and solution files seem to be the same file\n");
+  solutionfp=fopen(nam3,"r");
+  if(!solutionfp) fatal("Cannot open '%s' for reading: %m\n",nam3);
+  sqlite3_free(nam1);
+  sqlite3_bind_text(st,1,nam3,-1,0);
+  z=sqlite3_step(st);
+  if(z==SQLITE_ROW) {
+    solutionuc=sqlite3_column_int64(st,0);
+    t2=sqlite3_column_int64(st,1);
+  } else if(z==SQLITE_DONE) {
+    solutionuc=t2=-1;
+  } else {
+    fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  }
+  sqlite3_finalize(st);
+  if(stat(nam2,&fst)) fatal("Unable to stat '%s': %m\n",nam2);
+  if(!fst.st_size) fatal("File '%s' has zero size\n",nam2);
+  if(fst.st_mtime>t1 || fst.st_ctime>t1) reset_usercache(levelfp,nam2,&fst,".LVL");
+  if(stat(nam3,&fst)) fatal("Unable to stat '%s': %m\n",nam3);
+  if(!fst.st_size) fatal("File '%s' has zero size\n",nam2);
+  if(fst.st_mtime>t1 || fst.st_ctime>t1) reset_usercache(levelfp,nam2,&fst,".LVL");
+  free(nam2);
+  free(nam3);
+  if(z=sqlite3_prepare_v3(userdb,"SELECT * FROM `USERCACHEDATA` WHERE `FILE` = ?1 AND `LEVEL` = ?2;",-1,SQLITE_PREPARE_PERSISTENT,&readusercachest,0)) {
+    fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  }
 }
 
 static void init_sql(void) {
