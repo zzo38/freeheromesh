@@ -122,6 +122,7 @@ static const unsigned char chkind[256]={
 #define MAC_BXOR 0xFFC7
 #define MAC_BNOT 0xFFC8
 #define MAC_CAT 0xFFC9
+#define MAC_BIT 0xFFCA
 #define MAC_VERSION 0xFFE0
 #define MAC_DEFINE 0xFFE1
 #define MAC_INCLUDE 0xFFE2
@@ -767,6 +768,17 @@ static void nxttok(void) {
           strcpy(tokenstr,s);
           free(s);
           ReturnToken(TF_NAME|TF_ABNORMAL,OP_STRING);
+        case MAC_BIT:
+          n=0;
+          for(;;) {
+            nxttok();
+            if(tokent==TF_MACRO+TF_CLOSE) break;
+            if(tokent!=TF_INT) ParseError("Number expected\n");
+            n|=1<<tokenv;
+          }
+          tokent=TF_INT;
+          tokenv=n;
+          break;
         case MAC_VERSION:
           nxttok1();
           if(tokent!=TF_INT) ParseError("Number expected\n");
@@ -1019,6 +1031,9 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
           AddInst(OP_NEXT);
           cl->codes[flowptr[flowdepth]]=ptr;
           break;
+        case OP_STRING:
+          
+          break;
         default:
           if(Tokenf(TF_ABNORMAL)) ParseError("Invalid instruction token\n");
           if(compat && Tokenf(TF_COMPAT)) ++tokenv;
@@ -1116,6 +1131,84 @@ static void dump_class(int cla,int endptr,const Hash*hash) {
   printf("---\n\n");
 }
 
+static inline Uint32 class_def_number(void) {
+  Uint32 n;
+  nxttok();
+  if(!Tokenf(TF_INT)) fatal("Number expected\n");
+  n=tokenv;
+  nxttok();
+  if(tokent!=TF_CLOSE) fatal("Close parentheses expected\n");
+  return n;
+}
+
+static Uint32 class_def_misc(void) {
+  Uint32 n=0;
+  for(;;) {
+    nxttok();
+    if(tokent==TF_CLOSE) return n;
+    if(Tokenf(TF_INT)) {
+      n|=tokenv;
+    } else if(Tokenf(TF_NAME) && !(tokenv&~255)) {
+      n|=tokenv;
+    } else if(Tokenf(TF_NAME) && tokenv>=OP_BITCONSTANT && tokenv<=OP_BITCONSTANT_LAST) {
+      n|=1L<<(tokenv&31);
+    } else {
+      fatal("Number expected");
+    }
+  }
+}
+
+static Uint32 class_def_arrivals(void) {
+  Uint32 n=0;
+  int i;
+  nxttok();
+  if(Tokenf(TF_NAME) && tokenv==OP_INPLACE) {
+    nxttok();
+    if(tokent!=TF_CLOSE) ParseError("Close parentheses expected\n");
+    return 1<<12;
+  }
+  for(i=0;i<25;i++) {
+    nxttok();
+    if(!Tokenf(TF_INT) || (tokenv&~1)) ParseError("Expected 0 or 1\n");
+    if(tokenv) n|=1<<(i+4-2*(i%5));
+  }
+  nxttok();
+  if(tokent!=TF_CLOSE) ParseError("Close parentheses expected\n");
+  return n;
+}
+
+static void class_def_hard(Uint16*data) {
+  int i;
+  for(;;) {
+    nxttok();
+    if(tokent==TF_CLOSE) {
+      return;
+    } else if(tokent==TF_OPEN) {
+      nxttok();
+      if(!Tokenf(TF_DIR) || tokenv>7 || (tokenv&1)) ParseError("Expected even absolute direction\n");
+      i=tokenv>>1;
+      nxttok();
+      if(tokent!=TF_INT || (tokenv&~0xFFFF)) ParseError("Sixteen-bit number expected\n");
+      data[i]=tokenv;
+      nxttok();
+      if(tokent!=TF_CLOSE) ParseError("Close parentheses expected\n");
+    } else if(tokent==TF_INT) {
+      if(tokenv&~0xFFFF) ParseError("Hardness/sharpness must be a 16-bit number\n");
+      data[0]=data[1]=data[2]=data[3]=tokenv;
+    } else {
+      ParseError("Expected ( or ) or number\n");
+    }
+  }
+}
+
+static inline Uint8 class_def_shovable(void) {
+  
+}
+
+static inline Uint8 class_def_shape(void) {
+  
+}
+
 static void class_definition(int cla) {
   Hash*hash=calloc(LOCAL_HASH_SIZE,sizeof(Hash));
   Class*cl=classes[cla];
@@ -1136,11 +1229,93 @@ static void class_definition(int cla) {
       ParseError("Unexpected end of file\n");
     } else if(Tokenf(TF_MACRO)) {
       ParseError("Unexpected macro token\n");
-    } else if(Tokenf(TF_CLOSE)) {
-      break;
     } else if(Tokenf(TF_OPEN)) {
       nxttok();
-      
+      if(Tokenf(TF_NAME)) {
+        switch(tokenv) {
+          case OP_IMAGE:
+            
+            break;
+          case OP_DEFAULTIMAGE:
+            
+            break;
+          case OP_HELP:
+            
+            break;
+          case OP_EDITORHELP:
+            
+            break;
+          case OP_HEIGHT:
+            cl->height=class_def_number();
+            break;
+          case OP_WEIGHT:
+            cl->weight=class_def_number();
+            break;
+          case OP_CLIMB:
+            cl->climb=class_def_number();
+            break;
+          case OP_DENSITY:
+            cl->density=class_def_number();
+            break;
+          case OP_VOLUME:
+            cl->volume=class_def_number();
+            break;
+          case OP_STRENGTH:
+            cl->strength=class_def_number();
+            break;
+          case OP_TEMPERATURE:
+            cl->temperature=class_def_number();
+            break;
+          case OP_MISC4:
+            cl->misc4=class_def_misc();
+            break;
+          case OP_MISC5:
+            cl->misc5=class_def_misc();
+            break;
+          case OP_MISC6:
+            cl->misc6=class_def_misc();
+            break;
+          case OP_MISC7:
+            cl->misc7=class_def_misc();
+            break;
+          case OP_ARRIVALS:
+            cl->arrivals=class_def_arrivals();
+            break;
+          case OP_DEPARTURES:
+            cl->departures=class_def_arrivals();
+            break;
+          case OP_HARD:
+            class_def_hard(cl->hard);
+            break;
+          case OP_SHARP:
+            class_def_hard(cl->sharp);
+            break;
+          case OP_SHAPE:
+            cl->shape=class_def_shape();
+            break;
+          case OP_SHOVABLE:
+            cl->shovable=class_def_shovable();
+            break;
+          case OP_SUBS:
+            ptr=parse_instructions(cla,ptr,hash,compat);
+            break;
+          case OP_LABEL:
+            pushback=1;
+            ptr=parse_instructions(cla,ptr,hash,compat);
+            break;
+          case 0x0200 ... 0x02FF:
+            set_message_ptr(cla,tokenv&255,ptr);
+            ptr=parse_instructions(cla,ptr,hash,compat);
+            break;
+          case 0xC000 ... 0xFFFF:
+            set_message_ptr(cla,tokenv+256-0xC000,ptr);
+            ptr=parse_instructions(cla,ptr,hash,compat);
+            break;
+          default: ParseError("Invalid directly inside of a class definition\n");
+        }
+      } else {
+        ParseError("Invalid directly inside of a class definition\n");
+      }
     } else if(Tokenf(TF_NAME)) {
       switch(tokenv) {
         case OP_PLAYER: cl->cflags|=CF_PLAYER; break;
@@ -1155,11 +1330,14 @@ static void class_definition(int cla) {
         case OP_SHOVABLE: cl->shovable=0x55; break;
         default: ParseError("Invalid directly inside of a class definition\n");
       }
+    } else if(Tokenf(TF_CLOSE)) {
+      break;
     } else {
       ParseError("Invalid directly inside of a class definition\n");
     }
   }
   end_label_stack(classes[0]->codes,hash);
+  if(!cl->nimages) cl->oflags|=OF_INVISIBLE;
   if(main_options['C']) dump_class(cla,ptr,hash);
   if(main_options['H']) {
     for(i=0;i<LOCAL_HASH_SIZE;i++) if(hash[i].id) printf(" \"%s\": %04X\n",hash[i].txt,hash[i].id);
@@ -1168,11 +1346,44 @@ static void class_definition(int cla) {
   free(hash);
 }
 
+static void load_class_numbers(void) {
+  int i,n;
+  long size=0;
+  unsigned char*data=read_lump(FIL_LEVEL,LUMP_CLASS_DEF,&size,0);
+  unsigned char*p;
+  if(!data) return;
+  for(i=0;i<size-3;) {
+    n=data[i]|(data[i+1]<<8);
+    if(!n) break;
+    if(n>=0x4000) fatal("Malformed CLASS.DEF lump\n");
+    i+=2;
+    p=data+i;
+    while(i<size && data[i++]);
+    if(i==size && data[i-1]) fatal("Malformed CLASS.DEF lump\n");
+    initialize_class(n,CF_NOCLASS2,p);
+  }
+  i+=2;
+  for(;i<size-3;) {
+    n=data[i]|(data[i+1]<<8);
+    if(n<256 || n>=0x4100) fatal("Malformed CLASS.DEF lump\n");
+    n-=256;
+    i+=2;
+    p=data+i;
+    while(i<size && data[i++]);
+    if(i==size && data[i-1]) fatal("Malformed CLASS.DEF lump\n");
+    if(messages[n]) fatal("Duplicate message number %d\n",n+256);
+    messages[n]=strdup(p);
+    if(!messages[n]) fatal("Allocation failed\n");
+  }
+  free(data);
+}
+
 void load_classes(void) {
   int i;
   int gloptr=0;
   Hash*glolocalhash;
   char*nam=sqlite3_mprintf("%s.class",basefilename);
+  fprintf(stderr,"Loading class definitions...\n");
   if(!nam) fatal("Allocation failed\n");
   classfp=fopen(nam,"r");
   sqlite3_free(nam);
@@ -1191,6 +1402,7 @@ void load_classes(void) {
   strcpy(tokenstr,"bxor"); glohash[look_hash_mac()].id=MAC_BXOR;
   strcpy(tokenstr,"bnot"); glohash[look_hash_mac()].id=MAC_BNOT;
   strcpy(tokenstr,"cat"); glohash[look_hash_mac()].id=MAC_CAT;
+  strcpy(tokenstr,"bit"); glohash[look_hash_mac()].id=MAC_BIT;
   strcpy(tokenstr,"version"); glohash[look_hash_mac()].id=MAC_VERSION;
   strcpy(tokenstr,"define"); glohash[look_hash_mac()].id=MAC_DEFINE;
   strcpy(tokenstr,"include"); glohash[look_hash_mac()].id=MAC_INCLUDE;
@@ -1213,6 +1425,7 @@ void load_classes(void) {
   classes[0]->codes=classes[0]->messages=classes[0]->images=0;
   classes[0]->nmsg=0;
   memset(functions,-1,sizeof(functions));
+  load_class_numbers();
   for(;;) {
     nxttok();
     if(tokent==TF_EOF) goto done;
@@ -1291,4 +1504,5 @@ void load_classes(void) {
   for(i=1;i<undef_class;i++) if(classes[i] && (classes[i]->cflags&CF_NOCLASS1)) fatal("Class $%s mentioned but not defined\n",classes[i]->name);
   if(macros) for(i=0;i<MAX_MACRO;i++) if(macros[i]) free_macro(macros[i]);
   free(macros);
+  fprintf(stderr,"Done\n");
 }

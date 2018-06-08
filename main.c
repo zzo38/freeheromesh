@@ -31,7 +31,7 @@ static const char schema[]=
   "PRAGMA RECURSIVE_TRIGGERS(1);"
   "CREATE TABLE IF NOT EXISTS `USERCACHEINDEX`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `TIME` INT);"
   "CREATE TABLE IF NOT EXISTS `USERCACHEDATA`(`ID` INTEGER PRIMARY KEY, `FILE` INT, `LEVEL` INT, `NAME` TEXT, `OFFSET` INT, `DATA` BLOB, `USERSTATE` BLOB);"
-  "CREATE INDEX IF NOT EXISTS `USERCACHEDATA_I1` ON `USERCACHEDATA`(`FILE`, `LEVEL`);"
+  "CREATE UNIQUE INDEX IF NOT EXISTS `USERCACHEDATA_I1` ON `USERCACHEDATA`(`FILE`, `LEVEL`);"
   "CREATE TEMPORARY TABLE `PICTURES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `OFFSET` INT);"
   "CREATE TEMPORARY TABLE `VARIABLES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT);"
   "COMMIT;"
@@ -116,19 +116,23 @@ static sqlite3_int64 reset_usercache(FILE*fp,const char*nam,struct stat*stats,co
     }
     t=fgetc(fp)<<16; t|=fgetc(fp)<<24; t|=fgetc(fp); t|=fgetc(fp)<<8;
     if(feof(fp)) fatal("Invalid Hamster archive\n");
+    if(t<0) fatal("Invalid lump size\n");
     sqlite3_bind_text(st,3,buf,i,0);
     sqlite3_bind_int64(st,4,ftell(fp));
     if(i>4 && i<10 && !sqlite3_stricmp(buf+i-4,suffix)) {
       for(z=0;z<i-4;z++) if(buf[z]<'0' || buf[z]>'9') goto nomatch;
       if(*buf=='0' && i!=5) goto nomatch;
       sqlite3_bind_int(st,2,strtol(buf,0,10));
-    } else if(i==9 && !sqlite3_stricmp(buf,"CLASS.DEF")) {
+    } else if(i==9 && suffix[1]=='L' && !sqlite3_stricmp(buf,"CLASS.DEF")) {
       sqlite3_bind_int(st,2,LUMP_CLASS_DEF);
-    } else if(i==9 && !sqlite3_stricmp(buf,"LEVEL.IDX")) {
+    } else if(i==9 && suffix[1]=='L' && !sqlite3_stricmp(buf,"LEVEL.IDX")) {
       sqlite3_bind_int(st,2,LUMP_LEVEL_IDX);
     } else {
       nomatch: sqlite3_bind_null(st,2);
     }
+    while((z=sqlite3_step(st))==SQLITE_ROW);
+    if(z!=SQLITE_DONE) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+    fseek(fp,t,SEEK_CUR);
   }
   done:
   sqlite3_finalize(st);
@@ -180,6 +184,7 @@ static void init_usercache(void) {
   char*nam2;
   char*nam3;
   struct stat fst;
+  fprintf(stderr,"Initializing user cache...\n");
   if(z=sqlite3_prepare_v2(userdb,"SELECT `ID`, `TIME` FROM `USERCACHEINDEX` WHERE `NAME` = ?1;",-1,&st,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   nam1=sqlite3_mprintf("%s.level",basefilename);
   if(!nam1) fatal("Allocation failed\n");
@@ -220,15 +225,16 @@ static void init_usercache(void) {
   sqlite3_finalize(st);
   if(stat(nam2,&fst)) fatal("Unable to stat '%s': %m\n",nam2);
   if(!fst.st_size) fatal("File '%s' has zero size\n",nam2);
-  if(fst.st_mtime>t1 || fst.st_ctime>t1) reset_usercache(levelfp,nam2,&fst,".LVL");
+  if(fst.st_mtime>t1 || fst.st_ctime>t1) leveluc=reset_usercache(levelfp,nam2,&fst,".LVL");
   if(stat(nam3,&fst)) fatal("Unable to stat '%s': %m\n",nam3);
   if(!fst.st_size) fatal("File '%s' has zero size\n",nam2);
-  if(fst.st_mtime>t1 || fst.st_ctime>t1) reset_usercache(levelfp,nam2,&fst,".LVL");
+  if(fst.st_mtime>t2 || fst.st_ctime>t2) solutionuc=reset_usercache(solutionfp,nam3,&fst,".SOL");
   free(nam2);
   free(nam3);
   if(z=sqlite3_prepare_v3(userdb,"SELECT * FROM `USERCACHEDATA` WHERE `FILE` = ?1 AND `LEVEL` = ?2;",-1,SQLITE_PREPARE_PERSISTENT,&readusercachest,0)) {
     fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   }
+  fprintf(stderr,"Done\n");
 }
 
 static void init_sql(void) {
@@ -459,6 +465,7 @@ int main(int argc,char**argv) {
     test_mode();
     return 0;
   }
+  init_usercache();
   load_classes();
   
   return 0;
