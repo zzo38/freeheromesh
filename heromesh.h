@@ -42,6 +42,7 @@ extern Uint32 generation_number;
 extern char main_options[128];
 
 unsigned char*read_lump(int sol,int lvl,long*sz,sqlite3_value**us);
+void write_lump(int sol,int lvl,long sz,const unsigned char*data);
 void set_cursor(int id);
 
 #define FIL_SOLUTION 1
