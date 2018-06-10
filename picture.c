@@ -266,7 +266,7 @@ void load_pictures(void) {
       i-=j=fgetc(fp)&15;
       while(j--) havesize1[fgetc(fp)&255]=1;
       fseek(fp,i-1,SEEK_CUR);
-      for(i=1;i<256;i++) if(havesize1[j]) for(j=i+i;j<256;j+=i) havesize1[j]=1;
+      for(i=1;i<256;i++) if(havesize1[i]) for(j=i+i;j<256;j+=i) havesize1[j]=1;
       for(j=1;j<256;j++) havesize[j]+=havesize1[j];
     } else {
       fseek(fp,i,SEEK_CUR);

@@ -1328,7 +1328,7 @@ static void class_def_defaultimage(int cla) {
   }
 }
 
-static void class_definition(int cla) {
+static void class_definition(int cla,sqlite3_stmt*vst) {
   Hash*hash=calloc(LOCAL_HASH_SIZE,sizeof(Hash));
   Class*cl=classes[cla];
   int ptr=0;
@@ -1463,7 +1463,16 @@ static void class_definition(int cla) {
   if(main_options['H']) {
     for(i=0;i<LOCAL_HASH_SIZE;i++) if(hash[i].id) printf(" \"%s\": %04X\n",hash[i].txt,hash[i].id);
   }
-  for(i=0;i<LOCAL_HASH_SIZE;i++) free(hash[i].txt);
+  for(i=0;i<LOCAL_HASH_SIZE;i++) {
+    if(vst && hash[i].id>=0x2000 && hash[i].id<0x2800) {
+      sqlite3_reset(vst);
+      sqlite3_bind_int(vst,1,(hash[i].id&0x07FF)|(cla<<16));
+      sqlite3_bind_text(vst,2,hash[i].txt,-1,free);
+      while(sqlite3_step(vst)==SQLITE_ROW);
+    } else {
+      free(hash[i].txt);
+    }
+  }
   free(hash);
 }
 
@@ -1504,6 +1513,7 @@ void load_classes(void) {
   int gloptr=0;
   Hash*glolocalhash;
   char*nam=sqlite3_mprintf("%s.class",basefilename);
+  sqlite3_stmt*vst=0;
   fprintf(stderr,"Loading class definitions...\n");
   if(!nam) fatal("Allocation failed\n");
   classfp=fopen(nam,"r");
@@ -1547,6 +1557,7 @@ void load_classes(void) {
   classes[0]->nmsg=0;
   memset(functions,-1,sizeof(functions));
   load_class_numbers();
+  if(userdb && (i=sqlite3_prepare_v2(userdb,"INSERT INTO `VARIABLES`(`ID`,`NAME`) VALUES(?1,?2);",-1,&vst,0))) fatal("SQL error (%d): %s\n",i,sqlite3_errmsg(userdb));
   for(;;) {
     nxttok();
     if(tokent==TF_EOF) goto done;
@@ -1560,7 +1571,7 @@ void load_classes(void) {
     } else if(Tokenf(TF_NAME)) {
       switch(tokenv) {
         case 0x4000 ... 0x7FFF: // Class definition
-          class_definition(tokenv-0x4000);
+          class_definition(tokenv-0x4000,vst);
           break;
         case 0x0200 ... 0x02FF: case 0xC000 ... 0xFFFF: // Default message handler
           begin_label_stack();
@@ -1620,7 +1631,17 @@ void load_classes(void) {
     for(j=0;j<HASH_SIZE;j++) if(glohash[j].id==i+0x8000) fatal("Function &%s mentioned but not defined\n",glohash[j].txt);
     fatal("Function mentioned but not defined\n");
   }
-  for(i=0;i<HASH_SIZE;i++) free(glohash[i].txt);
+  for(i=0;i<HASH_SIZE;i++) {
+    if(vst && glohash[i].id>=0x2800 && glohash[i].id<0x3000) {
+      sqlite3_reset(vst);
+      sqlite3_bind_int(vst,1,glohash[i].id&0x07FF);
+      sqlite3_bind_text(vst,2,glohash[i].txt,-1,free);
+      while(sqlite3_step(vst)==SQLITE_ROW);
+    } else {
+      free(glohash[i].txt);
+    }
+  }
+  if(vst) sqlite3_finalize(vst);
   free(glohash);
   for(i=1;i<undef_class;i++) if(classes[i] && (classes[i]->cflags&CF_NOCLASS1)) fatal("Class $%s mentioned but not defined\n",classes[i]->name);
   if(macros) for(i=0;i<MAX_MACRO;i++) if(macros[i]) free_macro(macros[i]);
