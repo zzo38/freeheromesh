@@ -249,10 +249,10 @@ Uint16 get_message_ptr(int c,int m) {
 }
 
 static void set_message_ptr(int c,int m,int p) {
-  if(m>classes[c]->nmsg) {
+  if(m>=classes[c]->nmsg) {
     classes[c]->messages=realloc(classes[c]->messages,(m+1)*sizeof(Uint16));
     if(!classes[c]->messages) fatal("Allocation failed\n");
-    while(m>classes[c]->nmsg) classes[c]->messages[classes[c]->nmsg++]=0xFFFF;
+    while(m>=classes[c]->nmsg) classes[c]->messages[classes[c]->nmsg++]=0xFFFF;
   }
   classes[c]->messages[m]=p;
 }
@@ -904,10 +904,10 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
     if(Tokenf(TF_MACRO)) ParseError("Unexpected macro\n");
     if(Tokenf(TF_INT)) {
       numeric:
-      if(!(tokenv&~0xFF)) AddInst(tokenv);
+      if(!(tokenv&~0xFFL)) AddInst(tokenv);
       else if(!((tokenv-1)&tokenv)) AddInst(0x87E0+__builtin_ctz(tokenv));
-      else if(!(tokenv&~0xFFFF)) AddInst2(OP_INT16,tokenv);
-      else if(-256<(Sint32)tokenv) AddInst(tokenv&0x01FF);
+      else if(!(tokenv&~0xFFFFL)) AddInst2(OP_INT16,tokenv);
+      else if((tokenv&0x80000000L) && -256<(Sint32)tokenv) AddInst(tokenv&0x01FF);
       else AddInst(OP_INT32),AddInst2(tokenv>>16,tokenv);
     } else if(Tokenf(TF_NAME)) {
       switch(tokenv) {
@@ -1032,7 +1032,7 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
           cl->codes[flowptr[flowdepth]]=ptr;
           break;
         case OP_STRING:
-          
+          AddInst2(OP_STRING,pool_string(tokenstr));
           break;
         default:
           if(Tokenf(TF_ABNORMAL)) ParseError("Invalid instruction token\n");
@@ -1074,6 +1074,7 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
       }
     } else if(tokent==TF_CLOSE) {
       if(peep<ptr && cl->codes[ptr-1]==OP_RET) break;
+      if(peep<ptr && (cl->codes[ptr-1]&0xFF00)==0x1E00) break;
       if(Inst8bit()) ChangeInst(+=0x1E00);
       else AddInst(OP_RET);
       break;
@@ -1121,9 +1122,9 @@ static void dump_class(int cla,int endptr,const Hash*hash) {
     }
   }
   if(endptr && cl->codes) {
-    printf("  Codes:\n");
+    printf("  Codes:");
     for(i=0;i<endptr;i++) {
-      if(!(i&16)) printf("    [%04X]",i);
+      if(!(i&15)) printf("\n    [%04X]",i);
       printf(" %04X",cl->codes[i]);
     }
     putchar('\n');
@@ -1168,11 +1169,10 @@ static Uint32 class_def_arrivals(void) {
     return 1<<12;
   }
   for(i=0;i<25;i++) {
-    nxttok();
     if(!Tokenf(TF_INT) || (tokenv&~1)) ParseError("Expected 0 or 1\n");
     if(tokenv) n|=1<<(i+4-2*(i%5));
+    nxttok();
   }
-  nxttok();
   if(tokent!=TF_CLOSE) ParseError("Close parentheses expected\n");
   return n;
 }
@@ -1188,7 +1188,7 @@ static void class_def_hard(Uint16*data) {
       if(!Tokenf(TF_DIR) || tokenv>7 || (tokenv&1)) ParseError("Expected even absolute direction\n");
       i=tokenv>>1;
       nxttok();
-      if(tokent!=TF_INT || (tokenv&~0xFFFF)) ParseError("Sixteen-bit number expected\n");
+      if(tokent!=TF_INT || (tokenv&~0xFFFF)) ParseError("Hardness/sharpness must be a 16-bit number\n");
       data[i]=tokenv;
       nxttok();
       if(tokent!=TF_CLOSE) ParseError("Close parentheses expected\n");
@@ -1202,11 +1202,130 @@ static void class_def_hard(Uint16*data) {
 }
 
 static inline Uint8 class_def_shovable(void) {
-  
+  Uint8 n=0;
+  nxttok();
+  if(tokent==TF_INT) {
+    n=tokenv;
+    nxttok();
+    if(tokent!=TF_CLOSE) ParseError("Close parentheses expected\n");
+    return n;
+  }
+  for(;;) {
+    if(tokent==TF_CLOSE) return n;
+    if(!Tokenf(TF_DIR) || tokenv>7 || (tokenv&1)) ParseError("Expected even absolute direction\n");
+    n|=1<<tokenv;
+    nxttok();
+  }
 }
 
 static inline Uint8 class_def_shape(void) {
-  
+  Uint8 n=0;
+  int i;
+  for(;;) {
+    nxttok();
+    if(tokent==TF_CLOSE) {
+      return n;
+    } else if(tokent==TF_OPEN) {
+      nxttok();
+      if(!Tokenf(TF_DIR) || tokenv>7 || (tokenv&1)) ParseError("Expected even absolute direction\n");
+      i=tokenv;
+      n&=~(3<<i);
+      nxttok();
+      if(tokent!=TF_INT || (tokenv&~3)) ParseError("Shape must be 0, 1, 2, or 3\n");
+      n|=tokenv<<i;
+      nxttok();
+      if(tokent!=TF_CLOSE) ParseError("Close parentheses expected\n");
+    } else if(tokent==TF_INT) {
+      if(tokenv&~3) ParseError("Shape must be 0, 1, 2, or 3\n");
+      n=tokenv*0x55;
+    } else {
+      ParseError("Expected ( or ) or number\n");
+    }
+  }
+}
+
+static char*class_def_help(void) {
+  char*txt=malloc(0x3000);
+  int n=0;
+  int i;
+  for(;;) {
+    nxttok();
+    if(tokent==TF_CLOSE) break;
+    if(!Tokenf(TF_NAME) || tokenv!=OP_STRING) ParseError("String expected\n");
+    i=strlen(tokenstr);
+    if(i+n>=0x2FFD) ParseError("Help text is too long\n");
+    strcpy(txt+n,tokenstr);
+    n+=i;
+  }
+  if(!n) {
+    free(txt);
+    return 0;
+  }
+  txt[n]=0;
+  return realloc(txt,n+1)?:txt;
+}
+
+static void class_def_image(int cla) {
+  Class*cl=classes[cla];
+  Uint16*img=malloc(256*sizeof(Uint16));
+  sqlite3_stmt*st;
+  if(cl->nimages || cl->images) ParseError("Duplicate (Image) block\n");
+  if(!img) fatal("Allocation failed\n");
+  if(userdb && sqlite3_prepare_v2(userdb,"SELECT `ID` FROM `PICTURES` WHERE `NAME` = ?1;",-1,&st,0)) fatal("SQL error: %s\n",sqlite3_errmsg(userdb));
+  for(;;) {
+    nxttok();
+    if(tokent==TF_CLOSE) break;
+    if(cl->nimages==255) ParseError("Too many images in class\n");
+    if(!Tokenf(TF_NAME) || tokenv!=OP_STRING) ParseError("String expected\n");
+    if(userdb) {
+      sqlite3_bind_text(st,1,tokenstr,-1,0);
+      if(sqlite3_step(st)==SQLITE_ROW) {
+        img[cl->nimages++]=sqlite3_column_int(st,0)|0x8000;
+      } else {
+        ParseError("A picture named \"%s\" does not exist\n",tokenstr);
+      }
+      sqlite3_reset(st);
+      sqlite3_clear_bindings(st);
+    } else {
+      img[cl->nimages++]=0;
+    }
+  }
+  if(userdb) sqlite3_finalize(st);
+  if(!cl->nimages) {
+    free(img);
+    return;
+  }
+  cl->images=realloc(img,cl->nimages*sizeof(Uint16))?:img;
+}
+
+static void class_def_defaultimage(int cla) {
+  Class*cl=classes[cla];
+  int i;
+  for(i=0;i<cl->nimages;i++) cl->images[i]&=0x7FFF;
+  for(;;) {
+    nxttok();
+    if(tokent==TF_OPEN) {
+      nxttok();
+      if(tokent==TF_INT) {
+        if(tokenv<0 || tokenv>=cl->nimages) ParseError("Image number out of range\n");
+        i=tokenv;
+        nxttok();
+        if(tokent!=TF_INT) ParseError("Number expected\n");
+        if(tokenv<i) ParseError("Backward range in (DefaultImage) block\n");
+        if(tokenv>=cl->nimages) ParseError("Image number out of range\n");
+        while(i<=tokenv) cl->images[i++]|=0x8000;
+      } else if(tokent!=TF_CLOSE) {
+        ParseError("Number expected\n");
+      }
+    } else if(tokent==TF_CLOSE) {
+      break;
+    } else if(tokent==TF_INT) {
+      if(tokenv<0 || tokenv>=cl->nimages) ParseError("Image number out of range\n");
+      cl->images[tokenv]|=0x8000;
+    } else {
+      ParseError("Expected ( or ) or number\n");
+    }
+  }
 }
 
 static void class_definition(int cla) {
@@ -1234,16 +1353,18 @@ static void class_definition(int cla) {
       if(Tokenf(TF_NAME)) {
         switch(tokenv) {
           case OP_IMAGE:
-            
+            class_def_image(cla);
             break;
           case OP_DEFAULTIMAGE:
-            
+            class_def_defaultimage(cla);
             break;
           case OP_HELP:
-            
+            if(cl->gamehelp) ParseError("Duplicate (Help) block\n");
+            cl->gamehelp=class_def_help();
             break;
           case OP_EDITORHELP:
-            
+            if(cl->edithelp) ParseError("Duplicate (EditorHelp) block\n");
+            cl->edithelp=class_def_help();
             break;
           case OP_HEIGHT:
             cl->height=class_def_number();
@@ -1336,7 +1457,7 @@ static void class_definition(int cla) {
       ParseError("Invalid directly inside of a class definition\n");
     }
   }
-  end_label_stack(classes[0]->codes,hash);
+  end_label_stack(cl->codes,hash);
   if(!cl->nimages) cl->oflags|=OF_INVISIBLE;
   if(main_options['C']) dump_class(cla,ptr,hash);
   if(main_options['H']) {

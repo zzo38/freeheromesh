@@ -30,9 +30,9 @@ static const char schema[]=
   "PRAGMA APPLICATION_ID(1296388936);"
   "PRAGMA RECURSIVE_TRIGGERS(1);"
   "CREATE TABLE IF NOT EXISTS `USERCACHEINDEX`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `TIME` INT);"
-  "CREATE TABLE IF NOT EXISTS `USERCACHEDATA`(`ID` INTEGER PRIMARY KEY, `FILE` INT, `LEVEL` INT, `NAME` TEXT, `OFFSET` INT, `DATA` BLOB, `USERSTATE` BLOB);"
+  "CREATE TABLE IF NOT EXISTS `USERCACHEDATA`(`ID` INTEGER PRIMARY KEY, `FILE` INT, `LEVEL` INT, `NAME` TEXT COLLATE NOCASE, `OFFSET` INT, `DATA` BLOB, `USERSTATE` BLOB);"
   "CREATE UNIQUE INDEX IF NOT EXISTS `USERCACHEDATA_I1` ON `USERCACHEDATA`(`FILE`, `LEVEL`);"
-  "CREATE TEMPORARY TABLE `PICTURES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `OFFSET` INT);"
+  "CREATE TEMPORARY TABLE `PICTURES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT COLLATE NOCASE, `OFFSET` INT);"
   "CREATE TEMPORARY TABLE `VARIABLES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT);"
   "COMMIT;"
 ;
@@ -190,6 +190,10 @@ void write_lump(int sol,int lvl,long sz,const unsigned char*data) {
   while((e=sqlite3_step(st))==SQLITE_ROW);
   if(e!=SQLITE_DONE) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
   sqlite3_finalize(st);
+}
+
+static void flush_usercache(void) {
+  
 }
 
 static void init_usercache(void) {
@@ -445,6 +449,53 @@ keytest:
   }
 }
 
+static void do_sql_mode(void) {
+  int m=sqlite3_limit(userdb,SQLITE_LIMIT_SQL_LENGTH,-1);
+  char*txt=malloc(m);
+  int n=0;
+  int c;
+  int bail=1;
+  if(m>1000000) m=1000000;
+  txt=malloc(m+2);
+  if(!txt) fatal("Allocation failed\n");
+  for(;;) {
+    c=fgetc(stdin);
+    if(c=='\n' || c==EOF) {
+      if(!n) continue;
+      if(*txt=='#') {
+        n=0;
+      } else if(*txt=='.') {
+        txt[n]=0;
+        n=0;
+        switch(txt[1]) {
+          case 'b': bail=strtol(txt+2,0,0); break;
+          case 'f': sqlite3_db_cacheflush(userdb); sqlite3_db_release_memory(userdb); break;
+          case 'i': puts(sqlite3_db_filename(userdb,"main")); break;
+          case 'q': exit(0); break;
+          case 'u': flush_usercache(); break;
+          case 'x': sqlite3_enable_load_extension(userdb,strtol(txt+2,0,0)); break;
+          default: fatal("Invalid dot command .%c\n",txt[1]);
+        }
+      } else {
+        txt[n]=0;
+        if(sqlite3_complete(txt)) {
+          n=sqlite3_exec(userdb,txt,test_sql_callback,0,0);
+          if(bail && n) fatal("SQL error (%d): %s\n",n,sqlite3_errmsg(userdb));
+          n=0;
+        } else {
+          txt[n++]='\n';
+        }
+      }
+      if(c==EOF) break;
+    } else {
+      txt[n++]=c;
+    }
+    if(n>=m) fatal("Too long SQL statement\n");
+  }
+  if(n) fatal("Unterminated SQL statement\n");
+  free(txt);
+}
+
 int main(int argc,char**argv) {
   int optind=1;
   while(argc>optind && argv[optind][0]=='-') {
@@ -483,6 +534,11 @@ int main(int argc,char**argv) {
   }
   init_usercache();
   load_classes();
+  if(main_options['x']) {
+    fprintf(stderr,"Ready for executing SQL statements.\n");
+    do_sql_mode();
+    return 0;
+  }
   
   return 0;
 }

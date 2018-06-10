@@ -291,6 +291,8 @@
 #define OP_INTMOVE_CD 43141
 #define OP_JUMPTO 32902
 #define OP_JUMPTO_C 34950
+#define OP_JUMPTO_D 41094
+#define OP_JUMPTO_CD 43142
 #define OP_LOC 32903
 #define OP_LOC_C 34951
 #define OP_LOCATEME 32904
@@ -440,7 +442,7 @@ static const Op_Names op_names[]={
 {"Invisible",8618074},
 {"JAYAYAYNG",8389416},
 {"JUMPED",8389128},
-{"JumpTo",8487046},
+{"JumpTo",10584198},
 {"KEWEL",8389422},
 {"KEY",8389129},
 {"KLECK",8389387},

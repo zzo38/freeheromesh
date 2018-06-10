@@ -201,7 +201,7 @@ GetInventory
 HeightAt
 IgnoreKey
 .,IntMove ; move without initializing Inertia
-,JumpTo
+.,JumpTo
 ,Loc ; same as: Xloc Yloc
 LocateMe
 LoseLevel

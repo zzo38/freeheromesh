@@ -283,6 +283,7 @@ nomore1:
   }
   if(!curpic) fatal("Allocation failed\n");
   picture_size=decide_picture_size(nwantsize,wantsize,havesize,n);
+  if(main_options['x']) goto done;
   if(sqlite3_prepare_v2(userdb,"SELECT `ID`, `OFFSET` FROM `PICTURES`;",-1,&st,0))
    fatal("Unable to prepare SQL statement while loading pictures: %s\n",sqlite3_errmsg(userdb));
   optionquery[1]=Q_screenFlags;
@@ -300,12 +301,14 @@ nomore1:
   fclose(fp);
   sqlite3_exec(userdb,"COMMIT;",0,0,0);
   SDL_SetColorKey(picts,SDL_SRCCOLORKEY|SDL_RLEACCEL,0);
+done:
   fprintf(stderr,"Done\n");
 }
 
 void init_screen(void) {
   const char*v;
   int w,h,i;
+  if(main_options['x']) return;
   optionquery[1]=Q_screenWidth;
   w=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"800",0,10);
   optionquery[1]=Q_screenHeight;
