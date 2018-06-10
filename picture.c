@@ -231,7 +231,7 @@ void load_pictures(void) {
     wantsize[nwantsize++]=i;
     v+=j;
   }
-  sqlite3_exec(userdb,"BEGIN;",0,0,0);
+  if(n=sqlite3_exec(userdb,"BEGIN;",0,0,0)) fatal("SQL error (%d): %s\n",n,sqlite3_errmsg(userdb));
   if(sqlite3_prepare_v2(userdb,"INSERT INTO `PICTURES`(`ID`,`NAME`,`OFFSET`) VALUES(?1,?2,?3);",-1,&st,0))
    fatal("Unable to prepare SQL statement while loading pictures: %s\n",sqlite3_errmsg(userdb));
   nam=malloc(256);
@@ -299,9 +299,9 @@ nomore1:
   }
   sqlite3_finalize(st);
   fclose(fp);
-  sqlite3_exec(userdb,"COMMIT;",0,0,0);
   SDL_SetColorKey(picts,SDL_SRCCOLORKEY|SDL_RLEACCEL,0);
 done:
+  if(n=sqlite3_exec(userdb,"COMMIT;",0,0,0)) fatal("SQL error (%d): %s\n",n,sqlite3_errmsg(userdb));
   fprintf(stderr,"Done\n");
 }
 

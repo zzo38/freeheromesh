@@ -75,7 +75,6 @@ static sqlite3_int64 reset_usercache(FILE*fp,const char*nam,struct stat*stats,co
   sqlite3_int64 t,id;
   char buf[128];
   int i,z;
-  if(z=sqlite3_exec(userdb,"BEGIN;",0,0,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   if(z=sqlite3_prepare_v2(userdb,"DELETE FROM `USERCACHEDATA` WHERE `FILE` = (SELECT `ID` FROM `USERCACHEINDEX` WHERE `NAME` = ?1);",-1,&st,0)) {
     fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   }
@@ -136,7 +135,6 @@ static sqlite3_int64 reset_usercache(FILE*fp,const char*nam,struct stat*stats,co
   }
   done:
   sqlite3_finalize(st);
-  if(z=sqlite3_exec(userdb,"COMMIT;",0,0,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   return id;
 }
 
@@ -205,6 +203,7 @@ static void init_usercache(void) {
   char*nam3;
   struct stat fst;
   fprintf(stderr,"Initializing user cache...\n");
+  if(z=sqlite3_exec(userdb,"BEGIN;",0,0,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   if(z=sqlite3_prepare_v2(userdb,"SELECT `ID`, `TIME` FROM `USERCACHEINDEX` WHERE `NAME` = ?1;",-1,&st,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   nam1=sqlite3_mprintf("%s.level",basefilename);
   if(!nam1) fatal("Allocation failed\n");
@@ -254,6 +253,7 @@ static void init_usercache(void) {
   if(z=sqlite3_prepare_v3(userdb,"SELECT * FROM `USERCACHEDATA` WHERE `FILE` = ?1 AND `LEVEL` = ?2;",-1,SQLITE_PREPARE_PERSISTENT,&readusercachest,0)) {
     fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   }
+  if(z=sqlite3_exec(userdb,"COMMIT;",0,0,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   fprintf(stderr,"Done\n");
 }
 
