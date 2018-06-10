@@ -1,5 +1,5 @@
 #if 0
-gcc ${CFLAGS:--s -O2} -o ${EXE:-~/bin/heromesh} main.c class.o picture.o bindings.o smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread
+gcc ${CFLAGS:--s -O2} -o ${EXE:-~/bin/heromesh} main.c class.o picture.o bindings.o function.o smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread
 exit
 #endif
 
@@ -312,6 +312,7 @@ static void init_sql(void) {
   optionquery[1]=Q_sqlInit;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
   if(v && sqlite3_exec(userdb,v,0,0,&s)) fatal("Failed to execute user-defined SQL statements (%s)\n",s?:"unknown error");
+  init_sql_functions(&leveluc,&solutionuc);
 }
 
 void set_cursor(int id) {

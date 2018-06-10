@@ -122,3 +122,7 @@ typedef struct {
 void load_key_bindings(void);
 const UserCommand*find_key_binding(SDL_Event*ev,int editing);
 
+// == function ==
+
+void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1);
+
