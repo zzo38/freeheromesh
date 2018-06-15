@@ -30,6 +30,7 @@ typedef struct {
 #define MVALUE(x) UVALUE(x,TY_MESSAGE)
 #define ZVALUE(x) UVALUE(x,TY_STRING)
 
+#define N_MESSAGES 23
 extern const char*const standard_message_names[];
 extern const char*const standard_sound_names[];
 extern const char*const heromesh_key_names[256];
@@ -40,6 +41,7 @@ extern const char*basefilename;
 extern xrm_quark optionquery[16];
 extern Uint32 generation_number;
 extern char main_options[128];
+extern Uint8 message_trace[0x4100/8];
 
 unsigned char*read_lump(int sol,int lvl,long*sz,sqlite3_value**us);
 void write_lump(int sol,int lvl,long sz,const unsigned char*data);
