@@ -50,26 +50,7 @@ static SDL_Cursor*cursor[77];
 static FILE*levelfp;
 static FILE*solutionfp;
 static sqlite3_int64 leveluc,solutionuc;
-static FILE*hamarc_fp;
-static long hamarc_pos;
 static sqlite3_stmt*readusercachest;
-
-static void hamarc_begin(FILE*fp,const char*name) {
-  while(*name) fputc(*name++,fp);
-  fwrite("\0\0\0\0",1,5,hamarc_fp=fp);
-  hamarc_pos=ftell(fp);
-}
-
-static long hamarc_end(void) {
-  long end=ftell(hamarc_fp);
-  long len=end-hamarc_pos;
-  fseek(hamarc_fp,hamarc_pos-4,SEEK_SET);
-  fputc(len>>16,hamarc_fp);
-  fputc(len>>24,hamarc_fp);
-  fputc(len>>0,hamarc_fp);
-  fputc(len>>8,hamarc_fp);
-  fseek(hamarc_fp,end,SEEK_SET);
-}
 
 static sqlite3_int64 reset_usercache(FILE*fp,const char*nam,struct stat*stats,const char*suffix) {
   sqlite3_stmt*st;
@@ -191,8 +172,94 @@ void write_lump(int sol,int lvl,long sz,const unsigned char*data) {
   sqlite3_finalize(st);
 }
 
+static void flush_usercache_1(int sol) {
+  sqlite3_int64 uc_id=sol?solutionuc:leveluc;
+  FILE*fp=sol?solutionfp:levelfp;
+  int fd=fileno(fp);
+  sqlite3_stmt*st;
+  sqlite3_int64 of,of2;
+  sqlite3_int64*ofs;
+  int e,i,j,c;
+  if(fd<0) fatal("Unable to flush user cache. Expected file descriptor number; found %d\n",fd);
+  if(e=sqlite3_prepare_v2(userdb,"SELECT `OFFSET`, `OFFSET`-LENGTH(`NAME`)-5 FROM `USERCACHEDATA` WHERE `FILE` = ?1 AND `DATA` NOT NULL ORDER BY `OFFSET` LIMIT 1;",-1,&st,0))
+   fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  sqlite3_bind_int64(st,1,uc_id);
+  e=sqlite3_step(st);
+  if(e==SQLITE_ROW) {
+    of=sqlite3_column_int64(st,0);
+    of2=sqlite3_column_int64(st,1);
+  } else if(e==SQLITE_DONE) {
+    // There is nothing to do; nothing has been changed.
+    sqlite3_finalize(st);
+    return;
+  } else {
+    fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  }
+  sqlite3_finalize(st);
+  if(e=sqlite3_prepare_v2(userdb,"UPDATE `USERCACHEDATA` SET `DATA` = READ_LUMP_AT(`OFFSET`,?2) WHERE `FILE` = ?1 AND `OFFSET` > ?3 AND `DATA` IS NULL;",-1,&st,0))
+   fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  sqlite3_bind_int64(st,1,uc_id);
+  sqlite3_bind_pointer(st,2,fp,"http://zzo38computer.org/fossil/heromesh.ui#FILE_ptr",0);
+  sqlite3_bind_int64(st,3,of);
+  while((e=sqlite3_step(st))==SQLITE_ROW);
+  if(e!=SQLITE_DONE) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  sqlite3_finalize(st);
+  if(e=sqlite3_prepare_v2(userdb,"SELECT COUNT() FROM `USERCACHEDATA` WHERE `FILE` = ?1 AND `DATA` NOT NULL;",-1,&st,0)) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  sqlite3_bind_int64(st,1,uc_id);
+  if((e=sqlite3_step(st))!=SQLITE_ROW) fatal("SQL error (%d): %s\n",e,e==SQLITE_DONE?"Expected a result row; got nothing":sqlite3_errmsg(userdb));
+  ofs=malloc((c=sqlite3_column_int(st,0)<<1)*sizeof(sqlite3_int64));
+  sqlite3_finalize(st);
+  if(c<=0) fatal("Unexpected error: COUNT() returned zero or negative even though there used to be some data\n");
+  if(!ofs) fatal("Allocation failed\n");
+  if(e=sqlite3_prepare_v2(userdb,"SELECT `ID`, `NAME`, `DATA` FROM `USERCACHEDATA` WHERE `FILE` = ?1 AND `DATA` NOT NULL ORDER BY `ID`;",-1,&st,0))
+   fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  sqlite3_bind_int64(st,1,uc_id);
+  rewind(fp);
+  fseek(fp,of2,SEEK_SET);
+  i=0;
+  while((e=sqlite3_step(st))==SQLITE_ROW) {
+    ofs[i++]=sqlite3_column_int64(st,0);
+    if(sqlite3_column_type(st,1)!=SQLITE_TEXT || sqlite3_column_type(st,2)!=SQLITE_BLOB) fatal("Corrupted user cache database (NAME and DATA columns have wrong types)\n");
+    fwrite(sqlite3_column_text(st,1),1,sqlite3_column_bytes(st,1)+1,fp);
+    j=sqlite3_column_bytes(st,2);
+    fputc(j>>16,fp); fputc(j>>24,fp); fputc(j,fp); fputc(j>>8,fp);
+    ofs[i++]=ftell(fp);
+    fwrite(sqlite3_column_blob(st,2),1,j,fp);
+  }
+  if(e!=SQLITE_DONE) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  if(ftruncate(fd,ftell(fp))) fatal("I/O error: %m\n");
+  sqlite3_finalize(st);
+  if(e=sqlite3_prepare_v2(userdb,"UPDATE `USERCACHEDATA` SET `OFFSET` = ?2 WHERE `ID` = ?1;",-1,&st,0)) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  i=0;
+  while(i<c) {
+    sqlite3_reset(st);
+    sqlite3_bind_int64(st,1,ofs[i++]);
+    sqlite3_bind_int64(st,2,ofs[i++]);
+    while((e=sqlite3_step(st))==SQLITE_ROW);
+    if(e!=SQLITE_DONE) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  }
+  sqlite3_finalize(st);
+  free(ofs);
+  if(e=sqlite3_prepare_v2(userdb,"UPDATE `USERCACHEDATA` SET `DATA` = NULL WHERE `FILE` = ?1;",-1,&st,0)) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  sqlite3_bind_int64(st,1,uc_id);
+  while((e=sqlite3_step(st))==SQLITE_ROW);
+  if(e!=SQLITE_DONE) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  sqlite3_finalize(st);
+  if(e=sqlite3_prepare_v2(userdb,"UPDATE `USERCACHEINDEX` SET `TIME` = STRFTIME('%s')+1 WHERE `ID` = ?1;",-1,&st,0)) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  sqlite3_bind_int64(st,1,uc_id);
+  while((e=sqlite3_step(st))==SQLITE_ROW);
+  if(e!=SQLITE_DONE) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  sqlite3_finalize(st);
+}
+
 static void flush_usercache(void) {
-  
+  int e;
+  fprintf(stderr,"Flushing user cache...\n");
+  if(e=sqlite3_exec(userdb,"BEGIN;",0,0,0)) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  flush_usercache_1(FIL_LEVEL);
+  flush_usercache_1(FIL_SOLUTION);
+  if(e=sqlite3_exec(userdb,"COMMIT;",0,0,0)) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  fprintf(stderr,"Done\n");
 }
 
 static void init_usercache(void) {

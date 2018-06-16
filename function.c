@@ -33,6 +33,25 @@ static void fn_picture_size(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_result_int(cxt,picture_size);
 }
 
+static void fn_read_lump_at(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  sqlite3_int64 of=sqlite3_value_int64(argv[0]);
+  FILE*fp=sqlite3_value_pointer(argv[1],"http://zzo38computer.org/fossil/heromesh.ui#FILE_ptr");
+  long sz;
+  Uint8*buf;
+  if(!fp) return;
+  rewind(fp);
+  fseek(fp,of-4,SEEK_SET);
+  sz=fgetc(fp)<<16; sz|=fgetc(fp)<<24; sz|=fgetc(fp); sz|=fgetc(fp)<<8;
+  if(sz>0) {
+    buf=malloc(sz);
+    if(!buf) fatal("Allocation failed\n");
+    if(fread(buf,1,sz,fp)<=0) fatal("I/O error in READ_LUMP_AT() function\n");
+    sqlite3_result_blob64(cxt,buf,sz,free);
+  } else {
+    sqlite3_result_zeroblob64(cxt,0);
+  }
+}
+
 static void fn_resource(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   int i;
   if(argc>14 || argc<1) {
@@ -188,6 +207,7 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"LEVEL_CACHEID",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,ptr0,fn_cacheid,0,0);
   sqlite3_create_function(userdb,"MODSTATE",0,SQLITE_UTF8,0,fn_modstate,0,0);
   sqlite3_create_function(userdb,"PICTURE_SIZE",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_picture_size,0,0);
+  sqlite3_create_function(userdb,"READ_LUMP_AT",2,SQLITE_UTF8,0,fn_read_lump_at,0,0);
   sqlite3_create_function(userdb,"RESOURCE",-1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_resource,0,0);
   sqlite3_create_function(userdb,"SIGN_EXTEND",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_sign_extend,0,0);
   sqlite3_create_function(userdb,"SOLUTION_CACHEID",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,ptr1,fn_cacheid,0,0);
