@@ -1,6 +1,6 @@
 #!/bin/bash --
 test -f CFLAGS || echo xxx > CFLAGS
-test "xx$CFLAGS" = "x`cat CFLAGS`" || rm bindings.o class.o picture.o function.o
+test "xx$CFLAGS" = "x`cat CFLAGS`" || rm bindings.o class.o picture.o function.o exec.o
 echo "x$CFLAGS" > CFLAGS
 test "x$EXE" = "x" && EXE=~/bin/heromesh
 test instruc -nt instruc.h && node instruc.js > instruc.h
@@ -8,7 +8,7 @@ test instruc.js -nt instruc.h && node instruc.js > instruc.h
 test names.js -nt names.h && node names.js > names.h
 test quarks -nt quarks.h && node quarks.js > quarks.h
 test quarks.js -nt quarks.h && node quarks.js > quarks.h
-test heromesh.h -nt "$EXE" && rm bindings.o class.o picture.o function.o
+test heromesh.h -nt "$EXE" && rm bindings.o class.o picture.o function.o exec.o
 test instruc.h -nt "$EXE" && rm class.o
 test pcfont.h -nt "$EXE" && rm picture.o
 test quarks.h -nt "$EXE" && rm bindings.o picture.o
@@ -16,4 +16,5 @@ test bindings.c -nt bindings.o && bash bindings.c
 test class.c -nt class.o && bash class.c
 test function.c -nt function.o && bash function.c
 test picture.c -nt picture.o && bash picture.c
+test exec.c -nt exec.o && bash exec.c
 bash main.c

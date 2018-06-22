@@ -41,7 +41,6 @@ sqlite3*userdb;
 xrm_db*resourcedb;
 const char*basefilename;
 xrm_quark optionquery[16];
-Uint32 generation_number;
 char main_options[128];
 Uint8 message_trace[0x4100/8];
 

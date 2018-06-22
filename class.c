@@ -37,7 +37,6 @@ typedef struct {
 #include "instruc.h"
 #define Tokenf(x) (tokent&(x))
 
-Value globals[0x800];
 Value initglobals[0x800];
 Class*classes[0x4000];
 const char*messages[0x4000];
@@ -339,6 +338,14 @@ static void nxttok1(void) {
     tokenv=macstack->tok->v;
     *tokenstr=0;
     if(macstack->tok->str) strcpy(tokenstr,macstack->tok->str);
+    if(main_options['M']) {
+      printf("M* Macro %04X %08X \"",tokent,tokenv);
+      for(i=0;tokenstr[i];i++) {
+        if(tokenstr[i]<32 || tokenstr[i]>126) printf("<%02X>",tokenstr[i]&255);
+        else putchar(tokenstr[i]);
+      }
+      printf("\"\n");
+    }
     if(tokent==TF_MACRO+TF_INT && macstack->n>=0) {
       if(tokenv&~0xFF) {
         tokenv-=0x100;
@@ -355,6 +362,7 @@ static void nxttok1(void) {
       free(macstack->args);
       free(macstack);
       macstack=ms;
+      if(main_options['M']) printf("M.\n");
     }
     if(pr) {
       if(tl) {
@@ -366,6 +374,7 @@ static void nxttok1(void) {
         ms->next=macstack;
         macstack=ms;
       }
+      if(main_options['M']) printf("M^ %d\n",tl?1:0);
       goto magain;
     }
     return;
@@ -581,6 +590,15 @@ static void begin_macro(TokenList*mac) {
   for(;;) {
     nxttok1();
     if(tokent&TF_EOF) ParseError("Unexpected end of file in macro argument\n");
+    if(main_options['M']) {
+      int i;
+      printf("M= %c%4d %04X %08X \"",b?'|':a?'^':' ',ms->n,tokent,tokenv);
+      for(i=0;tokenstr[i];i++) {
+        if(tokenstr[i]<32 || tokenstr[i]>126) printf("<%02X>",tokenstr[i]&255);
+        else putchar(tokenstr[i]);
+      }
+      printf("\"\n");
+    }
     if(tokent&TF_OPEN) {
       ++a;
       if(tokent&TF_MACRO) ++c;
@@ -638,6 +656,7 @@ static void nxttok(void) {
     char*s;
     if(tokent&TF_OPEN) {
       call:
+      if(main_options['M']) printf("M+ {%s}\n",glohash[tokenv].txt);
       switch(glohash[tokenv].id) {
         case 0xC000 ... MAX_MACRO+0xC000-1:
           begin_macro(macros[glohash[tokenv].id-0xC000]);
@@ -816,6 +835,7 @@ static void nxttok(void) {
         default:
           ParseError("Strange macro token: 0x%04X\n",glohash[tokenv].id);
       }
+      if(main_options['M']) printf("M-\n");
     }
   }
 }

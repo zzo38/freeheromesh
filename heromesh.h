@@ -39,7 +39,6 @@ extern sqlite3*userdb;
 extern xrm_db*resourcedb;
 extern const char*basefilename;
 extern xrm_quark optionquery[16];
-extern Uint32 generation_number;
 extern char main_options[128];
 extern Uint8 message_trace[0x4100/8];
 
@@ -97,7 +96,6 @@ typedef struct {
   Uint8 cflags,shape,shovable,collisionLayers,nimages;
 } Class;
 
-extern Value globals[0x800];
 extern Value initglobals[0x800];
 extern Class*classes[0x4000]; // 0 isn't a real class
 extern const char*messages[0x4000]; // index is 256 less than message number
@@ -127,4 +125,26 @@ const UserCommand*find_key_binding(SDL_Event*ev,int editing);
 // == function ==
 
 void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1);
+
+// == exec ==
+
+// The following "internal object flags" are part of the "dir" variable:
+#define IOF_DEAD 0x10 // object doesn't exist, except to continue an animation
+#define IOF_ANIM 0x20 // an animation is being displayed
+
+typedef struct {
+  Sint32 height,weight,climb,density,volume,strength,arrivals,departures,temperature;
+  Uint32 arrived,departed,arrived2,departed2,generation,up;
+  Uint16 class,oflags;
+  Uint16 sharp[4];
+  Uint16 hard[4];
+  Uint8 x,y,shape,shovable,image,dir;
+  Value misc1,misc2,misc3,misc4,misc5,misc6,misc7;
+  Value uservars[0];
+} Object;
+
+extern Uint32 generation_number;
+extern Object*objects;
+extern Uint32 nobjects;
+extern Value globals[0x800];
 
