@@ -4,6 +4,7 @@ exit
 #endif
 
 #include "SDL.h"
+#include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,3 +17,11 @@ Object*objects;
 Uint32 nobjects;
 Value globals[0x800];
 
+static jmp_buf my_env;
+static int my_error;
+
+int execute_turn(int key) {
+  if(setjmp(my_env)) return my_error;
+  
+  return 0;
+}

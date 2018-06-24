@@ -639,6 +639,7 @@ static void nxttok(void) {
     pushback=0;
     return;
   }
+  if(StackProtection()) fatal("Stack overflow\n");
   again:
   nxttok1();
   if(tokent&TF_EOF) {

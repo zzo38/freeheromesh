@@ -42,6 +42,25 @@ extern xrm_quark optionquery[16];
 extern char main_options[128];
 extern Uint8 message_trace[0x4100/8];
 
+#ifdef __GNUC__
+extern char stack_protect_mode;
+extern void*stack_protect_mark;
+extern void*stack_protect_low;
+extern void*stack_protect_high;
+#define StackProtection() (stack_protect_mode && ( \
+  stack_protect_mode=='<' ? (__builtin_frame_address(0)<stack_protect_mark) : \
+  stack_protect_mode=='>' ? (__builtin_frame_address(0)>stack_protect_mark) : \
+  stack_protect_mode=='?' ? ({ \
+    if(__builtin_frame_address(0)<stack_protect_low) stack_protect_low=__builtin_frame_address(0); \
+    if(__builtin_frame_address(0)>stack_protect_high) stack_protect_high=__builtin_frame_address(0); \
+    0; \
+  }) : \
+  stack_protect_mode=='!' ? 1 : \
+0))
+#else
+#define StackProtection() 0
+#endif
+
 unsigned char*read_lump(int sol,int lvl,long*sz,sqlite3_value**us);
 void write_lump(int sol,int lvl,long sz,const unsigned char*data);
 void set_cursor(int id);

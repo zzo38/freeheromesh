@@ -44,6 +44,13 @@ xrm_quark optionquery[16];
 char main_options[128];
 Uint8 message_trace[0x4100/8];
 
+#ifdef __GNUC__
+char stack_protect_mode=0;
+void*stack_protect_mark;
+void*stack_protect_low;
+void*stack_protect_high;
+#endif
+
 static const char*globalclassname;
 static SDL_Cursor*cursor[77];
 static FILE*levelfp;
@@ -564,6 +571,26 @@ static void do_sql_mode(void) {
   free(txt);
 }
 
+#ifdef __GNUC__
+static void test_stack_protection(void) {
+  fprintf(stderr,"Stack protection final values: %p %p %p\n",stack_protect_mark,stack_protect_low,stack_protect_high);
+}
+
+static void set_stack_protection(void) {
+  const char*v;
+  optionquery[1]=Q_stackProtection;
+  v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
+  if(!v || !*v) return;
+  stack_protect_mode=*v;
+  if(*v=='?') {
+    fprintf(stderr,"Stack protection test mode: %p\n",stack_protect_mark);
+    stack_protect_low=stack_protect_high=stack_protect_mark;
+    atexit(test_stack_protection);
+  }
+  if(v[1]) stack_protect_mark=((char*)stack_protect_mark)+strtoll(v+1,0,0);
+}
+#endif
+
 int main(int argc,char**argv) {
   int optind=1;
   while(argc>optind && argv[optind][0]=='-') {
@@ -585,13 +612,17 @@ int main(int argc,char**argv) {
     globalclassname=strrchr(basefilename,'/');
     globalclassname=globalclassname?globalclassname+1:basefilename;
   }
+  if(!main_options['c']) load_options();
+  if(argc>optind) read_options(argc-optind,argv+optind);
+  *optionquery=xrm_make_quark(globalclassname,0)?:xrm_anyq;
+#ifdef __GNUC__
+  stack_protect_mark=__builtin_frame_address(0);
+  set_stack_protection();
+#endif
   if(main_options['c']) {
     load_classes();
     return 0;
   }
-  load_options();
-  if(argc>optind) read_options(argc-optind,argv+optind);
-  *optionquery=xrm_make_quark(globalclassname,0)?:xrm_anyq;
   init_sql();
   load_key_bindings();
   init_screen();
