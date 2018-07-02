@@ -29,6 +29,7 @@ typedef struct {
 #define CVALUE(x) UVALUE(x,TY_CLASS)
 #define MVALUE(x) UVALUE(x,TY_MESSAGE)
 #define ZVALUE(x) UVALUE(x,TY_STRING)
+#define OVALUE(x) UVALUE(x,objects[x]->generation)
 
 #define N_MESSAGES 23
 extern const char*const standard_message_names[];
@@ -147,13 +148,16 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1);
 
 // == exec ==
 
+#define VOIDLINK ((Uint32)(-1))
+
 // The following "internal object flags" are part of the "dir" variable:
 #define IOF_DEAD 0x10 // object doesn't exist, except to continue an animation
 #define IOF_ANIM 0x20 // an animation is being displayed
 
 typedef struct {
   Sint32 height,weight,climb,density,volume,strength,arrivals,departures,temperature;
-  Uint32 arrived,departed,arrived2,departed2,generation,up;
+  Uint32 arrived,departed,arrived2,departed2,generation;
+  Uint32 up,down,prev,next; // links to other objects
   Uint16 class,oflags;
   Uint16 sharp[4];
   Uint16 hard[4];
@@ -163,7 +167,15 @@ typedef struct {
 } Object;
 
 extern Uint32 generation_number;
-extern Object*objects;
+extern Object**objects;
 extern Uint32 nobjects;
 extern Value globals[0x800];
+extern Uint32 firstobj,lastobj;
+extern Uint32 playfield[64*64];
+
+void pfunlink(Uint32 n);
+void pflink(Uint32 n);
+Uint32 objalloc(Uint16 c);
+void annihilate(void);
+const char*execute_turn(int key);
 
