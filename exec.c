@@ -11,6 +11,7 @@ exit
 #include "sqlite3.h"
 #include "smallxrm.h"
 #include "heromesh.h"
+#include "instruc.h"
 
 Uint32 generation_number;
 Object**objects;
@@ -114,7 +115,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
 
 static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2,Value arg3) {
   MessageVars saved=msgvars;
-  Uint16 c=classes[objects[to]->class];
+  Uint16 c=objects[to]->class;
   Uint16 p=get_message_ptr(c,msg);
   Uint16*code;
   if(p==0xFFFF) {
@@ -125,7 +126,7 @@ static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2
     code=classes[c]->codes;
   }
   
-  msgvars={msg,from,arg1,arg2,arg3};
+  msgvars=(MessageVars){msg,from,arg1,arg2,arg3};
   execute_program(code,p,to);
   msgvars=saved;
   
