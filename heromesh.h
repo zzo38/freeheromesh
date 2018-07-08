@@ -75,9 +75,11 @@ void set_cursor(int id);
 
 extern SDL_Surface*screen;
 extern Uint16 picture_size;
+extern int left_margin;
 
 void draw_picture(int x,int y,Uint16 img);
 void draw_text(int x,int y,const unsigned char*t,int bg,int fg);
+void draw_cell(int x,int y);
 void load_pictures(void);
 
 // == class ==
@@ -172,6 +174,7 @@ extern Uint32 nobjects;
 extern Value globals[0x800];
 extern Uint32 firstobj,lastobj;
 extern Uint32 playfield[64*64];
+Uint8 pfwidth,pfheight;
 
 void pfunlink(Uint32 n);
 void pflink(Uint32 n);

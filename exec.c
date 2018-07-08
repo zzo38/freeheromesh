@@ -20,6 +20,7 @@ Value globals[0x800];
 Uint32 firstobj=VOIDLINK;
 Uint32 lastobj=VOIDLINK;
 Uint32 playfield[64*64];
+Uint8 pfwidth,pfheight;
 
 typedef struct {
   Uint16 msg;

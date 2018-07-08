@@ -1,5 +1,5 @@
 #if 0
-gcc ${CFLAGS:--s -O2} -o ${EXE:-~/bin/heromesh} main.c class.o picture.o bindings.o function.o smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread
+gcc ${CFLAGS:--s -O2} -o ${EXE:-~/bin/heromesh} main.c class.o picture.o bindings.o function.o exec.o smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread
 exit
 #endif
 

@@ -5,6 +5,7 @@
 ! Graphics/screen
 screenWidth
 screenHeight
+margin
 palette
 popupColors
 imageSize

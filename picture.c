@@ -21,6 +21,7 @@ exit
 
 SDL_Surface*screen;
 Uint16 picture_size;
+int left_margin;
 
 static SDL_Surface*picts;
 static Uint8*curpic;
@@ -87,6 +88,23 @@ void draw_picture(int x,int y,Uint16 img) {
   SDL_Rect src={(img&15)*picture_size,(img>>4)*picture_size,picture_size,picture_size};
   SDL_Rect dst={x,y,picture_size,picture_size};
   SDL_BlitSurface(picts,&src,screen,&dst);
+}
+
+void draw_cell(int x,int y) {
+  // To be called only when screen is unlocked!
+  Uint32 o;
+  Class*c;
+  SDL_Rect dst={x,y,picture_size,picture_size};
+  if(x<1 || x>64 || y<1 || y>64) return;
+  SDL_FillRect(screen,&dst,back_color);
+  o=playfield[y*64+x+65];
+  while(o!=VOIDLINK) {
+    if(!(objects[o]->oflags&OF_INVISIBLE)) {
+      c=classes[objects[o]->class];
+      if(objects[o]->image<c->nimages) draw_picture(x*picture_size+left_margin,y*picture_size,c->images[objects[o]->image]&0x7FFF);
+    }
+    o=objects[o]->up;
+  }
 }
 
 void draw_text(int x,int y,const unsigned char*t,int bg,int fg) {
@@ -338,4 +356,6 @@ void init_screen(void) {
   } else {
     SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY,SDL_DEFAULT_REPEAT_INTERVAL);
   }
+  optionquery[1]=Q_margin;
+  left_margin=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"65",0,10);
 }
