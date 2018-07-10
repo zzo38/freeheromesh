@@ -586,6 +586,9 @@ static void set_stack_protection(void) {
     fprintf(stderr,"Stack protection test mode: %p\n",stack_protect_mark);
     stack_protect_low=stack_protect_high=stack_protect_mark;
     atexit(test_stack_protection);
+  } else if(*v=='H') {
+    v=malloc(strtoll(v+1,0,0));
+    fatal("%p %p :: %lld\n",v,stack_protect_mark,(long long)(((char*)stack_protect_mark)-v));
   }
   if(v[1]) stack_protect_mark=((char*)stack_protect_mark)+strtoll(v+1,0,0);
 }
@@ -638,6 +641,7 @@ int main(int argc,char**argv) {
     do_sql_mode();
     return 0;
   }
-  
-  return 0;
+  optionquery[1]=Q_maxObjects;
+  max_objects=strtoll(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,0)?:0xFFFF0000L;
+  return 0; // for(;;) { if(main_options['e']) run_editor(); else run_game(); }
 }

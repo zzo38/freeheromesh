@@ -13,6 +13,7 @@ exit
 #include "heromesh.h"
 #include "instruc.h"
 
+Uint32 max_objects;
 Uint32 generation_number;
 Object**objects;
 Uint32 nobjects;
@@ -64,10 +65,13 @@ void pflink(Uint32 n) {
 
 #define OBJECT_ARRAY_BLOCK 256
 Uint32 objalloc(Uint16 c) {
-  // c must be a valid (nonzero) class number, and not a class with CF_GROUP, CF_NOCLASS1, or CF_NOCLASS2 flags.
+  // Allocates a new object of the given class; links into the event list but not into the playfield.
+  // Does not send any messages or otherwise notify anyone that it has been created.
+  // Returns VOIDLINK if object cannot be created.
   Uint32 n;
   Class*cl=classes[c];
   Object*o=calloc(1,sizeof(Object)+cl->uservars*sizeof(Value));
+  if(!c || !cl || cl->cflags&(CF_GROUP|CF_NOCLASS1|CF_NOCLASS2)) goto bad;
   if(!o) fatal("Allocation failed\n");
   o->class=c;
   o->generation=generation_number;
@@ -85,7 +89,7 @@ Uint32 objalloc(Uint16 c) {
     if(!objects[n]) goto found;
     if(!n) break;
   }
-  if(nobjects>=0xFFFF0000L) fatal("Too many objects\n");
+  if(nobjects>=max_objects) goto bad;
   objects=realloc(objects,(nobjects+OBJECT_ARRAY_BLOCK)*sizeof(Object*));
   if(!objects) fatal("Allocation failed\n");
   for(n=nobjects;n<nobjects+OBJECT_ARRAY_BLOCK;n++) objects[n]=0;
@@ -101,6 +105,9 @@ Uint32 objalloc(Uint16 c) {
   }
   objects[n]=o;
   return n;
+  bad:
+  free(o);
+  return VOIDLINK;
 }
 
 static void execute_program(Uint16*code,int ptr,Uint32 obj) {
