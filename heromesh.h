@@ -102,6 +102,8 @@ void load_pictures(void);
 #define OF_DONE 0x0080
 #define OF_KEYCLEARED 0x0100
 #define OF_DESTROYED 0x0200
+#define OF_TRACEIN 0x4000 // These more properly belong in CF_ but there is room here for them
+#define OF_TRACEOUT 0x8000 // see above
 
 typedef struct {
   const char*name;
