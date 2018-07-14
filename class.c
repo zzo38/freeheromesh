@@ -1274,9 +1274,11 @@ static char*class_def_help(void) {
     if(tokent==TF_CLOSE) break;
     if(!Tokenf(TF_NAME) || tokenv!=OP_STRING) ParseError("String expected\n");
     i=strlen(tokenstr);
-    if(i+n>=0x2FFD) ParseError("Help text is too long\n");
+    if(i+n>=0x2FFA) ParseError("Help text is too long\n");
     strcpy(txt+n,tokenstr);
     n+=i;
+    txt[n++]=10;
+    txt[n]=0;
   }
   if(!n) {
     free(txt);
