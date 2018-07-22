@@ -15,6 +15,7 @@ typedef struct {
   struct sqlite3_vtab_cursor;
   sqlite3_int64 rowid;
   char unique,eof;
+  Uint8 arg[4];
 } Cursor;
 
 static void find_first_usable_image(const Class*cl,sqlite3_context*cxt) {
@@ -88,8 +89,33 @@ static void fn_class_data(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   }
 }
 
+static void fn_cvalue(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  int a;
+  if(sqlite3_value_type(*argv)==SQLITE_NULL) return;
+  a=sqlite3_value_int(*argv)&0xFFFF;
+  sqlite3_result_int64(cxt,a|((sqlite3_int64)TY_CLASS<<32));
+}
+
 static void fn_modstate(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_result_int(cxt,SDL_GetModState());
+}
+
+static void fn_mvalue(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  int a;
+  if(sqlite3_value_type(*argv)==SQLITE_NULL) return;
+  a=sqlite3_value_int(*argv)&0xFFFF;
+  sqlite3_result_int64(cxt,a|((sqlite3_int64)TY_MESSAGE<<32LL));
+}
+
+static void fn_ovalue(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  Uint32 a;
+  if(sqlite3_value_type(*argv)==SQLITE_NULL) {
+    sqlite3_result_int(cxt,0);
+    return;
+  }
+  a=sqlite3_value_int64(*argv)&0xFFFFFFFF;
+  if(a>=nobjects || !objects[a] || (objects[a]->dir&IOF_DEAD)) return; // result is null if object does not exist
+  sqlite3_result_int64(cxt,a|((sqlite3_int64)objects[a]->generation<<32));
 }
 
 static void fn_picture_size(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
@@ -130,6 +156,13 @@ static void fn_sign_extend(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   if(sqlite3_value_type(*argv)==SQLITE_NULL) return;
   a=sqlite3_value_int64(*argv)&0xFFFFFFFF;
   sqlite3_result_int64(cxt,a-(a&0x80000000?0x100000000LL:0));
+}
+
+static void fn_zero_extend(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  sqlite3_int64 a;
+  if(sqlite3_value_type(*argv)==SQLITE_NULL) return;
+  a=sqlite3_value_int64(*argv)&0xFFFFFFFF;
+  sqlite3_result_int64(cxt,a);
 }
 
 static int vt0_close(sqlite3_vtab_cursor*cur) {
@@ -368,17 +401,54 @@ Module(vt_classes,
   .xUpdate=vt1_classes_update,
 );
 
+static int vt1_objects_column(sqlite3_vtab_cursor*pcur,sqlite3_context*cxt,int n) {
+  return SQLITE_OK;
+}
+
+static int vt1_objects_filter(sqlite3_vtab_cursor*pcur,int idxNum,const char*idxStr,int argc,sqlite3_value**argv) {
+  return SQLITE_OK;
+}
+
+static int vt1_objects_index(sqlite3_vtab*vt,sqlite3_index_info*info) {
+  
+  return SQLITE_OK;
+}
+
+static int vt1_objects_next(sqlite3_vtab_cursor*pcur) {
+  return SQLITE_OK;
+}
+
+static int vt1_objects_update(sqlite3_vtab*vt,int argc,sqlite3_value**argv,sqlite3_int64*rowid) {
+  if(!main_options['e']) return SQLITE_LOCKED;
+  return SQLITE_OK;
+}
+
+Module(vt_objects,
+  .xBestIndex=vt1_objects_index,
+  .xColumn=vt1_objects_column,
+  .xFilter=vt1_objects_filter,
+  .xNext=vt1_objects_next,
+  .xUpdate=vt1_objects_update,
+);
+
 void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"BASENAME",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_basename,0,0);
   sqlite3_create_function(userdb,"CLASS_DATA",2,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_class_data,0,0);
   sqlite3_create_function(userdb,"LEVEL_CACHEID",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,ptr0,fn_cacheid,0,0);
   sqlite3_create_function(userdb,"MODSTATE",0,SQLITE_UTF8,0,fn_modstate,0,0);
+  sqlite3_create_function(userdb,"CVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_cvalue,0,0);
+  sqlite3_create_function(userdb,"MVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_mvalue,0,0);
+  sqlite3_create_function(userdb,"NVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_zero_extend,0,0);
+  sqlite3_create_function(userdb,"OVALUE",1,SQLITE_UTF8,0,fn_ovalue,0,0);
   sqlite3_create_function(userdb,"PICTURE_SIZE",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_picture_size,0,0);
   sqlite3_create_function(userdb,"READ_LUMP_AT",2,SQLITE_UTF8,0,fn_read_lump_at,0,0);
   sqlite3_create_function(userdb,"RESOURCE",-1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_resource,0,0);
   sqlite3_create_function(userdb,"SIGN_EXTEND",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_sign_extend,0,0);
   sqlite3_create_function(userdb,"SOLUTION_CACHEID",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,ptr1,fn_cacheid,0,0);
+  sqlite3_create_function(userdb,"ZERO_EXTEND",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_zero_extend,0,0);
   sqlite3_create_module(userdb,"CLASSES",&vt_classes,"CREATE TABLE `CLASSES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `EDITORHELP` TEXT, `HELP` TEXT,"
    "`INPUT` INT, `QUIZ` INT, `TRACEIN` INT, `TRACEOUT` INT, `GROUP` TEXT, `PLAYER` INT);");
   sqlite3_create_module(userdb,"MESSAGES",&vt_messages,"CREATE TABLE `MESSAGES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `TRACE` INT);");
+  sqlite3_create_module(userdb,"OBJECTS",&vt_objects,"CREATE TABLE `OBJECTS`(`ID` INTEGER PRIMARY KEY, `CLASS` INT, `MISC1` INT, `MISC2` INT, `MISC3` INT,"
+   "`IMAGE` INT, `DIR` INT, `X` INT, `Y` INT, `UP` INT, `DOWN` INT, `DENSITY` INT HIDDEN);");
 }
