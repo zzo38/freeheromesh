@@ -66,6 +66,7 @@ void pflink(Uint32 n) {
 #define OBJECT_ARRAY_BLOCK 256
 Uint32 objalloc(Uint16 c) {
   // Allocates a new object of the given class; links into the event list but not into the playfield.
+  // All fields are initialized by the class or to zero.
   // Does not send any messages or otherwise notify anyone that it has been created.
   // Returns VOIDLINK if object cannot be created.
   Uint32 n;
@@ -142,13 +143,13 @@ static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2
 
 void annihilate(void) {
   Uint32 i;
+  for(i=0;i<64*64;i++) playfield[i]=VOIDLINK;
+  firstobj=lastobj=VOIDLINK;
   if(!objects) return;
   for(i=0;i<nobjects;i++) free(objects[i]);
   nobjects=0;
   free(objects);
   objects=0;
-  firstobj=lastobj=VOIDLINK;
-  for(i=0;i<64*64;i++) playfield[i]=VOIDLINK;
 }
 
 const char*execute_turn(int key) {

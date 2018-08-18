@@ -15,7 +15,7 @@ typedef struct {
   struct sqlite3_vtab_cursor;
   sqlite3_int64 rowid;
   char unique,eof;
-  Uint8 arg[4];
+  Uint16 arg[4];
 } Cursor;
 
 static void find_first_usable_image(const Class*cl,sqlite3_context*cxt) {
@@ -96,6 +96,33 @@ static void fn_cvalue(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_result_int64(cxt,a|((sqlite3_int64)TY_CLASS<<32));
 }
 
+static void fn_heromesh_type(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  static const char*const n[16]={
+    [TY_NUMBER]="number",
+    [TY_CLASS]="class",
+    [TY_MESSAGE]="message",
+    [TY_LEVELSTRING]="string",
+    [TY_STRING]="string",
+    [TY_SOUND]="sound",
+    [TY_USOUND]="sound",
+  };
+  int i;
+  if(sqlite3_value_type(*argv)!=SQLITE_INTEGER) return;
+  i=sqlite3_value_int64(*argv)>>32;
+  sqlite3_result_text(cxt,i<0||i>TY_MAXTYPE?"object":n[i]?:"???",-1,SQLITE_STATIC);
+}
+
+static void fn_load_level(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  const char*s;
+  if(!main_options['x']) {
+    sqlite3_result_error(cxt,"LOAD_LEVEL function requires -x switch",-1);
+    return;
+  }
+  if(sqlite3_value_type(*argv)==SQLITE_NULL) return;
+  s=load_level(sqlite3_value_int(*argv));
+  if(s) sqlite3_result_error(cxt,s,-1);
+}
+
 static void fn_modstate(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_result_int(cxt,SDL_GetModState());
 }
@@ -116,6 +143,10 @@ static void fn_ovalue(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   a=sqlite3_value_int64(*argv)&0xFFFFFFFF;
   if(a>=nobjects || !objects[a] || (objects[a]->dir&IOF_DEAD)) return; // result is null if object does not exist
   sqlite3_result_int64(cxt,a|((sqlite3_int64)objects[a]->generation<<32));
+}
+
+static void fn_pfsize(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  sqlite3_result_int(cxt,*(Uint8*)sqlite3_user_data(cxt));
 }
 
 static void fn_picture_size(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
@@ -402,24 +433,311 @@ Module(vt_classes,
 );
 
 static int vt1_objects_column(sqlite3_vtab_cursor*pcur,sqlite3_context*cxt,int n) {
-  return SQLITE_OK;
-}
-
-static int vt1_objects_filter(sqlite3_vtab_cursor*pcur,int idxNum,const char*idxStr,int argc,sqlite3_value**argv) {
-  return SQLITE_OK;
-}
-
-static int vt1_objects_index(sqlite3_vtab*vt,sqlite3_index_info*info) {
-  
+  Cursor*cur=(void*)pcur;
+  switch(n) {
+    case 0: // ID
+      sqlite3_result_int64(cxt,cur->rowid);
+      break;
+    case 1: // CLASS
+      sqlite3_result_int(cxt,objects[cur->rowid]->class);
+      break;
+    case 2: // MISC1
+      sqlite3_result_int64(cxt,ValueTo64(objects[cur->rowid]->misc1));
+      break;
+    case 3: // MISC2
+      sqlite3_result_int64(cxt,ValueTo64(objects[cur->rowid]->misc2));
+      break;
+    case 4: // MISC3
+      sqlite3_result_int64(cxt,ValueTo64(objects[cur->rowid]->misc3));
+      break;
+    case 5: // IMAGE
+      sqlite3_result_int(cxt,objects[cur->rowid]->image);
+      break;
+    case 6: // DIR
+      sqlite3_result_int(cxt,objects[cur->rowid]->dir&7);
+      break;
+    case 7: // X
+      sqlite3_result_int(cxt,objects[cur->rowid]->x);
+      break;
+    case 8: // Y
+      sqlite3_result_int(cxt,objects[cur->rowid]->y);
+      break;
+    case 9: // UP
+      if(objects[cur->rowid]->up!=VOIDLINK) sqlite3_result_int64(cxt,objects[cur->rowid]->up);
+      break;
+    case 10: // DOWN
+      if(objects[cur->rowid]->down!=VOIDLINK) sqlite3_result_int64(cxt,objects[cur->rowid]->down);
+      break;
+    case 11: // DENSITY
+      sqlite3_result_int(cxt,objects[cur->rowid]->density);
+      break;
+  }
   return SQLITE_OK;
 }
 
 static int vt1_objects_next(sqlite3_vtab_cursor*pcur) {
+  Cursor*cur=(void*)pcur;
+  if(cur->unique) {
+    eof:
+    cur->eof=1;
+    return SQLITE_OK;
+  }
+  again:
+  if(cur->arg[0]&0x0008) {
+    // Ordered by ID
+    if(cur->arg[1] || !objects[cur->rowid]) {
+      for(;;) {
+        if(++cur->rowid>=nobjects) {
+          cur->eof=1;
+          break;
+        }
+        if(objects[cur->rowid]) break;
+      }
+    }
+    cur->arg[1]=1;
+  } else if((cur->arg[0]&0x0006) && !cur->arg[1]) {
+    // Find top/bottom at location
+    cur->arg[1]=1;
+    atxy:
+    cur->rowid=playfield[cur->arg[2]+cur->arg[3]*64-65];
+    if(cur->rowid==VOIDLINK) goto nextxy;
+    if(cur->arg[0]&0x0020) {
+      while(cur->rowid!=VOIDLINK && objects[cur->rowid]->up!=VOIDLINK) cur->rowid=objects[cur->rowid]->up;
+    }
+  } else if(cur->arg[0]&0x0020) {
+    // Go down
+    cur->rowid=objects[cur->rowid]->down;
+    if(cur->rowid==VOIDLINK) goto nextxy;
+  } else if(cur->arg[0]&0x0040) {
+    // Go up
+    cur->rowid=objects[cur->rowid]->up;
+    if(cur->rowid==VOIDLINK) {
+      nextxy:
+      if(cur->arg[0]&0x1000) {
+        cur->arg[2]+=cur->arg[0]&0x0400?-1:1;
+        if(cur->arg[0]&0x0002) goto eof;
+        if(cur->arg[2]<1 || cur->arg[2]>pfwidth) {
+          if(cur->arg[0]&0x0004) goto eof;
+          cur->arg[2]=cur->arg[0]&0x0400?pfwidth:1;
+          cur->arg[3]+=cur->arg[0]&0x4000?-1:1;
+          if(cur->arg[3]<1 || cur->arg[3]>pfheight) goto eof;
+        }
+      } else {
+        cur->arg[3]+=cur->arg[0]&0x4000?-1:1;
+        if(cur->arg[0]&0x0004) goto eof;
+        if(cur->arg[3]<1 || cur->arg[3]>pfheight) {
+          if(cur->arg[0]&0x0002) goto eof;
+          cur->arg[3]=cur->arg[0]&0x4000?pfheight:1;
+          cur->arg[2]+=cur->arg[0]&0x0400?-1:1;
+          if(cur->arg[2]<1 || cur->arg[2]>pfwidth) goto eof;
+        }
+      }
+      goto atxy;
+    }
+  } else {
+    // This shouldn't happen
+    return SQLITE_INTERNAL;
+  }
+  if(!cur->eof && (objects[cur->rowid]->dir&IOF_DEAD)) goto again;
   return SQLITE_OK;
+}
+
+static int vt1_objects_filter(sqlite3_vtab_cursor*pcur,int idxNum,const char*idxStr,int argc,sqlite3_value**argv) {
+  Cursor*cur=(void*)pcur;
+  int i;
+  Uint32 t;
+  cur->rowid=-1;
+  cur->unique=0;
+  cur->eof=0;
+  cur->arg[0]=idxNum;
+  cur->arg[1]=0;
+  cur->arg[2]=cur->arg[3]=1;
+  if(!nobjects) {
+    cur->eof=1;
+    return SQLITE_OK;
+  }
+  if(idxStr) for(i=0;idxStr[i];i++) switch(idxStr[i]) {
+    case 'a':
+      cur->rowid=sqlite3_value_int64(argv[i]);
+      cur->unique=1;
+      break;
+    case 'b':
+      if(cur->rowid<sqlite3_value_int64(argv[i])) {
+        cur->rowid=sqlite3_value_int64(argv[i]);
+        cur->arg[1]=1;
+        if(cur->unique) cur->eof=1;
+      }
+      break;
+    case 'c':
+      if(cur->rowid<=sqlite3_value_int64(argv[i])) {
+        cur->rowid=sqlite3_value_int64(argv[i]);
+        cur->arg[1]=0;
+        if(cur->unique) cur->eof=1;
+      }
+      break;
+    case 'd':
+      cur->arg[2]=sqlite3_value_int(argv[i]);
+      if(cur->arg[2]<1 || cur->arg[2]>64) cur->eof=1;
+      break;
+    case 'e':
+      cur->arg[3]=sqlite3_value_int(argv[i]);
+      if(cur->arg[2]<1 || cur->arg[2]>64) cur->eof=1;
+      break;
+    case 'f':
+      if(sqlite3_value_type(argv[i])==SQLITE_NULL) {
+        cur->arg[0]=idxNum&=~0x0010;
+      } else {
+        t=sqlite3_value_int64(argv[i]);
+        if(t>=nobjects || t<0 || !objects[t]) {
+          cur->eof=1;
+          break;
+        }
+        cur->rowid=objects[t]->down;
+        if(cur->rowid==VOIDLINK) cur->eof=1;
+        cur->unique=1;
+      }
+      break;
+    case 'g':
+      if(sqlite3_value_type(argv[i])==SQLITE_NULL) {
+        cur->arg[0]=idxNum&=~0x0010;
+      } else {
+        t=sqlite3_value_int64(argv[i]);
+        if(t>=nobjects || t<0 || !objects[t]) {
+          cur->eof=1;
+          break;
+        }
+        cur->rowid=objects[t]->up;
+        if(cur->rowid==VOIDLINK) cur->eof=1;
+        cur->unique=1;
+      }
+      break;
+  }
+  if(cur->unique) {
+    if(cur->rowid<0 || cur->rowid>=nobjects || !objects[cur->rowid]) cur->eof=1;
+    return SQLITE_OK;
+  }
+  if(cur->eof) return SQLITE_OK;
+  if(idxNum&0x0400) cur->arg[2]=pfwidth;
+  if(idxNum&0x4000) cur->arg[3]=pfheight;
+  if(cur->rowid==-1) cur->rowid=0;
+  return vt1_objects_next(pcur);
+}
+
+static int vt1_objects_index(sqlite3_vtab*vt,sqlite3_index_info*info) {
+  sqlite3_str*str=sqlite3_str_new(0);
+  int arg=0;
+  int i,j;
+  info->estimatedCost=100000.0;
+  for(i=0;i<info->nConstraint;i++) if(info->aConstraint[i].usable) {
+    j=info->aConstraint[i].op;
+    switch(info->aConstraint[i].iColumn) {
+      case -1: case 0: // ID
+        if(info->idxNum&0x0017) break;
+        if(j==SQLITE_INDEX_CONSTRAINT_EQ || j==SQLITE_INDEX_CONSTRAINT_IS) {
+          info->idxNum|=0x0001;
+          info->aConstraintUsage[i].omit=1;
+          info->aConstraintUsage[i].argvIndex=++arg;
+          info->idxFlags=SQLITE_INDEX_SCAN_UNIQUE;
+          sqlite3_str_appendchar(str,1,'a');
+          info->estimatedCost/=10000.0;
+        } else if(j==SQLITE_INDEX_CONSTRAINT_GT || j==SQLITE_INDEX_CONSTRAINT_GE) {
+          info->idxNum|=0x0008;
+          info->aConstraintUsage[i].omit=1;
+          info->aConstraintUsage[i].argvIndex=++arg;
+          sqlite3_str_appendchar(str,1,j==SQLITE_INDEX_CONSTRAINT_GT?'b':'c');
+          info->estimatedCost/=1200.0;
+        }
+        break;
+      case 7: // X
+        if(info->idxNum&0x0013) break;
+        if(j==SQLITE_INDEX_CONSTRAINT_EQ || j==SQLITE_INDEX_CONSTRAINT_IS) {
+          info->idxNum|=0x0002;
+          info->aConstraintUsage[i].omit=1;
+          info->aConstraintUsage[i].argvIndex=++arg;
+          sqlite3_str_appendchar(str,1,'d');
+          info->estimatedCost/=64.0;
+        }
+        break;
+      case 8: // Y
+        if(info->idxNum&0x0015) break;
+        if(j==SQLITE_INDEX_CONSTRAINT_EQ || j==SQLITE_INDEX_CONSTRAINT_IS) {
+          info->idxNum|=0x0004;
+          info->aConstraintUsage[i].omit=1;
+          info->aConstraintUsage[i].argvIndex=++arg;
+          sqlite3_str_appendchar(str,1,'e');
+          info->estimatedCost/=64.0;
+        }
+        break;
+      case 9: // UP
+        if(info->idxNum&0x0019) break;
+        if(j==SQLITE_INDEX_CONSTRAINT_IS && !(info->idxNum&0x000E)) {
+          info->idxNum|=0x0010;
+          info->aConstraintUsage[i].omit=1;
+          info->aConstraintUsage[i].argvIndex=++arg;
+          sqlite3_str_appendchar(str,1,'f');
+          info->estimatedCost/=80.0;
+        }
+        break;
+      case 10: // DOWN
+        if(info->idxNum&0x0019) break;
+        if(j==SQLITE_INDEX_CONSTRAINT_IS && !(info->idxNum&0x000E)) {
+          info->idxNum|=0x0010;
+          info->aConstraintUsage[i].omit=1;
+          info->aConstraintUsage[i].argvIndex=++arg;
+          sqlite3_str_appendchar(str,1,'g');
+          info->estimatedCost/=80.0;
+        }
+        break;
+    }
+  }
+  if(info->nOrderBy==1) {
+    if(info->aOrderBy->iColumn==0 && !info->aOrderBy->desc && !(info->idxNum&~0x0008)) info->orderByConsumed=1;
+    if(info->aOrderBy->iColumn==-1 && !info->aOrderBy->desc && !(info->idxNum&~0x0008)) info->orderByConsumed=1;
+    if(info->aOrderBy->iColumn==7 && !(info->idxNum&~0x0004)) info->orderByConsumed=1,info->idxNum|=info->aOrderBy->desc?0x0400:0x0800;
+    if(info->aOrderBy->iColumn==8 && !(info->idxNum&~0x0002)) info->orderByConsumed=1,info->idxNum|=info->aOrderBy->desc?0x4000:0x8000;
+    if(info->aOrderBy->iColumn==11 && info->idxNum==0x0006) info->orderByConsumed=1,info->idxNum|=info->aOrderBy->desc?0x0040:0x0020;
+  } else if(info->nOrderBy==2 && !(info->idxNum&~0x0066)) {
+    if(info->aOrderBy[0].iColumn==7 && info->aOrderBy[1].iColumn==8) {
+      info->orderByConsumed=1;
+      info->idxNum|=info->aOrderBy[0].desc?0x0400:0x0800;
+      info->idxNum|=info->aOrderBy[1].desc?0x4000:0x8000;
+    } else if(info->aOrderBy[0].iColumn==8 && info->aOrderBy[1].iColumn==7) {
+      info->orderByConsumed=1;
+      info->idxNum|=info->aOrderBy[0].desc?0x4000:0x8000;
+      info->idxNum|=info->aOrderBy[1].desc?0x0400:0x0800;
+      info->idxNum|=0x1000;
+    }
+  } else if(info->nOrderBy==3 && info->aOrderBy[2].iColumn==11 && !(info->idxNum&~0x0006)) {
+    if(info->aOrderBy[0].iColumn==7 && info->aOrderBy[1].iColumn==8) {
+      info->orderByConsumed=1;
+      info->idxNum|=info->aOrderBy[0].desc?0x0400:0x0800;
+      info->idxNum|=info->aOrderBy[1].desc?0x4000:0x8000;
+      info->idxNum|=info->aOrderBy[2].desc?0x0040:0x0020;
+    } else if(info->aOrderBy[0].iColumn==8 && info->aOrderBy[1].iColumn==7) {
+      info->orderByConsumed=1;
+      info->idxNum|=info->aOrderBy[0].desc?0x4000:0x8000;
+      info->idxNum|=info->aOrderBy[1].desc?0x0400:0x0800;
+      info->idxNum|=0x1000;
+      info->idxNum|=info->aOrderBy[2].desc?0x0040:0x0020;
+    }
+  }
+  if(info->orderByConsumed) info->estimatedCost-=0.5;
+  switch(info->idxNum&0x0006) {
+    case 0x0002: info->idxNum&=~0x1000; break;
+    case 0x0004: info->idxNum|=0x1000; break;
+  }
+  if(!info->idxNum) info->idxNum=0x0008;
+  if((info->idxNum&0x0006) && !(info->idxNum&0x0060)) info->idxNum|=0x0040;
+  if((info->idxNum&0xCC00) && !(info->idxNum&0x0069)) info->idxNum|=0x0040;
+  arg=sqlite3_str_errcode(str);
+  info->idxStr=sqlite3_str_finish(str);
+  info->needToFreeIdxStr=1;
+  return arg;
 }
 
 static int vt1_objects_update(sqlite3_vtab*vt,int argc,sqlite3_value**argv,sqlite3_int64*rowid) {
   if(!main_options['e']) return SQLITE_LOCKED;
+  
   return SQLITE_OK;
 }
 
@@ -434,12 +752,16 @@ Module(vt_objects,
 void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"BASENAME",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_basename,0,0);
   sqlite3_create_function(userdb,"CLASS_DATA",2,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_class_data,0,0);
-  sqlite3_create_function(userdb,"LEVEL_CACHEID",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,ptr0,fn_cacheid,0,0);
-  sqlite3_create_function(userdb,"MODSTATE",0,SQLITE_UTF8,0,fn_modstate,0,0);
   sqlite3_create_function(userdb,"CVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_cvalue,0,0);
+  sqlite3_create_function(userdb,"HEROMESH_TYPE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_heromesh_type,0,0);
+  sqlite3_create_function(userdb,"LEVEL_CACHEID",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,ptr0,fn_cacheid,0,0);
+  sqlite3_create_function(userdb,"LOAD_LEVEL",1,SQLITE_UTF8,0,fn_load_level,0,0);
+  sqlite3_create_function(userdb,"MODSTATE",0,SQLITE_UTF8,0,fn_modstate,0,0);
   sqlite3_create_function(userdb,"MVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_mvalue,0,0);
   sqlite3_create_function(userdb,"NVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_zero_extend,0,0);
   sqlite3_create_function(userdb,"OVALUE",1,SQLITE_UTF8,0,fn_ovalue,0,0);
+  sqlite3_create_function(userdb,"PFHEIGHT",0,SQLITE_UTF8,&pfheight,fn_pfsize,0,0);
+  sqlite3_create_function(userdb,"PFWIDTH",0,SQLITE_UTF8,&pfwidth,fn_pfsize,0,0);
   sqlite3_create_function(userdb,"PICTURE_SIZE",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_picture_size,0,0);
   sqlite3_create_function(userdb,"READ_LUMP_AT",2,SQLITE_UTF8,0,fn_read_lump_at,0,0);
   sqlite3_create_function(userdb,"RESOURCE",-1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_resource,0,0);

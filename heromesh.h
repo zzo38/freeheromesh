@@ -10,11 +10,12 @@
 #define TY_NUMBER 0
 #define TY_CLASS 1
 #define TY_MESSAGE 2
-#define TY_SOUND 3
-#define TY_USOUND 4
-#define TY_STRING 5
-#define TY_LEVELSTRING 6
+#define TY_LEVELSTRING 3
+#define TY_STRING 4
+#define TY_SOUND 5
+#define TY_USOUND 6
 #define TY_MAXTYPE 15
+// The level file format requires type codes 0 to 3 to be as is; other codes may change.
 
 typedef struct {
   union {
@@ -30,6 +31,7 @@ typedef struct {
 #define MVALUE(x) UVALUE(x,TY_MESSAGE)
 #define ZVALUE(x) UVALUE(x,TY_STRING)
 #define OVALUE(x) UVALUE(x,objects[x]->generation)
+#define ValueTo64(v) (((sqlite3_int64)((v).u))|(((sqlite3_int64)((v).t))<<32))
 
 #define N_MESSAGES 23
 extern const char*const standard_message_names[];
@@ -64,6 +66,7 @@ extern void*stack_protect_high;
 
 unsigned char*read_lump(int sol,int lvl,long*sz,sqlite3_value**us);
 void write_lump(int sol,int lvl,long sz,const unsigned char*data);
+const char*load_level(int lvl);
 void set_cursor(int id);
 
 #define FIL_SOLUTION 1

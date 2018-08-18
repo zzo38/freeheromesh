@@ -178,6 +178,127 @@ void write_lump(int sol,int lvl,long sz,const unsigned char*data) {
   sqlite3_finalize(st);
 }
 
+const char*load_level(int lvl) {
+  // Load level by ID. Returns null pointer if successful, or an error message if it failed.
+  long sz=0;
+  unsigned char*buf=lvl>=0?read_lump(FIL_LEVEL,lvl,&sz,0):0;
+  unsigned char*p=buf;
+  unsigned char*end=buf+sz;
+  int i,n,x,y,z;
+  Uint32 o;
+  Uint32 mru[2];
+  if(lvl<0) return "Invalid level ID";
+  if(!buf) return "Cannot find level";
+  annihilate();
+  generation_number=TY_MAXTYPE+1;
+  p+=4; // skip level version and level code for now
+  pfwidth=(*p++&63)+1;
+  pfheight=(*p++&63)+1;
+  while(*p && p<end) p++; // skip text for now
+  p++; // skip null terminator
+  if(p==end) goto bad1;
+  x=0;
+  y=1;
+  n=0;
+  mru[0]=mru[1]=VOIDLINK;
+  for(;;) {
+    if(n) {
+      o=objalloc(objects[*mru]->class);
+      if(o==VOIDLINK) goto bad3;
+      objects[o]->image=objects[*mru]->image;
+      objects[o]->misc1=objects[*mru]->misc1;
+      objects[o]->misc2=objects[*mru]->misc2;
+      objects[o]->misc3=objects[*mru]->misc3;
+      objects[o]->dir=objects[*mru]->dir;
+      objects[o]->x=++x;
+      objects[o]->y=y;
+      if(x>pfwidth) goto bad2;
+      pflink(o);
+      --n;
+    } else {
+      if(p>=end) goto bad1;
+      z=*p++;
+      if(z==0xFF) break;
+      if(z&0x20) x=*p++;
+      if(z&0x10) y=*p++;
+      if(z&0x40) x++;
+      if(!x || !y || x>pfwidth || y>pfheight) goto bad2;
+      if(z&0x80) {
+        // MRU
+        n=playfield[x+y*64-65]==VOIDLINK?0:1;
+        if(mru[n]==VOIDLINK) goto bad1;
+        o=objalloc(objects[mru[n]]->class);
+        if(o==VOIDLINK) goto bad3;
+        objects[o]->image=objects[mru[n]]->image;
+        objects[o]->misc1=objects[mru[n]]->misc1;
+        objects[o]->misc2=objects[mru[n]]->misc2;
+        objects[o]->misc3=objects[mru[n]]->misc3;
+        objects[o]->dir=objects[mru[n]]->dir;
+        objects[o]->x=x;
+        objects[o]->y=y;
+        pflink(o);
+        n=z&15;
+      } else {
+        // Not MRU
+        n=playfield[x+y*64-65];
+        n=n==VOIDLINK?0:objects[n]->down==VOIDLINK?1:2;
+        i=*p++;
+        i|=*p++<<8;
+        o=objalloc(i&0x3FFF);
+        if(o==VOIDLINK) goto bad3;
+        if(n!=2) mru[n]=o;
+        if(i&0x8000) {
+          n=objects[o]->class;
+          for(i=0;i<classes[n]->nimages;i++) {
+            if(classes[n]->images[i]&0x8000) {
+              objects[o]->image=i;
+              break;
+            }
+          }
+        } else {
+          objects[o]->image=*p++;
+        }
+        objects[o]->dir=z&7;
+        if(z&0x08) {
+          z=*p++;
+          if(z&0xC0) {
+            // Misc1
+            objects[o]->misc1=UVALUE(p[0]|(p[1]<<8),(z>>0)&3);
+            p+=2;
+          }
+          if((z&0xC0)!=0x40) {
+            // Misc2
+            objects[o]->misc2=UVALUE(p[0]|(p[1]<<8),(z>>2)&3);
+            p+=2;
+          }
+          if(!((z&0xC0)%0xC0)) {
+            // Misc3
+            objects[o]->misc1=UVALUE(p[0]|(p[1]<<8),(z>>4)&3);
+            p+=2;
+          }
+        }
+        objects[o]->x=x;
+        objects[o]->y=y;
+        pflink(o);
+        n=0;
+      }
+    }
+  }
+  // skip level strings for now
+  if(p>end) goto bad1;
+  free(buf);
+  return 0;
+bad1:
+  free(buf);
+  return "Corrupted level data";
+bad2:
+  free(buf);
+  return "Object out of bounds";
+bad3:
+  free(buf);
+  return "Bad object in level";
+}
+
 static void flush_usercache_1(int sol) {
   sqlite3_int64 uc_id=sol?solutionuc:leveluc;
   FILE*fp=sol?solutionfp:levelfp;
@@ -526,7 +647,7 @@ keytest:
 
 static void do_sql_mode(void) {
   int m=sqlite3_limit(userdb,SQLITE_LIMIT_SQL_LENGTH,-1);
-  char*txt=malloc(m);
+  char*txt;
   int n=0;
   int c;
   int bail=1;
@@ -536,6 +657,7 @@ static void do_sql_mode(void) {
   for(;;) {
     c=fgetc(stdin);
     if(c=='\n' || c==EOF) {
+      if(!n && c==EOF) break;
       if(!n) continue;
       if(*txt=='#') {
         n=0;
@@ -556,6 +678,7 @@ static void do_sql_mode(void) {
         if(sqlite3_complete(txt)) {
           n=sqlite3_exec(userdb,txt,test_sql_callback,0,0);
           if(bail && n) fatal("SQL error (%d): %s\n",n,sqlite3_errmsg(userdb));
+          else if(n) fprintf(stderr,"SQL error (%d): %s\n",n,sqlite3_errmsg(userdb));
           n=0;
         } else {
           txt[n++]='\n';
@@ -636,12 +759,13 @@ int main(int argc,char**argv) {
   }
   init_usercache();
   load_classes();
+  optionquery[1]=Q_maxObjects;
+  max_objects=strtoll(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,0)?:0xFFFF0000L;
+  annihilate();
   if(main_options['x']) {
     fprintf(stderr,"Ready for executing SQL statements.\n");
     do_sql_mode();
     return 0;
   }
-  optionquery[1]=Q_maxObjects;
-  max_objects=strtoll(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,0)?:0xFFFF0000L;
   return 0; // for(;;) { if(main_options['e']) run_editor(); else run_game(); }
 }
