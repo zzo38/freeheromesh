@@ -43,6 +43,10 @@ const char*basefilename;
 xrm_quark optionquery[16];
 char main_options[128];
 Uint8 message_trace[0x4100/8];
+Uint16 level_id,level_ord,level_version,level_code;
+unsigned char*level_title;
+Uint16*level_index;
+int level_nindex;
 
 #ifdef __GNUC__
 char stack_protect_mode=0;
@@ -189,14 +193,20 @@ const char*load_level(int lvl) {
   Uint32 mru[2];
   if(lvl<0) return "Invalid level ID";
   if(!buf) return "Cannot find level";
+  free(level_title);
+  level_title=0;
   annihilate();
   generation_number=TY_MAXTYPE+1;
-  p+=4; // skip level version and level code for now
+  level_version=p[0]|(p[1]<<8);
+  level_code=p[2]|(p[3]<<8);
+  p+=4;
   pfwidth=(*p++&63)+1;
   pfheight=(*p++&63)+1;
   while(*p && p<end) p++; // skip text for now
   p++; // skip null terminator
-  if(p==end) goto bad1;
+  if(p>=end) goto bad1;
+  level_title=strdup(buf+6);
+  if(!level_title) fatal("Allocation failed\n");
   x=0;
   y=1;
   n=0;
@@ -287,6 +297,7 @@ const char*load_level(int lvl) {
   // skip level strings for now
   if(p>end) goto bad1;
   free(buf);
+  level_id=lvl;
   return 0;
 bad1:
   free(buf);

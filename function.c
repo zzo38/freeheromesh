@@ -96,6 +96,58 @@ static void fn_cvalue(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_result_int64(cxt,a|((sqlite3_int64)TY_CLASS<<32));
 }
 
+static void fn_heromesh_escape(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  const unsigned char*u=sqlite3_value_blob(*argv);
+  int un=sqlite3_value_bytes(*argv);
+  char*e;
+  int en=0;
+  int i=0;
+  int c;
+  int isimg=0;
+  if(!u) return;
+  if(!un) {
+    sqlite3_result_zeroblob(cxt,0);
+    return;
+  }
+  e=sqlite3_malloc((un<<2)+1);
+  if(!e) {
+    sqlite3_result_error_nomem(cxt);
+    return;
+  }
+  while(i<un) switch(c=u[i++]) {
+    case 1 ... 8: e[en++]='\\'; e[en++]=c+'0'-1; break;
+    case 10: e[en++]='\\'; e[en++]='n'; break;
+    case 11: e[en++]='\\'; e[en++]='l'; break;
+    case 12: e[en++]='\\'; e[en++]='c'; break;
+    case 14: e[en++]='\\'; e[en++]='i'; isimg=1; break;
+    case 15: e[en++]='\\'; e[en++]='b'; break;
+    case 16: e[en++]='\\'; e[en++]='q'; break;
+    case 31:
+      if(i==un) break;
+      c=u[i++];
+      e[en++]='\\';
+      e[en++]='x';
+      e[en++]=(c>>4)<10?(c>>4)+'0':(c>>4)+'A'-10;
+      e[en++]=c<10?c+'0':c+'A'-10;
+      break;
+    case 32 ... 127:
+      if(c=='\\') {
+        if(!isimg) e[en++]=c;
+        isimg=0;
+      } else if(c=='"') {
+        e[en++]='\\';
+      }
+      e[en++]=c;
+      break;
+    default:
+      e[en++]='\\';
+      e[en++]='x';
+      e[en++]=(c>>4)<10?(c>>4)+'0':(c>>4)+'A'-10;
+      e[en++]=c<10?c+'0':c+'A'-10;
+  }
+  sqlite3_result_text(cxt,sqlite3_realloc(e,en+1)?:e,en,sqlite3_free);
+}
+
 static void fn_heromesh_type(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   static const char*const n[16]={
     [TY_NUMBER]="number",
@@ -110,6 +162,69 @@ static void fn_heromesh_type(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   if(sqlite3_value_type(*argv)!=SQLITE_INTEGER) return;
   i=sqlite3_value_int64(*argv)>>32;
   sqlite3_result_text(cxt,i<0||i>TY_MAXTYPE?"object":n[i]?:"???",-1,SQLITE_STATIC);
+}
+
+static void fn_heromesh_unescape(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  const unsigned char*e=sqlite3_value_text(*argv);
+  int en=sqlite3_value_bytes(*argv);
+  char*u;
+  int un=0;
+  int c,n;
+  int isimg=0;
+  if(!e) return;
+  if(!*e) {
+    sqlite3_result_text(cxt,"",0,SQLITE_STATIC);
+    return;
+  }
+  u=sqlite3_malloc(en+1);
+  if(!u) {
+    sqlite3_result_error_nomem(cxt);
+    return;
+  }
+  while(c=*e++) {
+    if(c=='\\') {
+      if(isimg) {
+        u[un++]=c;
+        isimg=0;
+      } else switch(c=*e++) {
+        case '0' ... '7': u[un++]=c-'0'+1; break;
+        case 'b': u[un++]=15; break;
+        case 'c': u[un++]=12; break;
+        case 'i': u[un++]=14; isimg=1; break;
+        case 'l': u[un++]=11; break;
+        case 'n': u[un++]=10; break;
+        case 'q': u[un++]=16; break;
+        case 'x':
+          c=*e++;
+          if(c>='0' && c<='9') n=c-'0';
+          else if(c>='A' && c<='F') n=c+10-'A';
+          else if(c>='a' && c<='f') n=c+10-'a';
+          else break;
+          n<<=4;
+          c=*e++;
+          if(c>='0' && c<='9') n|=c-'0';
+          else if(c>='A' && c<='F') n|=c+10-'A';
+          else if(c>='a' && c<='f') n|=c+10-'a';
+          else break;
+          if(n<32) u[un++]=31;
+          u[un++]=n?:255;
+          break;
+        default: u[un++]=c;
+      }
+    } else {
+      u[un++]=c;
+    }
+  }
+  done:
+  sqlite3_result_blob(cxt,u,un,sqlite3_free);
+}
+
+static void fn_level(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  sqlite3_result_int(cxt,*(Uint16*)sqlite3_user_data(cxt));
+}
+
+static void fn_level_title(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  if(level_title) sqlite3_result_blob(cxt,level_title,strlen(level_title),SQLITE_TRANSIENT);
 }
 
 static void fn_load_level(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
@@ -753,8 +868,13 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"BASENAME",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_basename,0,0);
   sqlite3_create_function(userdb,"CLASS_DATA",2,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_class_data,0,0);
   sqlite3_create_function(userdb,"CVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_cvalue,0,0);
+  sqlite3_create_function(userdb,"HEROMESH_ESCAPE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_heromesh_escape,0,0);
   sqlite3_create_function(userdb,"HEROMESH_TYPE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_heromesh_type,0,0);
+  sqlite3_create_function(userdb,"HEROMESH_UNESCAPE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_heromesh_unescape,0,0);
+  sqlite3_create_function(userdb,"LEVEL",0,SQLITE_UTF8,&level_ord,fn_level,0,0);
   sqlite3_create_function(userdb,"LEVEL_CACHEID",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,ptr0,fn_cacheid,0,0);
+  sqlite3_create_function(userdb,"LEVEL_ID",0,SQLITE_UTF8,&level_id,fn_level,0,0);
+  sqlite3_create_function(userdb,"LEVEL_TITLE",0,SQLITE_UTF8,0,fn_level_title,0,0);
   sqlite3_create_function(userdb,"LOAD_LEVEL",1,SQLITE_UTF8,0,fn_load_level,0,0);
   sqlite3_create_function(userdb,"MODSTATE",0,SQLITE_UTF8,0,fn_modstate,0,0);
   sqlite3_create_function(userdb,"MVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_mvalue,0,0);

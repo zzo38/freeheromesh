@@ -201,7 +201,7 @@ static void read_quoted_string(void) {
           else if(c>='a' && c<='f') n|=c+10-'a';
           else ParseError("Invalid string escape: \\x%X%c\n",n>>4,c);
           if(n<32) tokenstr[i++]=31;
-          tokenstr[i++]=n;
+          tokenstr[i++]=n?:255;
           break;
         default: ParseError("Invalid string escape: \\%c\n",c);
       }
