@@ -33,7 +33,7 @@ typedef struct {
 #define OVALUE(x) UVALUE(x,objects[x]->generation)
 #define ValueTo64(v) (((sqlite3_int64)((v).u))|(((sqlite3_int64)((v).t))<<32))
 
-#define N_MESSAGES 23
+#define N_MESSAGES 24
 extern const char*const standard_message_names[];
 extern const char*const standard_sound_names[];
 extern const char*const heromesh_key_names[256];
@@ -96,6 +96,8 @@ void load_pictures(void);
 #define CF_COMPATIBLE 0x04
 #define CF_QUIZ 0x08
 #define CF_GROUP 0x10 // this is a group of classes; you can't create an object of this class
+#define CF_TRACEIN 0x20
+#define CF_TRACEOUT 0x40 // same as CF_NOCLASS1 (no problem since CF_NOCLASS1 not used after class loading)
 #define CF_NOCLASS1 0x40 // if only the name has been loaded so far, from the .class file
 #define CF_NOCLASS2 0x80 // if only the name has been loaded so far, from the CLASS.DEF lump
 
@@ -109,8 +111,7 @@ void load_pictures(void);
 #define OF_DONE 0x0080
 #define OF_KEYCLEARED 0x0100
 #define OF_DESTROYED 0x0200
-#define OF_TRACEIN 0x4000 // These more properly belong in CF_ but there is room here for them
-#define OF_TRACEOUT 0x8000 // see above
+#define OF_BIZARRO 0x0400
 
 typedef struct {
   const char*name;

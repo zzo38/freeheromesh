@@ -22,6 +22,7 @@
 #define MSG_CLEANUP 20
 #define MSG_COLLIDING 21
 #define MSG_COLLIDE 22
+#define MSG_BIZARRO_SWAP 23
 const char*const standard_message_names[]={
  "INIT",
  "CREATE",
@@ -46,6 +47,7 @@ const char*const standard_message_names[]={
  "CLEANUP",
  "COLLIDING",
  "COLLIDE",
+ "BIZARRO_SWAP",
 };
 #define SND_SPLASH 0
 #define SND_POUR 1

@@ -469,10 +469,10 @@ static int vt1_classes_column(sqlite3_vtab_cursor*pcur,sqlite3_context*cxt,int n
       sqlite3_result_int(cxt,classes[cur->rowid]->cflags&CF_QUIZ?1:0);
       break;
     case 6: // TRACEIN
-      sqlite3_result_int(cxt,classes[cur->rowid]->oflags&OF_TRACEIN?1:0);
+      sqlite3_result_int(cxt,classes[cur->rowid]->cflags&CF_TRACEIN?1:0);
       break;
     case 7: // TRACEOUT
-      sqlite3_result_int(cxt,classes[cur->rowid]->oflags&OF_TRACEOUT?1:0);
+      sqlite3_result_int(cxt,classes[cur->rowid]->cflags&CF_TRACEOUT?1:0);
       break;
     case 8: // GROUP
       if(sqlite3_vtab_nochange(cxt)) return SQLITE_OK;
@@ -501,11 +501,11 @@ static int vt1_classes_filter(sqlite3_vtab_cursor*pcur,int idxNum,const char*idx
   if(argc) {
     cur->rowid=sqlite3_value_int64(*argv);
     cur->unique=1;
-    if(cur->rowid<=0 || cur->rowid>=0x4000 || !classes[cur->rowid] || classes[cur->rowid]->cflags&CF_NOCLASS2) cur->eof=1;
+    if(cur->rowid<=0 || cur->rowid>=0x4000 || !classes[cur->rowid] || (classes[cur->rowid]->cflags&CF_NOCLASS2)) cur->eof=1;
   } else {
     cur->unique=0;
     cur->rowid=1;
-    while(cur->rowid<0x4000 && (!classes[cur->rowid] || classes[cur->rowid]->cflags&CF_NOCLASS2)) ++cur->rowid;
+    while(cur->rowid<0x4000 && (!classes[cur->rowid] || (classes[cur->rowid]->cflags&CF_NOCLASS2))) ++cur->rowid;
     if(cur->rowid>=0x4000) cur->eof=1;
   }
   return SQLITE_OK;
@@ -517,7 +517,7 @@ static int vt1_classes_next(sqlite3_vtab_cursor*pcur) {
     cur->eof=1;
   } else {
     ++cur->rowid;
-    while(cur->rowid<0x4000 && (!classes[cur->rowid] || classes[cur->rowid]->cflags&CF_NOCLASS2)) ++cur->rowid;
+    while(cur->rowid<0x4000 && (!classes[cur->rowid] || (classes[cur->rowid]->cflags&CF_NOCLASS2))) ++cur->rowid;
     if(cur->rowid>=0x4000) cur->eof=1;
   }
   return SQLITE_OK;
@@ -526,17 +526,17 @@ static int vt1_classes_next(sqlite3_vtab_cursor*pcur) {
 static int vt1_classes_update(sqlite3_vtab*vt,int argc,sqlite3_value**argv,sqlite3_int64*rowid) {
   sqlite3_int64 id;
   int v[3];
-  if(argc!=5 || sqlite3_value_type(*argv)!=SQLITE_INTEGER) return SQLITE_CONSTRAINT_VTAB;
+  if(argc<2 || sqlite3_value_type(*argv)!=SQLITE_INTEGER) return SQLITE_CONSTRAINT_VTAB;
   id=sqlite3_value_int64(*argv);
   if(id!=sqlite3_value_int64(argv[1])) return SQLITE_CONSTRAINT_VTAB;
   if(id<=0 || id>=0x4000 || !classes[id]) return SQLITE_INTERNAL;
-  v[0]=sqlite3_value_int(argv[5]);
-  v[1]=sqlite3_value_int(argv[6]);
-  v[2]=sqlite3_value_int(argv[7]);
+  v[0]=sqlite3_value_int(argv[7]);
+  v[1]=sqlite3_value_int(argv[8]);
+  v[2]=sqlite3_value_int(argv[9]);
   if((v[0]|v[1]|v[2])&~1) return SQLITE_CONSTRAINT_CHECK;
   if(v[0]) classes[id]->cflags|=CF_QUIZ; else classes[id]->cflags&=~CF_QUIZ;
-  classes[id]->oflags&=~(OF_TRACEIN|OF_TRACEOUT);
-  classes[id]->oflags|=(v[1]?OF_TRACEIN:0)|(v[2]?OF_TRACEOUT:0);
+  classes[id]->cflags&=~(CF_TRACEIN|CF_TRACEOUT);
+  classes[id]->cflags|=(v[1]?CF_TRACEIN:0)|(v[2]?CF_TRACEOUT:0);
   return SQLITE_OK;
 }
 

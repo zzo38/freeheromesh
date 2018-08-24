@@ -72,7 +72,7 @@ Uint32 objalloc(Uint16 c) {
   Uint32 n;
   Class*cl=classes[c];
   Object*o=calloc(1,sizeof(Object)+cl->uservars*sizeof(Value));
-  if(!c || !cl || cl->cflags&(CF_GROUP|CF_NOCLASS1|CF_NOCLASS2)) goto bad;
+  if(!c || !cl || cl->cflags&(CF_GROUP|CF_NOCLASS2)) goto bad;
   if(!o) fatal("Allocation failed\n");
   o->class=c;
   o->generation=generation_number;

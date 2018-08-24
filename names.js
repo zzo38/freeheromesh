@@ -27,6 +27,7 @@ const standard_message_names=`
  20 = CLEANUP
  21 = COLLIDING
  22 = COLLIDE
+ 23 = BIZARRO_SWAP
 `.split("\n").map(x=>/^ *([0-9]+) = ([^ ]*) *$/.exec(x)).filter(x=>x);
 const standard_sound_names=[];
 `
