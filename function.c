@@ -851,8 +851,63 @@ static int vt1_objects_index(sqlite3_vtab*vt,sqlite3_index_info*info) {
 }
 
 static int vt1_objects_update(sqlite3_vtab*vt,int argc,sqlite3_value**argv,sqlite3_int64*rowid) {
+  sqlite3_int64 id;
+  int x,y,z;
   if(!main_options['e']) return SQLITE_LOCKED;
-  
+  if(argc==1) {
+    // DELETE
+    id=sqlite3_value_int64(argv[0]);
+    pfunlink(id);
+    free(objects[id]);
+    objects[id]=0;
+  } else if(sqlite3_value_type(argv[0])==SQLITE_NULL) {
+    // INSERT
+    if(sqlite3_value_type(argv[1])!=SQLITE_NULL || sqlite3_value_type(argv[2])!=SQLITE_NULL) return SQLITE_CONSTRAINT_VTAB;
+    if(sqlite3_value_type(argv[3])==SQLITE_NULL) return SQLITE_CONSTRAINT_NOTNULL;
+    if(sqlite3_value_type(argv[7])==SQLITE_NULL) return SQLITE_CONSTRAINT_NOTNULL;
+    if(sqlite3_value_type(argv[11])!=SQLITE_NULL) return SQLITE_CONSTRAINT_VTAB;
+    if(sqlite3_value_type(argv[12])!=SQLITE_NULL) return SQLITE_CONSTRAINT_VTAB;
+    x=sqlite3_value_int(argv[9]);
+    y=sqlite3_value_int(argv[10]);
+    if(x<1 || x>pfwidth || y<1 || y>pfheight) return SQLITE_CONSTRAINT_CHECK;
+    z=sqlite3_value_type(argv[3]);
+    if(z<=0 || z>=0x4000 || !classes[z]) return SQLITE_CONSTRAINT_FOREIGNKEY;
+    if(sqlite3_value_int(argv[7])<0 || sqlite3_value_int(argv[7])>=classes[z]->nimages) return SQLITE_CONSTRAINT_CHECK;
+    id=objalloc(z);
+    if(id==VOIDLINK) return SQLITE_CONSTRAINT_VTAB;
+    goto update;
+  } else {
+    // UPDATE
+    id=sqlite3_value_int64(argv[0]);
+    if(id!=sqlite3_value_int64(argv[1]) || id!=sqlite3_value_int64(argv[2])) return SQLITE_CONSTRAINT_VTAB;
+    if(sqlite3_value_type(argv[3])==SQLITE_NULL) return SQLITE_CONSTRAINT_NOTNULL;
+    if(sqlite3_value_type(argv[7])==SQLITE_NULL) return SQLITE_CONSTRAINT_NOTNULL;
+    x=sqlite3_value_int(argv[9]);
+    y=sqlite3_value_int(argv[10]);
+    if(x<1 || x>pfwidth || y<1 || y>pfheight) return SQLITE_CONSTRAINT_CHECK;
+    if(sqlite3_value_int(argv[3])!=objects[id]->class) return SQLITE_CONSTRAINT_VTAB;
+    if(sqlite3_value_int(argv[13])!=objects[id]->density) return SQLITE_CONSTRAINT_VTAB;
+    z=objects[id]->class;
+    if(sqlite3_value_int(argv[7])<0 || sqlite3_value_int(argv[7])>=classes[z]->nimages) return SQLITE_CONSTRAINT_CHECK;
+    if(x!=objects[id]->x || y!=objects[id]->y) {
+      pfunlink(id);
+      update:
+      objects[id]->x=x;
+      objects[id]->y=y;
+      pflink(id);
+    }
+    objects[id]->image=sqlite3_value_int(argv[7]);
+    objects[id]->dir=sqlite3_value_int(argv[8])&7;
+    objects[id]->misc1.u=sqlite3_value_int64(argv[4])&0xFFFF;
+    objects[id]->misc1.t=sqlite3_value_int64(argv[4])>>32;
+    if(objects[id]->misc1.t&~3) objects[id]->misc1=NVALUE(0);
+    objects[id]->misc2.u=sqlite3_value_int64(argv[5])&0xFFFF;
+    objects[id]->misc2.t=sqlite3_value_int64(argv[5])>>32;
+    if(objects[id]->misc2.t&~3) objects[id]->misc2=NVALUE(0);
+    objects[id]->misc3.u=sqlite3_value_int64(argv[6])&0xFFFF;
+    objects[id]->misc3.t=sqlite3_value_int64(argv[6])>>32;
+    if(objects[id]->misc3.t&~3) objects[id]->misc3=NVALUE(0);
+  }
   return SQLITE_OK;
 }
 

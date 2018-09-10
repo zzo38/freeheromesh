@@ -192,4 +192,3 @@ void pflink(Uint32 n);
 Uint32 objalloc(Uint16 c);
 void annihilate(void);
 const char*execute_turn(int key);
-
