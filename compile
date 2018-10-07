@@ -1,6 +1,7 @@
 #!/bin/bash --
+set -e
 test -f CFLAGS || echo xxx > CFLAGS
-test "xx$CFLAGS" = "x`cat CFLAGS`" || rm bindings.o class.o picture.o function.o exec.o
+test "xx$CFLAGS" = "x`cat CFLAGS`" || rm bindings.o class.o picture.o function.o exec.o edit.o || true
 echo "x$CFLAGS" > CFLAGS
 test "x$EXE" = "x" && EXE=~/bin/heromesh
 echo 'Flags: ' "$CFLAGS"
@@ -10,10 +11,10 @@ test instruc.js -nt instruc.h && node instruc.js > instruc.h
 test names.js -nt names.h && node names.js > names.h
 test quarks -nt quarks.h && node quarks.js > quarks.h
 test quarks.js -nt quarks.h && node quarks.js > quarks.h
-test heromesh.h -nt "$EXE" && rm bindings.o class.o picture.o function.o exec.o
-test instruc.h -nt "$EXE" && rm class.o
-test pcfont.h -nt "$EXE" && rm picture.o
-test quarks.h -nt "$EXE" && rm bindings.o picture.o
+test heromesh.h -nt "$EXE" && rm bindings.o class.o picture.o function.o exec.o edit.o || true
+test instruc.h -nt "$EXE" && rm class.o || true
+test pcfont.h -nt "$EXE" && rm picture.o || true
+test quarks.h -nt "$EXE" && rm bindings.o picture.o || true
 echo '* bindings'
 test bindings.c -nt bindings.o && bash bindings.c
 echo '* class'
@@ -24,6 +25,8 @@ echo '* picture'
 test picture.c -nt picture.o && bash picture.c
 echo '* exec'
 test exec.c -nt exec.o && bash exec.c
+echo '* edit'
+test edit.c -nt edit.o && bash edit.c
 echo '* main'
 bash main.c
 echo 'DONE'

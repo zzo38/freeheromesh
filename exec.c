@@ -111,6 +111,7 @@ Uint32 objalloc(Uint16 c) {
   return VOIDLINK;
 }
 
+// Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 static void execute_program(Uint16*code,int ptr,Uint32 obj) {
   Object*o=objects[obj];
   if(StackProtection()) Throw("Call stack overflow");

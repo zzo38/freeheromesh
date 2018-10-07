@@ -1,5 +1,5 @@
 #if 0
-gcc ${CFLAGS:--s -O2} -o ${EXE:-~/bin/heromesh} main.c class.o picture.o bindings.o function.o exec.o smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread
+gcc ${CFLAGS:--s -O2} -o ${EXE:-~/bin/heromesh} main.c class.o picture.o bindings.o function.o exec.o edit.o smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread
 exit
 #endif
 
@@ -728,6 +728,7 @@ static void set_stack_protection(void) {
 }
 #endif
 
+#define run_game() fatal("[Not implemented yet]\n")
 int main(int argc,char**argv) {
   int optind=1;
   while(argc>optind && argv[optind][0]=='-') {
@@ -778,5 +779,5 @@ int main(int argc,char**argv) {
     do_sql_mode();
     return 0;
   }
-  return 0; // for(;;) { if(main_options['e']) run_editor(); else run_game(); }
+  for(;;) { if(main_options['e']) run_editor(); else run_game(); }
 }
