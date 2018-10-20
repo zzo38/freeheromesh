@@ -1,5 +1,5 @@
 #if 0
-gcc ${CFLAGS:--s -O2} -c -Wno-unused-result bindings.c `sdl-config --cflags`
+gcc ${CFLAGS:--s -O2} -c -Wno-multichar bindings.c `sdl-config --cflags`
 exit
 #endif
 
@@ -157,3 +157,29 @@ const UserCommand*find_key_binding(SDL_Event*ev,int editing) {
   return kb->m+i;
 }
 
+int exec_key_binding(SDL_Event*ev,int editing,int x,int y,int(*cb)(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux),void*aux) {
+  const UserCommand*cmd=find_key_binding(ev,editing);
+  int prev=0;
+  int i;
+  switch(cmd->cmd) {
+    case 0:
+      return 0;
+    case '^':
+      return cb(0,cmd->n*'\0\1'+'^\0',0,0,0,aux);
+    case '=': case '-': case '+':
+      return cb(0,cmd->cmd*'\1\0'+'\0 ',cmd->n,0,0,aux);
+    case '\'':
+      return cb(0,'\' ',cmd->n,0,0,aux);
+    case '!':
+      system(cmd->txt);
+      return 0;
+    case 's':
+      sqlite3_reset(cmd->stmt);
+      sqlite3_clear_bindings(cmd->stmt);
+      
+      break;
+    default:
+      fprintf(stderr,"Confusion in exec_key_binding()\n");
+      return 0;
+  }
+}

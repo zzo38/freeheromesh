@@ -97,11 +97,12 @@ void draw_cell(int x,int y) {
   SDL_Rect dst={x,y,picture_size,picture_size};
   if(x<1 || x>64 || y<1 || y>64) return;
   SDL_FillRect(screen,&dst,back_color);
-  o=playfield[y*64+x+65];
+  o=playfield[y*64+x-65];
   while(o!=VOIDLINK) {
     if(!(objects[o]->oflags&OF_INVISIBLE)) {
       c=classes[objects[o]->class];
-      if(objects[o]->image<c->nimages) draw_picture(x*picture_size+left_margin,y*picture_size,c->images[objects[o]->image]&0x7FFF);
+      if(objects[o]->image<c->nimages)
+       draw_picture((x-1)*picture_size+left_margin,(y-1)*picture_size,c->images[objects[o]->image]&0x7FFF);
     }
     o=objects[o]->up;
   }
