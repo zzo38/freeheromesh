@@ -18,6 +18,7 @@ exit
 #include "pcfont.h"
 #include "quarks.h"
 #include "heromesh.h"
+#include "cursorshapes.h"
 
 SDL_Surface*screen;
 Uint16 picture_size;
@@ -130,6 +131,73 @@ void draw_text(int x,int y,const unsigned char*t,int bg,int fg) {
     t++;
     if(!--len) return;
     pix+=8;
+  }
+}
+
+const char*screen_prompt(const char*txt) {
+  static char*t=0;
+  int n=0;
+  SDL_Rect r={0,0,screen->w,16};
+  int m=r.w>>3;
+  SDL_Event ev;
+  if(!t) {
+    t=malloc(m+2);
+    if(!t) fatal("Allocation failed\n");
+  }
+  *t=0;
+  SDL_FillRect(screen,&r,0xF1);
+  r.y=16;
+  r.h=1;
+  SDL_FillRect(screen,&r,0xF8);
+  SDL_LockSurface(screen);
+  draw_text(0,0,txt,0xF1,0xFE);
+  draw_text(0,8,"\xB1",0xF1,0xFB);
+  SDL_UnlockSurface(screen);
+  set_cursor(XC_iron_cross);
+  SDL_Flip(screen);
+  r.y=8;
+  r.h=8;
+  while(SDL_WaitEvent(&ev)) {
+    switch(ev.type) {
+      case SDL_QUIT:
+        SDL_PushEvent(&ev);
+        return 0;
+      case SDL_KEYDOWN:
+        SDL_FillRect(screen,&r,0xF1);
+        switch(ev.key.keysym.sym) {
+          case SDLK_RETURN: case SDLK_KP_ENTER:
+            r.y=0;
+            r.h=17;
+            SDL_FillRect(screen,&r,0xF0);
+            t[n]=0;
+            return t;
+          case SDLK_BACKSPACE: case SDLK_DELETE:
+            if(n) t[n--]=0;
+            break;
+          case SDLK_CLEAR:
+            t[n=0]=0;
+            break;
+          default:
+            if(ev.key.keysym.sym==SDLK_u && (ev.key.keysym.mod&KMOD_CTRL)) {
+              t[n=0]=0;
+            } else if(ev.key.keysym.sym==SDLK_c && (ev.key.keysym.mod&KMOD_CTRL)) {
+              r.y=0;
+              r.h=17;
+              SDL_FillRect(screen,&r,0xF0);
+              return 0;
+            } else if(n<m && ev.key.keysym.unicode<127 && ev.key.keysym.unicode>=32 && !(ev.key.keysym.mod&KMOD_CTRL)) {
+              t[n++]=ev.key.keysym.unicode;
+              t[n]=0;
+            }
+        }
+        t[n]=0;
+        SDL_FillRect(screen,&r,0xF1);
+        SDL_LockSurface(screen);
+        draw_text(0,8,t,0xF1,0xFF);
+        draw_text(n<<3,8,"\xB1",0xF1,0xFB);
+        SDL_UnlockSurface(screen);
+        SDL_Flip(screen);
+    }
   }
 }
 
@@ -357,6 +425,7 @@ void init_screen(void) {
   } else {
     SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY,SDL_DEFAULT_REPEAT_INTERVAL);
   }
+  SDL_EnableUNICODE(1);
   optionquery[1]=Q_margin;
   left_margin=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"65",0,10);
 }

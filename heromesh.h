@@ -87,6 +87,7 @@ extern int left_margin;
 void draw_picture(int x,int y,Uint16 img);
 void draw_text(int x,int y,const unsigned char*t,int bg,int fg);
 void draw_cell(int x,int y);
+const char*screen_prompt(const char*txt);
 void load_pictures(void);
 
 // == class ==
@@ -153,6 +154,7 @@ typedef struct {
 
 void load_key_bindings(void);
 const UserCommand*find_key_binding(SDL_Event*ev,int editing);
+int exec_key_binding(SDL_Event*ev,int editing,int x,int y,int(*cb)(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux),void*aux);
 
 // == function ==
 

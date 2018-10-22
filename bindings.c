@@ -160,7 +160,12 @@ const UserCommand*find_key_binding(SDL_Event*ev,int editing) {
 int exec_key_binding(SDL_Event*ev,int editing,int x,int y,int(*cb)(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux),void*aux) {
   const UserCommand*cmd=find_key_binding(ev,editing);
   int prev=0;
-  int i;
+  int i,j,k;
+  const char*name;
+  if(ev->type==SDL_MOUSEBUTTONDOWN && !x && !y && ev->button.x>=left_margin) {
+    x=(ev->button.x-left_margin)/picture_size+1;
+    y=ev->button.y/picture_size+1;
+  }
   switch(cmd->cmd) {
     case 0:
       return 0;
@@ -171,13 +176,47 @@ int exec_key_binding(SDL_Event*ev,int editing,int x,int y,int(*cb)(int prev,int 
     case '\'':
       return cb(0,'\' ',cmd->n,0,0,aux);
     case '!':
-      system(cmd->txt);
+      i=system(cmd->txt);
       return 0;
     case 's':
       sqlite3_reset(cmd->stmt);
       sqlite3_clear_bindings(cmd->stmt);
-      
-      break;
+      if(sqlite3_bind_parameter_count(cmd->stmt)) {
+        for(i=sqlite3_bind_parameter_count(cmd->stmt);i;--i) if(name=sqlite3_bind_parameter_name(cmd->stmt,i)) {
+          if(*name=='$') {
+            if(!sqlite3_stricmp(name+1,"X")) {
+              if(x) sqlite3_bind_int(cmd->stmt,i,x);
+            } else if(!sqlite3_stricmp(name+1,"Y")) {
+              if(y) sqlite3_bind_int(cmd->stmt,i,y);
+            } else if(!sqlite3_stricmp(name+1,"LEVEL")) {
+              sqlite3_bind_int(cmd->stmt,i,level_ord);
+            } else if(!sqlite3_stricmp(name+1,"LEVEL_ID")) {
+              sqlite3_bind_int(cmd->stmt,i,level_id);
+            }
+          } else if(*name==':') {
+            name=screen_prompt(name);
+            if(!name) return 0;
+            sqlite3_bind_text(cmd->stmt,i,name,-1,SQLITE_TRANSIENT);
+          }
+        }
+      }
+      while((i=sqlite3_step(cmd->stmt))==SQLITE_ROW) {
+        if(i=sqlite3_data_count(cmd->stmt)) {
+          j=i>1?sqlite3_column_int(cmd->stmt,1):0;
+          if((name=sqlite3_column_text(cmd->stmt,0)) && *name) {
+            k=name[0]*'\1\0'+name[1]*'\0\1';
+            prev=cb(prev,k,j,i,cmd->stmt,aux);
+            if(prev<0) {
+              i=SQLITE_DONE;
+              break;
+            }
+          }
+        }
+      }
+      sqlite3_reset(cmd->stmt);
+      sqlite3_clear_bindings(cmd->stmt);
+      if(i!=SQLITE_DONE) fprintf(stderr,"SQL error in key binding: %s\n",sqlite3_errmsg(userdb)?:"unknown error");
+      return prev;
     default:
       fprintf(stderr,"Confusion in exec_key_binding()\n");
       return 0;

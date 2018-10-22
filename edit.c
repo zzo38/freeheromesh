@@ -1,5 +1,5 @@
 #if 0
-gcc ${CFLAGS:--s -O2} -c edit.c `sdl-config --cflags`
+gcc ${CFLAGS:--s -O2} -c -Wno-multichar edit.c `sdl-config --cflags`
 exit
 #endif
 
@@ -11,6 +11,7 @@ exit
 #include "smallxrm.h"
 #include "heromesh.h"
 #include "quarks.h"
+#include "cursorshapes.h"
 
 static void redraw_editor(void) {
   SDL_Rect r;
@@ -26,6 +27,9 @@ static void redraw_editor(void) {
   r.w=screen->w-r.x;
   SDL_FillRect(screen,&r,back_color);
   for(x=1;x<=pfwidth;x++) for(y=1;y<=pfheight;y++) draw_cell(x,y);
+  SDL_LockSurface(screen);
+  draw_text(0,0,"EDIT",0xF0,0xF7);
+  SDL_UnlockSurface(screen);
   SDL_Flip(screen);
 }
 
@@ -48,8 +52,20 @@ static void set_caption(void) {
   sqlite3_free(s);
 }
 
+static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
+  switch(cmd) {
+    case '^P': // Play
+      return -2;
+    case '^Q': // Quit
+      return -1;
+    default:
+      return prev;
+  }
+}
+
 void run_editor(void) {
   SDL_Event ev;
+  int i;
   set_caption();
   load_level(level_id);
   redraw_editor();
@@ -60,6 +76,21 @@ void run_editor(void) {
         break;
       case SDL_QUIT:
         exit(0);
+        break;
+      case SDL_MOUSEMOTION:
+        set_cursor(ev.motion.x<left_margin?XC_arrow:XC_tcross);
+        break;
+      case SDL_MOUSEBUTTONDOWN:
+        
+        // fallthrough
+      case SDL_KEYDOWN:
+        i=exec_key_binding(&ev,1,0,0,editor_command,0);
+        if(i==-1) exit(0);
+        if(i==-2) {
+          main_options['e']=0;
+          return;
+        }
+        redraw_editor();
         break;
     }
   }

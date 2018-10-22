@@ -611,6 +611,9 @@ static void test_mode(void) {
         case SDLK_q:
           exit(0);
           break;
+        case SDLK_t:
+          puts(screen_prompt("Testing screen_prompt()")?:"No output.");
+          break;
       }
       break;
     case SDL_MOUSEBUTTONDOWN:
