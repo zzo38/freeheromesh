@@ -182,6 +182,18 @@ void write_lump(int sol,int lvl,long sz,const unsigned char*data) {
   sqlite3_finalize(st);
 }
 
+static void load_level_index(void) {
+  long sz;
+  int i;
+  unsigned char*data=read_lump(0,LUMP_LEVEL_IDX,&sz,0);
+  if(!data) return;
+  if(sz>65536) fatal("Too many levels\n");
+  level_index=malloc((level_nindex=sz>>1)*sizeof(Uint16));
+  if(!level_index) fatal("Allocation failed\n");
+  for(i=0;i<level_nindex;i++) level_index[i]=data[i+i]|(data[i+i+1]<<8);
+  free(data);
+}
+
 const char*load_level(int lvl) {
   // Load level by ID. Returns null pointer if successful, or an error message if it failed.
   long sz=0;
@@ -298,6 +310,13 @@ const char*load_level(int lvl) {
   if(p>end) goto bad1;
   free(buf);
   level_id=lvl;
+  level_ord=0;
+  if(level_index) {
+    for(i=0;i<level_nindex;i++) if(level_index[i]==lvl) {
+      level_ord=i+1;
+      break;
+    }
+  }
   return 0;
 bad1:
   free(buf);
@@ -774,6 +793,7 @@ int main(int argc,char**argv) {
   }
   init_usercache();
   load_classes();
+  load_level_index();
   optionquery[1]=Q_maxObjects;
   max_objects=strtoll(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,0)?:0xFFFF0000L;
   annihilate();
