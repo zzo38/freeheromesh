@@ -165,12 +165,13 @@ int exec_key_binding(SDL_Event*ev,int editing,int x,int y,int(*cb)(int prev,int 
   if(ev->type==SDL_MOUSEBUTTONDOWN && !x && !y && ev->button.x>=left_margin) {
     x=(ev->button.x-left_margin)/picture_size+1;
     y=ev->button.y/picture_size+1;
+    if(x<1 || y<1 || x>pfwidth || y>pfheight) return 0;
   }
   switch(cmd->cmd) {
     case 0:
       return 0;
     case '^':
-      return cb(0,cmd->n*'\0\1'+'^\0',0,0,0,aux);
+      return cb(0,cmd->n*'\0\1'+'^\0',y*64+x,0,0,aux);
     case '=': case '-': case '+':
       return cb(0,cmd->cmd*'\1\0'+'\0 ',cmd->n,0,0,aux);
     case '\'':
@@ -205,6 +206,7 @@ int exec_key_binding(SDL_Event*ev,int editing,int x,int y,int(*cb)(int prev,int 
           j=i>1?sqlite3_column_int(cmd->stmt,1):0;
           if((name=sqlite3_column_text(cmd->stmt,0)) && *name) {
             k=name[0]*'\1\0'+name[1]*'\0\1';
+            while(i && sqlite3_column_type(cmd->stmt,i-1)==SQLITE_NULL) i--;
             prev=cb(prev,k,j,i,cmd->stmt,aux);
             if(prev<0) {
               i=SQLITE_DONE;

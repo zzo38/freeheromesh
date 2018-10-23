@@ -14,6 +14,7 @@ exit
 #include "cursorshapes.h"
 
 static void redraw_editor(void) {
+  char buf[32];
   SDL_Rect r;
   int x,y;
   r.x=r.y=0;
@@ -27,8 +28,53 @@ static void redraw_editor(void) {
   r.w=screen->w-r.x;
   SDL_FillRect(screen,&r,back_color);
   for(x=1;x<=pfwidth;x++) for(y=1;y<=pfheight;y++) draw_cell(x,y);
+  x=y=0;
+  SDL_GetMouseState(&x,&y);
   SDL_LockSurface(screen);
-  draw_text(0,0,"EDIT",0xF0,0xF7);
+  if(left_margin>=88) {
+    snprintf(buf,32,"%5d/%5d",level_ord,level_nindex);
+    draw_text(0,0,buf,0xF0,0xFC);
+    snprintf(buf,32,"%5d",level_id);
+    draw_text(0,8,"ID",0xF0,0xF7);
+    draw_text(48,8,buf,0xF0,0xFF);
+    snprintf(buf,32,"%5d",level_version);
+    draw_text(0,16,"VER",0xF0,0xF7);
+    draw_text(48,16,buf,0xF0,0xFF);
+    snprintf(buf,32,"%5d",level_code);
+    draw_text(0,24,"CODE",0xF0,0xF7);
+    draw_text(48,24,buf,0xF0,0xFF);
+  } else {
+    snprintf(buf,32,"%5d",level_ord);
+    draw_text(16,0,buf,0xF0,0xFC);
+    snprintf(buf,32,"%5d",level_id);
+    draw_text(0,8,"I",0xF0,0xF7);
+    draw_text(16,8,buf,0xF0,0xFF);
+    snprintf(buf,32,"%5d",level_version);
+    draw_text(0,16,"V",0xF0,0xF7);
+    draw_text(16,16,buf,0xF0,0xFF);
+    snprintf(buf,32,"%5d",level_code);
+    draw_text(0,24,"C",0xF0,0xF7);
+    draw_text(16,24,buf,0xF0,0xFF);
+  }
+  x=x>=left_margin?(x-left_margin)/picture_size+1:0;
+  y=y/picture_size+1;
+  if(x>0 && y>0 && x<=pfwidth && y<=pfheight) snprintf(buf,8,"(%2d,%2d)",x,y);
+  else strcpy(buf,"       ");
+  draw_text(0,32,buf,0xF0,0xF3);
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+}
+
+static void show_mouse_xy(SDL_Event*ev) {
+  char buf[32];
+  int x,y;
+  x=(ev->motion.x-left_margin)/picture_size+1;
+  y=ev->motion.y/picture_size+1;
+  if(ev->motion.x<left_margin) x=0;
+  if(x>0 && y>0 && x<=pfwidth && y<=pfheight) snprintf(buf,8,"(%2d,%2d)",x,y);
+  else strcpy(buf,"       ");
+  SDL_LockSurface(screen);
+  draw_text(0,32,buf,0xF0,0xF3);
   SDL_UnlockSurface(screen);
   SDL_Flip(screen);
 }
@@ -79,6 +125,7 @@ void run_editor(void) {
         break;
       case SDL_MOUSEMOTION:
         set_cursor(ev.motion.x<left_margin?XC_arrow:XC_tcross);
+        show_mouse_xy(&ev);
         break;
       case SDL_MOUSEBUTTONDOWN:
         
