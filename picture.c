@@ -100,7 +100,7 @@ void draw_cell(int x,int y) {
   SDL_FillRect(screen,&dst,back_color);
   o=playfield[y*64+x-65];
   while(o!=VOIDLINK) {
-    if(!(objects[o]->oflags&OF_INVISIBLE)) {
+    if(main_options['e'] || !(objects[o]->oflags&OF_INVISIBLE)) {
       c=classes[objects[o]->class];
       if(objects[o]->image<c->nimages)
        draw_picture((x-1)*picture_size+left_margin,(y-1)*picture_size,c->images[objects[o]->image]&0x7FFF);
