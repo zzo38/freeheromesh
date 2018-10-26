@@ -201,8 +201,13 @@ const char*load_level(int lvl) {
   unsigned char*p=buf;
   unsigned char*end=buf+sz;
   int i,n,x,y,z;
+  Uint16 lo=0;
   Uint32 o;
   Uint32 mru[2];
+  if(lvl<0 && level_index && -lvl<=level_nindex) {
+    lo=-lvl;
+    lvl=level_index[~lvl];
+  }
   if(lvl<0) return "Invalid level ID";
   if(!buf) return "Cannot find level";
   free(level_title);
@@ -310,8 +315,8 @@ const char*load_level(int lvl) {
   if(p>end) goto bad1;
   free(buf);
   level_id=lvl;
-  level_ord=0;
-  if(level_index) {
+  level_ord=lo;
+  if(level_index && !lo) {
     for(i=0;i<level_nindex;i++) if(level_index[i]==lvl) {
       level_ord=i+1;
       break;

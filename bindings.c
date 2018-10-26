@@ -203,7 +203,7 @@ int exec_key_binding(SDL_Event*ev,int editing,int x,int y,int(*cb)(int prev,int 
       }
       while((i=sqlite3_step(cmd->stmt))==SQLITE_ROW) {
         if(i=sqlite3_data_count(cmd->stmt)) {
-          j=i>1?sqlite3_column_int(cmd->stmt,1):0;
+          j=(i>1&&sqlite3_column_type(cmd->stmt,1)!=SQLITE_NULL)?sqlite3_column_int(cmd->stmt,1):y*64+x;
           if((name=sqlite3_column_text(cmd->stmt,0)) && *name) {
             k=name[0]*'\1\0'+name[1]*'\0\1';
             while(i && sqlite3_column_type(cmd->stmt,i-1)==SQLITE_NULL) i--;

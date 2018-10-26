@@ -56,11 +56,14 @@ static void redraw_editor(void) {
     draw_text(0,24,"C",0xF0,0xF7);
     draw_text(16,24,buf,0xF0,0xFF);
   }
+  snprintf(buf,8,"%2dx%2d",pfwidth,pfheight);
+  draw_text(8,32,buf,0xF0,0xFD);
+  draw_text(24,32,"x",0xF0,0xF5);
   x=x>=left_margin?(x-left_margin)/picture_size+1:0;
   y=y/picture_size+1;
   if(x>0 && y>0 && x<=pfwidth && y<=pfheight) snprintf(buf,8,"(%2d,%2d)",x,y);
   else strcpy(buf,"       ");
-  draw_text(0,32,buf,0xF0,0xF3);
+  draw_text(0,40,buf,0xF0,0xF3);
   SDL_UnlockSurface(screen);
   SDL_Flip(screen);
 }
@@ -74,7 +77,7 @@ static void show_mouse_xy(SDL_Event*ev) {
   if(x>0 && y>0 && x<=pfwidth && y<=pfheight) snprintf(buf,8,"(%2d,%2d)",x,y);
   else strcpy(buf,"       ");
   SDL_LockSurface(screen);
-  draw_text(0,32,buf,0xF0,0xF3);
+  draw_text(0,40,buf,0xF0,0xF3);
   SDL_UnlockSurface(screen);
   SDL_Flip(screen);
 }
@@ -129,6 +132,7 @@ void run_editor(void) {
         break;
       case SDL_MOUSEBUTTONDOWN:
         
+        if(ev.button.x<left_margin) break;
         // fallthrough
       case SDL_KEYDOWN:
         i=exec_key_binding(&ev,1,0,0,editor_command,0);
