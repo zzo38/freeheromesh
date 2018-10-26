@@ -429,3 +429,84 @@ void init_screen(void) {
   optionquery[1]=Q_margin;
   left_margin=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"65",0,10);
 }
+
+// Widgets
+
+static void draw_scrollbar(int*cur,int page,int max,int x0,int y0,int x1,int y1) {
+  Uint8*pix=screen->pixels;
+  Uint16 pitch=screen->pitch;
+  int x,y,m0,m1;
+  double f;
+  f=(y1-y0)/(double)(max+page);
+  if(*cur<0) *cur=0; else if(*cur>max) *cur=max;
+  m0=*cur*f+y0;
+  m1=(*cur+page)*f+y0;
+  pix+=y0*pitch;
+  SDL_LockSurface(screen);
+  for(y=y0;y<y1;y++) {
+    for(x=x0;x<x1;x++) pix[x]=y<m0?0xFF:y>m1?0xFF:(y^x)&1?0xF0:0xFF;
+    pix[x1]=0xFF;
+    pix+=pitch;
+  }
+  SDL_UnlockSurface(screen);
+}
+
+int scrollbar(int*cur,int page,int max,SDL_Event*ev,SDL_Rect*re) {
+  int x0=re?re->x:0;
+  int y0=re?re->y:0;
+  int x1=re?re->x+12:12;
+  int y1=re?re->y+re->h:screen->h;
+  int y;
+  double f;
+  switch(ev?ev->type:SDL_VIDEOEXPOSE) {
+    case SDL_MOUSEMOTION:
+      if(ev->motion.x<x0 || ev->motion.x>x1 || ev->motion.y<y0 || ev->motion.y>=y1) return 0;
+      if(ev->motion.state&SDL_BUTTON(2)) {
+        y=ev->motion.y;
+        goto move;
+      } else if(ev->motion.state&SDL_BUTTON(1)) {
+        set_cursor(XC_sb_up_arrow);
+      } else if(ev->motion.state&SDL_BUTTON(3)) {
+        set_cursor(XC_sb_down_arrow);
+      } else {
+        set_cursor(XC_sb_v_double_arrow);
+      }
+      return 1;
+    case SDL_MOUSEBUTTONDOWN:
+      if(ev->button.x<x0 || ev->button.x>x1 || ev->button.y<y0 || ev->button.y>=y1) return 0;
+      if(ev->button.button==2) {
+        y=ev->button.y;
+        goto move;
+      } else if(ev->button.button==1) {
+        set_cursor(XC_sb_up_arrow);
+      } else if(ev->button.button==3) {
+        set_cursor(XC_sb_down_arrow);
+      }
+      return 1;
+    case SDL_MOUSEBUTTONUP:
+      if(ev->button.x<x0 || ev->button.x>x1 || ev->button.y<y0 || ev->button.y>=y1) return 0;
+      f=(y1-y0)/(double)page;
+      y=(ev->button.y-y0+0.5)/f;
+      if(ev->button.button==1) {
+        *cur+=y;
+      } else if(ev->button.button==3) {
+        *cur-=y;
+      }
+      draw_scrollbar(cur,page,max,x0,y0,x1,y1);
+      SDL_Flip(screen);
+      set_cursor(XC_sb_v_double_arrow);
+      return 1;
+    case SDL_VIDEOEXPOSE:
+      draw_scrollbar(cur,page,max,x0,y0,x1,y1);
+      return 0;
+    default:
+      return 0;
+  }
+  move:
+  f=(y1-y0)/(double)(max+page);
+  *cur=(y-y0+0.5)/f;
+  draw_scrollbar(cur,page,max,x0,y0,x1,y1);
+  SDL_Flip(screen);
+  set_cursor(XC_sb_right_arrow);
+  return 1;
+}

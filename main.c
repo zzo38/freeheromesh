@@ -597,6 +597,7 @@ static void test_mode(void) {
   SDL_Event ev;
   char buf[32];
   const UserCommand*uc;
+  int i;
   set_cursor(XC_tcross);
   SDL_LockSurface(screen);
   draw_text(0,0,"Hello, World!",0xF0,0xFF);
@@ -635,6 +636,8 @@ static void test_mode(void) {
         case SDLK_q:
           exit(0);
           break;
+        case SDLK_s:
+          goto scrolltest;
         case SDLK_t:
           puts(screen_prompt("Testing screen_prompt()")?:"No output.");
           break;
@@ -681,6 +684,41 @@ keytest:
       exit(0);
       break;
   }
+  fatal("An error occurred waiting for events.\n");
+scrolltest:
+  SDL_FillRect(screen,0,0xF2);
+  i=0;
+  scrollbar(&i,10,n,0,0);
+  draw_picture(16,screen->h/10,1);
+  draw_picture(16,(2*screen->h)/10,2);
+  draw_picture(16,(3*screen->h)/10,3);
+  SDL_Flip(screen);
+  set_cursor(XC_arrow);
+  while(SDL_WaitEvent(&ev)) switch(ev.type) {
+    case SDL_KEYDOWN:
+      if(ev.key.keysym.sym==SDLK_SPACE) exit(0);
+      break;
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONUP:
+      scrollbar(&i,10,n,&ev,0);
+      printf("scroll %d %d\n",i,n);
+      break;
+    case SDL_MOUSEMOTION:
+      if(!scrollbar(&i,10,n,&ev,0)) set_cursor(XC_arrow);
+      break;
+    case SDL_VIDEOEXPOSE:
+      SDL_FillRect(screen,0,0xF2);
+      scrollbar(&i,10,n,&ev,0);
+      draw_picture(16,screen->h/10,1);
+      draw_picture(16,(2*screen->h)/10,2);
+      draw_picture(16,(3*screen->h)/10,3);
+      SDL_Flip(screen);
+      break;
+    case SDL_QUIT:
+      exit(0);
+      break;
+  }
+  fatal("An error occurred waiting for events.\n");
 }
 
 static void do_sql_mode(void) {

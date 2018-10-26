@@ -90,6 +90,8 @@ void draw_cell(int x,int y);
 const char*screen_prompt(const char*txt);
 void load_pictures(void);
 
+int scrollbar(int*cur,int page,int max,SDL_Event*ev,SDL_Rect*re);
+
 // == class ==
 
 #define CF_PLAYER 0x01
