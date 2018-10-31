@@ -19,7 +19,8 @@ typedef struct {
   Value misc1,misc2,misc3;
 } MRU;
 
-static MRU mru[32];
+#define MRUCOUNT 32
+static MRU mru[MRUCOUNT];
 static int curmru;
 
 static void redraw_editor(void) {
@@ -73,7 +74,7 @@ static void redraw_editor(void) {
   if(x>0 && y>0 && x<=pfwidth && y<=pfheight) snprintf(buf,8,"(%2d,%2d)",x,y);
   else strcpy(buf,"       ");
   draw_text(0,40,buf,0xF0,0xF3);
-  for(x=0;x<32;x++) {
+  for(x=0;x<MRUCOUNT;x++) {
     y=picture_size*x+56;
     if(y+picture_size>screen->h) break;
     if(x==curmru) draw_text(0,y,">",0xF0,0xFE);
@@ -82,13 +83,13 @@ static void redraw_editor(void) {
   SDL_UnlockSurface(screen);
   r.w=r.h=picture_size;
   r.x=8;
-  for(x=0;x<32;x++) {
+  for(x=0;x<MRUCOUNT;x++) {
     y=picture_size*x+56;
     if(y+picture_size>screen->h) break;
     if(mru[x].class) {
       r.y=y;
       SDL_FillRect(screen,&r,0x00);
-      draw_picture(8,y,classes[mru[x].class]->images[mru[x].img]);
+      draw_picture(8,y,classes[mru[x].class]->images[mru[x].img]&0x7FFF);
     }
   }
   SDL_Flip(screen);
@@ -125,6 +126,16 @@ static void set_caption(void) {
   s=sqlite3_str_finish(m);
   if(s) SDL_WM_SetCaption(s,s); else SDL_WM_SetCaption("Free Hero Mesh","Free Hero Mesh");
   sqlite3_free(s);
+}
+
+static void add_mru(int cl,int img) {
+  int i;
+  for(i=0;i<MRUCOUNT-1;i++) if(mru[i].class==cl && mru[i].img==img) break;
+  memmove(mru+1,mru,i*sizeof(MRU));
+  mru[0].class=cl;
+  mru[0].img=img;
+  mru[0].dir=0;
+  mru[0].misc1=mru[0].misc2=mru[0].misc3=NVALUE(0);
 }
 
 static void class_image_select(void) {
@@ -216,14 +227,14 @@ static void class_image_select(void) {
           imgscroll=imgcount=0;
           for(i=0;i<classes[cl]->nimages;i++) if(classes[cl]->images[i]&0x8000) imglist[imgcount++]=i;
           img=*imglist;
-          goto redraw;
         } else {
           i=imgscroll+ev.button.y/picture_size;
           if(i<0 || i>=imgcount) break;
           img=imglist[i];
-          goto redraw;
         }
-        break;
+        if(ev.button.button==3 || ev.button.button==2) add_mru(cl,img);
+        if(ev.button.button==2) return;
+        goto redraw;
       case SDL_KEYDOWN:
         switch(ev.key.keysym.sym) {
           case SDLK_HOME: clscroll=0; goto redraw;
@@ -231,10 +242,37 @@ static void class_image_select(void) {
           case SDLK_PAGEDOWN: clscroll+=screen->h/8; goto redraw;
           case SDLK_PAGEUP: clscroll-=screen->h/8; goto redraw;
           case SDLK_ESCAPE: return;
-          case SDLK_TAB: namei=0; goto redraw;
+          case SDLK_CLEAR: case SDLK_DELETE: namei=0; goto redraw;
           case SDLK_BACKSPACE: if(namei) --namei; goto redraw;
+          case SDLK_TAB:
+            if(!cl) break;
+            strncpy(name,classes[cl]->name,254);
+            for(j=0;j<clcount;j++) if(cl==cllist[j]) break;
+            // Increase namei according to all directly following letters that are matching
+            while(namei<253 && classes[cl]->name[namei]) {
+              for(i=j+1;i<clcount;i++) {
+                if(sqlite3_strnicmp(name,classes[cllist[i]]->name,namei)) {
+                  // The first part of the name doesn't match; all others did, so accept the next letter.
+                  break;
+                } else {
+                  if(sqlite3_strnicmp(classes[cl]->name+namei,classes[cllist[i]]->name+namei,1)) {
+                    // The first part of the name matches but the next letter doesn't.
+                    goto redraw;
+                  } else {
+                    // The first part and next letter are both matching; see if the next one also matches.
+                    continue;
+                  }
+                }
+              }
+              ++namei;
+            }
+            goto redraw;
           default:
             j=ev.key.keysym.unicode;
+            if(j=='$' || j==21) {
+              namei=0;
+              goto redraw;
+            }
             if(j>32 && j<127 && namei<254) {
               name[namei++]=j;
               for(i=0;i<clcount;i++) {
