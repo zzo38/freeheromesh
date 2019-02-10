@@ -267,6 +267,18 @@ static void class_image_select(void) {
               ++namei;
             }
             goto redraw;
+          case SDLK_LEFT:
+            for(i=0;i<imgcount-1;i++) if(img==imglist[i+1]) {
+              img=imglist[i];
+              goto redraw;
+            }
+            break;
+          case SDLK_RIGHT:
+            for(i=0;i<imgcount-1;i++) if(img==imglist[i]) {
+              img=imglist[i+1];
+              goto redraw;
+            }
+            break;
           default:
             j=ev.key.keysym.unicode;
             if(j=='$' || j==21) {
