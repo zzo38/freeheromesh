@@ -13,6 +13,10 @@ exit
 #include "heromesh.h"
 #include "instruc.h"
 
+#ifndef VSTACKSIZE
+#define VSTACKSIZE 0x400
+#endif
+
 Uint32 max_objects;
 Uint32 generation_number;
 Object**objects;
@@ -33,9 +37,13 @@ static jmp_buf my_env;
 static const char*my_error;
 static MessageVars msgvars;
 static char lastimage_processing;
+static Value vstack[VSTACKSIZE];
+static int vstackptr;
 
 #define Throw(x) (my_error=(x),longjmp(my_env,1))
-#define StackReq(x,y)
+#define StackReq(x,y) do{ if(vstackptr<(x)) Throw("Stack underflow"); if(vstackptr-(x)+(y)>=VSTACKSIZE) Throw("Stack overflow"); }while(0)
+#define Push(x) (vstack[vstackptr++]=(x))
+#define Pop() (vstack[--vstackptr])
 
 void pfunlink(Uint32 n) {
   Object*o=objects[n];
@@ -111,14 +119,55 @@ Uint32 objalloc(Uint16 c) {
   return VOIDLINK;
 }
 
+static inline int v_bool(Value v) {
+  switch(v.t) {
+    case TY_NUMBER: return v.u!=0;
+    case TY_SOUND: case TY_USOUND: Throw("Cannot convert sound to boolean");
+    default: return 1;
+  }
+}
+
+static Uint32 v_object(Value v) {
+  if(v.t==TY_NUMBER) {
+    if(v.u) Throw("Cannot convert number to object");
+    return VOIDLINK;
+  } else if(v.t>TY_MAXTYPE) {
+    if(v.u>=nobjects || !objects[v.u]) Throw("Attempt to use a nonexistent object");
+    if(objects[v.u]->generation!=v.t) Throw("Attempt to use a nonexistent object");
+    return v.u;
+  } else {
+    Throw("Cannot convert non-object to object");
+  }
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 static void execute_program(Uint16*code,int ptr,Uint32 obj) {
   Object*o=objects[obj];
+  Value t1,t2;
   if(StackProtection()) Throw("Call stack overflow");
   for(;;) switch(code[ptr++]) {
-    case OP_GOTO: ptr=code[ptr]; break;
+    case 0x0000 ... 0x00FF: StackReq(0,1); Push(NVALUE(code[ptr-1])); break;
+    case 0x0100 ... 0x01FF: StackReq(0,1); Push(NVALUE(code[ptr-1]-0x200)); break;
+    case 0x0200 ... 0x02FF: StackReq(0,1); Push(MVALUE(code[ptr-1]&255)); break;
+    case 0x0300 ... 0x03FF: StackReq(0,1); Push(UVALUE(code[ptr-1]&255,TY_SOUND)); break;
+    case 0x0400 ... 0x04FF: StackReq(0,1); Push(UVALUE(code[ptr-1]&255,TY_USOUND)); break;
+    case 0x4000 ... 0x7FFF: StackReq(0,1); Push(CVALUE(code[ptr-1]-0x4000)); break;
+    case 0x87E8 ... 0x87FF: StackReq(0,1); Push(NVALUE(1UL<<(code[ptr-1]&31))); break;
+    case 0xC000 ... 0xFFFF: StackReq(0,1); Push(NVALUE((code[ptr-1]&0x3FFF)+256)); break;
     case OP_CALLSUB: execute_program(code,code[ptr++],obj); break;
+    case OP_DROP: StackReq(1,0); Pop(); break;
+    case OP_DROP_D: StackReq(2,0); Pop(); Pop(); break;
+    case OP_DUP: StackReq(1,2); t1=Pop(); Push(t1); Push(t1); break;
+    case OP_GOTO: ptr=code[ptr]; break;
+    case OP_IF: StackReq(1,0); if(v_bool(Pop())) ptr=code[ptr]; else ptr++; break;
+    case OP_INT16: StackReq(0,1); Push(NVALUE(code[ptr++])); break;
+    case OP_INT32: StackReq(0,1); t1=UVALUE(code[ptr++]<<16,TY_NUMBER); t1.u|=code[ptr++]; Push(t1); break;
+    case OP_LAND: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1) && v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_LNOT: StackReq(1,1); if(v_bool(Pop())) Push(NVALUE(0)); else Push(NVALUE(1)); break;
+    case OP_LOR: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1) || v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_NIP: StackReq(2,1); t1=Pop(); Pop(); Push(t1); break;
     case OP_RET: return;
+    case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
     default: Throw("Internal error: Unrecognized opcode");
   }
 }
@@ -128,6 +177,7 @@ static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2
   Uint16 c=objects[to]->class;
   Uint16 p=get_message_ptr(c,msg);
   Uint16*code;
+  int stackptr=vstackptr;
   if(p==0xFFFF) {
     p=get_message_ptr(0,msg);
     if(!p) return NVALUE(0);
@@ -135,11 +185,16 @@ static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2
   } else {
     code=classes[c]->codes;
   }
-  
   msgvars=(MessageVars){msg,from,arg1,arg2,arg3};
   execute_program(code,p,to);
   msgvars=saved;
-  
+  if(vstackptr<stackptr) Throw("Message code used up too much data from stack");
+  if(vstackptr>stackptr+1) Throw("Message code left too much data on stack");
+  if(vstackptr==stackptr) {
+    return NVALUE(0);
+  } else {
+    return Pop();
+  }
 }
 
 void annihilate(void) {
@@ -156,6 +211,7 @@ void annihilate(void) {
 const char*execute_turn(int key) {
   if(setjmp(my_env)) return my_error;
   lastimage_processing=0;
+  vstackptr=0;
   
   return 0;
 }

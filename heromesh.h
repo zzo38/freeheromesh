@@ -169,6 +169,7 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1);
 // The following "internal object flags" are part of the "dir" variable:
 #define IOF_DEAD 0x10 // object doesn't exist, except to continue an animation
 #define IOF_ANIM 0x20 // an animation is being displayed
+// If the IOF_DEAD flag is set, then generation should also be set to zero.
 
 typedef struct {
   Sint32 height,weight,climb,density,volume,strength,arrivals,departures,temperature;
