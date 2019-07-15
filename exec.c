@@ -26,6 +26,7 @@ Uint32 firstobj=VOIDLINK;
 Uint32 lastobj=VOIDLINK;
 Uint32 playfield[64*64];
 Uint8 pfwidth,pfheight;
+Sint8 gameover,key_ignored;
 
 typedef struct {
   Uint16 msg;
@@ -36,7 +37,7 @@ typedef struct {
 static jmp_buf my_env;
 static const char*my_error;
 static MessageVars msgvars;
-static char lastimage_processing;
+static char lastimage_processing,changed;
 static Value vstack[VSTACKSIZE];
 static int vstackptr;
 
@@ -141,7 +142,10 @@ static Uint32 v_object(Value v) {
 }
 
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
+#define NoIgnore() do{ changed=1; }while(0)
+#define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
 static void execute_program(Uint16*code,int ptr,Uint32 obj) {
+  Uint32 i;
   Object*o=objects[obj];
   Value t1,t2;
   if(StackProtection()) Throw("Call stack overflow");
@@ -151,10 +155,14 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case 0x0200 ... 0x02FF: StackReq(0,1); Push(MVALUE(code[ptr-1]&255)); break;
     case 0x0300 ... 0x03FF: StackReq(0,1); Push(UVALUE(code[ptr-1]&255,TY_SOUND)); break;
     case 0x0400 ... 0x04FF: StackReq(0,1); Push(UVALUE(code[ptr-1]&255,TY_USOUND)); break;
+    case 0x2000 ... 0x2FFF: StackReq(0,1); Push(o->uservars[code[ptr-1]&0xFFF]); break;
+    case 0x3000 ... 0x3FFF: NoIgnore(); StackReq(1,0); o->uservars[code[ptr-1]&0xFFF]=Pop(); break;
     case 0x4000 ... 0x7FFF: StackReq(0,1); Push(CVALUE(code[ptr-1]-0x4000)); break;
     case 0x87E8 ... 0x87FF: StackReq(0,1); Push(NVALUE(1UL<<(code[ptr-1]&31))); break;
     case 0xC000 ... 0xFFFF: StackReq(0,1); Push(NVALUE((code[ptr-1]&0x3FFF)+256)); break;
     case OP_CALLSUB: execute_program(code,code[ptr++],obj); break;
+    case OP_CLASS: StackReq(0,1); Push(CVALUE(o->class)); break;
+    case OP_CLASS_C: StackReq(1,1); Push(GetVariableOf(class,CVALUE)); break;
     case OP_DROP: StackReq(1,0); Pop(); break;
     case OP_DROP_D: StackReq(2,0); Pop(); Pop(); break;
     case OP_DUP: StackReq(1,2); t1=Pop(); Push(t1); Push(t1); break;
@@ -165,9 +173,11 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_LAND: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1) && v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_LNOT: StackReq(1,1); if(v_bool(Pop())) Push(NVALUE(0)); else Push(NVALUE(1)); break;
     case OP_LOR: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1) || v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_LOSELEVEL: gameover=-1; Throw(0); break;
     case OP_NIP: StackReq(2,1); t1=Pop(); Pop(); Push(t1); break;
     case OP_RET: return;
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
+    case OP_WINLEVEL: key_ignored=0; gameover=1; Throw(0); break;
     default: Throw("Internal error: Unrecognized opcode");
   }
 }
@@ -206,10 +216,13 @@ void annihilate(void) {
   nobjects=0;
   free(objects);
   objects=0;
+  gameover=0;
 }
 
 const char*execute_turn(int key) {
   if(setjmp(my_env)) return my_error;
+  changed=0;
+  key_ignored=0;
   lastimage_processing=0;
   vstackptr=0;
   

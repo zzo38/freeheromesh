@@ -191,6 +191,7 @@ extern Value globals[0x800];
 extern Uint32 firstobj,lastobj;
 extern Uint32 playfield[64*64];
 extern Uint8 pfwidth,pfheight;
+extern Sint8 gameover,key_ignored;
 
 void pfunlink(Uint32 n);
 void pflink(Uint32 n);
