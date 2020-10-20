@@ -199,6 +199,10 @@ Uint32 objalloc(Uint16 c);
 void annihilate(void);
 const char*execute_turn(int key);
 
+// == game ==
+
+void run_game(void);
+
 // == edit ==
 
 void run_editor(void);

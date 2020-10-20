@@ -226,5 +226,8 @@ const char*execute_turn(int key) {
   lastimage_processing=0;
   vstackptr=0;
   
+  if(key_ignored && changed) return "Invalid use of IgnoreKey";
+  
+  if(key_ignored && changed) return "Invalid use of IgnoreKey";
   return 0;
 }

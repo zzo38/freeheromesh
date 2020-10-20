@@ -3,6 +3,10 @@ gcc ${CFLAGS:--s -O2} -c -Wno-multichar edit.c `sdl-config --cflags`
 exit
 #endif
 
+/*
+  This program is part of Free Hero Mesh and is public domain.
+*/
+
 #include "SDL.h"
 #include <stdio.h>
 #include <stdlib.h>
