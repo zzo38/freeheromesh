@@ -201,6 +201,27 @@ const char*screen_prompt(const char*txt) {
   }
 }
 
+void screen_message(const char*txt) {
+  SDL_Rect r;
+  SDL_Event ev;
+  
+  set_cursor(XC_iron_cross);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) {
+    switch(ev.type) {
+      case SDL_QUIT:
+        SDL_PushEvent(&ev);
+        return;
+      case SDL_KEYDOWN:
+        
+        return;
+      case SDL_MOUSEBUTTONDOWN:
+        
+        return;
+    }
+  }
+}
+
 static Uint16 decide_picture_size(int nwantsize,const Uint8*wantsize,const Uint16*havesize,int n) {
   int i,j;
   if(!nwantsize) fatal("Unable to determine what picture size is wanted\n");

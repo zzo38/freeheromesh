@@ -117,10 +117,13 @@ void run_game(void) {
         if(ev.button.x<left_margin) {
           
           break;
+        } else {
+          i=exec_key_binding(&ev,0,(ev.button.x-left_margin)/picture_size+1,ev.button.y/picture_size+1,game_command,0);
+          goto command;
         }
-        // fallthrough
       case SDL_KEYDOWN:
         i=exec_key_binding(&ev,0,0,0,game_command,0);
+      command:
         if(i==-1) exit(0);
         if(i==-2) {
           main_options['e']=1;

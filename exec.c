@@ -220,6 +220,7 @@ void annihilate(void) {
 }
 
 const char*execute_turn(int key) {
+  // Set key=0 for initialization
   if(setjmp(my_env)) return my_error;
   changed=0;
   key_ignored=0;
