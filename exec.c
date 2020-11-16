@@ -80,8 +80,9 @@ Uint32 objalloc(Uint16 c) {
   // Returns VOIDLINK if object cannot be created.
   Uint32 n;
   Class*cl=classes[c];
-  Object*o=calloc(1,sizeof(Object)+cl->uservars*sizeof(Value));
+  Object*o=0;
   if(!c || !cl || cl->cflags&(CF_GROUP|CF_NOCLASS2)) goto bad;
+  o=calloc(1,sizeof(Object)+cl->uservars*sizeof(Value));
   if(!o) fatal("Allocation failed\n");
   o->class=c;
   o->generation=generation_number;

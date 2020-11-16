@@ -207,6 +207,8 @@ const char*load_level(int lvl) {
   if(lvl<0 && level_index && -lvl<=level_nindex) {
     lo=-lvl;
     lvl=level_index[~lvl];
+    p=buf=read_lump(FIL_LEVEL,lvl,&sz,0);
+    end=buf+sz;
   }
   if(lvl<0) return "Invalid level ID";
   if(!buf) return "Cannot find level";
