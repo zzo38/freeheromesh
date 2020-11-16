@@ -4,4 +4,5 @@ Puzzle sets may have their own copyright which might or might not differ
 from that of the Free Hero Mesh program itself.
 
 SDL1 is licensed by GNU LGPL. This means that if you redistribute Free
-Hero Mesh with SDL1, then you must follow that license.
+Hero Mesh with SDL1, or if you compile Free Hero Mesh and link it with
+SDL1, then you must follow that license.
