@@ -316,6 +316,9 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
     case '^c': // Select class/image
       class_image_select();
       return 0;
+    case '^L': // Select level
+      load_level(number);
+      return 1;
     case '^P': // Play
       return -2;
     case '^Q': // Quit

@@ -72,6 +72,7 @@ unsigned char*read_lump(int sol,int lvl,long*sz,sqlite3_value**us);
 void write_lump(int sol,int lvl,long sz,const unsigned char*data);
 const char*load_level(int lvl);
 void set_cursor(int id);
+const char*log_if_error(const char*t);
 
 #define FIL_SOLUTION 1
 #define FIL_LEVEL 0

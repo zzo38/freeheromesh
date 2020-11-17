@@ -795,6 +795,11 @@ static void set_stack_protection(void) {
 }
 #endif
 
+const char*log_if_error(const char*t) {
+  if(t && main_options['v']) fprintf(stderr,"!! %s\n",t);
+  return t;
+}
+
 int main(int argc,char**argv) {
   int optind=1;
   while(argc>optind && argv[optind][0]=='-') {
@@ -841,6 +846,8 @@ int main(int argc,char**argv) {
   optionquery[1]=Q_maxObjects;
   max_objects=strtoll(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,0)?:0xFFFF0000L;
   annihilate();
+  optionquery[1]=Q_level;
+  if(level_ord=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,10)) log_if_error(load_level(-level_ord));
   if(main_options['x']) {
     fprintf(stderr,"Ready for executing SQL statements.\n");
     do_sql_mode();
