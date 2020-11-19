@@ -1008,6 +1008,7 @@ static void one_level(FILE*fp,int ord) {
       else if(buf[12] || buf[13]) i|=0x80;
       else i|=0x40;
       if(i>=0xC0 && !buf[10] && !buf[11]) i&=0x3F;
+      fputc(i,fp);
       if(i&0xC0) {
         if((i&0x03)==0x02 && (buf[11] || buf[10]>20)) {
           j=buf[10]|(buf[11]<<8);
