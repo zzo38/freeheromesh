@@ -283,12 +283,34 @@ static void class_image_select(void) {
               goto redraw;
             }
             break;
+          case SDLK_UP:
+            namei=0;
+            for(i=1;i<clcount;i++) if(cl==cllist[i]) {
+              cl=cllist[i-1];
+              goto setclass;
+            }
+            break;
+          case SDLK_DOWN:
+            namei=0;
+            if(!cl) {
+              cl=*cllist;
+              goto setclass;
+            }
+            for(i=0;i<clcount-1;i++) if(cl==cllist[i]) {
+              cl=cllist[i+1];
+              goto setclass;
+            }
+            break;
+          case SDLK_RETURN:
+            add_mru(cl,img);
+            return;
           default:
             j=ev.key.keysym.unicode;
             if(j=='$' || j==21) {
               namei=0;
               goto redraw;
             }
+            if(j==27) return;
             if(j>32 && j<127 && namei<254) {
               name[namei++]=j;
               for(i=0;i<clcount;i++) {

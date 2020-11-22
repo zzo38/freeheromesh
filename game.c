@@ -73,6 +73,9 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       return number;
     case '^E': // Edit
       return -2;
+    case '^L': // Select level
+      load_level(number);
+      return 1;
     case '^Q': // Quit
       return -1;
     default:
