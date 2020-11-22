@@ -252,9 +252,9 @@ const char*load_level(int lvl) {
       if(z&0x10) y=*p++;
       if(z&0x40) x++;
       if(!x || !y || x>pfwidth || y>pfheight) goto bad2;
+      n=z&0x70?0:1;
       if(z&0x80) {
         // MRU
-        n=playfield[x+y*64-65]==VOIDLINK?0:1;
         if(mru[n]==VOIDLINK) goto bad1;
         o=objalloc(objects[mru[n]]->class);
         if(o==VOIDLINK) goto bad3;
@@ -269,8 +269,6 @@ const char*load_level(int lvl) {
         n=z&15;
       } else {
         // Not MRU
-        n=playfield[x+y*64-65];
-        n=n==VOIDLINK?0:objects[n]->down==VOIDLINK?1:2;
         i=*p++;
         i|=*p++<<8;
         o=objalloc(i&0x3FFF);

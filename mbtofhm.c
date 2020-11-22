@@ -946,6 +946,14 @@ static void one_level(FILE*fp,int ord) {
   n|=fgetc(stdin)<<8;
   x=q=r=0;
   y=1;
+  // Hero Mesh level format for objects:
+  //   0-1    Class
+  //   2-3    CurImage
+  //   4      LastDir
+  //   5      Misc Types
+  //   6-7    X
+  //   8-9    Y
+  //   10-15  Misc1,Misc2,Misc3
   // Free Hero Mesh level format for objects:
   //   * bit flags (or 0xFF for end):
   //     bit7 = MRU (omit everything but position)
@@ -973,7 +981,7 @@ static void one_level(FILE*fp,int ord) {
     i=0;
     if(buf[6]==x+1) i|=0x40; else if(buf[6]!=x) i|=0x20;
     if(buf[8]!=y) i|=0x10;
-    if(x==buf[6] && y==buf[8]) q+=16; else q=0;
+    q=i&0x70?0:16;
     if(q<32 && !memcmp(mru+q,buf,16)) {
       i|=0x80;
     } else {
