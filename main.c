@@ -216,6 +216,7 @@ const char*load_level(int lvl) {
   level_title=0;
   annihilate();
   generation_number=TY_MAXTYPE+1;
+  generation_number_inc=0;
   level_version=p[0]|(p[1]<<8);
   level_code=p[2]|(p[3]<<8);
   p+=4;

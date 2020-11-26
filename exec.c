@@ -27,6 +27,7 @@ Uint32 lastobj=VOIDLINK;
 Uint32 playfield[64*64];
 Uint8 pfwidth,pfheight;
 Sint8 gameover,key_ignored;
+Uint8 generation_number_inc;
 
 typedef struct {
   Uint16 msg;
@@ -85,6 +86,11 @@ Uint32 objalloc(Uint16 c) {
   o=calloc(1,sizeof(Object)+cl->uservars*sizeof(Value));
   if(!o) fatal("Allocation failed\n");
   o->class=c;
+  if(generation_number_inc) {
+    generation_number_inc=0;
+    ++generation_number;
+    if(generation_number<=TY_MAXTYPE) goto bad;
+  }
   o->generation=generation_number;
 #define C(x) o->x=cl->x;
   C(height) C(weight) C(climb) C(density) C(volume) C(strength) C(arrivals) C(departures) C(temperature)
@@ -119,6 +125,22 @@ Uint32 objalloc(Uint16 c) {
   bad:
   free(o);
   return VOIDLINK;
+}
+
+void objtrash(Uint32 n) {
+  Object*o=objects[n];
+  if(!o) return;
+  if(o->down==VOIDLINK) playfield[o->x+o->y*64-65]=o->up;
+  else objects[o->down]->up=o->up;
+  if(o->up!=VOIDLINK) objects[o->up]->down=o->down;
+  o->down=o->up=VOIDLINK;
+  if(firstobj==n) firstobj=o->next;
+  if(lastobj==n) lastobj=o->prev;
+  if(o->prev) objects[o->prev]->next=o->next;
+  if(o->next) objects[o->next]->prev=o->prev;
+  free(o);
+  objects[n]=0;
+  generation_number_inc=1;
 }
 
 static inline int v_bool(Value v) {
@@ -221,7 +243,6 @@ void annihilate(void) {
 }
 
 const char*execute_turn(int key) {
-  // Set key=0 for initialization
   if(setjmp(my_env)) return my_error;
   changed=0;
   key_ignored=0;
@@ -231,5 +252,18 @@ const char*execute_turn(int key) {
   if(key_ignored && changed) return "Invalid use of IgnoreKey";
   
   if(key_ignored && changed) return "Invalid use of IgnoreKey";
+  if(generation_number<=TY_MAXTYPE) return "Too many generations of objects";
+  return 0;
+}
+
+const char*init_level(void) {
+  if(setjmp(my_env)) return my_error;
+  gameover=0;
+  changed=0;
+  key_ignored=0;
+  lastimage_processing=0;
+  vstackptr=0;
+  
+  if(generation_number<=TY_MAXTYPE) return "Too many generations of objects";
   return 0;
 }

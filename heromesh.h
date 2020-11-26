@@ -193,12 +193,15 @@ extern Uint32 firstobj,lastobj;
 extern Uint32 playfield[64*64];
 extern Uint8 pfwidth,pfheight;
 extern Sint8 gameover,key_ignored;
+extern Uint8 generation_number_inc;
 
 void pfunlink(Uint32 n);
 void pflink(Uint32 n);
 Uint32 objalloc(Uint16 c);
+void objtrash(Uint32 n);
 void annihilate(void);
 const char*execute_turn(int key);
+const char*init_level(void);
 
 // == game ==
 
