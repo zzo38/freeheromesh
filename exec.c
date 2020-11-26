@@ -178,11 +178,13 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case 0x0200 ... 0x02FF: StackReq(0,1); Push(MVALUE(code[ptr-1]&255)); break;
     case 0x0300 ... 0x03FF: StackReq(0,1); Push(UVALUE(code[ptr-1]&255,TY_SOUND)); break;
     case 0x0400 ... 0x04FF: StackReq(0,1); Push(UVALUE(code[ptr-1]&255,TY_USOUND)); break;
-    case 0x2000 ... 0x2FFF: StackReq(0,1); Push(o->uservars[code[ptr-1]&0xFFF]); break;
-    case 0x3000 ... 0x3FFF: NoIgnore(); StackReq(1,0); o->uservars[code[ptr-1]&0xFFF]=Pop(); break;
+    case 0x2000 ... 0x27FF: StackReq(0,1); Push(o->uservars[code[ptr-1]&0x7FF]); break;
+    case 0x2800 ... 0x28FF: StackReq(0,1); Push(globals[code[ptr-1]&0x7FF]); break;
+    case 0x3000 ... 0x37FF: NoIgnore(); StackReq(1,0); o->uservars[code[ptr-1]&0x7FF]=Pop(); break;
+    case 0x3800 ... 0x38FF: NoIgnore(); StackReq(1,0); Push(globals[code[ptr-1]&0x7FF]); break;
     case 0x4000 ... 0x7FFF: StackReq(0,1); Push(CVALUE(code[ptr-1]-0x4000)); break;
     case 0x87E8 ... 0x87FF: StackReq(0,1); Push(NVALUE(1UL<<(code[ptr-1]&31))); break;
-    case 0xC000 ... 0xFFFF: StackReq(0,1); Push(NVALUE((code[ptr-1]&0x3FFF)+256)); break;
+    case 0xC000 ... 0xFFFF: StackReq(0,1); Push(MVALUE((code[ptr-1]&0x3FFF)+256)); break;
     case OP_CALLSUB: execute_program(code,code[ptr++],obj); break;
     case OP_CLASS: StackReq(0,1); Push(CVALUE(o->class)); break;
     case OP_CLASS_C: StackReq(1,1); Push(GetVariableOf(class,CVALUE)); break;
