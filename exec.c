@@ -10,6 +10,7 @@ exit
 #include <string.h>
 #include "sqlite3.h"
 #include "smallxrm.h"
+#include "quarks.h"
 #include "heromesh.h"
 #include "instruc.h"
 
@@ -28,6 +29,7 @@ Uint32 playfield[64*64];
 Uint8 pfwidth,pfheight;
 Sint8 gameover,key_ignored;
 Uint8 generation_number_inc;
+Uint32 move_number;
 
 typedef struct {
   Uint16 msg;
@@ -41,6 +43,7 @@ static MessageVars msgvars;
 static char lastimage_processing,changed;
 static Value vstack[VSTACKSIZE];
 static int vstackptr;
+static const char*traceprefix;
 
 #define Throw(x) (my_error=(x),longjmp(my_env,1))
 #define StackReq(x,y) do{ if(vstackptr<(x)) Throw("Stack underflow"); if(vstackptr-(x)+(y)>=VSTACKSIZE) Throw("Stack overflow"); }while(0)
@@ -164,6 +167,27 @@ static Uint32 v_object(Value v) {
   }
 }
 
+static void trace_stack(Uint32 obj) {
+  Value t2=Pop();
+  Value t1=Pop();
+  Value t0=Pop();
+  Object*o;
+  if(!main_options['t']) return;
+  if(!traceprefix) {
+    optionquery[1]=Q_tracePrefix;
+    traceprefix=xrm_get_resource(resourcedb,optionquery,optionquery,2);
+    if(!traceprefix) traceprefix="";
+  }
+  printf("%sTrace : %d : %u %u",traceprefix,vstackptr,t0.t,t0.u);
+  if(t0.t>TY_MAXTYPE && t0.u<nobjects && objects[t0.u] && objects[t0.u]->generation==t0.t) {
+    o=objects[t0.u];
+    printf(" [$%s %d %d]",classes[o->class]->name,o->x,o->y);
+  }
+  o=objects[obj];
+  printf(" : %u %u [$%s %d %d]",o->generation,obj,classes[o->class]->name,o->x,o->y);
+  printf(" : %u %u : %u %u\n",t1.t,t1.u,t2.t,t2.u);
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -202,6 +226,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_NIP: StackReq(2,1); t1=Pop(); Pop(); Push(t1); break;
     case OP_RET: return;
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
+    case OP_TRACE: StackReq(3,0); trace_stack(obj); break;
     case OP_WINLEVEL: key_ignored=0; gameover=1; Throw(0); break;
     default: Throw("Internal error: Unrecognized opcode");
   }
@@ -265,6 +290,7 @@ const char*init_level(void) {
   key_ignored=0;
   lastimage_processing=0;
   vstackptr=0;
+  move_number=0;
   
   if(generation_number<=TY_MAXTYPE) return "Too many generations of objects";
   return 0;
