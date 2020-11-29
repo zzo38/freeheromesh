@@ -23,6 +23,7 @@
 #define MSG_COLLIDING 21
 #define MSG_COLLIDE 22
 #define MSG_BIZARRO_SWAP 23
+#ifdef HEROMESH_MAIN
 const char*const standard_message_names[]={
  "INIT",
  "CREATE",
@@ -49,6 +50,7 @@ const char*const standard_message_names[]={
  "COLLIDE",
  "BIZARRO_SWAP",
 };
+#endif
 #define SND_SPLASH 0
 #define SND_POUR 1
 #define SND_DOOR 2
@@ -99,6 +101,7 @@ const char*const standard_message_names[]={
 #define SND_WHACK 47
 #define SND_STEAM 48
 #define SND_HAWK 49
+#ifdef HEROMESH_MAIN
 const char*const standard_sound_names[]={
  "SPLASH",
  "POUR",
@@ -237,3 +240,4 @@ const char*const heromesh_key_names[256]={
  [221]="CBRACKET",
  [222]="QUOTE",
 };
+#endif

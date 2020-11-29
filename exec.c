@@ -13,6 +13,7 @@ exit
 #include "quarks.h"
 #include "heromesh.h"
 #include "instruc.h"
+#include "names.h"
 
 #ifndef VSTACKSIZE
 #define VSTACKSIZE 0x400
@@ -178,7 +179,7 @@ static void trace_stack(Uint32 obj) {
     traceprefix=xrm_get_resource(resourcedb,optionquery,optionquery,2);
     if(!traceprefix) traceprefix="";
   }
-  printf("%sTrace : %d : %u %u",traceprefix,vstackptr,t0.t,t0.u);
+  printf("%s%d : Trace : %d : %u %u",traceprefix,move_number,vstackptr,t0.t,t0.u);
   if(t0.t>TY_MAXTYPE && t0.u<nobjects && objects[t0.u] && objects[t0.u]->generation==t0.t) {
     o=objects[t0.u];
     printf(" [$%s %d %d]",classes[o->class]->name,o->x,o->y);
@@ -232,6 +233,23 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
   }
 }
 
+static void trace_message(Uint32 obj) {
+  Object*o;
+  const char*s;
+  if(!traceprefix) {
+    optionquery[1]=Q_tracePrefix;
+    traceprefix=xrm_get_resource(resourcedb,optionquery,optionquery,2);
+    if(!traceprefix) traceprefix="";
+  }
+  if(msgvars.msg<256) s=standard_message_names[msgvars.msg]; else s=messages[msgvars.msg-256];
+  o=msgvars.from==VOIDLINK?0:objects[msgvars.from];
+  printf("%s%d : %s : %d : %u %u",traceprefix,move_number,s,vstackptr,o?o->generation:0,o?msgvars.from:0);
+  if(o) printf(" [$%s %d %d]",classes[o->class]->name,o->x,o->y);
+  o=objects[obj];
+  printf(" : %u %u [$%s %d %d]",o->generation,obj,classes[o->class]->name,o->x,o->y);
+  printf(" : %u %u : %u %u\n",msgvars.arg1.t,msgvars.arg1.u,msgvars.arg2.t,msgvars.arg2.u,msgvars.arg3.t,msgvars.arg3.u);
+}
+
 static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2,Value arg3) {
   MessageVars saved=msgvars;
   Uint16 c=objects[to]->class;
@@ -246,6 +264,11 @@ static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2
     code=classes[c]->codes;
   }
   msgvars=(MessageVars){msg,from,arg1,arg2,arg3};
+  if(main_options['t']) {
+    if(from==VOIDLINK || (classes[objects[from]->class]->cflags&CF_TRACEOUT)) {
+      if((classes[c]->cflags&CF_TRACEIN) && (message_trace[msg>>3]&(1<<(msg&7)))) trace_message(to);
+    }
+  }
   execute_program(code,p,to);
   msgvars=saved;
   if(vstackptr<stackptr) Throw("Message code used up too much data from stack");
@@ -255,6 +278,42 @@ static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2
   } else {
     return Pop();
   }
+}
+
+static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value arg3,int s) {
+  Uint32 t=0;
+  Uint32 n,p;
+  Object*o;
+  Value v;
+  if(c && !classes[c]->nmsg && (!classes[0] || !classes[0]->nmsg)) {
+    if(s) return 0;
+    for(n=0;n<nobjects;n++) if((o=objects[n]) && o->class==c) t++;
+    return t;
+  }
+  if(lastobj==VOIDLINK) return;
+  n=lastobj;
+  while(o=objects[n]) {
+    p=o->prev;
+    if(!c || o->class==c) {
+      v=send_message(from,n,msg,arg1,arg2,arg3);
+      if(s>0) {
+        switch(v.t) {
+          case TY_NUMBER: t+=v.u; break;
+          case TY_CLASS: t++; break;
+          case TY_MESSAGE: break;
+          default:
+            if(v.t<=TY_MAXTYPE) Throw("Invalid return type for BroadcastSum");
+            t++;
+        }
+      } else {
+        if(s<0) arg2=v;
+        t++;
+      }
+    }
+    if(p==VOIDLINK) break;
+    o=objects[p];
+  }
+  return t;
 }
 
 void annihilate(void) {
@@ -270,11 +329,16 @@ void annihilate(void) {
 }
 
 const char*execute_turn(int key) {
+  Uint32 n;
   if(setjmp(my_env)) return my_error;
   changed=0;
   key_ignored=0;
   lastimage_processing=0;
   vstackptr=0;
+  for(n=0;n<nobjects;n++) if(objects[n]) {
+    objects[n]->distance=0;
+    objects[n]->oflags&=~(OF_KEYCLEARED|OF_DONE);
+  }
   
   if(key_ignored && changed) return "Invalid use of IgnoreKey";
   
@@ -285,13 +349,15 @@ const char*execute_turn(int key) {
 
 const char*init_level(void) {
   if(setjmp(my_env)) return my_error;
+  if(main_options['t']) printf("[Level %d restarted]",level_id);
   gameover=0;
   changed=0;
   key_ignored=0;
   lastimage_processing=0;
   vstackptr=0;
   move_number=0;
-  
+  broadcast(0,0,MSG_INIT,NVALUE(0),NVALUE(0),NVALUE(0),0);
+  broadcast(0,0,MSG_POSTINIT,NVALUE(0),NVALUE(0),NVALUE(0),0);
   if(generation_number<=TY_MAXTYPE) return "Too many generations of objects";
   return 0;
 }
