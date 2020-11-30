@@ -225,6 +225,7 @@ QueueTurn ; queue another turn that automatically occurs after this one
 SetInventory
 Sound
 Trace
+,Transform
 VolumeAt
 WinLevel
 ,XDir

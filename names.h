@@ -23,6 +23,8 @@
 #define MSG_COLLIDING 21
 #define MSG_COLLIDE 22
 #define MSG_BIZARRO_SWAP 23
+#define MSG_TRANSFORMING 24
+#define MSG_TRANSFORMED 25
 #ifdef HEROMESH_MAIN
 const char*const standard_message_names[]={
  "INIT",
@@ -49,6 +51,8 @@ const char*const standard_message_names[]={
  "COLLIDING",
  "COLLIDE",
  "BIZARRO_SWAP",
+ "TRANSFORMING",
+ "TRANSFORMED",
 };
 #endif
 #define SND_SPLASH 0

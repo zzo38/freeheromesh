@@ -335,18 +335,20 @@
 #define OP_SETINVENTORY 32923
 #define OP_SOUND 32924
 #define OP_TRACE 32925
-#define OP_VOLUMEAT 32926
-#define OP_WINLEVEL 32927
-#define OP_XDIR 32928
-#define OP_XDIR_C 34976
-#define OP_YDIR 32929
-#define OP_YDIR_C 34977
-#define OP_FUNCTION 32930
-#define OP_LOCAL 32931
-#define OP_LABEL 32932
-#define OP_STRING 32933
-#define OP_INT16 32934
-#define OP_INT32 32935
+#define OP_TRANSFORM 32926
+#define OP_TRANSFORM_C 34974
+#define OP_VOLUMEAT 32927
+#define OP_WINLEVEL 32928
+#define OP_XDIR 32929
+#define OP_XDIR_C 34977
+#define OP_YDIR 32930
+#define OP_YDIR_C 34978
+#define OP_FUNCTION 32931
+#define OP_LOCAL 32932
+#define OP_LABEL 32933
+#define OP_STRING 32934
+#define OP_INT16 32935
+#define OP_INT32 32936
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486933},
@@ -368,6 +370,7 @@ static const Op_Names op_names[]={
 {"BEDOINGNG",8389406},
 {"BEEDEEP",8389404},
 {"BEGIN_TURN",8389123},
+{"BIZARRO_SWAP",8389143},
 {"BOOOM",8389410},
 {"BOUNCE",8389415},
 {"BRRREEET",8389396},
@@ -528,8 +531,11 @@ static const Op_Names op_names[]={
 {"THMP_thmp",8389405},
 {"THWIT",8389384},
 {"TICK",8389391},
+{"TRANSFORMED",8389145},
+{"TRANSFORMING",8389144},
 {"Temperature",9142316},
 {"Trace",8421533},
+{"Transform",8487070},
 {"UH_OH",8389382},
 {"UNCORK",8389414},
 {"UNHH",8389381},
@@ -538,15 +544,15 @@ static const Op_Names op_names[]={
 {"VACUUM",8389411},
 {"VisualOnly",8618078},
 {"Volume",9142329},
-{"VolumeAt",8421534},
+{"VolumeAt",8421535},
 {"W",9437188},
 {"WAHOO",8389400},
 {"WHACK",8389423},
 {"Weight",9142331},
-{"WinLevel",8421535},
-{"XDir",8487072},
+{"WinLevel",8421536},
+{"XDir",8487073},
 {"Xloc",8486959},
-{"YDir",8487073},
+{"YDir",8487074},
 {"YEEHAW",8389401},
 {"Yloc",8486960},
 {"again",8683530},
@@ -618,5 +624,5 @@ static const Op_Names op_names[]={
 {"until",8683531},
 {"while",8683532},
 };
-#define N_OP_NAMES 268
+#define N_OP_NAMES 272
 #endif
