@@ -799,6 +799,17 @@ const char*log_if_error(const char*t) {
   return t;
 }
 
+static void set_tracing(void) {
+  const char*v;
+  int i;
+  optionquery[1]=Q_traceAll;
+  v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
+  if(boolxrm(v,0)) {
+    memset(message_trace,255,sizeof(message_trace));
+    for(i=0;i<0x4000;i++) if(classes[i]) classes[i]->cflags|=CF_TRACEIN|CF_TRACEOUT;
+  }
+}
+
 int main(int argc,char**argv) {
   int optind=1;
   while(argc>optind && argv[optind][0]=='-') {
@@ -844,6 +855,7 @@ int main(int argc,char**argv) {
   load_level_index();
   optionquery[1]=Q_maxObjects;
   max_objects=strtoll(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,0)?:0xFFFF0000L;
+  set_tracing();
   annihilate();
   optionquery[1]=Q_level;
   if(level_ord=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,10)) log_if_error(load_level(-level_ord));

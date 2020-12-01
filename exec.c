@@ -300,7 +300,6 @@ static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value
         switch(v.t) {
           case TY_NUMBER: t+=v.u; break;
           case TY_CLASS: t++; break;
-          case TY_MESSAGE: break;
           default:
             if(v.t<=TY_MAXTYPE) Throw("Invalid return type for BroadcastSum");
             t++;

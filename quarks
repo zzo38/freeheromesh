@@ -212,4 +212,5 @@ level
 tracePrefix
 stackProtection
 maxObjects
+traceAll
 

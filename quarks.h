@@ -177,6 +177,7 @@
 #define Q_tracePrefix 178
 #define Q_stackProtection 179
 #define Q_maxObjects 180
+#define Q_traceAll 181
 static const char*const global_quarks[]={
   "screenWidth",
   "screenHeight",
@@ -357,6 +358,7 @@ static const char*const global_quarks[]={
   "tracePrefix",
   "stackProtection",
   "maxObjects",
+  "traceAll",
 0};
 #ifdef HEROMESH_BINDINGS
 static const SDLKey quark_to_key[Q_undo+1-Q_backspace]={
