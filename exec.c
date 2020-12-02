@@ -229,7 +229,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
     case OP_TRACE: StackReq(3,0); trace_stack(obj); break;
     case OP_WINLEVEL: key_ignored=0; gameover=1; Throw(0); break;
-    default: Throw("Internal error: Unrecognized opcode");
+    default: fprintf(stderr,"Unrecognized opcode 0x%04X at 0x%04X\n",code[ptr-1],ptr-1); Throw("Internal error: Unrecognized opcode");
   }
 }
 
@@ -247,7 +247,7 @@ static void trace_message(Uint32 obj) {
   if(o) printf(" [$%s %d %d]",classes[o->class]->name,o->x,o->y);
   o=objects[obj];
   printf(" : %u %u [$%s %d %d]",o->generation,obj,classes[o->class]->name,o->x,o->y);
-  printf(" : %u %u : %u %u\n",msgvars.arg1.t,msgvars.arg1.u,msgvars.arg2.t,msgvars.arg2.u,msgvars.arg3.t,msgvars.arg3.u);
+  printf(" : %u %u : %u %u : %u %u\n",msgvars.arg1.t,msgvars.arg1.u,msgvars.arg2.t,msgvars.arg2.u,msgvars.arg3.t,msgvars.arg3.u);
 }
 
 static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2,Value arg3) {
@@ -310,7 +310,7 @@ static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value
       }
     }
     if(p==VOIDLINK) break;
-    o=objects[p];
+    n=p;
   }
   return t;
 }
@@ -348,15 +348,15 @@ const char*execute_turn(int key) {
 
 const char*init_level(void) {
   if(setjmp(my_env)) return my_error;
-  if(main_options['t']) printf("[Level %d restarted]",level_id);
+  if(main_options['t']) printf("[Level %d restarted]\n",level_id);
   gameover=0;
   changed=0;
   key_ignored=0;
   lastimage_processing=0;
   vstackptr=0;
   move_number=0;
-  broadcast(0,0,MSG_INIT,NVALUE(0),NVALUE(0),NVALUE(0),0);
-  broadcast(0,0,MSG_POSTINIT,NVALUE(0),NVALUE(0),NVALUE(0),0);
+  broadcast(VOIDLINK,0,MSG_INIT,NVALUE(0),NVALUE(0),NVALUE(0),0);
+  broadcast(VOIDLINK,0,MSG_POSTINIT,NVALUE(0),NVALUE(0),NVALUE(0),0);
   if(generation_number<=TY_MAXTYPE) return "Too many generations of objects";
   return 0;
 }
