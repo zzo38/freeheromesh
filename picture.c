@@ -199,27 +199,42 @@ const char*screen_prompt(const char*txt) {
         SDL_Flip(screen);
     }
   }
+  return 0;
 }
 
-void screen_message(const char*txt) {
-  SDL_Rect r;
+int screen_message(const char*txt) {
+  int n=0;
+  SDL_Rect r={0,0,screen->w,16};
   SDL_Event ev;
-  
+  SDL_FillRect(screen,&r,0xF4);
+  r.y=16;
+  r.h=1;
+  SDL_FillRect(screen,&r,0xF8);
+  SDL_LockSurface(screen);
+  draw_text(0,0,txt,0xF4,0xFE);
+  draw_text(0,8,"<Push ENTER to continue>",0xF4,0xF7);
+  SDL_UnlockSurface(screen);
   set_cursor(XC_iron_cross);
   SDL_Flip(screen);
+  r.y=8;
+  r.h=8;
   while(SDL_WaitEvent(&ev)) {
     switch(ev.type) {
       case SDL_QUIT:
         SDL_PushEvent(&ev);
-        return;
+        return -1;
       case SDL_KEYDOWN:
-        
-        return;
-      case SDL_MOUSEBUTTONDOWN:
-        
-        return;
+        switch(ev.key.keysym.sym) {
+          case SDLK_RETURN: case SDLK_KP_ENTER:
+            r.y=0;
+            r.h=17;
+            SDL_FillRect(screen,&r,0xF0);
+            return 0;
+        }
+        break;
     }
   }
+  return -1;
 }
 
 static Uint16 decide_picture_size(int nwantsize,const Uint8*wantsize,const Uint16*havesize,int n) {

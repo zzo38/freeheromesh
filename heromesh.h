@@ -89,6 +89,7 @@ void draw_picture(int x,int y,Uint16 img);
 void draw_text(int x,int y,const unsigned char*t,int bg,int fg);
 void draw_cell(int x,int y);
 const char*screen_prompt(const char*txt);
+int screen_message(const char*txt);
 void load_pictures(void);
 
 int scrollbar(int*cur,int page,int max,SDL_Event*ev,SDL_Rect*re);

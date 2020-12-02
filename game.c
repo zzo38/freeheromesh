@@ -67,6 +67,17 @@ static void redraw_game(void) {
   SDL_Flip(screen);
 }
 
+static void begin_level(int id) {
+  const char*t;
+  t=load_level(id)?:init_level();
+  if(t) {
+    gameover=-1;
+    screen_message(t);
+  } else {
+    gameover=0;
+  }
+}
+
 static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
   switch(cmd) {
     case '\' ': // Play a move
@@ -74,7 +85,7 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
     case '^E': // Edit
       return -2;
     case '^L': // Select level
-      load_level(number);
+      begin_level(number);
       return 1;
     case '^Q': // Quit
       return -1;
@@ -106,7 +117,7 @@ void run_game(void) {
   int i;
   SDL_Event ev;
   set_caption();
-  load_level(level_id);
+  begin_level(level_id);
   redraw_game();
   while(SDL_WaitEvent(&ev)) {
     switch(ev.type) {
