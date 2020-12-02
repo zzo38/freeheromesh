@@ -258,7 +258,7 @@ static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2
   int stackptr=vstackptr;
   if(p==0xFFFF) {
     p=get_message_ptr(0,msg);
-    if(!p) return NVALUE(0);
+    if(p==0xFFFF) return NVALUE(0);
     code=classes[0]->codes;
   } else {
     code=classes[c]->codes;
