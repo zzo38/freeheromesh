@@ -1,5 +1,5 @@
 #if 0
-gcc ${CFLAGS:--s -O2} -c exec.c `sdl-config --cflags`
+gcc ${CFLAGS:--s -O2} -c -fwrapv exec.c `sdl-config --cflags`
 exit
 #endif
 
@@ -50,6 +50,9 @@ static const char*traceprefix;
 #define StackReq(x,y) do{ if(vstackptr<(x)) Throw("Stack underflow"); if(vstackptr-(x)+(y)>=VSTACKSIZE) Throw("Stack overflow"); }while(0)
 #define Push(x) (vstack[vstackptr++]=(x))
 #define Pop() (vstack[--vstackptr])
+
+static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2,Value arg3);
+static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value arg3,int s);
 
 void pfunlink(Uint32 n) {
   Object*o=objects[n];
@@ -189,6 +192,12 @@ static void trace_stack(Uint32 obj) {
   printf(" : %u %u : %u %u\n",t1.t,t1.u,t2.t,t2.u);
 }
 
+static inline Value v_broadcast(Uint32 from,Value c,Value msg,Value arg1,Value arg2,Value arg3,int s) {
+  if(msg.t!=TY_MESSAGE) Throw("Type mismatch");
+  if(c.t!=TY_CLASS && (c.t!=TY_NUMBER || c.u)) Throw("Type mismatch");
+  return NVALUE(broadcast(from,c.u,msg.u,arg1,arg2,arg3,s));
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -196,6 +205,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
   Uint32 i;
   Object*o=objects[obj];
   Value t1,t2;
+  static Value t3,t4,t5;
   if(StackProtection()) Throw("Call stack overflow");
   for(;;) switch(code[ptr++]) {
     case 0x0000 ... 0x00FF: StackReq(0,1); Push(NVALUE(code[ptr-1])); break;
@@ -210,6 +220,13 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case 0x4000 ... 0x7FFF: StackReq(0,1); Push(CVALUE(code[ptr-1]-0x4000)); break;
     case 0x87E8 ... 0x87FF: StackReq(0,1); Push(NVALUE(1UL<<(code[ptr-1]&31))); break;
     case 0xC000 ... 0xFFFF: StackReq(0,1); Push(MVALUE((code[ptr-1]&0x3FFF)+256)); break;
+    case OP_BROADCAST: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_broadcast(obj,t1,t2,t3,t4,NVALUE(0),0)); break;
+    case OP_BROADCAST_D: StackReq(4,0); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_broadcast(obj,t1,t2,t3,t4,NVALUE(0),0); break;
+    case OP_BROADCASTCLASS: StackReq(3,1); t4=Pop(); t3=Pop(); t2=Pop(); Push(v_broadcast(obj,CVALUE(code[ptr++]),t2,t3,t4,NVALUE(0),0)); break;
+    case OP_BROADCASTEX: StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_broadcast(obj,t1,t2,t3,t4,t5,0)); break;
+    case OP_BROADCASTEX_D: StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_broadcast(obj,t1,t2,t3,t4,t5,0); break;
+    case OP_BROADCASTSUM: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_broadcast(obj,t1,t2,t3,t4,NVALUE(0),1)); break;
+    case OP_BROADCASTSUMEX: StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_broadcast(obj,t1,t2,t3,t4,t5,1)); break;
     case OP_CALLSUB: execute_program(code,code[ptr++],obj); break;
     case OP_CLASS: StackReq(0,1); Push(CVALUE(o->class)); break;
     case OP_CLASS_C: StackReq(1,1); Push(GetVariableOf(class,CVALUE)); break;
@@ -243,7 +260,7 @@ static void trace_message(Uint32 obj) {
   }
   if(msgvars.msg<256) s=standard_message_names[msgvars.msg]; else s=messages[msgvars.msg-256];
   o=msgvars.from==VOIDLINK?0:objects[msgvars.from];
-  printf("%s%d : %s : %d : %u %u",traceprefix,move_number,s,vstackptr,o?o->generation:0,o?msgvars.from:0);
+  printf("%s%d : %s%s : %d : %u %u",traceprefix,move_number,msgvars.msg<256?"":"#",s,vstackptr,o?o->generation:0,o?msgvars.from:0);
   if(o) printf(" [$%s %d %d]",classes[o->class]->name,o->x,o->y);
   o=objects[obj];
   printf(" : %u %u [$%s %d %d]",o->generation,obj,classes[o->class]->name,o->x,o->y);
