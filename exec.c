@@ -198,6 +198,16 @@ static inline Value v_broadcast(Uint32 from,Value c,Value msg,Value arg1,Value a
   return NVALUE(broadcast(from,c.u,msg.u,arg1,arg2,arg3,s));
 }
 
+static inline Value v_send_message(Uint32 from,Value to,Value msg,Value arg1,Value arg2,Value arg3) {
+  if(msg.t!=TY_MESSAGE) Throw("Type mismatch");
+  return send_message(from,v_object(to),msg.u,arg1,arg2,arg3);
+}
+
+static inline Value v_send_self(Uint32 from,Value msg,Value arg1,Value arg2,Value arg3) {
+  if(msg.t!=TY_MESSAGE) Throw("Type mismatch");
+  return send_message(from,from,msg.u,arg1,arg2,arg3);
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -243,6 +253,14 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_LOSELEVEL: gameover=-1; Throw(0); break;
     case OP_NIP: StackReq(2,1); t1=Pop(); Pop(); Push(t1); break;
     case OP_RET: return;
+    case OP_SEND: StackReq(3,1); t4=Pop(); t3=Pop(); t2=Pop(); Push(v_send_self(obj,t2,t3,t4,NVALUE(0))); break;
+    case OP_SEND_C: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_send_message(obj,t1,t2,t3,t4,NVALUE(0))); break;
+    case OP_SEND_D: StackReq(3,0); t4=Pop(); t3=Pop(); t2=Pop(); v_send_self(obj,t2,t3,t4,NVALUE(0)); break;
+    case OP_SEND_CD: StackReq(4,0); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_send_message(obj,t1,t2,t3,t4,NVALUE(0)); break;
+    case OP_SENDEX: StackReq(4,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); Push(v_send_self(obj,t2,t3,t4,t5)); break;
+    case OP_SENDEX_C: StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_send_message(obj,t1,t2,t3,t4,t5)); break;
+    case OP_SENDEX_D: StackReq(4,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); v_send_self(obj,t2,t3,t4,t5); break;
+    case OP_SENDEX_CD: StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_send_message(obj,t1,t2,t3,t4,t5); break;
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
     case OP_TRACE: StackReq(3,0); trace_stack(obj); break;
     case OP_WINLEVEL: key_ignored=0; gameover=1; Throw(0); break;
