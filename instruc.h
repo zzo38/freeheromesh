@@ -242,101 +242,101 @@
 #define OP_PLAYER_C 34914
 #define OP_COMPATIBLE 32867
 #define OP_COMPATIBLE_C 34915
-#define OP_SELF 32868
-#define OP_MSG 32869
-#define OP_FROM 32870
-#define OP_ARG1 32871
-#define OP_ARG1_E 36967
-#define OP_ARG2 32872
-#define OP_ARG2_E 36968
-#define OP_ARG3 32873
-#define OP_ARG3_E 36969
-#define OP_MOVENUMBER 32874
-#define OP_LEVEL 32875
-#define OP_KEY 32876
-#define OP_BACKGROUND 32877
-#define OP_INPUT 32878
-#define OP_QUIZ 32879
-#define OP_INPLACE 32880
-#define OP_DEFAULTIMAGE 32881
-#define OP_HELP 32882
-#define OP_EDITORHELP 32883
-#define OP_SUBS 32884
-#define OP_ANIMATE 32885
-#define OP_ASSASSINATE 32886
-#define OP_ASSASSINATE_C 34934
-#define OP_BROADCAST 32887
-#define OP_BROADCAST_D 41079
-#define OP_BROADCASTCLASS 32888
-#define OP_BROADCASTEX 32889
-#define OP_BROADCASTEX_D 41081
-#define OP_BROADCASTSUM 32890
-#define OP_BROADCASTSUMEX 32891
-#define OP_CREATE 32892
-#define OP_CREATE_D 41084
-#define OP_DELINVENTORY 32893
-#define OP_DELTA 32894
-#define OP_DESTROY 32895
-#define OP_DESTROY_C 34943
-#define OP_DESTROY_D 41087
-#define OP_DESTROY_CD 43135
-#define OP_FLUSHCLASS 32896
-#define OP_FLUSHOBJ 32897
-#define OP_GETINVENTORY 32898
-#define OP_HEIGHTAT 32899
-#define OP_IGNOREKEY 32900
-#define OP_INTMOVE 32901
-#define OP_INTMOVE_C 34949
-#define OP_INTMOVE_D 41093
-#define OP_INTMOVE_CD 43141
-#define OP_JUMPTO 32902
-#define OP_JUMPTO_C 34950
-#define OP_JUMPTO_D 41094
-#define OP_JUMPTO_CD 43142
-#define OP_LOC 32903
-#define OP_LOC_C 34951
-#define OP_LOCATEME 32904
-#define OP_LOSELEVEL 32905
-#define OP_MAXINVENTORY 32906
-#define OP_MOVE 32907
-#define OP_MOVE_C 34955
-#define OP_MOVE_D 41099
-#define OP_MOVE_CD 43147
-#define OP_MOVEPLUS 32908
-#define OP_MOVEPLUS_C 34956
-#define OP_MOVEPLUS_D 41100
-#define OP_MOVEPLUS_CD 43148
-#define OP_MOVETO 32909
-#define OP_MOVETO_C 34957
-#define OP_MOVETO_D 41101
-#define OP_MOVETO_CD 43149
-#define OP_NEWX 32910
-#define OP_NEWY 32911
-#define OP_OBJABOVE 32912
-#define OP_OBJABOVE_C 34960
-#define OP_OBJBELOW 32913
-#define OP_OBJBELOW_C 34961
-#define OP_OBJBOTTOMAT 32914
-#define OP_OBJCLASSAT 32915
-#define OP_OBJDIR 32916
-#define OP_OBJDIR_C 34964
-#define OP_OBJTOPAT 32917
-#define OP_POPUP 32918
-#define OP_POPUPARGS 32919
-#define OP_QUEUETURN 32920
-#define OP_SEND 32921
-#define OP_SEND_C 34969
-#define OP_SEND_D 41113
-#define OP_SEND_CD 43161
-#define OP_SENDEX 32922
-#define OP_SENDEX_C 34970
-#define OP_SENDEX_D 41114
-#define OP_SENDEX_CD 43162
-#define OP_SETINVENTORY 32923
-#define OP_SOUND 32924
-#define OP_TRACE 32925
-#define OP_TRANSFORM 32926
-#define OP_TRANSFORM_C 34974
+#define OP_COLLISIONLAYERS 32868
+#define OP_COLLISIONLAYERS_C 34916
+#define OP_SELF 32869
+#define OP_MSG 32870
+#define OP_FROM 32871
+#define OP_ARG1 32872
+#define OP_ARG1_E 36968
+#define OP_ARG2 32873
+#define OP_ARG2_E 36969
+#define OP_ARG3 32874
+#define OP_ARG3_E 36970
+#define OP_MOVENUMBER 32875
+#define OP_LEVEL 32876
+#define OP_KEY 32877
+#define OP_BACKGROUND 32878
+#define OP_INPUT 32879
+#define OP_QUIZ 32880
+#define OP_INPLACE 32881
+#define OP_DEFAULTIMAGE 32882
+#define OP_HELP 32883
+#define OP_EDITORHELP 32884
+#define OP_SUBS 32885
+#define OP_ANIMATE 32886
+#define OP_ASSASSINATE 32887
+#define OP_ASSASSINATE_C 34935
+#define OP_BROADCAST 32888
+#define OP_BROADCAST_D 41080
+#define OP_BROADCASTCLASS 32889
+#define OP_BROADCASTEX 32890
+#define OP_BROADCASTEX_D 41082
+#define OP_BROADCASTSUM 32891
+#define OP_BROADCASTSUMEX 32892
+#define OP_CREATE 32893
+#define OP_CREATE_D 41085
+#define OP_DELINVENTORY 32894
+#define OP_DELTA 32895
+#define OP_DESTROY 32896
+#define OP_DESTROY_C 34944
+#define OP_DESTROY_D 41088
+#define OP_DESTROY_CD 43136
+#define OP_FLUSHCLASS 32897
+#define OP_FLUSHOBJ 32898
+#define OP_GETINVENTORY 32899
+#define OP_HEIGHTAT 32900
+#define OP_IGNOREKEY 32901
+#define OP_INTMOVE 32902
+#define OP_INTMOVE_C 34950
+#define OP_INTMOVE_D 41094
+#define OP_INTMOVE_CD 43142
+#define OP_JUMPTO 32903
+#define OP_JUMPTO_C 34951
+#define OP_JUMPTO_D 41095
+#define OP_JUMPTO_CD 43143
+#define OP_LOC 32904
+#define OP_LOC_C 34952
+#define OP_LOCATEME 32905
+#define OP_LOSELEVEL 32906
+#define OP_MAXINVENTORY 32907
+#define OP_MOVE 32908
+#define OP_MOVE_C 34956
+#define OP_MOVE_D 41100
+#define OP_MOVE_CD 43148
+#define OP_MOVEPLUS 32909
+#define OP_MOVEPLUS_C 34957
+#define OP_MOVEPLUS_D 41101
+#define OP_MOVEPLUS_CD 43149
+#define OP_MOVETO 32910
+#define OP_MOVETO_C 34958
+#define OP_MOVETO_D 41102
+#define OP_MOVETO_CD 43150
+#define OP_NEWX 32911
+#define OP_NEWY 32912
+#define OP_OBJABOVE 32913
+#define OP_OBJABOVE_C 34961
+#define OP_OBJBELOW 32914
+#define OP_OBJBELOW_C 34962
+#define OP_OBJBOTTOMAT 32915
+#define OP_OBJCLASSAT 32916
+#define OP_OBJDIR 32917
+#define OP_OBJDIR_C 34965
+#define OP_OBJTOPAT 32918
+#define OP_POPUP 32919
+#define OP_POPUPARGS 32920
+#define OP_QUEUETURN 32921
+#define OP_SEND 32922
+#define OP_SEND_C 34970
+#define OP_SEND_D 41114
+#define OP_SEND_CD 43162
+#define OP_SENDEX 32923
+#define OP_SENDEX_C 34971
+#define OP_SENDEX_D 41115
+#define OP_SENDEX_CD 43163
+#define OP_SETINVENTORY 32924
+#define OP_SOUND 32925
+#define OP_TRACE 32926
 #define OP_VOLUMEAT 32927
 #define OP_WINLEVEL 32928
 #define OP_XDIR 32929
@@ -358,13 +358,13 @@ static const Op_Names op_names[]={
 {"/",8486934},
 {"ANHH",8389394},
 {"ARRIVED",8389124},
-{"Animate",8421493},
-{"Arg1",8552551},
-{"Arg2",8552552},
-{"Arg3",8552553},
+{"Animate",8421494},
+{"Arg1",8552552},
+{"Arg2",8552553},
+{"Arg3",8552554},
 {"Arrivals",8618071},
 {"Arrived",8618069},
-{"Assassinate",8487030},
+{"Assassinate",8487031},
 {"B",9437196},
 {"BANG",8389380},
 {"BEDOINGNG",8389406},
@@ -377,24 +377,25 @@ static const Op_Names op_names[]={
 {"BRRRT",8389395},
 {"BUZZER",8389420},
 {"BWEEP",8389397},
-{"Background",8683629},
-{"Broadcast",10518647},
-{"BroadcastEx",10518649},
-{"BroadcastSum",8421498},
-{"BroadcastSumEx",8421499},
+{"Background",8683630},
+{"Broadcast",10518648},
+{"BroadcastEx",10518650},
+{"BroadcastSum",8421499},
+{"BroadcastSumEx",8421500},
 {"Busy",8618073},
 {"CHEEP",8389393},
 {"CHYEW",8389392},
 {"CLEANUP",8389140},
 {"CLICK",8389388},
 {"COLLIDE",8389142},
-{"COLLIDING",8389141},
+{"COLLIDEBY",8389141},
 {"CREATE",8389121},
 {"CREATED",8389137},
 {"Class",8486955},
 {"Climb",9142335},
+{"CollisionLayers",8487012},
 {"Compatible",8487011},
-{"Create",10518652},
+{"Create",10518653},
 {"DEEP_POP",8389417},
 {"DEPARTED",8389125},
 {"DESTROY",8389122},
@@ -403,54 +404,54 @@ static const Op_Names op_names[]={
 {"DOOR",8389378},
 {"DRLRLRINK",8389398},
 {"DYUPE",8389413},
-{"DefaultImage",8683633},
-{"DelInventory",8421501},
-{"Delta",8421502},
+{"DefaultImage",8683634},
+{"DelInventory",8421502},
+{"Delta",8421503},
 {"Density",9142327},
 {"Departed",8618070},
 {"Departures",8618072},
-{"Destroy",10584191},
+{"Destroy",10584192},
 {"Destroyed",8487009},
 {"Dir",8618033},
 {"Distance",9142325},
 {"E",9437184},
 {"END_TURN",8389139},
-{"EditorHelp",8683635},
+{"EditorHelp",8683636},
 {"F",9437192},
 {"FAROUT",8389421},
 {"FFFFTT",8389399},
 {"FLOATED",8389132},
 {"FROG",8389383},
-{"FlushClass",8421504},
-{"FlushObj",8421505},
-{"From",8421478},
+{"FlushClass",8421505},
+{"FlushObj",8421506},
+{"From",8421479},
 {"GLASS",8389379},
 {"GLISSANT",8389419},
-{"GetInventory",8421506},
+{"GetInventory",8421507},
 {"HAWK",8389425},
 {"HEARTBEAT",8389407},
 {"HIT",8389134},
 {"HITBY",8389135},
 {"Hard",8618051},
 {"Height",9142333},
-{"HeightAt",8421507},
-{"Help",8683634},
+{"HeightAt",8421508},
+{"Help",8683635},
 {"INIT",8389120},
-{"IgnoreKey",8421508},
+{"IgnoreKey",8421509},
 {"Image",8618034},
-{"InPlace",8683632},
+{"InPlace",8683633},
 {"Inertia",9142323},
-{"Input",8683630},
-{"IntMove",10584197},
+{"Input",8683631},
+{"IntMove",10584198},
 {"Invisible",8618074},
 {"JAYAYAYNG",8389416},
 {"JUMPED",8389128},
-{"JumpTo",10584198},
+{"JumpTo",10584199},
 {"KEWEL",8389422},
 {"KEY",8389129},
 {"KLECK",8389387},
 {"KLINKK",8389385},
-{"Key",8421484},
+{"Key",8421485},
 {"KeyCleared",8618075},
 {"L",9437194},
 {"LASTIMAGE",8389126},
@@ -458,13 +459,13 @@ static const Op_Names op_names[]={
 {"LF",9437193},
 {"LOCK",8389408},
 {"LOOP",8388610},
-{"Level",8421483},
-{"Loc",8487047},
-{"LocateMe",8421512},
-{"LoseLevel",8421513},
+{"Level",8421484},
+{"Loc",8487048},
+{"LocateMe",8421513},
+{"LoseLevel",8421514},
 {"MOVED",8389127},
 {"MOVING",8389130},
-{"MaxInventory",8421514},
+{"MaxInventory",8421515},
 {"Misc1",9142343},
 {"Misc2",9142345},
 {"Misc3",9142347},
@@ -472,35 +473,35 @@ static const Op_Names op_names[]={
 {"Misc5",9142351},
 {"Misc6",9142353},
 {"Misc7",9142355},
-{"Move",10584203},
-{"Move+",10584204},
-{"MoveNumber",8421482},
-{"MoveTo",10584205},
+{"Move",10584204},
+{"Move+",10584205},
+{"MoveNumber",8421483},
+{"MoveTo",10584206},
 {"Moved",8618080},
-{"Msg",8421477},
+{"Msg",8421478},
 {"N",9437186},
 {"NE",9437185},
 {"NW",9437187},
-{"NewX",8421518},
-{"NewY",8421519},
+{"NewX",8421519},
+{"NewY",8421520},
 {"OLDPHONE",8389402},
 {"ONCE",8388609},
 {"OSC",8388616},
 {"OSCLOOP",8388618},
-{"ObjAbove",8487056},
-{"ObjBelow",8487057},
-{"ObjBottomAt",8421522},
-{"ObjClassAt",8421523},
-{"ObjDir",8487060},
-{"ObjTopAt",8421525},
+{"ObjAbove",8487057},
+{"ObjBelow",8487058},
+{"ObjBottomAt",8421523},
+{"ObjClassAt",8421524},
+{"ObjDir",8487061},
+{"ObjTopAt",8421526},
 {"PLAYERMOVING",8389133},
 {"POSTINIT",8389138},
 {"POUR",8389377},
 {"POWER",8389386},
 {"Player",8487010},
-{"PopUp",8421526},
-{"QueueTurn",8421528},
-{"Quiz",8683631},
+{"PopUp",8421527},
+{"QueueTurn",8421529},
+{"Quiz",8683632},
 {"R",9437198},
 {"RATCHET1",8389418},
 {"RATCHET2",8389412},
@@ -513,29 +514,26 @@ static const Op_Names op_names[]={
 {"SPLASH",8389376},
 {"STEAM",8389424},
 {"STOP",8388608},
-{"SUBS",8683636},
+{"SUBS",8683637},
 {"SUNK",8389131},
 {"SW",9437189},
-{"Self",8421476},
-{"Send",10584217},
-{"SendEx",10584218},
-{"SetInventory",8421531},
+{"Self",8421477},
+{"Send",10584218},
+{"SendEx",10584219},
+{"SetInventory",8421532},
 {"Shape",8618030},
 {"ShapeDir",8618053},
 {"Sharp",8618052},
 {"Shovable",8618054},
-{"Sound",8421532},
+{"Sound",8421533},
 {"Stealthy",8618079},
 {"Strength",9142337},
 {"TAHTASHH",8389409},
 {"THMP_thmp",8389405},
 {"THWIT",8389384},
 {"TICK",8389391},
-{"TRANSFORMED",8389145},
-{"TRANSFORMING",8389144},
 {"Temperature",9142316},
-{"Trace",8421533},
-{"Transform",8487070},
+{"Trace",8421534},
 {"UH_OH",8389382},
 {"UNCORK",8389414},
 {"UNHH",8389381},
@@ -624,5 +622,5 @@ static const Op_Names op_names[]={
 {"until",8683531},
 {"while",8683532},
 };
-#define N_OP_NAMES 272
+#define N_OP_NAMES 270
 #endif

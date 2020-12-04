@@ -25,11 +25,9 @@ const standard_message_names=`
  19 = END_TURN
  // New
  20 = CLEANUP
- 21 = COLLIDING
+ 21 = COLLIDEBY
  22 = COLLIDE
  23 = BIZARRO_SWAP
- 24 = TRANSFORMING
- 25 = TRANSFORMED
 `.split("\n").map(x=>/^ *([0-9]+) = ([^ ]*) *$/.exec(x)).filter(x=>x);
 const standard_sound_names=[];
 `
