@@ -26,7 +26,7 @@ Uint32 nobjects;
 Value globals[0x800];
 Uint32 firstobj=VOIDLINK;
 Uint32 lastobj=VOIDLINK;
-Uint32 playfield[64*64];
+Uint32 playfield[64*64]; // bottom-most object per cell
 Uint8 pfwidth,pfheight;
 Sint8 gameover,key_ignored;
 Uint8 generation_number_inc;
@@ -45,6 +45,7 @@ static char lastimage_processing,changed;
 static Value vstack[VSTACKSIZE];
 static int vstackptr;
 static const char*traceprefix;
+static Uint8 current_key;
 
 #define Throw(x) (my_error=(x),longjmp(my_env,1))
 #define StackReq(x,y) do{ if(vstackptr<(x)) Throw("Stack underflow"); if(vstackptr-(x)+(y)>=VSTACKSIZE) Throw("Stack overflow"); }while(0)
@@ -53,6 +54,14 @@ static const char*traceprefix;
 
 static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2,Value arg3);
 static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value arg3,int s);
+
+const char*value_string_ptr(Value v) {
+  switch(v.t) {
+    case TY_STRING: return stringpool[v.u];
+    //TODO: Level strings
+    default: fatal("Trying to get string pointer for a non-string\n");
+  }
+}
 
 void pfunlink(Uint32 n) {
   Object*o=objects[n];
@@ -150,12 +159,32 @@ void objtrash(Uint32 n) {
   generation_number_inc=1;
 }
 
+static Uint32 obj_class_at(Uint32 c,Uint32 x,Uint32 y) {
+  Uint32 i;
+  if(x<1 || x>pfwidth || y<1 || y>pfheight) return VOIDLINK;
+  i=playfield[x+y*64-65];
+  while(i!=VOIDLINK) {
+    if(objects[i]->class==c && !(objects[i]->oflags&OF_DESTROYED) && !(objects[i]->dir&IOF_DEAD)) return i;
+    i=objects[i]->up;
+  }
+  return VOIDLINK;
+}
+
 static inline int v_bool(Value v) {
   switch(v.t) {
     case TY_NUMBER: return v.u!=0;
     case TY_SOUND: case TY_USOUND: Throw("Cannot convert sound to boolean");
     default: return 1;
   }
+}
+
+static inline int v_equal(Value x,Value y) {
+  if(x.t==TY_SOUND || y.t==TY_SOUND || x.t==TY_USOUND || y.t==TY_USOUND) Throw("Cannot compare sounds");
+  if(x.t==y.t && x.u==y.u) return 1;
+  if((x.t==TY_STRING || x.t==TY_LEVELSTRING) && (y.t==TY_STRING || y.t==TY_LEVELSTRING)) {
+    if(!strcmp(value_string_ptr(x),value_string_ptr(y))) return 1;
+  }
+  return 0;
 }
 
 static Uint32 v_object(Value v) {
@@ -169,6 +198,16 @@ static Uint32 v_object(Value v) {
   } else {
     Throw("Cannot convert non-object to object");
   }
+}
+
+static inline int v_signed_greater(Value x,Value y) {
+  if(x.t!=TY_NUMBER || y.t!=TY_NUMBER) Throw("Type mismatch");
+  return x.s>y.s;
+}
+
+static inline int v_unsigned_greater(Value x,Value y) {
+  if(x.t!=TY_NUMBER || y.t!=TY_NUMBER) Throw("Type mismatch");
+  return x.u>y.u;
 }
 
 static void trace_stack(Uint32 obj) {
@@ -198,6 +237,14 @@ static inline Value v_broadcast(Uint32 from,Value c,Value msg,Value arg1,Value a
   return NVALUE(broadcast(from,c.u,msg.u,arg1,arg2,arg3,s));
 }
 
+static inline Value v_obj_class_at(Value c,Value x,Value y) {
+  Uint32 i;
+  if(c.t==TY_NUMBER && !c.u) return NVALUE(0);
+  if(c.t!=TY_CLASS || x.t!=TY_NUMBER || y.t!=TY_NUMBER) Throw("Type mismatch");
+  i=obj_class_at(c.u,x.u,y.u);
+  return OVALUE(i);
+}
+
 static inline Value v_send_message(Uint32 from,Value to,Value msg,Value arg1,Value arg2,Value arg3) {
   if(msg.t!=TY_MESSAGE) Throw("Type mismatch");
   return send_message(from,v_object(to),msg.u,arg1,arg2,arg3);
@@ -211,22 +258,52 @@ static inline Value v_send_self(Uint32 from,Value msg,Value arg1,Value arg2,Valu
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
+#define Numeric(a) do{ if((a).t!=TY_NUMBER) Throw("Type mismatch"); }while(0)
+#define DivideBy(a) do { if(!(a).u) Throw("Division by zero"); }while(0)
 static void execute_program(Uint16*code,int ptr,Uint32 obj) {
   Uint32 i;
   Object*o=objects[obj];
   Value t1,t2;
   static Value t3,t4,t5;
   if(StackProtection()) Throw("Call stack overflow");
+  // Note about bit shifting: At least when running Hero Mesh in DOSBOX, out of range bit shifts produce zero.
+  // I don't know if this is true on all computers that Hero Mesh runs on, though. (Some documents suggest that x86 doesn't work this way)
+  // The below code assumes that signed right shifting is available.
   for(;;) switch(code[ptr++]) {
     case 0x0000 ... 0x00FF: StackReq(0,1); Push(NVALUE(code[ptr-1])); break;
     case 0x0100 ... 0x01FF: StackReq(0,1); Push(NVALUE(code[ptr-1]-0x200)); break;
     case 0x0200 ... 0x02FF: StackReq(0,1); Push(MVALUE(code[ptr-1]&255)); break;
     case 0x0300 ... 0x03FF: StackReq(0,1); Push(UVALUE(code[ptr-1]&255,TY_SOUND)); break;
     case 0x0400 ... 0x04FF: StackReq(0,1); Push(UVALUE(code[ptr-1]&255,TY_USOUND)); break;
+    case 0x1000 ... 0x107F: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u+=code[ptr-1]&0x7F; Push(t1); break; // +
+    case 0x1080 ... 0x10FF: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u-=code[ptr-1]&0x7F; Push(t1); break; // -
+    case 0x1100 ... 0x117F: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u*=code[ptr-1]&0x7F; Push(t1); break; // *
+    case 0x1180 ... 0x11FF: StackReq(1,1); t1=Pop(); Numeric(t1); DivideBy(t1); t1.u/=code[ptr-1]&0x7F; Push(t1); break; // /
+    case 0x1200 ... 0x127F: StackReq(1,1); t1=Pop(); Numeric(t1); DivideBy(t1); t1.u%=code[ptr-1]&0x7F; Push(t1); break; // mod
+    case 0x1280 ... 0x12FF: StackReq(1,1); t1=Pop(); Numeric(t1); t1.s*=code[ptr-1]&0x7F; Push(t1); break; // ,*
+    case 0x1300 ... 0x137F: StackReq(1,1); t1=Pop(); Numeric(t1); DivideBy(t1); t1.s/=code[ptr-1]&0x7F; Push(t1); break; // ,/
+    case 0x1380 ... 0x13FF: StackReq(1,1); t1=Pop(); Numeric(t1); DivideBy(t1); t1.s%=code[ptr-1]&0x7F; Push(t1); break; // ,mod
+    case 0x1400 ... 0x147F: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u&=code[ptr-1]&0x7F; Push(t1); break; // band
+    case 0x1480 ... 0x14FF: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u|=code[ptr-1]&0x7F; Push(t1); break; // bor
+    case 0x1500 ... 0x157F: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u^=code[ptr-1]&0x7F; Push(t1); break; // bxor
+    case 0x1580 ... 0x15FF: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u=code[ptr-1]&0x60?0:t1.u<<(code[ptr-1]&31); Push(t1); break; // lsh
+    case 0x1600 ... 0x167F: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u=code[ptr-1]&0x60?0:t1.u>>(code[ptr-1]&31); Push(t1); break; // rsh
+    case 0x1680 ... 0x168F: StackReq(1,1); t1=Pop(); Numeric(t1); t1.s=code[ptr-1]&0x60?(t1.s<0?-1:0):t1.s>>(code[ptr-1]&31); Push(t1); break; // ,rsh
+    case 0x1700 ... 0x177F: StackReq(1,1); t1=Pop(); Push(NVALUE(t1.t?0:t1.u==(code[ptr-1]&0x7F)?1:0)); break; // eq
+    case 0x1780 ... 0x17FF: StackReq(1,1); t1=Pop(); Push(NVALUE(t1.t?1:t1.u==(code[ptr-1]&0x7F)?0:1)); break; // ne
+    case 0x1800 ... 0x187F: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u<(code[ptr-1]&0x7F)?1:0)); break; // lt
+    case 0x1880 ... 0x18FF: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u>(code[ptr-1]&0x7F)?1:0)); break; // gt
+    case 0x1900 ... 0x197F: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u<=(code[ptr-1]&0x7F)?1:0)); break; // le
+    case 0x1980 ... 0x19FF: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u>=(code[ptr-1]&0x7F)?1:0)); break; // ge
+    case 0x1A00 ... 0x1A7F: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s<(code[ptr-1]&0x7F)?1:0)); break; // ,lt
+    case 0x1A80 ... 0x1AFF: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s>(code[ptr-1]&0x7F)?1:0)); break; // ,gt
+    case 0x1B00 ... 0x1B7F: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s<=(code[ptr-1]&0x7F)?1:0)); break; // ,le
+    case 0x1B80 ... 0x1BFF: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s>=(code[ptr-1]&0x7F)?1:0)); break; // ,ge
+    case 0x1E00 ... 0x1EFF: StackReq(0,1); Push(NVALUE(code[ptr-1]&0xFF)); return; // ret
     case 0x2000 ... 0x27FF: StackReq(0,1); Push(o->uservars[code[ptr-1]&0x7FF]); break;
     case 0x2800 ... 0x28FF: StackReq(0,1); Push(globals[code[ptr-1]&0x7FF]); break;
     case 0x3000 ... 0x37FF: NoIgnore(); StackReq(1,0); o->uservars[code[ptr-1]&0x7FF]=Pop(); break;
-    case 0x3800 ... 0x38FF: NoIgnore(); StackReq(1,0); Push(globals[code[ptr-1]&0x7FF]); break;
+    case 0x3800 ... 0x38FF: NoIgnore(); StackReq(1,0); globals[code[ptr-1]&0x7FF]=Pop(); break;
     case 0x4000 ... 0x7FFF: StackReq(0,1); Push(CVALUE(code[ptr-1]-0x4000)); break;
     case 0x87E8 ... 0x87FF: StackReq(0,1); Push(NVALUE(1UL<<(code[ptr-1]&31))); break;
     case 0xC000 ... 0xFFFF: StackReq(0,1); Push(MVALUE((code[ptr-1]&0x3FFF)+256)); break;
@@ -240,18 +317,34 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_CALLSUB: execute_program(code,code[ptr++],obj); break;
     case OP_CLASS: StackReq(0,1); Push(CVALUE(o->class)); break;
     case OP_CLASS_C: StackReq(1,1); Push(GetVariableOf(class,CVALUE)); break;
+    case OP_DIR: StackReq(0,1); Push(NVALUE(o->dir&7)); break;
+    case OP_DISTANCE: StackReq(0,1); Push(NVALUE(o->distance)); break;
     case OP_DROP: StackReq(1,0); Pop(); break;
     case OP_DROP_D: StackReq(2,0); Pop(); Pop(); break;
     case OP_DUP: StackReq(1,2); t1=Pop(); Push(t1); Push(t1); break;
+    case OP_EQ: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_equal(t1,t2)?1:0)); break;
+    case OP_GE: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t2,t1)?0:1)); break;
+    case OP_GE_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t2,t1)?0:1)); break;
     case OP_GOTO: ptr=code[ptr]; break;
-    case OP_IF: StackReq(1,0); if(v_bool(Pop())) ptr=code[ptr]; else ptr++; break;
+    case OP_GT: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t1,t2)?1:0)); break;
+    case OP_GT_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t1,t2)?1:0)); break;
+    case OP_IF: StackReq(1,0); if(v_bool(Pop())) ptr++; else ptr=code[ptr]; break;
+    case OP_IMAGE: StackReq(0,1); Push(NVALUE(o->image)); break;
     case OP_INT16: StackReq(0,1); Push(NVALUE(code[ptr++])); break;
     case OP_INT32: StackReq(0,1); t1=UVALUE(code[ptr++]<<16,TY_NUMBER); t1.u|=code[ptr++]; Push(t1); break;
+    case OP_KEY: StackReq(0,1); Push(NVALUE(current_key)); break;
     case OP_LAND: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1) && v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_LE: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t1,t2)?0:1)); break;
+    case OP_LE_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t1,t2)?0:1)); break;
     case OP_LNOT: StackReq(1,1); if(v_bool(Pop())) Push(NVALUE(0)); else Push(NVALUE(1)); break;
+    case OP_LOC: StackReq(0,2); Push(NVALUE(o->x)); Push(NVALUE(o->y)); break;
     case OP_LOR: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1) || v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_LOSELEVEL: gameover=-1; Throw(0); break;
+    case OP_LT: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t2,t1)?1:0)); break;
+    case OP_LT_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t2,t1)?1:0)); break;
+    case OP_NE: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_equal(t1,t2)?0:1)); break;
     case OP_NIP: StackReq(2,1); t1=Pop(); Pop(); Push(t1); break;
+    case OP_OBJCLASSAT: StackReq(3,1); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_obj_class_at(t1,t2,t3)); break;
     case OP_RET: return;
     case OP_SEND: StackReq(3,1); t4=Pop(); t3=Pop(); t2=Pop(); Push(v_send_self(obj,t2,t3,t4,NVALUE(0))); break;
     case OP_SEND_C: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_send_message(obj,t1,t2,t3,t4,NVALUE(0))); break;
@@ -261,10 +354,13 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_SENDEX_C: StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_send_message(obj,t1,t2,t3,t4,t5)); break;
     case OP_SENDEX_D: StackReq(4,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); v_send_self(obj,t2,t3,t4,t5); break;
     case OP_SENDEX_CD: StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_send_message(obj,t1,t2,t3,t4,t5); break;
+    case OP_SOUND: StackReq(2,0); t2=Pop(); t1=Pop(); break; // Sound not implemented at this time
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
     case OP_TRACE: StackReq(3,0); trace_stack(obj); break;
     case OP_WINLEVEL: key_ignored=0; gameover=1; Throw(0); break;
-    default: fprintf(stderr,"Unrecognized opcode 0x%04X at 0x%04X\n",code[ptr-1],ptr-1); Throw("Internal error: Unrecognized opcode");
+    case OP_XLOC: StackReq(0,1); Push(NVALUE(o->x)); break;
+    case OP_YLOC: StackReq(0,1); Push(NVALUE(o->y)); break;
+    default: fprintf(stderr,"Unrecognized opcode 0x%04X at 0x%04X in $%s\n",code[ptr-1],ptr-1,classes[o->class]->name); Throw("Internal error: Unrecognized opcode");
   }
 }
 
@@ -369,12 +465,14 @@ const char*execute_turn(int key) {
   key_ignored=0;
   lastimage_processing=0;
   vstackptr=0;
+  current_key=key;
   for(n=0;n<nobjects;n++) if(objects[n]) {
     objects[n]->distance=0;
     objects[n]->oflags&=~(OF_KEYCLEARED|OF_DONE);
   }
   
   if(key_ignored && changed) return "Invalid use of IgnoreKey";
+  current_key=0;
   
   if(key_ignored && changed) return "Invalid use of IgnoreKey";
   if(generation_number<=TY_MAXTYPE) return "Too many generations of objects";
@@ -390,6 +488,7 @@ const char*init_level(void) {
   lastimage_processing=0;
   vstackptr=0;
   move_number=0;
+  current_key=0;
   broadcast(VOIDLINK,0,MSG_INIT,NVALUE(0),NVALUE(0),NVALUE(0),0);
   broadcast(VOIDLINK,0,MSG_POSTINIT,NVALUE(0),NVALUE(0),NVALUE(0),0);
   if(generation_number<=TY_MAXTYPE) return "Too many generations of objects";

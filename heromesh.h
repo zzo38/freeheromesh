@@ -30,7 +30,7 @@ typedef struct {
 #define CVALUE(x) UVALUE(x,TY_CLASS)
 #define MVALUE(x) UVALUE(x,TY_MESSAGE)
 #define ZVALUE(x) UVALUE(x,TY_STRING)
-#define OVALUE(x) UVALUE(x,objects[x]->generation)
+#define OVALUE(x) ((x)==VOIDLINK?NVALUE(0):UVALUE(x,objects[x]->generation))
 #define ValueTo64(v) (((sqlite3_int64)((v).u))|(((sqlite3_int64)((v).t))<<32))
 
 #define N_MESSAGES 24
@@ -197,6 +197,7 @@ extern Sint8 gameover,key_ignored;
 extern Uint8 generation_number_inc;
 extern Uint32 move_number;
 
+const char*value_string_ptr(Value v);
 void pfunlink(Uint32 n);
 void pflink(Uint32 n);
 Uint32 objalloc(Uint16 c);
