@@ -438,7 +438,7 @@ void init_screen(void) {
   h=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"600",0,10);
   optionquery[1]=Q_screenFlags;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
-  if(SDL_Init(SDL_INIT_VIDEO|(strchr(v,'z')?SDL_INIT_NOPARACHUTE:0))) fatal("Error initializing SDL: %s\n",SDL_GetError());
+  if(SDL_Init(SDL_INIT_VIDEO|(strchr(v,'z')?SDL_INIT_NOPARACHUTE:0)|SDL_INIT_TIMER)) fatal("Error initializing SDL: %s\n",SDL_GetError());
   atexit(SDL_Quit);
   i=0;
   while(*v) switch(*v++) {

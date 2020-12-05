@@ -17,6 +17,8 @@ exit
 #include "quarks.h"
 #include "cursorshapes.h"
 
+static volatile Uint8 timerflag;
+
 static void redraw_game(void) {
   char buf[32];
   SDL_Rect r;
@@ -113,12 +115,23 @@ static void set_caption(void) {
   sqlite3_free(s);
 }
 
+static Uint32 timer_callback(Uint32 n) {
+  if(!timerflag) {
+    static SDL_Event ev={SDL_USEREVENT};
+    SDL_PushEvent(&ev);
+  }
+  timerflag=1;
+  return n;
+}
+
 void run_game(void) {
   int i;
   SDL_Event ev;
   set_caption();
   begin_level(level_id);
   redraw_game();
+  timerflag=0;
+  SDL_SetTimer(10,timer_callback);
   while(SDL_WaitEvent(&ev)) {
     switch(ev.type) {
       case SDL_VIDEOEXPOSE:
@@ -126,6 +139,10 @@ void run_game(void) {
         break;
       case SDL_QUIT:
         exit(0);
+        break;
+      case SDL_USEREVENT:
+        //TODO: animation
+        timerflag=0;
         break;
       case SDL_MOUSEBUTTONDOWN:
         if(ev.button.x<left_margin) {
@@ -141,6 +158,7 @@ void run_game(void) {
         if(i==-1) exit(0);
         if(i==-2) {
           main_options['e']=1;
+          SDL_SetTimer(0,0);
           return;
         }
         redraw_game();
