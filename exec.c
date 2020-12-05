@@ -159,12 +159,38 @@ void objtrash(Uint32 n) {
   generation_number_inc=1;
 }
 
+static Uint32 obj_above(Uint32 i) {
+  Object*o;
+  if(i==VOIDLINK) return VOIDLINK;
+  o=objects[i];
+  i=o->up;
+  while(i!=VOIDLINK) {
+    o=objects[i];
+    if(!(o->oflags&(OF_DESTROYED|OF_VISUALONLY))) return i;
+    i=o->up;
+  }
+  return VOIDLINK;
+}
+
+static Uint32 obj_below(Uint32 i) {
+  Object*o;
+  if(i==VOIDLINK) return VOIDLINK;
+  o=objects[i];
+  i=o->down;
+  while(i!=VOIDLINK) {
+    o=objects[i];
+    if(!(o->oflags&(OF_DESTROYED|OF_VISUALONLY))) return i;
+    i=o->down;
+  }
+  return VOIDLINK;
+}
+
 static Uint32 obj_class_at(Uint32 c,Uint32 x,Uint32 y) {
   Uint32 i;
   if(x<1 || x>pfwidth || y<1 || y>pfheight) return VOIDLINK;
   i=playfield[x+y*64-65];
   while(i!=VOIDLINK) {
-    if(objects[i]->class==c && !(objects[i]->oflags&OF_DESTROYED) && !(objects[i]->dir&IOF_DEAD)) return i;
+    if(objects[i]->class==c && !(objects[i]->oflags&OF_DESTROYED)) return i;
     i=objects[i]->up;
   }
   return VOIDLINK;
@@ -189,7 +215,7 @@ static inline int v_equal(Value x,Value y) {
 
 static Uint32 v_object(Value v) {
   if(v.t==TY_NUMBER) {
-    if(v.u) Throw("Cannot convert number to object");
+    if(v.u) Throw("Cannot convert non-zero number to object");
     return VOIDLINK;
   } else if(v.t>TY_MAXTYPE) {
     if(v.u>=nobjects || !objects[v.u]) Throw("Attempt to use a nonexistent object");
@@ -259,7 +285,7 @@ static inline Value v_send_self(Uint32 from,Value msg,Value arg1,Value arg2,Valu
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
 #define Numeric(a) do{ if((a).t!=TY_NUMBER) Throw("Type mismatch"); }while(0)
-#define DivideBy(a) do { if(!(a).u) Throw("Division by zero"); }while(0)
+#define DivideBy(a) do{ if(!(a).u) Throw("Division by zero"); }while(0)
 static void execute_program(Uint16*code,int ptr,Uint32 obj) {
   Uint32 i;
   Object*o=objects[obj];
@@ -307,6 +333,10 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case 0x4000 ... 0x7FFF: StackReq(0,1); Push(CVALUE(code[ptr-1]-0x4000)); break;
     case 0x87E8 ... 0x87FF: StackReq(0,1); Push(NVALUE(1UL<<(code[ptr-1]&31))); break;
     case 0xC000 ... 0xFFFF: StackReq(0,1); Push(MVALUE((code[ptr-1]&0x3FFF)+256)); break;
+    case OP_ADD: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u+t2.u)); break;
+    case OP_BAND: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u&t2.u)); break;
+    case OP_BNOT: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(~t1.u)); break;
+    case OP_BOR: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u|t2.u)); break;
     case OP_BROADCAST: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_broadcast(obj,t1,t2,t3,t4,NVALUE(0),0)); break;
     case OP_BROADCAST_D: StackReq(4,0); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_broadcast(obj,t1,t2,t3,t4,NVALUE(0),0); break;
     case OP_BROADCASTCLASS: StackReq(3,1); t4=Pop(); t3=Pop(); t2=Pop(); Push(v_broadcast(obj,CVALUE(code[ptr++]),t2,t3,t4,NVALUE(0),0)); break;
@@ -314,6 +344,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_BROADCASTEX_D: StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_broadcast(obj,t1,t2,t3,t4,t5,0); break;
     case OP_BROADCASTSUM: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_broadcast(obj,t1,t2,t3,t4,NVALUE(0),1)); break;
     case OP_BROADCASTSUMEX: StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_broadcast(obj,t1,t2,t3,t4,t5,1)); break;
+    case OP_BXOR: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u^t2.u)); break;
     case OP_CALLSUB: execute_program(code,code[ptr++],obj); break;
     case OP_CLASS: StackReq(0,1); Push(CVALUE(o->class)); break;
     case OP_CLASS_C: StackReq(1,1); Push(GetVariableOf(class,CVALUE)); break;
@@ -342,8 +373,13 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_LOSELEVEL: gameover=-1; Throw(0); break;
     case OP_LT: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t2,t1)?1:0)); break;
     case OP_LT_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t2,t1)?1:0)); break;
+    case OP_LXOR: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1)?!v_bool(t2):v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_NE: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_equal(t1,t2)?0:1)); break;
     case OP_NIP: StackReq(2,1); t1=Pop(); Pop(); Push(t1); break;
+    case OP_OBJABOVE: StackReq(0,1); i=obj_above(obj); Push(OVALUE(i)); break;
+    case OP_OBJABOVE_C: StackReq(1,1); i=obj_above(v_object(Pop())); Push(OVALUE(i)); break;
+    case OP_OBJBELOW: StackReq(0,1); i=obj_below(obj); Push(OVALUE(i)); break;
+    case OP_OBJBELOW_C: StackReq(1,1); i=obj_below(v_object(Pop())); Push(OVALUE(i)); break;
     case OP_OBJCLASSAT: StackReq(3,1); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_obj_class_at(t1,t2,t3)); break;
     case OP_RET: return;
     case OP_SEND: StackReq(3,1); t4=Pop(); t3=Pop(); t2=Pop(); Push(v_send_self(obj,t2,t3,t4,NVALUE(0))); break;
@@ -355,11 +391,22 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_SENDEX_D: StackReq(4,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); v_send_self(obj,t2,t3,t4,t5); break;
     case OP_SENDEX_CD: StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_send_message(obj,t1,t2,t3,t4,t5); break;
     case OP_SOUND: StackReq(2,0); t2=Pop(); t1=Pop(); break; // Sound not implemented at this time
+    case OP_SUB: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u-t2.u)); break;
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
     case OP_TRACE: StackReq(3,0); trace_stack(obj); break;
     case OP_WINLEVEL: key_ignored=0; gameover=1; Throw(0); break;
     case OP_XLOC: StackReq(0,1); Push(NVALUE(o->x)); break;
     case OP_YLOC: StackReq(0,1); Push(NVALUE(o->y)); break;
+#define MiscVar(a,b) \
+    case a: StackReq(0,1); Push(o->b); break; \
+    case a+0x0800: StackReq(1,1); Push(GetVariableOf(b,)); break; \
+    case a+0x1000: StackReq(1,0); objects[i]->b=Pop(); break; \
+    case a+0x1001: StackReq(1,0); t1=Pop(); if(!t1.t) t1.u&=0xFFFF; objects[i]->b=t1; break; \
+    case a+0x1800: StackReq(2,0); t1=Pop(); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->b=t1; break; \
+    case a+0x1801: StackReq(2,0); t1=Pop(); if(!t1.t) t1.u&=0xFFFF; i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->b=t1; break;
+    MiscVar(OP_MISC1,misc1) MiscVar(OP_MISC2,misc2) MiscVar(OP_MISC3,misc3)
+    MiscVar(OP_MISC4,misc4) MiscVar(OP_MISC5,misc5) MiscVar(OP_MISC6,misc6) MiscVar(OP_MISC7,misc7)
+#undef MiscVar
     default: fprintf(stderr,"Unrecognized opcode 0x%04X at 0x%04X in $%s\n",code[ptr-1],ptr-1,classes[o->class]->name); Throw("Internal error: Unrecognized opcode");
   }
 }

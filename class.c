@@ -1057,7 +1057,7 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
           break;
         default:
           if(Tokenf(TF_ABNORMAL)) ParseError("Invalid instruction token\n");
-          if(compat && Tokenf(TF_COMPAT)) ++tokenv;
+          if(compat && Tokenf(TF_COMPAT) && Tokenf(TF_EQUAL)) ++tokenv;
           AddInstF(tokenv,tokent);
       }
     } else if(Tokenf(TF_FUNCTION)) {

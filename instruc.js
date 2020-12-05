@@ -39,7 +39,7 @@ data_file.forEach((line,linenum)=>{
     if(flags&2) console.log("#define OP_"+reg[2].toUpperCase()+"_E "+(curnum+0x1000));
     if(3==(flags&3)) console.log("#define OP_"+reg[2].toUpperCase()+"_EC "+(curnum+0x1800));
     if(10==(flags&10)) {
-      if(flags&1) console.log("#define OP_"+reg[2].toUpperCase()+"_EC16 "+(curnum+0x0801));
+      if(flags&1) console.log("#define OP_"+reg[2].toUpperCase()+"_EC16 "+(curnum+0x1801));
       console.log("#define OP_"+reg[2].toUpperCase()+"_E16 "+(curnum+0x1001));
     }
     if(flags&32) {
