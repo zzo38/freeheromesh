@@ -348,7 +348,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_CALLSUB: execute_program(code,code[ptr++],obj); break;
     case OP_CLASS: StackReq(0,1); Push(CVALUE(o->class)); break;
     case OP_CLASS_C: StackReq(1,1); Push(GetVariableOf(class,CVALUE)); break;
-    case OP_DIR: StackReq(0,1); Push(NVALUE(o->dir&7)); break;
+    case OP_DIR: StackReq(0,1); Push(NVALUE(o->dir)); break;
     case OP_DISTANCE: StackReq(0,1); Push(NVALUE(o->distance)); break;
     case OP_DROP: StackReq(1,0); Pop(); break;
     case OP_DROP_D: StackReq(2,0); Pop(); Pop(); break;
@@ -465,14 +465,14 @@ static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value
   Value v;
   if(c && !classes[c]->nmsg && (!classes[0] || !classes[0]->nmsg)) {
     if(s) return 0;
-    for(n=0;n<nobjects;n++) if((o=objects[n]) && o->class==c) t++;
+    for(n=0;n<nobjects;n++) if((o=objects[n]) && o->class==c && o->generation) t++;
     return t;
   }
   if(lastobj==VOIDLINK) return;
   n=lastobj;
   while(o=objects[n]) {
     p=o->prev;
-    if(!c || o->class==c) {
+    if((!c || o->class==c) && o->generation) {
       v=send_message(from,n,msg,arg1,arg2,arg3);
       if(s>0) {
         switch(v.t) {

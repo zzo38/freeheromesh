@@ -256,7 +256,7 @@ static void fn_ovalue(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
     return;
   }
   a=sqlite3_value_int64(*argv)&0xFFFFFFFF;
-  if(a>=nobjects || !objects[a] || (objects[a]->dir&IOF_DEAD)) return; // result is null if object does not exist
+  if(a>=nobjects || !objects[a] || !objects[a]->generation) return; // result is null if object does not exist
   sqlite3_result_int64(cxt,a|((sqlite3_int64)objects[a]->generation<<32));
 }
 
@@ -658,7 +658,7 @@ static int vt1_objects_next(sqlite3_vtab_cursor*pcur) {
     // This shouldn't happen
     return SQLITE_INTERNAL;
   }
-  if(!cur->eof && (objects[cur->rowid]->dir&IOF_DEAD)) goto again;
+  if(!cur->eof && !objects[cur->rowid]->generation) goto again;
   return SQLITE_OK;
 }
 

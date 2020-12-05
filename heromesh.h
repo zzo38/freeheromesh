@@ -168,10 +168,9 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1);
 
 #define VOIDLINK ((Uint32)(-1))
 
-// The following "internal object flags" are part of the "dir" variable:
-#define IOF_DEAD 0x10 // object doesn't exist, except to continue an animation
-#define IOF_ANIM 0x20 // an animation is being displayed
-// If the IOF_DEAD flag is set, then generation should also be set to zero, and OF_DESTROYED must be set, too.
+typedef struct {
+  //TODO
+} Animation;
 
 typedef struct {
   Sint32 height,weight,climb,density,volume,strength,arrivals,departures,temperature;
@@ -181,9 +180,14 @@ typedef struct {
   Uint16 sharp[4];
   Uint16 hard[4];
   Uint8 x,y,shape,shovable,image,dir;
+  Animation*anim;
   Value misc1,misc2,misc3,misc4,misc5,misc6,misc7;
   Value uservars[0];
 } Object;
+
+// Some objects may remain in memory for animation purposes even after they have been
+// destroyed. In this case, their "generation" value is zero, and they will always
+// have the OF_DESTROYED flag.
 
 extern Uint32 max_objects;
 extern Uint32 generation_number;
