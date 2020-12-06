@@ -52,6 +52,10 @@ static Uint8 current_key;
 #define Push(x) (vstack[vstackptr++]=(x))
 #define Pop() (vstack[--vstackptr])
 
+// For arrival/departure masks
+#define Xbit(a) ((a)%5-2)
+#define Ybit(a) (2-(a)/5)
+
 static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2,Value arg3);
 static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value arg3,int s);
 
@@ -59,7 +63,7 @@ const char*value_string_ptr(Value v) {
   switch(v.t) {
     case TY_STRING: return stringpool[v.u];
     //TODO: Level strings
-    default: fatal("Trying to get string pointer for a non-string\n");
+    default: fatal("Internal confusion: Trying to get string pointer for a non-string\n");
   }
 }
 
@@ -152,8 +156,8 @@ void objtrash(Uint32 n) {
   o->down=o->up=VOIDLINK;
   if(firstobj==n) firstobj=o->next;
   if(lastobj==n) lastobj=o->prev;
-  if(o->prev) objects[o->prev]->next=o->next;
-  if(o->next) objects[o->next]->prev=o->prev;
+  if(o->prev!=VOIDLINK) objects[o->prev]->next=o->next;
+  if(o->next!=VOIDLINK) objects[o->next]->prev=o->prev;
   free(o);
   objects[n]=0;
   generation_number_inc=1;
@@ -234,6 +238,39 @@ static inline int v_signed_greater(Value x,Value y) {
 static inline int v_unsigned_greater(Value x,Value y) {
   if(x.t!=TY_NUMBER || y.t!=TY_NUMBER) Throw("Type mismatch");
   return x.u>y.u;
+}
+
+static Value destroy(Uint32 from,Uint32 to,Uint32 why) {
+  Object*o;
+  Value v;
+  int i,x,y,xx,yy;
+  Uint32 n;
+  if(n==VOIDLINK) return NVALUE(0);
+  o=objects[to];
+  // Not checking if it is already destroyed, since EKS Hero Mesh doesn't check.
+  v=send_message(from,to,MSG_DESTROY,NVALUE(0),NVALUE(0),NVALUE(why));
+  if(!v_bool(v)) {
+    o->oflags|=OF_DESTROYED;
+    if(firstobj==to) firstobj=o->next;
+    if(lastobj==to) lastobj=o->prev;
+    if(o->prev!=VOIDLINK) objects[o->prev]->next=o->next;
+    if(o->next!=VOIDLINK) objects[o->next]->prev=o->prev;
+    if(!(o->oflags&OF_VISUALONLY)) {
+      // Not checking for stealth; that only applies to movement, not destruction
+      xx=o->x; yy=o->y;
+      for(i=25;i>=0;i--) {
+        x=xx+Xbit(i); y=yy+Ybit(i);
+        if(x<1 || x>pfwidth || y<1 || y>pfheight) continue;
+        n=playfield[x+y*64-65];
+        while(n!=VOIDLINK) {
+          o=objects[n];
+          if(o->departures&(1<<i)) send_message(to,n,MSG_DESTROYED,NVALUE(0),NVALUE(0),NVALUE(why));
+          n=o->up;
+        }
+      }
+    }
+  }
+  return v;
 }
 
 static void trace_stack(Uint32 obj) {
@@ -434,6 +471,7 @@ static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2
   Uint16 p=get_message_ptr(c,msg);
   Uint16*code;
   int stackptr=vstackptr;
+  if(objects[to]->oflags&OF_DESTROYED) return NVALUE(0);
   if(p==0xFFFF) {
     p=get_message_ptr(0,msg);
     if(p==0xFFFF) return NVALUE(0);
@@ -463,16 +501,11 @@ static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value
   Uint32 n,p;
   Object*o;
   Value v;
-  if(c && !classes[c]->nmsg && (!classes[0] || !classes[0]->nmsg)) {
-    if(s) return 0;
-    for(n=0;n<nobjects;n++) if((o=objects[n]) && o->class==c && o->generation) t++;
-    return t;
-  }
   if(lastobj==VOIDLINK) return;
   n=lastobj;
   while(o=objects[n]) {
     p=o->prev;
-    if((!c || o->class==c) && o->generation) {
+    if(!c || o->class==c) {
       v=send_message(from,n,msg,arg1,arg2,arg3);
       if(s>0) {
         switch(v.t) {
