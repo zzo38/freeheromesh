@@ -147,9 +147,21 @@ Uint32 objalloc(Uint16 c) {
   return VOIDLINK;
 }
 
+#define animfree free
+
 void objtrash(Uint32 n) {
   Object*o=objects[n];
   if(!o) return;
+  if(o->anim && !(o->oflags&(OF_INVISIBLE|OF_BIZARRO))) {
+    //TODO: Check that the animation is actually playing
+    // If there is an animation, continue to display it, but let it have no effect on the game behaviour
+    // This may happen if the LASTIMAGE message destroys the object.
+    o->oflags=OF_DESTROYED|OF_STEALTHY|OF_VISUALONLY;
+    o->generation=0;
+    //TODO
+    return;
+  }
+  animfree(o->anim);
   if(o->down==VOIDLINK) playfield[o->x+o->y*64-65]=o->up;
   else objects[o->down]->up=o->up;
   if(o->up!=VOIDLINK) objects[o->up]->down=o->down;
@@ -161,6 +173,11 @@ void objtrash(Uint32 n) {
   free(o);
   objects[n]=0;
   generation_number_inc=1;
+}
+
+static void animate(Uint32 n,Uint32 f,Uint32 a0,Uint32 a1,Uint32 t) {
+  objects[n]->image=a0;
+  //TODO
 }
 
 static Uint32 obj_above(Uint32 i) {
@@ -371,6 +388,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case 0x87E8 ... 0x87FF: StackReq(0,1); Push(NVALUE(1UL<<(code[ptr-1]&31))); break;
     case 0xC000 ... 0xFFFF: StackReq(0,1); Push(MVALUE((code[ptr-1]&0x3FFF)+256)); break;
     case OP_ADD: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u+t2.u)); break;
+    case OP_ANIMATE: StackReq(4,0); t4=Pop(); Numeric(t4); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); animate(obj,t1.u,t2.u,t3.u,t4.u); break;
     case OP_BAND: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u&t2.u)); break;
     case OP_BNOT: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(~t1.u)); break;
     case OP_BOR: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u|t2.u)); break;
@@ -531,7 +549,10 @@ void annihilate(void) {
   for(i=0;i<64*64;i++) playfield[i]=VOIDLINK;
   firstobj=lastobj=VOIDLINK;
   if(!objects) return;
-  for(i=0;i<nobjects;i++) free(objects[i]);
+  for(i=0;i<nobjects;i++) if(objects[i]) {
+    animfree(objects[i]->anim);
+    free(objects[i]);
+  }
   nobjects=0;
   free(objects);
   objects=0;

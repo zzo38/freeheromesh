@@ -168,6 +168,11 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1);
 
 #define VOIDLINK ((Uint32)(-1))
 
+#define ANI_STOP 0x00
+#define ANI_ONCE 0x01
+#define ANI_LOOP 0x02
+#define ANI_OSC 0x08
+
 typedef struct {
   //TODO
 } Animation;
