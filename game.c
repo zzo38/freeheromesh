@@ -65,6 +65,26 @@ static void redraw_game(void) {
   snprintf(buf,8,"%2dx%2d",pfwidth,pfheight);
   draw_text(8,32,buf,0xF0,0xFD);
   draw_text(24,32,"x",0xF0,0xF5);
+  x=x>=left_margin?(x-left_margin)/picture_size+1:0;
+  y=y/picture_size+1;
+  if(x>0 && y>0 && x<=pfwidth && y<=pfheight) snprintf(buf,8,"(%2d,%2d)",x,y);
+  else strcpy(buf,"       ");
+  draw_text(0,40,buf,0xF0,0xF1);
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+  set_cursor(XC_arrow);
+}
+
+static void show_mouse_xy(SDL_Event*ev) {
+  char buf[32];
+  int x,y;
+  x=(ev->motion.x-left_margin)/picture_size+1;
+  y=ev->motion.y/picture_size+1;
+  if(ev->motion.x<left_margin) x=0;
+  if(x>0 && y>0 && x<=pfwidth && y<=pfheight) snprintf(buf,8,"(%2d,%2d)",x,y);
+  else strcpy(buf,"       ");
+  SDL_LockSurface(screen);
+  draw_text(0,40,buf,0xF0,0xF1);
   SDL_UnlockSurface(screen);
   SDL_Flip(screen);
 }
@@ -80,6 +100,61 @@ static void begin_level(int id) {
   }
 }
 
+static void list_objects_at(int xy) {
+  static const char*const dirs[8]={"E ","NE","N ","NW","W ","SW","S ","SE"};
+  SDL_Event ev;
+  SDL_Rect r;
+  char buf[256];
+  int scroll=0;
+  int count=0;
+  Uint32 n,t;
+  Object*o;
+  int i,j;
+  if(xy<0 || xy>=64*64) return;
+  n=playfield[xy];
+  if(n==VOIDLINK) return;
+  while(n!=VOIDLINK) t=n,count++,n=objects[n]->up;
+  redraw:
+  r.x=r.y=0;
+  r.w=screen->w;
+  r.h=screen->h;
+  SDL_FillRect(screen,&r,0xF1);
+  r.y=8;
+  r.h-=8;
+  scrollbar(&scroll,r.h/8,count,0,&r);
+  snprintf(buf,255," %d objects at (%d,%d): ",count,(xy&63)+1,(xy/64)+1);
+  SDL_LockSurface(screen);
+  draw_text(0,0,buf,0xF7,0xF0);
+  n=t;
+  for(i=0;i<scroll && n!=VOIDLINK;i++) n=objects[n]->down;
+  for(i=0;i<screen->h/8 && n!=VOIDLINK;i++) {
+    o=objects[n];
+    snprintf(buf,255," %8d: %-14.14s %3d %s",n,classes[o->class]->name,o->image,dirs[o->dir&7]);
+    draw_text(24,r.y,buf,0xF1,o->generation?0xFF:0xF8);
+    n=o->down;
+    r.y+=8;
+  }
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) {
+    switch(ev.type) {
+      case SDL_MOUSEMOTION:
+        set_cursor(XC_draft_small);
+        break;
+      case SDL_KEYDOWN:
+        switch(ev.key.keysym.sym) {
+          case SDLK_ESCAPE: case SDLK_RETURN: return;
+        }
+        goto redraw;
+      case SDL_VIDEOEXPOSE:
+        goto redraw;
+      case SDL_QUIT:
+        exit(0);
+        break;
+    }
+  }
+}
+
 static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
   switch(cmd) {
     case '\' ': // Play a move
@@ -91,6 +166,9 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       return 1;
     case '^Q': // Quit
       return -1;
+    case '^o': // List objects
+      list_objects_at(number-65);
+      return prev;
     default:
       return prev;
   }
@@ -139,6 +217,9 @@ void run_game(void) {
         break;
       case SDL_QUIT:
         exit(0);
+        break;
+      case SDL_MOUSEMOTION:
+        show_mouse_xy(&ev);
         break;
       case SDL_USEREVENT:
         //TODO: animation
