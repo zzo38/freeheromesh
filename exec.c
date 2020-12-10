@@ -358,11 +358,11 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case 0x1000 ... 0x107F: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u+=code[ptr-1]&0x7F; Push(t1); break; // +
     case 0x1080 ... 0x10FF: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u-=code[ptr-1]&0x7F; Push(t1); break; // -
     case 0x1100 ... 0x117F: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u*=code[ptr-1]&0x7F; Push(t1); break; // *
-    case 0x1180 ... 0x11FF: StackReq(1,1); t1=Pop(); Numeric(t1); DivideBy(t1); t1.u/=code[ptr-1]&0x7F; Push(t1); break; // /
-    case 0x1200 ... 0x127F: StackReq(1,1); t1=Pop(); Numeric(t1); DivideBy(t1); t1.u%=code[ptr-1]&0x7F; Push(t1); break; // mod
+    case 0x1181 ... 0x11FF: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u/=code[ptr-1]&0x7F; Push(t1); break; // /
+    case 0x1201 ... 0x127F: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u%=code[ptr-1]&0x7F; Push(t1); break; // mod
     case 0x1280 ... 0x12FF: StackReq(1,1); t1=Pop(); Numeric(t1); t1.s*=code[ptr-1]&0x7F; Push(t1); break; // ,*
-    case 0x1300 ... 0x137F: StackReq(1,1); t1=Pop(); Numeric(t1); DivideBy(t1); t1.s/=code[ptr-1]&0x7F; Push(t1); break; // ,/
-    case 0x1380 ... 0x13FF: StackReq(1,1); t1=Pop(); Numeric(t1); DivideBy(t1); t1.s%=code[ptr-1]&0x7F; Push(t1); break; // ,mod
+    case 0x1301 ... 0x137F: StackReq(1,1); t1=Pop(); Numeric(t1); t1.s/=code[ptr-1]&0x7F; Push(t1); break; // ,/
+    case 0x1381 ... 0x13FF: StackReq(1,1); t1=Pop(); Numeric(t1); t1.s%=code[ptr-1]&0x7F; Push(t1); break; // ,mod
     case 0x1400 ... 0x147F: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u&=code[ptr-1]&0x7F; Push(t1); break; // band
     case 0x1480 ... 0x14FF: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u|=code[ptr-1]&0x7F; Push(t1); break; // bor
     case 0x1500 ... 0x157F: StackReq(1,1); t1=Pop(); Numeric(t1); t1.u^=code[ptr-1]&0x7F; Push(t1); break; // bxor
