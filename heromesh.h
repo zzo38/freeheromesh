@@ -178,7 +178,7 @@ typedef struct {
 } Animation;
 
 typedef struct {
-  Sint32 height,weight,climb,density,volume,strength,arrivals,departures,temperature;
+  Sint32 height,weight,climb,density,volume,strength,arrivals,departures,temperature,inertia;
   Uint32 arrived,departed,arrived2,departed2,generation;
   Uint32 up,down,prev,next; // links to other objects
   Uint16 class,oflags,distance;

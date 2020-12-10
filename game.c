@@ -16,8 +16,10 @@ exit
 #include "heromesh.h"
 #include "quarks.h"
 #include "cursorshapes.h"
+#include "names.h"
 
 static volatile Uint8 timerflag;
+static int exam_scroll;
 
 static void redraw_game(void) {
   char buf[32];
@@ -100,6 +102,169 @@ static void begin_level(int id) {
   }
 }
 
+static inline void exam_value(const char*t,int y,Value v) {
+  char buf[256];
+  int i;
+  y=(y-exam_scroll)*8;
+  if(y<0 || y>screen->h-8) return;
+  draw_text(0,y,t,0xF0,0xF7);
+  switch(v.t) {
+    case TY_NUMBER:
+      snprintf(buf,255,"%12lu  0x%08lX  %ld",(long)v.u,(long)v.u,(long)v.s);
+      draw_text(200,y,buf,0xF0,0xFE);
+      break;
+    case TY_CLASS:
+      draw_text(200,y,"$",0xF0,0xFB);
+      draw_text(208,y,classes[v.u]->name,0xF0,0xFB);
+      break;
+    case TY_MESSAGE:
+      snprintf(buf,255,"%s%s",v.u<256?"":"#",v.u<256?standard_message_names[v.u]:messages[v.u-256]);
+      draw_text(200,y,buf,0xF0,0xFD);
+      break;
+    case TY_LEVELSTRING:
+      
+      break;
+    case TY_STRING:
+      
+      break;
+    case TY_SOUND: case TY_USOUND:
+      draw_text(200,y,"<Sound>",0xF0,0xF6);
+      break;
+    default:
+      snprintf(buf,80,"<%lu:%lu>",(long)v.u,(long)v.t);
+      draw_text(200,y,buf,0xF0,0xFA);
+      i=strlen(buf)*8+208;
+      if(v.u<nobjects && objects[v.u]) {
+        snprintf(buf,80,"@ (%d,%d)",objects[v.u]->x,objects[v.u]->y);
+        draw_text(i,y,buf,0xF0,0xF2);
+      } else {
+        draw_text(i,y,"(dead)",0xF0,0xF4);
+      }
+      break;
+  }
+}
+
+static inline void exam_flags(int y,Uint16 v) {
+  y=(y-exam_scroll)*8;
+  if(y<0 || y>screen->h-8) return;
+  draw_text(0,y,"Flags:",0xF0,0xF7);
+  draw_text(200,y,"--- --- --- --- --- --- --- --- --- --- ---",0xF0,0xF8);
+  if(v&OF_INVISIBLE) draw_text(200,y,"Inv",0xF0,0xFF);
+  if(v&OF_VISUALONLY) draw_text(232,y,"Vis",0xF0,0xFF);
+  if(v&OF_STEALTHY) draw_text(264,y,"Stl",0xF0,0xFF);
+  if(v&OF_BUSY) draw_text(296,y,"Bus",0xF0,0xFF);
+  if(v&OF_USERSTATE) draw_text(328,y,"Ust",0xF0,0xFF);
+  if(v&OF_USERSIGNAL) draw_text(360,y,"Usg",0xF0,0xFF);
+  if(v&OF_MOVED) draw_text(392,y,"Mov",0xF0,0xFF);
+  if(v&OF_DONE) draw_text(424,y,"Don",0xF0,0xFF);
+  if(v&OF_KEYCLEARED) draw_text(456,y,"Key",0xF0,0xFF);
+  if(v&OF_DESTROYED) draw_text(488,y,"Des",0xF0,0xFF);
+  if(v&OF_BIZARRO) draw_text(520,y,"Biz",0xF0,0xFF);
+}
+
+static inline void exam_hardsharp(const char*t,int y,Uint16*v) {
+  int i;
+  char buf[16];
+  y=(y-exam_scroll)*8;
+  if(y<0 || y>screen->h-8) return;
+  draw_text(0,y,t,0xF0,0xF7);
+  for(i=0;i<4;i++) {
+    snprintf(buf,8,"%5u",v[i]);
+    draw_text(200+i*56,y,buf,0xF0,v[i]?0xFF:0xF8);
+  }
+}
+
+static void draw_back_line(int y,int c) {
+  unsigned char*p=screen->pixels;
+  int i;
+  p+=screen->pitch*y;
+  for(i=0;i<screen->w;i++) if(p[i]==0xF0 || p[i]==0xF1) p[i]=i&1?c:0xF0;
+}
+
+static void examine(Uint32 n) {
+  sqlite3_stmt*st;
+  SDL_Event ev;
+  SDL_Rect r;
+  Object*o;
+  int i,y;
+  y=0;
+  i=sqlite3_prepare_v2(userdb,"SELECT '%'||`NAME`,`ID`&0xFFFF FROM `VARIABLES` WHERE `ID` BETWEEN ?1 AND (?1|0xFFFF) ORDER BY `ID`",-1,&st,0);
+  if(i) fatal("SQL error (%d): %s",i,sqlite3_errmsg(userdb));
+  object:
+  if(n==VOIDLINK) return;
+  o=objects[n];
+  if(!o) return;
+  sqlite3_bind_int(st,1,o->class<<16);
+  exam_scroll=0;
+  redraw:
+  set_cursor(XC_arrow);
+  r.x=r.y=0;
+  r.w=screen->w;
+  r.h=screen->h;
+  SDL_FillRect(screen,&r,0xF0);
+  SDL_LockSurface(screen);
+  exam_value("Self:",0,OVALUE(n));
+  exam_value("Class:",1,CVALUE(o->class));
+  exam_value("Image:",2,NVALUE(o->image));
+  exam_value("Dir:",3,NVALUE(o->dir));
+  exam_value("Misc1:",4,o->misc1);
+  exam_value("Misc2:",5,o->misc2);
+  exam_value("Misc3:",6,o->misc3);
+  exam_value("Misc4:",7,o->misc4);
+  exam_value("Misc5:",8,o->misc5);
+  exam_value("Misc6:",9,o->misc6);
+  exam_value("Misc7:",10,o->misc7);
+  exam_value("Temperature:",11,NVALUE(o->temperature));
+  exam_flags(12,o->oflags);
+  exam_value("Density:",13,NVALUE(o->density));
+  exam_value("Volume:",14,NVALUE(o->volume));
+  exam_value("Strength:",15,NVALUE(o->strength));
+  exam_value("Weight:",16,NVALUE(o->weight));
+  exam_value("Climb:",17,NVALUE(o->climb));
+  exam_value("Height:",18,NVALUE(o->height));
+  exam_value("Arrivals:",19,NVALUE(o->arrivals));
+  exam_value("Departures:",20,NVALUE(o->departures));
+  exam_value("Shape:",21,NVALUE(o->shape));
+  exam_value("Shovable:",22,NVALUE(o->shovable));
+  exam_value("Distance:",23,NVALUE(o->distance));
+  exam_value("Inertia:",24,NVALUE(o->inertia));
+  exam_hardsharp("Hardness:",25,o->hard);
+  exam_hardsharp("Sharpness:",26,o->sharp);
+  while(sqlite3_step(st)==SQLITE_ROW) {
+    i=sqlite3_column_int(st,1);
+    exam_value(sqlite3_column_text(st,0),i+28,o->uservars[i]);
+  }
+  sqlite3_reset(st);
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) switch(ev.type) {
+    case SDL_KEYDOWN:
+      switch(ev.key.keysym.sym) {
+        case SDLK_ESCAPE: case SDLK_RETURN: case SDLK_KP_ENTER: sqlite3_finalize(st); return;
+        case SDLK_UP: if(exam_scroll) exam_scroll--; break;
+        case SDLK_DOWN: exam_scroll++; break;
+        case SDLK_HOME: exam_scroll=0; break;
+        case SDLK_PAGEUP: exam_scroll-=screen->h/8; if(exam_scroll<0) exam_scroll=0; break;
+        case SDLK_PAGEDOWN: exam_scroll+=screen->h/8; break;
+      }
+      goto redraw;
+    case SDL_MOUSEMOTION:
+      if(ev.motion.y!=y && ev.motion.y<screen->h) {
+        SDL_LockSurface(screen);
+        draw_back_line(y,0xF0);
+        draw_back_line(y=ev.motion.y,0xF1);
+        SDL_UnlockSurface(screen);
+        SDL_Flip(screen);
+      }
+      break;
+    case SDL_VIDEOEXPOSE:
+      goto redraw;
+    case SDL_QUIT:
+      exit(0);
+      break;
+  }
+}
+
 static void list_objects_at(int xy) {
   static const char*const dirs[8]={"E ","NE","N ","NW","W ","SW","S ","SE"};
   SDL_Event ev;
@@ -137,13 +302,28 @@ static void list_objects_at(int xy) {
   SDL_UnlockSurface(screen);
   SDL_Flip(screen);
   while(SDL_WaitEvent(&ev)) {
+    if(ev.type!=SDL_VIDEOEXPOSE) {
+      r.h=screen->h-8;
+      r.x=0;
+      r.y=8;
+      if(scrollbar(&scroll,r.h/8,count,&ev,&r)) goto redraw;
+    }
     switch(ev.type) {
+      case SDL_MOUSEBUTTONDOWN:
+        if(ev.button.button!=1 || ev.button.y<8) break;
+        j=ev.button.y/8-scroll-1;
+        if(j>=count) break;
+        n=t;
+        for(i=0;i<j;i++) n=objects[n]->down;
+        examine(n);
+        set_cursor(XC_draft_small);
+        goto redraw;
       case SDL_MOUSEMOTION:
         set_cursor(XC_draft_small);
         break;
       case SDL_KEYDOWN:
         switch(ev.key.keysym.sym) {
-          case SDLK_ESCAPE: case SDLK_RETURN: return;
+          case SDLK_ESCAPE: case SDLK_RETURN: case SDLK_KP_ENTER: return;
         }
         goto redraw;
       case SDL_VIDEOEXPOSE:
