@@ -301,7 +301,7 @@ const char*load_level(int lvl) {
           }
           if(!((z&0xC0)%0xC0)) {
             // Misc3
-            objects[o]->misc1=UVALUE(p[0]|(p[1]<<8),(z>>4)&3);
+            objects[o]->misc3=UVALUE(p[0]|(p[1]<<8),(z>>4)&3);
             p+=2;
           }
         }

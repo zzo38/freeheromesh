@@ -441,6 +441,12 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case 0xC000 ... 0xFFFF: StackReq(0,1); Push(MVALUE((code[ptr-1]&0x3FFF)+256)); break;
     case OP_ADD: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u+t2.u)); break;
     case OP_ANIMATE: StackReq(4,0); t4=Pop(); Numeric(t4); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); animate(obj,t1.u,t2.u,t3.u,t4.u); break;
+    case OP_ARG1: StackReq(0,1); Push(msgvars.arg1); break;
+    case OP_ARG1_E: StackReq(1,0); msgvars.arg1=Pop(); break;
+    case OP_ARG2: StackReq(0,1); Push(msgvars.arg2); break;
+    case OP_ARG2_E: StackReq(1,0); msgvars.arg2=Pop(); break;
+    case OP_ARG3: StackReq(0,1); Push(msgvars.arg3); break;
+    case OP_ARG3_E: StackReq(1,0); msgvars.arg3=Pop(); break;
     case OP_ARRIVALS: StackReq(0,1); Push(NVALUE(o->arrivals&0x1FFFFFF)); break;
     case OP_ARRIVALS_C: StackReq(1,1); Push(GetVariableOrAttributeOf(arrivals&0x1FFFFFF,NVALUE)); break;
     case OP_ARRIVALS_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->arrivals=t1.u; break;
@@ -497,6 +503,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_DROP_D: StackReq(2,0); Pop(); Pop(); break;
     case OP_DUP: StackReq(1,2); t1=Pop(); Push(t1); Push(t1); break;
     case OP_EQ: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_equal(t1,t2)?1:0)); break;
+    case OP_FROM: StackReq(0,1); Push(OVALUE(msgvars.from)); break;
     case OP_GE: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t2,t1)?0:1)); break;
     case OP_GE_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t2,t1)?0:1)); break;
     case OP_GOTO: ptr=code[ptr]; break;
@@ -532,6 +539,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_LXOR: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1)?!v_bool(t2):v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_MOD: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u%t2.u)); break;
     case OP_MOD_C: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s%t2.s)); break;
+    case OP_MSG: StackReq(0,1); Push(MVALUE(msgvars.msg)); break;
     case OP_MUL: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u*t2.u)); break;
     case OP_MUL_C: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s*t2.s)); break;
     case OP_NE: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_equal(t1,t2)?0:1)); break;
@@ -542,6 +550,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_OBJBELOW_C: StackReq(1,1); i=obj_below(v_object(Pop())); Push(OVALUE(i)); break;
     case OP_OBJCLASSAT: StackReq(3,1); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_obj_class_at(t1,t2,t3)); break;
     case OP_RET: return;
+    case OP_SELF: StackReq(0,1); Push(OVALUE(obj)); break;
     case OP_SEND: StackReq(3,1); t4=Pop(); t3=Pop(); t2=Pop(); Push(v_send_self(obj,t2,t3,t4,NVALUE(0))); break;
     case OP_SEND_C: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_send_message(obj,t1,t2,t3,t4,NVALUE(0))); break;
     case OP_SEND_D: StackReq(3,0); t4=Pop(); t3=Pop(); t2=Pop(); v_send_self(obj,t2,t3,t4,NVALUE(0)); break;
