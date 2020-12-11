@@ -307,6 +307,48 @@ static inline int v_unsigned_greater(Value x,Value y) {
   return x.u>y.u;
 }
 
+static Uint32 create(Uint32 from,Uint16 c,Uint32 x,Uint32 y,Uint32 im,Uint32 d) {
+  Uint32 m,n;
+  int i,xx,yy;
+  Object*o;
+  Object*p;
+  Value v;
+  if(d>7) d=0;
+  if(x<1 || y<1 || x>pfwidth || y>pfheight) return VOIDLINK;
+  //TODO: Handle collisions
+  n=objalloc(c);
+  if(n==VOIDLINK) return VOIDLINK;
+  o=objects[n];
+  o->x=x;
+  o->y=y;
+  o->image=im;
+  o->dir=d;
+  pflink(n);
+  v=send_message(from,n,MSG_CREATE,NVALUE(0),NVALUE(0),NVALUE(0));
+  if(o->oflags&OF_DESTROYED) return VOIDLINK;
+  for(i=25;i>=0;i--) {
+    xx=x+Xbit(i); yy=y+Ybit(i);
+    if(xx<1 || xx>pfwidth || yy<1 || yy>pfheight) continue;
+    m=playfield[xx+yy*64-65];
+    while(m!=VOIDLINK) {
+      p=objects[m];
+      if(p->arrivals&(1<<i)) send_message(n,m,MSG_CREATED,NVALUE(x),NVALUE(y),v);
+      m=p->up;
+    }
+  }
+  if(o->oflags&OF_DESTROYED) return VOIDLINK;
+  m=obj_above(n);
+  if(m!=VOIDLINK) {
+    v=send_message(VOIDLINK,n,MSG_SUNK,NVALUE(0),NVALUE(0),v);
+    while(m!=VOIDLINK) {
+      send_message(n,m,MSG_FLOATED,NVALUE(0),NVALUE(0),v);
+      m=obj_above(m);
+    }
+  }
+  if(o->oflags&OF_DESTROYED) return VOIDLINK;
+  return n;
+}
+
 static Value destroy(Uint32 from,Uint32 to,Uint32 why) {
   Object*o;
   Value v;
@@ -365,6 +407,14 @@ static inline Value v_broadcast(Uint32 from,Value c,Value msg,Value arg1,Value a
   if(msg.t!=TY_MESSAGE) Throw("Type mismatch");
   if(c.t!=TY_CLASS && (c.t!=TY_NUMBER || c.u)) Throw("Type mismatch");
   return NVALUE(broadcast(from,c.u,msg.u,arg1,arg2,arg3,s));
+}
+
+static inline Value v_create(Uint32 from,Value cl,Value x,Value y,Value im,Value d) {
+  Uint32 n;
+  if(!cl.t && !cl.u) return NVALUE(0);
+  if(cl.t!=TY_CLASS || x.t || x.t || y.t || im.t || d.t) Throw("Type mismatch");
+  n=create(from,cl.u,x.u,y.u,im.u,d.u);
+  return OVALUE(n);
 }
 
 static inline Value v_obj_class_at(Value c,Value x,Value y) {
@@ -475,6 +525,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_CLIMB_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->climb=t1.u&0xFFFF; break;
     case OP_CLIMB_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->climb=t1.u; break;
     case OP_CLIMB_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->climb=t1.u; break;
+    case OP_CREATE: NoIgnore(); StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_create(obj,t1,t2,t3,t4,t5)); break;
     case OP_DENSITY: StackReq(0,1); Push(NVALUE(o->density)); break;
     case OP_DENSITY_C: StackReq(1,1); Push(GetVariableOrAttributeOf(density,NVALUE)); break;
     case OP_DENSITY_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); change_density(obj,t1.s); break;
