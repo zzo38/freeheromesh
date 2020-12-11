@@ -228,6 +228,39 @@ static void change_shape(Uint32 n,int d,int v) {
   objects[n]->shape=v;
 }
 
+static void sink(Uint32 x,Uint32 y) {
+  // Before, x(o) was above y(p); now make y(p) above x(o)
+  Object*o=objects[x];
+  Object*p=objects[y];
+  Value v;
+  p->up=o->up;
+  o->down=p->down;
+  o->up=y;
+  p->down=x;
+  if(!(o->oflags&p->oflags&OF_VISUALONLY)) v=send_message(x,y,MSG_FLOATED,NVALUE(0),NVALUE(0),NVALUE(0));
+  if(!(o->oflags&p->oflags&OF_VISUALONLY)) send_message(y,x,MSG_SUNK,NVALUE(0),NVALUE(0),v);
+}
+
+static void change_density(Uint32 n,Sint32 v) {
+  Object*o=objects[n];
+  Uint32 i;
+  if(v<o->density) {
+    o->density=v;
+    for(;;) {
+      i=o->up;
+      if(i==VOIDLINK || objects[i]->density<=v) return;
+      sink(i,n);
+    }
+  } else if(v>o->density) {
+    o->density=v;
+    for(;;) {
+      i=o->down;
+      if(i==VOIDLINK || objects[i]->density>=v) return;
+      sink(n,i);
+    }
+  }
+}
+
 static inline int v_bool(Value v) {
   switch(v.t) {
     case TY_NUMBER: return v.u!=0;
@@ -410,12 +443,12 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_ANIMATE: StackReq(4,0); t4=Pop(); Numeric(t4); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); animate(obj,t1.u,t2.u,t3.u,t4.u); break;
     case OP_ARRIVALS: StackReq(0,1); Push(NVALUE(o->arrivals&0x1FFFFFF)); break;
     case OP_ARRIVALS_C: StackReq(1,1); Push(GetVariableOrAttributeOf(arrivals&0x1FFFFFF,NVALUE)); break;
-    case OP_ARRIVALS_E: StackReq(1,0); t1=Pop(); Numeric(t1); o->arrivals=t1.u; break;
-    case OP_ARRIVALS_EC: StackReq(1,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->arrivals=t1.u; break;
+    case OP_ARRIVALS_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->arrivals=t1.u; break;
+    case OP_ARRIVALS_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->arrivals=t1.u; break;
     case OP_ARRIVED: StackReq(0,1); Push(NVALUE(o->arrived&0x1FFFFFF)); break;
     case OP_ARRIVED_C: StackReq(1,1); Push(GetVariableOf(arrived&0x1FFFFFF,NVALUE)); break;
-    case OP_ARRIVED_E: StackReq(1,0); t1=Pop(); Numeric(t1); o->arrived=t1.u; break;
-    case OP_ARRIVED_EC: StackReq(1,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->arrived=t1.u; break;
+    case OP_ARRIVED_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->arrived=t1.u; break;
+    case OP_ARRIVED_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->arrived=t1.u; break;
     case OP_BAND: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u&t2.u)); break;
     case OP_BNOT: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(~t1.u)); break;
     case OP_BOR: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u|t2.u)); break;
@@ -430,22 +463,34 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_CALLSUB: execute_program(code,code[ptr++],obj); break;
     case OP_CLASS: StackReq(0,1); Push(CVALUE(o->class)); break;
     case OP_CLASS_C: StackReq(1,1); Push(GetVariableOf(class,CVALUE)); break;
+    case OP_CLIMB: StackReq(0,1); Push(NVALUE(o->climb)); break;
+    case OP_CLIMB_C: StackReq(1,1); Push(GetVariableOrAttributeOf(climb,NVALUE)); break;
+    case OP_CLIMB_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->climb=t1.u; break;
+    case OP_CLIMB_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->climb=t1.u&0xFFFF; break;
+    case OP_CLIMB_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->climb=t1.u; break;
+    case OP_CLIMB_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->climb=t1.u; break;
+    case OP_DENSITY: StackReq(0,1); Push(NVALUE(o->density)); break;
+    case OP_DENSITY_C: StackReq(1,1); Push(GetVariableOrAttributeOf(density,NVALUE)); break;
+    case OP_DENSITY_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); change_density(obj,t1.s); break;
+    case OP_DENSITY_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); change_density(obj,t1.s&0xFFFF); break;
+    case OP_DENSITY_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); change_density(v_object(Pop()),t1.s); break;
+    case OP_DENSITY_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); change_density(v_object(Pop()),t1.s&0xFFFF); break;
     case OP_DEPARTED: StackReq(0,1); Push(NVALUE(o->departed&0x1FFFFFF)); break;
     case OP_DEPARTED_C: StackReq(1,1); Push(GetVariableOf(departed&0x1FFFFFF,NVALUE)); break;
-    case OP_DEPARTED_E: StackReq(1,0); t1=Pop(); Numeric(t1); o->departed=t1.u; break;
-    case OP_DEPARTED_EC: StackReq(1,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->departed=t1.u; break;
+    case OP_DEPARTED_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->departed=t1.u; break;
+    case OP_DEPARTED_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->departed=t1.u; break;
     case OP_DEPARTURES: StackReq(0,1); Push(NVALUE(o->departures&0x1FFFFFF)); break;
     case OP_DEPARTURES_C: StackReq(1,1); Push(GetVariableOrAttributeOf(departures&0x1FFFFFF,NVALUE)); break;
-    case OP_DEPARTURES_E: StackReq(1,0); t1=Pop(); Numeric(t1); o->departures=t1.u; break;
-    case OP_DEPARTURES_EC: StackReq(1,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->departures=t1.u; break;
+    case OP_DEPARTURES_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->departures=t1.u; break;
+    case OP_DEPARTURES_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->departures=t1.u; break;
     case OP_DIR: StackReq(0,1); Push(NVALUE(o->dir)); break;
     case OP_DIR_C: StackReq(1,1); Push(GetVariableOf(dir,NVALUE)); break;
-    case OP_DIR_E: StackReq(1,0); t1=Pop(); Numeric(t1); o->dir=resolve_dir(obj,t1.u); break;
-    case OP_DIR_EC: StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->dir=resolve_dir(i,t1.u); break;
+    case OP_DIR_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->dir=resolve_dir(obj,t1.u); break;
+    case OP_DIR_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->dir=resolve_dir(i,t1.u); break;
     case OP_DISTANCE: StackReq(0,1); Push(NVALUE(o->distance)); break;
     case OP_DISTANCE_C: StackReq(1,1); Push(GetVariableOf(distance,NVALUE)); break;
-    case OP_DISTANCE_E: StackReq(1,0); t1=Pop(); Numeric(t1); o->distance=t1.u; break;
-    case OP_DISTANCE_EC: StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->distance=t1.u; break;
+    case OP_DISTANCE_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->distance=t1.u; break;
+    case OP_DISTANCE_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->distance=t1.u; break;
     case OP_DIV: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u/t2.u)); break;
     case OP_DIV_C: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s/t2.s)); break;
     case OP_DROP: StackReq(1,0); Pop(); break;
@@ -459,13 +504,19 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_GT_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t1,t2)?1:0)); break;
     case OP_HARD: StackReq(1,1); j=v_sh_dir(Pop()); Push(NVALUE(o->hard[j])); break;
     case OP_HARD_C: StackReq(2,1); j=v_sh_dir(Pop()); Push(GetVariableOrAttributeOf(hard[j],NVALUE)); break;
-    case OP_HARD_E: StackReq(2,0); j=v_sh_dir(Pop()); t1=Pop(); Numeric(t1); o->hard[j]=t1.u; break;
-    case OP_HARD_EC: StackReq(3,0); j=v_sh_dir(Pop()); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->hard[j]=t1.u; break;
+    case OP_HARD_E: NoIgnore(); StackReq(2,0); j=v_sh_dir(Pop()); t1=Pop(); Numeric(t1); o->hard[j]=t1.u; break;
+    case OP_HARD_EC: NoIgnore(); StackReq(3,0); j=v_sh_dir(Pop()); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->hard[j]=t1.u; break;
+    case OP_HEIGHT: StackReq(0,1); Push(NVALUE(o->height)); break;
+    case OP_HEIGHT_C: StackReq(1,1); Push(GetVariableOrAttributeOf(height,NVALUE)); break;
+    case OP_HEIGHT_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->height=t1.u; break;
+    case OP_HEIGHT_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->height=t1.u&0xFFFF; break;
+    case OP_HEIGHT_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->height=t1.u; break;
+    case OP_HEIGHT_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->height=t1.u; break;
     case OP_IF: StackReq(1,0); if(v_bool(Pop())) ptr++; else ptr=code[ptr]; break;
     case OP_IMAGE: StackReq(0,1); Push(NVALUE(o->image)); break;
     case OP_IMAGE_C: StackReq(1,1); Push(GetVariableOf(image,NVALUE)); break;
-    case OP_IMAGE_E: StackReq(1,0); t1=Pop(); Numeric(t1); o->image=t1.u; break;
-    case OP_IMAGE_EC: StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->image=t1.u; break;
+    case OP_IMAGE_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->image=t1.u; break;
+    case OP_IMAGE_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->image=t1.u; break;
     case OP_INT16: StackReq(0,1); Push(NVALUE(code[ptr++])); break;
     case OP_INT32: StackReq(0,1); t1=UVALUE(code[ptr++]<<16,TY_NUMBER); t1.u|=code[ptr++]; Push(t1); break;
     case OP_KEY: StackReq(0,1); Push(NVALUE(current_key)); break;
@@ -501,34 +552,46 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_SENDEX_CD: StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_send_message(obj,t1,t2,t3,t4,t5); break;
     case OP_SHAPE: StackReq(0,1); Push(NVALUE(o->shape)); break;
     case OP_SHAPE_C: StackReq(1,1); Push(GetVariableOrAttributeOf(shape,NVALUE)); break;
-    case OP_SHAPE_E: StackReq(1,0); t1=Pop(); Numeric(t1); o->shape=t1.u; break;
-    case OP_SHAPE_EC: StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->shape=t1.u; break;
+    case OP_SHAPE_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->shape=t1.u; break;
+    case OP_SHAPE_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->shape=t1.u; break;
     case OP_SHAPEDIR: StackReq(1,1); j=v_sh_dir(Pop()); Push(NVALUE((o->shape>>(j+j))&3)); break;
     case OP_SHAPEDIR_C: StackReq(2,1); j=v_sh_dir(Pop()); t1=GetVariableOrAttributeOf(sharp[j],NVALUE); t1.u=(t1.u>>(j+j))&3; Push(t1); break;
-    case OP_SHAPEDIR_E: StackReq(2,0); j=v_sh_dir(Pop()); t1=Pop(); Numeric(t1); change_shape(obj,j,t1.u); break;
-    case OP_SHAPEDIR_EC: StackReq(3,0); j=v_sh_dir(Pop()); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) change_shape(i,j,t1.u); break;
+    case OP_SHAPEDIR_E: NoIgnore(); StackReq(2,0); j=v_sh_dir(Pop()); t1=Pop(); Numeric(t1); change_shape(obj,j,t1.u); break;
+    case OP_SHAPEDIR_EC: NoIgnore(); StackReq(3,0); j=v_sh_dir(Pop()); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) change_shape(i,j,t1.u); break;
     case OP_SHARP: StackReq(1,1); j=v_sh_dir(Pop()); Push(NVALUE(o->sharp[j])); break;
     case OP_SHARP_C: StackReq(2,1); j=v_sh_dir(Pop()); Push(GetVariableOrAttributeOf(sharp[j],NVALUE)); break;
-    case OP_SHARP_E: StackReq(2,0); j=v_sh_dir(Pop()); t1=Pop(); Numeric(t1); o->sharp[j]=t1.u; break;
-    case OP_SHARP_EC: StackReq(3,0); j=v_sh_dir(Pop()); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->sharp[j]=t1.u; break;
+    case OP_SHARP_E: NoIgnore(); StackReq(2,0); j=v_sh_dir(Pop()); t1=Pop(); Numeric(t1); o->sharp[j]=t1.u; break;
+    case OP_SHARP_EC: NoIgnore(); StackReq(3,0); j=v_sh_dir(Pop()); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->sharp[j]=t1.u; break;
     case OP_SHOVABLE: StackReq(0,1); Push(NVALUE(o->shovable)); break;
     case OP_SHOVABLE_C: StackReq(1,1); Push(GetVariableOrAttributeOf(shovable,NVALUE)); break;
-    case OP_SHOVABLE_E: StackReq(1,0); t1=Pop(); Numeric(t1); o->shovable=t1.u; break;
-    case OP_SHOVABLE_EC: StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->shovable=t1.u; break;
+    case OP_SHOVABLE_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->shovable=t1.u; break;
+    case OP_SHOVABLE_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->shovable=t1.u; break;
+    case OP_STRENGTH: StackReq(0,1); Push(NVALUE(o->strength)); break;
+    case OP_STRENGTH_C: StackReq(1,1); Push(GetVariableOrAttributeOf(strength,NVALUE)); break;
+    case OP_STRENGTH_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->strength=t1.u; break;
+    case OP_STRENGTH_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->strength=t1.u&0xFFFF; break;
+    case OP_STRENGTH_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->strength=t1.u; break;
+    case OP_STRENGTH_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->strength=t1.u; break;
     case OP_SOUND: StackReq(2,0); t2=Pop(); t1=Pop(); break; // Sound not implemented at this time
     case OP_SUB: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u-t2.u)); break;
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
     case OP_TRACE: StackReq(3,0); trace_stack(obj); break;
+    case OP_WEIGHT: StackReq(0,1); Push(NVALUE(o->weight)); break;
+    case OP_WEIGHT_C: StackReq(1,1); Push(GetVariableOrAttributeOf(weight,NVALUE)); break;
+    case OP_WEIGHT_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->weight=t1.u; break;
+    case OP_WEIGHT_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->weight=t1.u&0xFFFF; break;
+    case OP_WEIGHT_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->weight=t1.u; break;
+    case OP_WEIGHT_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->weight=t1.u; break;
     case OP_WINLEVEL: key_ignored=0; gameover=1; Throw(0); break;
     case OP_XLOC: StackReq(0,1); Push(NVALUE(o->x)); break;
     case OP_YLOC: StackReq(0,1); Push(NVALUE(o->y)); break;
 #define MiscVar(a,b) \
     case a: StackReq(0,1); Push(o->b); break; \
     case a+0x0800: StackReq(1,1); Push(GetVariableOf(b,)); break; \
-    case a+0x1000: StackReq(1,0); o->b=Pop(); break; \
-    case a+0x1001: StackReq(1,0); t1=Pop(); if(!t1.t) t1.u&=0xFFFF; o->b=t1; break; \
-    case a+0x1800: StackReq(2,0); t1=Pop(); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->b=t1; break; \
-    case a+0x1801: StackReq(2,0); t1=Pop(); if(!t1.t) t1.u&=0xFFFF; i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->b=t1; break;
+    case a+0x1000: NoIgnore(); StackReq(1,0); o->b=Pop(); break; \
+    case a+0x1001: NoIgnore(); StackReq(1,0); t1=Pop(); if(!t1.t) t1.u&=0xFFFF; o->b=t1; break; \
+    case a+0x1800: NoIgnore(); StackReq(2,0); t1=Pop(); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->b=t1; break; \
+    case a+0x1801: NoIgnore(); StackReq(2,0); t1=Pop(); if(!t1.t) t1.u&=0xFFFF; i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->b=t1; break;
     MiscVar(OP_MISC1,misc1) MiscVar(OP_MISC2,misc2) MiscVar(OP_MISC3,misc3)
 #undef GetVariableOf
 #define GetVariableOf(a,b) GetVariableOrAttributeOf(a,b)
