@@ -1041,16 +1041,16 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
           cl->codes[x]=ptr;
           break;
         case OP_FOR:
-          if(cl->uservars>=0x07FF || num_globals>=0x07FF) ParseError("Too many user variables\n");
-          if(cla) x=cl->uservars++|0x2000; else x=num_globals++|0x2800;
+          if(num_globals>=0x07FF) ParseError("Too many user variables\n");
+          x=num_globals++;
           AddInst2(OP_FOR,x);
           FlowPush(OP_FOR);
           peep=++ptr;
           break;
         case OP_NEXT:
           FlowPop(OP_FOR);
-          AddInst(OP_NEXT);
-          cl->codes[flowptr[flowdepth]]=ptr;
+          AddInst2(OP_NEXT,flowptr[flowdepth]);
+          cl->codes[flowptr[flowdepth]]=peep=ptr;
           break;
         case OP_STRING:
           AddInst2(OP_STRING,pool_string(tokenstr));
