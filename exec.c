@@ -59,6 +59,9 @@ static Uint8 current_key;
 static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2,Value arg3);
 static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value arg3,int s);
 
+static const Sint8 x_delta[8]={1,1,0,-1,-1,-1,0,1};
+static const Sint8 y_delta[8]={0,-1,-1,-1,0,1,1,1};
+
 const char*value_string_ptr(Value v) {
   switch(v.t) {
     case TY_STRING: return stringpool[v.u];
@@ -210,6 +213,17 @@ static Uint32 obj_below(Uint32 i) {
   return VOIDLINK;
 }
 
+static Uint32 obj_bottom_at(Uint32 x,Uint32 y) {
+  Uint32 i;
+  if(x<1 || x>pfwidth || y<1 || y>pfheight) return VOIDLINK;
+  i=playfield[x+y*64-65];
+  while(i!=VOIDLINK) {
+    if(!(objects[i]->oflags&(OF_DESTROYED|OF_VISUALONLY))) return i;
+    i=objects[i]->up;
+  }
+  return VOIDLINK;
+}
+
 static Uint32 obj_class_at(Uint32 c,Uint32 x,Uint32 y) {
   Uint32 i;
   if(x<1 || x>pfwidth || y<1 || y>pfheight) return VOIDLINK;
@@ -219,6 +233,24 @@ static Uint32 obj_class_at(Uint32 c,Uint32 x,Uint32 y) {
     i=objects[i]->up;
   }
   return VOIDLINK;
+}
+
+static Uint32 obj_top_at(Uint32 x,Uint32 y) {
+  Uint32 i,r;
+  if(x<1 || x>pfwidth || y<1 || y>pfheight) return VOIDLINK;
+  i=playfield[x+y*64-65];
+  r=VOIDLINK;
+  while(i!=VOIDLINK) {
+    if(!(objects[i]->oflags&(OF_DESTROYED|OF_VISUALONLY))) r=i;
+    i=objects[i]->up;
+  }
+  return r;
+}
+
+static Uint32 obj_dir(Uint32 n,Uint32 d) {
+  if(n==VOIDLINK) return VOIDLINK;
+  d=resolve_dir(n,d);
+  return obj_top_at(objects[n]->x+x_delta[d],objects[n]->y+y_delta[d]);
 }
 
 static void change_shape(Uint32 n,int d,int v) {
@@ -577,6 +609,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_COMPATIBLE: StackReq(0,1); if(classes[o->class]->cflags&CF_COMPATIBLE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_COMPATIBLE_C: StackReq(1,1); GetClassFlagOf(CF_COMPATIBLE); break;
     case OP_CREATE: NoIgnore(); StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_create(obj,t1,t2,t3,t4,t5)); break;
+    case OP_CREATE_D: NoIgnore(); StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_create(obj,t1,t2,t3,t4,t5); break;
     case OP_DENSITY: StackReq(0,1); Push(NVALUE(o->density)); break;
     case OP_DENSITY_C: StackReq(1,1); Push(GetVariableOrAttributeOf(density,NVALUE)); break;
     case OP_DENSITY_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); change_density(obj,t1.s); break;
@@ -647,6 +680,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_LOC: StackReq(0,2); Push(NVALUE(o->x)); Push(NVALUE(o->y)); break;
     case OP_LOR: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1) || v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_LOSELEVEL: gameover=-1; Throw(0); break;
+    case OP_LSH: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t2.u&~31?0:t1.u<<t2.u)); break;
     case OP_LT: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t2,t1)?1:0)); break;
     case OP_LT_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t2,t1)?1:0)); break;
     case OP_LXOR: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1)?!v_bool(t2):v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
@@ -667,10 +701,16 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_OBJABOVE_C: StackReq(1,1); i=obj_above(v_object(Pop())); Push(OVALUE(i)); break;
     case OP_OBJBELOW: StackReq(0,1); i=obj_below(obj); Push(OVALUE(i)); break;
     case OP_OBJBELOW_C: StackReq(1,1); i=obj_below(v_object(Pop())); Push(OVALUE(i)); break;
+    case OP_OBJBOTTOMAT: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); i=obj_bottom_at(t1.u,t2.u); Push(OVALUE(i)); break;
     case OP_OBJCLASSAT: StackReq(3,1); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_obj_class_at(t1,t2,t3)); break;
+    case OP_OBJDIR: StackReq(1,1); t2=Pop(); Numeric(t2); i=obj_dir(obj,t2.u); Push(OVALUE(i)); break;
+    case OP_OBJDIR_C: StackReq(2,1); t2=Pop(); Numeric(t2); i=obj_dir(v_object(Pop()),t2.u); Push(OVALUE(i)); break;
+    case OP_OBJTOPAT: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); i=obj_top_at(t1.u,t2.u); Push(OVALUE(i)); break;
     case OP_PLAYER: StackReq(0,1); if(classes[o->class]->cflags&CF_PLAYER) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_PLAYER_C: StackReq(1,1); GetClassFlagOf(CF_PLAYER); break;
     case OP_RET: return;
+    case OP_RSH: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t2.u&~31?0:t1.u>>t2.u)); break;
+    case OP_RSH_C: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t2.u&~31?(t1.s<0?-1:0):t1.s>>t2.u)); break;
     case OP_SELF: StackReq(0,1); Push(OVALUE(obj)); break;
     case OP_SEND: StackReq(3,1); t4=Pop(); t3=Pop(); t2=Pop(); Push(v_send_self(obj,t2,t3,t4,NVALUE(0))); break;
     case OP_SEND_C: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_send_message(obj,t1,t2,t3,t4,NVALUE(0))); break;
@@ -736,7 +776,9 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_WEIGHT_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->weight=t1.u; break;
     case OP_WINLEVEL: key_ignored=0; gameover=1; Throw(0); break;
     case OP_XLOC: StackReq(0,1); Push(NVALUE(o->x)); break;
+    case OP_XLOC_C: StackReq(1,1); Push(GetVariableOf(x,NVALUE)); break;
     case OP_YLOC: StackReq(0,1); Push(NVALUE(o->y)); break;
+    case OP_YLOC_C: StackReq(1,1); Push(GetVariableOf(y,NVALUE)); break;
 #define MiscVar(a,b) \
     case a: StackReq(0,1); Push(o->b); break; \
     case a+0x0800: StackReq(1,1); Push(GetVariableOf(b,)); break; \
