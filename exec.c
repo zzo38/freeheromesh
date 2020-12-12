@@ -632,8 +632,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_DIR_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->dir=resolve_dir(i,t1.u); break;
     case OP_DISTANCE: StackReq(0,1); Push(NVALUE(o->distance)); break;
     case OP_DISTANCE_C: StackReq(1,1); Push(GetVariableOf(distance,NVALUE)); break;
-    case OP_DISTANCE_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->distance=t1.u; break;
-    case OP_DISTANCE_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->distance=t1.u; break;
+    case OP_DISTANCE_E: StackReq(1,0); t1=Pop(); Numeric(t1); o->distance=t1.u; break;
+    case OP_DISTANCE_EC: StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->distance=t1.u; break;
     case OP_DIV: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u/t2.u)); break;
     case OP_DIV_C: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s/t2.s)); break;
     case OP_DROP: StackReq(1,0); Pop(); break;
