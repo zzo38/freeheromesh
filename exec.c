@@ -386,9 +386,9 @@ static Value destroy(Uint32 from,Uint32 to,Uint32 why) {
   Value v;
   int i,x,y,xx,yy;
   Uint32 n;
-  if(n==VOIDLINK) return NVALUE(0);
+  if(to==VOIDLINK) return NVALUE(0);
   o=objects[to];
-  // Not checking if it is already destroyed, since EKS Hero Mesh doesn't check.
+  // EKS Hero Mesh doesn't check if it already destroyed.
   v=send_message(from,to,MSG_DESTROY,NVALUE(0),NVALUE(0),NVALUE(why));
   if(!v_bool(v)) {
     o->oflags|=OF_DESTROYED;
@@ -624,6 +624,10 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_DEPARTURES_C: StackReq(1,1); Push(GetVariableOrAttributeOf(departures&0x1FFFFFF,NVALUE)); break;
     case OP_DEPARTURES_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->departures=t1.u; break;
     case OP_DEPARTURES_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->departures=t1.u; break;
+    case OP_DESTROY: NoIgnore(); StackReq(0,1); Push(destroy(obj,obj,0)); break;
+    case OP_DESTROY_C: NoIgnore(); StackReq(1,1); i=v_object(Pop()); Push(destroy(obj,i,0)); break;
+    case OP_DESTROY_D: NoIgnore(); destroy(obj,obj,0); break;
+    case OP_DESTROY_CD: NoIgnore(); StackReq(1,0); i=v_object(Pop()); destroy(obj,i,0); break;
     case OP_DESTROYED: StackReq(0,1); if(o->oflags&OF_DESTROYED) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_DESTROYED_C: StackReq(1,1); GetFlagOf(OF_DESTROYED); break;
     case OP_DIR: StackReq(0,1); Push(NVALUE(o->dir)); break;
