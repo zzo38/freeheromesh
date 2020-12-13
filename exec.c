@@ -606,6 +606,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_CLIMB_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->climb=t1.u&0xFFFF; break;
     case OP_CLIMB_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->climb=t1.u; break;
     case OP_CLIMB_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->climb=t1.u; break;
+    case OP_COLLISIONLAYERS: StackReq(0,1); Push(NVALUE(classes[o->class]->collisionLayers)); break;
+    case OP_COLLISIONLAYERS_C: StackReq(1,1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else Push(NVALUE(classes[objects[i]->class]->collisionLayers)); break;
     case OP_COMPATIBLE: StackReq(0,1); if(classes[o->class]->cflags&CF_COMPATIBLE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_COMPATIBLE_C: StackReq(1,1); GetClassFlagOf(CF_COMPATIBLE); break;
     case OP_CREATE: NoIgnore(); StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_create(obj,t1,t2,t3,t4,t5)); break;
@@ -666,6 +668,12 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_IMAGE_C: StackReq(1,1); Push(GetVariableOf(image,NVALUE)); break;
     case OP_IMAGE_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->image=t1.u; break;
     case OP_IMAGE_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->image=t1.u; break;
+    case OP_INERTIA: StackReq(0,1); Push(NVALUE(o->inertia)); break;
+    case OP_INERTIA_C: StackReq(1,1); Push(GetVariableOf(inertia,NVALUE)); break;
+    case OP_INERTIA_E: StackReq(1,0); t1=Pop(); Numeric(t1); o->inertia=t1.u; break;
+    case OP_INERTIA_E16: StackReq(1,0); t1=Pop(); Numeric(t1); o->inertia=t1.u&0xFFFF; break;
+    case OP_INERTIA_EC: StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->inertia=t1.u; break;
+    case OP_INERTIA_EC16: StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->inertia=t1.u&0xFFFF; break;
     case OP_INT16: StackReq(0,1); Push(NVALUE(code[ptr++])); break;
     case OP_INT32: StackReq(0,1); t1=UVALUE(code[ptr++]<<16,TY_NUMBER); t1.u|=code[ptr++]; Push(t1); break;
     case OP_INVISIBLE: StackReq(0,1); if(o->oflags&OF_INVISIBLE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
