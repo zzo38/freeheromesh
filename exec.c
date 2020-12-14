@@ -496,6 +496,7 @@ static int move_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
   if(!(o->oflags&OF_BIZARRO) && (i=classes[o->class]->collisionLayers) && (xx=collisions_at(x,y)&i)) {
     if((i=collide_with(xx,VOIDLINK,x,y,o->class))&0x01) return i&0x04?1:0;
   }
+  pfunlink(n);
   if(!(o->oflags&((classes[o->class]->cflags&CF_COMPATIBLE?OF_VISUALONLY:0)|OF_STEALTHY))) {
     for(i=25;i>=0;i--) {
       xx=o->x+Xbit(i); yy=o->y+Ybit(i);
@@ -508,11 +509,9 @@ static int move_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
       }
     }
   }
-  pfunlink(n);
   o->distance+=abs(x-o->x)+abs(y-o->y);
   o->x=x;
   o->y=y;
-  pflink(n);
   if(!(o->oflags&((classes[o->class]->cflags&CF_COMPATIBLE?OF_VISUALONLY:0)|OF_STEALTHY))) {
     for(i=25;i>=0;i--) {
       xx=x+Xbit(i); yy=y+Ybit(i);
@@ -525,6 +524,7 @@ static int move_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
       }
     }
   }
+  pflink(n);
   if(!(o->oflags&OF_VISUALONLY)) {
     m=objects[n]->up;
     if(m!=VOIDLINK) {
