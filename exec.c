@@ -41,7 +41,7 @@ typedef struct {
 static jmp_buf my_env;
 static const char*my_error;
 static MessageVars msgvars;
-static char lastimage_processing,changed;
+static char lastimage_processing,changed,all_flushed;
 static Value vstack[VSTACKSIZE];
 static int vstackptr;
 static const char*traceprefix;
@@ -528,7 +528,7 @@ static int move_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
   if(!(o->oflags&OF_VISUALONLY)) {
     m=objects[n]->up;
     if(m!=VOIDLINK) {
-      v=send_message(VOIDLINK,n,MSG_SUNK,NVALUE(0),NVALUE(0),v);
+      v=send_message(VOIDLINK,n,MSG_SUNK,NVALUE(0),NVALUE(0),NVALUE(0));
       while(m!=VOIDLINK) {
         send_message(n,m,MSG_FLOATED,NVALUE(0),NVALUE(0),v);
         m=objects[m]->up;
@@ -568,6 +568,35 @@ static void trace_stack(Uint32 obj) {
   o=objects[obj];
   printf(" : %u %u [$%s %d %d]",o->generation,obj,classes[o->class]->name,o->x,o->y);
   printf(" : %u %u : %u %u\n",t1.t,t1.u,t2.t,t2.u);
+}
+
+static void flush_object(Uint32 n) {
+  Object*o=objects[n];
+  o->arrived=o->arrived2=o->departed=o->departed2=0;
+  o->oflags&=~(OF_MOVED|OF_BUSY|OF_USERSIGNAL);
+  o->inertia=0;
+}
+
+static void flush_class(Uint16 c) {
+  Uint32 n,p;
+  Object*o;
+  if(lastobj==VOIDLINK) return;
+  n=lastobj;
+  while(o=objects[n]) {
+    p=o->prev;
+    if(!c || o->class==c) {
+      o->arrived=o->arrived2=o->departed=o->departed2=0;
+      o->oflags&=~(OF_MOVED|OF_BUSY|OF_USERSIGNAL);
+      o->inertia=0;
+    }
+    if(p==VOIDLINK) break;
+    n=p;
+  }
+}
+
+static inline void flush_all(void) {
+  if(current_key) all_flushed=1;
+  flush_class(0);
 }
 
 static inline Value v_broadcast(Uint32 from,Value c,Value msg,Value arg1,Value arg2,Value arg3,int s) {
@@ -787,6 +816,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_DROP_D: StackReq(2,0); Pop(); Pop(); break;
     case OP_DUP: StackReq(1,2); t1=Pop(); Push(t1); Push(t1); break;
     case OP_EQ: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_equal(t1,t2)?1:0)); break;
+    case OP_FLUSHCLASS: NoIgnore(); StackReq(1,0); t1=Pop(); if(t1.t==TY_CLASS) flush_class(t1.u); else if(t1.t==TY_NUMBER && t1.s==-1) flush_all(); else if(t1.t) Throw("Type mismatch"); break;
+    case OP_FLUSHOBJ: NoIgnore(); StackReq(1,0); i=v_object(Pop()); if(i!=VOIDLINK) flush_object(i); break;
     case OP_FOR: NoIgnore(); StackReq(3,1); t3=Pop(); t2=Pop(); t1=Pop(); ptr=v_for(code,ptr,t1,t2,t3); break;
     case OP_FROM: StackReq(0,1); Push(OVALUE(msgvars.from)); break;
     case OP_GE: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t2,t1)?0:1)); break;
@@ -805,6 +836,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_HEIGHT_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->height=t1.u; break;
     case OP_HEIGHT_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->height=t1.u; break;
     case OP_IF: StackReq(1,0); if(v_bool(Pop())) ptr++; else ptr=code[ptr]; break;
+    case OP_IGNOREKEY: if(current_key) key_ignored=all_flushed=1; break;
     case OP_IMAGE: StackReq(0,1); Push(NVALUE(o->image)); break;
     case OP_IMAGE_C: StackReq(1,1); Push(GetVariableOf(image,NVALUE)); break;
     case OP_IMAGE_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->image=t1.u; break;
@@ -913,14 +945,14 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
     case OP_TRACE: StackReq(3,0); trace_stack(obj); break;
     case OP_TUCK: StackReq(2,3); t2=Pop(); t1=Pop(); Push(t2); Push(t1); Push(t2); break;
-    case OP_USERSTATE: StackReq(0,1); if(o->oflags&OF_USERSTATE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
-    case OP_USERSTATE_C: StackReq(1,1); GetFlagOf(OF_USERSTATE); break;
-    case OP_USERSTATE_E: NoIgnore(); StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_USERSTATE; else o->oflags&=~OF_USERSTATE; break;
-    case OP_USERSTATE_EC: NoIgnore(); StackReq(2,0); SetFlagOf(OF_USERSTATE); break;
     case OP_USERSIGNAL: StackReq(0,1); if(o->oflags&OF_USERSIGNAL) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_USERSIGNAL_C: StackReq(1,1); GetFlagOf(OF_USERSIGNAL); break;
     case OP_USERSIGNAL_E: NoIgnore(); StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_USERSIGNAL; else o->oflags&=~OF_USERSIGNAL; break;
     case OP_USERSIGNAL_EC: NoIgnore(); StackReq(2,0); SetFlagOf(OF_USERSIGNAL); break;
+    case OP_USERSTATE: StackReq(0,1); if(o->oflags&OF_USERSTATE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_USERSTATE_C: StackReq(1,1); GetFlagOf(OF_USERSTATE); break;
+    case OP_USERSTATE_E: NoIgnore(); StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_USERSTATE; else o->oflags&=~OF_USERSTATE; break;
+    case OP_USERSTATE_EC: NoIgnore(); StackReq(2,0); SetFlagOf(OF_USERSTATE); break;
     case OP_VISUALONLY: StackReq(0,1); if(o->oflags&OF_VISUALONLY) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_VISUALONLY_C: StackReq(1,1); GetFlagOf(OF_VISUALONLY); break;
     case OP_VISUALONLY_E: NoIgnore(); StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_VISUALONLY; else o->oflags&=~OF_VISUALONLY; break;
@@ -1057,6 +1089,7 @@ const char*execute_turn(int key) {
   if(setjmp(my_env)) return my_error;
   changed=0;
   key_ignored=0;
+  all_flushed=0;
   lastimage_processing=0;
   vstackptr=0;
   current_key=key;
@@ -1068,7 +1101,6 @@ const char*execute_turn(int key) {
   if(key_ignored && changed) return "Invalid use of IgnoreKey";
   current_key=0;
   
-  if(key_ignored && changed) return "Invalid use of IgnoreKey";
   if(generation_number<=TY_MAXTYPE) return "Too many generations of objects";
   return 0;
 }
@@ -1080,6 +1112,7 @@ const char*init_level(void) {
   gameover=0;
   changed=0;
   key_ignored=0;
+  all_flushed=0;
   lastimage_processing=0;
   vstackptr=0;
   move_number=0;
