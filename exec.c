@@ -912,6 +912,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_SUB: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u-t2.u)); break;
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
     case OP_TRACE: StackReq(3,0); trace_stack(obj); break;
+    case OP_TUCK: StackReq(2,3); t2=Pop(); t1=Pop(); Push(t2); Push(t1); Push(t2); break;
     case OP_USERSTATE: StackReq(0,1); if(o->oflags&OF_USERSTATE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_USERSTATE_C: StackReq(1,1); GetFlagOf(OF_USERSTATE); break;
     case OP_USERSTATE_E: NoIgnore(); StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_USERSTATE; else o->oflags&=~OF_USERSTATE; break;
