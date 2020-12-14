@@ -160,6 +160,7 @@ is
 ,=VisualOnly
 ,=Stealthy
 ,=Moved
+,=Done
 ,Destroyed
 ,Player
 ,Compatible
@@ -217,6 +218,7 @@ NewY
 ObjBottomAt
 ObjClassAt
 ,ObjDir
+ObjLayerAt
 ObjTopAt
 PopUp
 *PopUpArgs ; for (PopUp [number])
