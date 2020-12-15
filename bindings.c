@@ -157,6 +157,63 @@ const UserCommand*find_key_binding(SDL_Event*ev,int editing) {
   return kb->m+i;
 }
 
+static void sql_interactive(void) {
+  const char*t=screen_prompt("<SQL>");
+  const char*u;
+  SDL_Rect r;
+  SDL_Event ev;
+  sqlite3_stmt*st=0;
+  int i,j,y;
+  int k=0;
+  if(!t) return;
+  if(sqlite3_prepare_v2(userdb,t,-1,&st,0)) screen_message(sqlite3_errmsg(userdb));
+  if(!st) return;
+  redraw:
+  r.x=r.y=0;
+  r.w=screen->w;
+  r.h=screen->h;
+  SDL_FillRect(screen,&r,0xF0);
+  SDL_LockSurface(screen);
+  if(!k) draw_text(0,0,t,0xF8,0xFB);
+  y=8-k;
+  while((i=sqlite3_step(st))==SQLITE_ROW) {
+    if(y>=0) {
+      if(y>screen->h-8) break;
+      for(i=j=0;i<sqlite3_data_count(st);i++) {
+        u=sqlite3_column_text(st,i);
+        draw_text(j,y,"\xB3",0xF0,0xF9),j+=8;
+        if(u) draw_text(j,y,u,0xF0,0xF7),j+=strlen(u)*8; else draw_text(j,y,"\x04",0xF0,0xF4),j+=8;
+      }
+    }
+    y+=8;
+  }
+  if(y>=0 && y<=screen->h-8) {
+    if(i==SQLITE_DONE) draw_text(0,y,"--END--",0xF8,0xFA); else draw_text(0,y,sqlite3_errmsg(userdb),0xF8,0xFC);
+  }
+  SDL_UnlockSurface(screen);
+  sqlite3_reset(st);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) switch(ev.type) {
+    case SDL_KEYDOWN:
+      switch(ev.key.keysym.sym) {
+        case SDLK_ESCAPE: case SDLK_RETURN: case SDLK_KP_ENTER: goto done;
+        case SDLK_UP: k-=8; if(k<0) k=0; break;
+        case SDLK_DOWN: k+=8; break;
+        case SDLK_HOME: k=0; break;
+        case SDLK_PAGEUP: k-=screen->h; if(k<0) k=0; break;
+        case SDLK_PAGEDOWN: k+=screen->h; break;
+      }
+      goto redraw;
+    case SDL_VIDEOEXPOSE:
+      goto redraw;
+    case SDL_QUIT:
+      SDL_PushEvent(&ev);
+      goto done;
+  }
+  done:
+  sqlite3_finalize(st);
+}
+
 int exec_key_binding(SDL_Event*ev,int editing,int x,int y,int(*cb)(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux),void*aux) {
   const UserCommand*cmd=find_key_binding(ev,editing);
   int prev=0;
@@ -205,16 +262,27 @@ int exec_key_binding(SDL_Event*ev,int editing,int x,int y,int(*cb)(int prev,int 
         if(i=sqlite3_data_count(cmd->stmt)) {
           j=(i>1&&sqlite3_column_type(cmd->stmt,1)!=SQLITE_NULL)?sqlite3_column_int(cmd->stmt,1):y*64+x;
           if((name=sqlite3_column_text(cmd->stmt,0)) && *name) {
-            k=name[0]*'\1\0'+name[1]*'\0\1';
-            while(i && sqlite3_column_type(cmd->stmt,i-1)==SQLITE_NULL) i--;
-            prev=cb(prev,k,j,i,cmd->stmt,aux);
-            if(prev<0) {
-              i=SQLITE_DONE;
-              break;
+            if(name[0]==':') {
+              switch(name[1]) {
+                case '!': if(i>1) i=system(sqlite3_column_text(cmd->stmt,1)?:(const unsigned char*)"# "); break;
+                case ';': i=SQLITE_DONE; goto done;
+                case '?': if(i>1) puts(sqlite3_column_text(cmd->stmt,1)?:(const unsigned char*)"(null)"); break;
+                case 'm': if(i>1) screen_message(sqlite3_column_text(cmd->stmt,1)?:(const unsigned char*)"(null)"); break;
+                case 'x': sql_interactive(); break;
+              }
+            } else {
+              k=name[0]*'\1\0'+name[1]*'\0\1';
+              while(i && sqlite3_column_type(cmd->stmt,i-1)==SQLITE_NULL) i--;
+              prev=cb(prev,k,j,i,cmd->stmt,aux);
+              if(prev<0) {
+                i=SQLITE_DONE;
+                goto done;
+              }
             }
           }
         }
       }
+      done:
       sqlite3_reset(cmd->stmt);
       sqlite3_clear_bindings(cmd->stmt);
       if(i!=SQLITE_DONE) fprintf(stderr,"SQL error in key binding: %s\n",sqlite3_errmsg(userdb)?:"unknown error");
