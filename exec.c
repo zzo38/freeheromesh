@@ -865,6 +865,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_LAND: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1) && v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_LE: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t1,t2)?0:1)); break;
     case OP_LE_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t1,t2)?0:1)); break;
+    case OP_LEVEL: StackReq(0,1); Push(NVALUE(level_code)); break;
     case OP_LNOT: StackReq(1,1); if(v_bool(Pop())) Push(NVALUE(0)); else Push(NVALUE(1)); break;
     case OP_LOC: StackReq(0,2); Push(NVALUE(o->x)); Push(NVALUE(o->y)); break;
     case OP_LOR: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1) || v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
@@ -879,6 +880,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_MOVED_C: StackReq(1,1); GetFlagOf(OF_MOVED); break;
     case OP_MOVED_E: NoIgnore(); StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_MOVED; else o->oflags&=~OF_MOVED; break;
     case OP_MOVED_EC: NoIgnore(); StackReq(2,0); SetFlagOf(OF_MOVED); break;
+    case OP_MOVENUMBER: StackReq(0,1); Push(NVALUE(move_number)); break;
     case OP_MOVETO: NoIgnore(); StackReq(2,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); Push(NVALUE(move_to(obj,obj,t2.u,t3.u))); break;
     case OP_MOVETO_C: NoIgnore(); StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); i=v_object(Pop()); Push(NVALUE(move_to(obj,i,t2.u,t3.u))); break;
     case OP_MOVETO_D: NoIgnore(); StackReq(2,0); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); move_to(obj,obj,t2.u,t3.u); break;
@@ -903,6 +905,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_PLAYER: StackReq(0,1); if(classes[o->class]->cflags&CF_PLAYER) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_PLAYER_C: StackReq(1,1); GetClassFlagOf(CF_PLAYER); break;
     case OP_RET: return;
+    case OP_ROT: StackReq(3,3); t3=Pop(); t2=Pop(); t1=Pop(); Push(t2); Push(t3); Push(t1); break;
+    case OP_ROTBACK: StackReq(3,3); t3=Pop(); t2=Pop(); t1=Pop(); Push(t3); Push(t1); Push(t2); break;
     case OP_RSH: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t2.u&~31?0:t1.u>>t2.u)); break;
     case OP_RSH_C: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t2.u&~31?(t1.s<0?-1:0):t1.s>>t2.u)); break;
     case OP_SELF: StackReq(0,1); Push(OVALUE(obj)); break;
@@ -1086,6 +1090,7 @@ void annihilate(void) {
 
 const char*execute_turn(int key) {
   Uint32 n;
+  if(!key) return 0;
   if(setjmp(my_env)) return my_error;
   changed=0;
   key_ignored=0;
@@ -1098,8 +1103,9 @@ const char*execute_turn(int key) {
     objects[n]->oflags&=~(OF_KEYCLEARED|OF_DONE);
   }
   
-  if(key_ignored && changed) return "Invalid use of IgnoreKey";
   current_key=0;
+  if(key_ignored) return changed?"Invalid use of IgnoreKey":0;
+  move_number++;
   
   if(generation_number<=TY_MAXTYPE) return "Too many generations of objects";
   return 0;

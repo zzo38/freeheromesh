@@ -72,6 +72,8 @@ OSCLOOP (000A)
 swap
 nip
 tuck
+rot
+rotback "-rot"
 
 ; Flow controls
 -if
