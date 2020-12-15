@@ -341,14 +341,14 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       return number;
     case '^E': // Edit
       return -2;
-    case '^L': // Select level
-      begin_level(number);
-      return 1;
     case '^Q': // Quit
       return -1;
     case '^o': // List objects
       list_objects_at(number-65);
       return prev;
+    case 'go': // Select level
+      begin_level(number);
+      return 1;
     default:
       return prev;
   }
