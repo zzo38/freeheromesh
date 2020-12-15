@@ -1,0 +1,101 @@
+This document describes the format of the key/mouse bindings and the list
+of the available commands that the binding can be set to.
+
+The resource name for a binding consists of the following in order:
+* The puzzle set name (can be "?" to apply to all puzzle sets)
+* One of "editClick", "editKey", "gameClick", or "gameKey"
+* Zero or more components for modifier keys (see below)
+* Key name (or mouse button)
+
+You cannot use "?" for keys, mouse buttons, or modifiers. You may,
+however, use "?" in place of the edit/game selection.
+
+Valid modifier keys are:
+* shift
+* ctrl
+* alt
+* meta
+* numLock (cannot be combined with other modifiers except shift)
+
+Most key names are lowercase, except alphabetic keys which are uppercase.
+Mouse button names are "left", "middle", or "right".
+
+The value specifies what action. The action can be one of the below:
+
+It can be + (to advance) or - (to rewind) or = (to restart) followed by
+the number of moves.
+
+It can be ! followed by a system command.
+
+It can be ' followed by a Hero Mesh key name, to input a move.
+
+It can be ^ followed by one more character, to execute a command which
+has ^ as the first character; if it requires an argument, the clicked
+location will be used if it is clicked with the mouse.
+
+Finally, it can be a single SQL statement. The result rows are treated as
+commands to execute, where the first column is a string of two characters
+(the possibilities are explained below) and the rest of the columns (if
+any) are the arguments. You can use NULL for trailing arguments if you do
+not need that many arguments.
+
+SQL statements can also contain host parameters. The valid host parameters
+are $X (clicked X coordinate), $Y (clicked Y coordinate), $LEVEL (level
+order number), $LEVEL_ID (level ID number), and any name with : at first
+to ask the user for the value to use.
+
+
+=== Game commands ===
+
+'' ' <key>
+  Input a move.
+
+'+ ' <count>
+  Advance that many moves in the replay list.
+
+'- ' <count>
+  Rewind that many moves.
+
+'= ' <count>
+  Restart and replay that many moves.
+
+'^o' <location>
+  List objects at the specified coordinates.
+
+
+=== Editor commands ===
+
+'^c'
+  Display the class selection menu.
+
+
+=== Mode-independent commands ===
+
+':!' <command>
+  Execute a system command.
+
+':;'
+  Ignore the rest of the result rows of this SQL statement.
+
+':?' <text>
+  Write text to stdout.
+
+':m' <text>
+  Display text on the screen, wait to push enter to continue.
+
+':x'
+  Ask for a SQL statement, execute it, and display the results.
+
+'^E'
+  Switch to the editor.
+
+'^P'
+  Switch to the game play.
+
+'^Q'
+  Quit.
+
+'go' <level>
+  Go to the specified level. If the level number is negative, then it is
+  a level order number, otherwise it is a level ID number.
+

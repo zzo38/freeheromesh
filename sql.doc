@@ -1,0 +1,142 @@
+This document explains the SQL functions and SQL tables which are
+available for the user customization in Free Hero Mesh. (You cannot
+use SQL to define the rules of the game.)
+
+
+=== Functions ===
+
+Asterisks denote aggregate/window functions.
+
+BASENAME()
+  The base name, which is a copy of the first command-line argument (not
+  counting the switches or the program name).
+
+CLASS_DATA(id,info)
+  Returns data about a class.
+
+CVALUE(number)
+  Makes a game value of type 'class', given the class number.
+
+HEROMESH_ESCAPE(blob)
+  Converts blob representation of a game string into escaped format.
+
+HEROMESH_TYPE(value)
+  The type of a game value, given as a 64-bit integer. The types are
+  'class', 'number', 'string', 'object', and 'sound'.
+
+HEROMESH_UNESCAPE(text)
+  Converts escaped representation of a game string into text format.
+
+LEVEL()
+  The one-based order number of the current level.
+
+LEVEL_CACHEID()
+  The cache ID number of this level in the user cache table.
+
+LEVEL_ID()
+  The ID number of the current level.
+
+LEVEL_TITLE()
+  The title of the current level, as a blob.
+
+LOAD_LEVEL(level_id)
+  Only valid when Free Hero Mesh is invoked with the -x switch. Loads
+  the level with the specified ID number.
+
+MVALUE(number)
+  Makes a game value of type 'message'.
+
+MODSTATE()
+  The SDL keyboard modifier state.
+
+MOVENUMBER()
+  Return the number of moves executed so far since the level restarted.
+
+NVALUE(number)
+  Makes a game value of type 'number'. Same as ZERO_EXTEND.
+
+OVALUE(number)
+  Makes a game value of type 'object'. The argument is the ID number of
+  the object in the OBJECTS table.
+
+PICTURE_SIZE()
+  Tell you the picture size.
+
+READ_LUMP_AT(offset,ptr)
+  Used internally; there is no way to use this in user SQL codes.
+
+RESOURCE(...)
+  Given the list of resource names, read a value from the X resource
+  manager. Returns null if there is no such resource value.
+
+SIGN_EXTEND(number)
+  Sign extends a 32-bit number to 64-bits.
+
+TRACE_OFF()
+  Disables tracing when called.
+
+TRACE_ON()
+  Enables tracing when called.
+
+ZERO_EXTEND(number)
+  Zero extends a 32-bit number to 64-bits. Same as NVALUE.
+
+
+=== Tables ===
+
+Asterisks denote virtual tables.
+
+CREATE TABLE "CLASSES"("ID" INTEGER PRIMARY KEY, "NAME" TEXT, "EDITORHELP"
+TEXT, "HELP" TEXT, "INPUT" INT, "QUIZ" INT, "TRACEIN" INT, "TRACEOUT" INT,
+"GROUP" TEXT, "PLAYER" INT); *
+  A list of classes in the current puzzle set; mostly read-only. Only
+  QUIZ, TRACEIN, and TRACEOUT are writable. If TRACEIN is true then it
+  will trace messages received by this class (if tracing is enabled). If
+  TRACEOUT is true then it will trace messages sent by this class (if
+  tracing is enabled).
+
+CREATE TABLE "MESSAGES"("ID" INTEGER PRIMARY KEY, "NAME" TEXT, "TRACE"
+INT); *
+  The list of messages in the current puzzle set; mostly read-only. Only
+  TRACE is writable; if true, this message will be traced.
+
+CREATE TABLE "OBJECTS"("ID" INTEGER PRIMARY KEY, "CLASS" INT, "MISC1" INT,
+"MISC2" INT, "MISC3" INT, "IMAGE" INT, "DIR" INT, "X" INT, "Y" INT, "UP"
+INT, "DOWN" INT, "DENSITY" INT HIDDEN); *
+  List of objects. Read-only during the game, writable in the editor.
+  CLASS is a class number (the ID in the CLASSES table), DIR is the
+  direction (where 0 is east, 7 is southeast), and MISC1, MISC2, MISC3
+  are the game values for the initial Misc values of this object; they
+  must be numbers, classes, messages, or strings. Once an object is
+  created, you cannot change its class; you must delete it and then add
+  a new object of the correct class. DENSITY is read-only, but you can
+  use ORDER BY DENSITY to sort in the stacking order of the objects.
+  UP and DOWN are also read-only.
+
+CREATE TEMPORARY TABLE "PICTURES"("ID" INTEGER PRIMARY KEY, "NAME" TEXT
+COLLATE NOCASE, "OFFSET" INT);
+  List of all pictures available in this puzzle set.
+
+CREATE TABLE "USERCACHEDATA"("ID" INTEGER PRIMARY KEY, "FILE" INT,
+"LEVEL" INT, "NAME" TEXT COLLATE NOCASE, "OFFSET" INT, "DATA" BLOB,
+"USERSTATE" BLOB);
+  Contains the user cache data for the .level and .solution files of each
+  puzzle set, in order to speed up loading and saving. The DATA will be
+  null unless the data has changed, in which case the new data is stored
+  here; it will later rewrite the Hamster archive with the new data and
+  then it will be set to null again. USERSTATE contains user data such as
+  the list of moves made by the player. FILE is the ID in the user cache
+  index, and indicates which Hamster archive file this lump belongs to.
+
+CREATE TABLE "USERCACHEINDEX"("ID" INTEGER PRIMARY KEY, "NAME" TEXT,
+"TIME" INT);
+  The user cache index; contains one record for each .level and .solution
+  file of all puzzle sets which have been loaded. NAME is the full path,
+  and TIME is the UNIX timestamp. If you want to delete a record, then
+  you should also delete all records from USERCACHEDATA whose FILE value
+  is the same as the ID value in this table for which it is deleted. You
+  should not touch it while Free Hero Mesh is running, though.
+
+CREATE TEMPORARY TABLE "VARIABLES"("ID" INTEGER PRIMARY KEY, "NAME" TEXT);
+  List of all global and local user variables used in the game.
+
