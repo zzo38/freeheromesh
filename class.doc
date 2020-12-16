@@ -1,0 +1,1484 @@
+[TODO: This document is incomplete]
+
+This document describes how class definitions are working.
+
+
+=== Syntax ===
+
+The following kinds of tokens are available:
+
+* Open and closing delimiters: These are ( and ) and no spaces are
+required around it. They are used for grouping in many places.
+
+* Plain name: A plain word with no sigil. The set of valid plain names is
+fixed, and they are all explained in the rest of this document.
+
+* Number: Can be in decimal, or in hexadecimal with a 0x prefix, or in
+octal with a 0o prefix. The "x" or "o" must be in lowercase, but the
+hexadecimal digits can be uppercase or lowercase. Decimal numbers may be
+optionally preceded by a - or + sign.
+
+* Qualified name: A name with a sigil prefix. See below for the list of
+possible sigils and their meanings. In all cases except key names, you can
+define your own qualified names.
+
+* String: A string literal with quotation marks around it. A string may
+contain escapes, which use a backslash followed by whatever text is being
+escaped; see below section for the list of string escapes.
+
+Names can contain the following characters:
+  0123456789-+_?.*/
+  ABCDEFGHIJKLMNOPQRSTUVWXYZ
+  abcdefghijklmnopqrstuvwxyz
+
+Plain and qualified names may also optionally be prefixed by an equal
+sign and/or a comma; their purpose is explained later. If you have both,
+the equal sign comes first and then the comma.
+
+Name sigils are:
+  $  Class
+  @  Global variable
+  '  Key code
+  :  Label
+  %  Local variable
+  #  User message
+  !  User sound
+
+Comments are also allowed; these start with a semicolon (outside of a
+string literal) and end at the next line break.
+
+
+=== Escapes ===
+
+\0
+  Makes further text black (default).
+
+\1
+  Makes further text blue.
+
+\2
+  Makes further text green.
+
+\3
+  Makes further text cyan.
+
+\4
+  Makes further text red.
+
+\5
+  Makes further text purple.
+
+\6
+  Makes further text yellow.
+
+\7
+  Makes further text white.
+
+\b
+  Draws a horizontal rule.
+
+\c
+  Makes further text centred.
+
+\iCLASS:NUMBER\
+  Displays a picture. Give the class name (without $ at first) and a
+  colon and the zero-based index number of the picture in that class.
+  This is then followed by another backslash. The picture may span
+  multiple lines; it will automatically move the text to make room.
+
+\l
+  Makes further text left aligned (default).
+
+\n
+  Line break.
+
+\qX
+  Make a "quiz button". Any string containing this command is a "quiz
+  string", and there are special behaviours involving quiz strings. The
+  X should be replaced by any digit or uppercase letter; that will be
+  displayed, and if clicked, it represents that key code.
+
+\xXX
+  Hexadecimal escape, where XX is a hexadecimal number from 01 to FF,
+  and displays a graphic character with the given PC character code.
+
+
+=== Preprocessor ===
+
+Free Hero Mesh includes a macro preprocessor, which you may use if wanted.
+All preprocessor commands are in braces; that constitutes a preprocessor
+token, which may contain other tokens as arguments.
+
+Other preprocessor tokens include the macro separator token, which is
+written as a vertical bar, and a macro argument token, which is one or
+more backslashes followed by a number from 1 to 255.
+
+For user-defined macros, one argument can be either many tokens inside of
+parentheses (the parentheses are part of the argument), a single token, or
+a macro separator token (omitted from the expansion) followed by any number
+of further tokens to make up the last argument.
+
+Built-in macros include:
+
+{+ <numbers...>}
+  Addition. The result is 0 if no arguments are specified.
+
+{- <number> <number>}
+  Subtraction.
+
+{* <numbers...>}
+  Multiplication. The result is 1 if no arguments are specified.
+
+{/ <number> <number>}
+  Division.
+
+{band <numbers...>}
+  Bitwise AND. The result is -1 if no arguments are specified.
+
+{bit <numbers...>}
+  The numbers are in range 0 to 31 and denote bit positions; the result is
+  a number with only those bits set.
+
+{bnot <number>}
+  Bitwise complement.
+
+{bor <numbers...>}
+  Bitwise OR. The result is 0 if no arguments are specified.
+
+{bxor <numbers...>}
+  Bitwise XOR. The result is 0 if no arguments are specified.
+
+{call <string> <tokens...>}
+  Call a macro dynamically.
+
+{cat <tokens...>}
+  Makes a string by concatenating several tokens together. Sigils are
+  omitted, macro separator tokens are removed, and numbers are converted
+  to decimal. Strings are also allowed.
+
+{define <string> <tokens...>}
+  Define a macro. The inner tokens are not expanded yet; they will be
+  expanded during each use. A macro argument token with a single backslash
+  expands to the argument in that position, while a macro argument tokens
+  with multiple tokens becomes the token with one less backslash. It is
+  permitted to redefine existing macros as well as new ones.
+
+{include <string>}
+  Include text from another file into this one. You cannot use {include}
+  inside of another macro or in a macro argument.
+
+{mod <number> <number>}
+  Modulo.
+
+{version <number>}
+  Expands into nothing. The number must be zero, otherwise it is an error.
+  Future versions of Free Hero Mesh may change this.
+
+It is possible to implement a tag system in this preprocessor, which makes
+it Turing complete. For example:
+
+  {define "skip" {call \2}}
+  {define "1" {skip \1|"3"|"3"|"2"|"1"|"H"}}
+  {define "2" {skip \1|"3"|"3"|"1"}}
+  {define "3" {skip \1|"3"|"3"}}
+  {define "H" \1}
+  {call "2"|"1"|"1"}
+
+Note: Macro names are entirely independent from token names.
+
+
+=== Global definitions ===
+
+These are the global definitions in the class definition file.
+
+(Animate <limit>)
+  Set the limit for logical animations, from 1 to 255. The default is 32.
+
+(Background <number>)
+  Set the background colour, from 0 to 255. The default value is 1.
+
+(Synchronize <slot> <length> <speed>)
+  Define an animation slot for synchronized animation. The slot number can
+  be 0 to 7, the length is the number of images in the sequence, and the
+  speed is the number of centiseconds between frames.
+
+(Volume <number>)
+  Define the maximum allowed volume for an object to move diagonally
+  between two other objects. The default value is 10000.
+
+($<name> <definitions...>)
+  Define a class. See the section about class definitions for details.
+
+(@<name> <value>)
+  Define a global variable and its initial value.
+
+(<message> <code...>)
+  Defines a default message code for all classes which do not specify
+  their own code for this message.
+
+
+=== Data types ===
+
+The following data types are available:
+
+* Number: A 32-bit integer. Whether it is treated as signed or unsigned
+depends on the context. In some cases, it is used as bit field data.
+
+* Class: A class name with a $ prefix.
+
+* Message: A message name. User-defined message names have a # prefix;
+standard message names have no prefix.
+
+* Object: A reference to an object. There are no literals of this type.
+
+* String: A string in quotation marks. There are no string manipulation
+functions; the only thing that can be done with a string is to display it.
+
+* Sound: A sound.
+
+Some things are not their own types, and are other uses of numbers:
+
+* Null: A null class or null object is represented as zero.
+
+* Boolean: When a boolean is required as input to some instruction, zero
+is false, and most other values (of any type) are true, except for sounds
+which cannot be used as booleans at all. When an instruction produces a
+boolean value as output, true is one and false is zero.
+
+* Key: A key code for input (not necessarily the same as the physical key
+with that label). See the list in the below section.
+
+* Direction: Can be absolute or relative. For absolute directions, zero is
+east, and increasing numbers go counterclockwise 45 degrees each, up to
+seven for southeast. Relative directions start at eight for forward and
+otherwise work similarly (increasing numbers go counterclockwise).
+
+
+=== Constants ===
+
+The following constants are available. Some of them are numeric constants
+and using them pushes numbers to the stack, and they are interchangeable
+with the corresponding numbers where instructions are expected.
+
+Absolute directions:
+  E = 0
+  NE = 1
+  N = 2
+  NW = 3
+  W = 4
+  SW = 5
+  S = 6
+  SE = 7
+
+Relative directions:
+  F = 8
+  LF = 9
+  L = 10
+  LB = 11
+  B = 12
+  RB = 13
+  R = 14
+  RF = 15
+
+Bit constants:
+  bit0 to bit31 = numbers with a single bit set
+
+Animation constants:
+  STOP = 0
+  ONCE = 1
+  LOOP = 2
+  OSC = 8
+  OSCLOOP = 10
+
+Standard messages:
+  ARRIVED
+  BEGIN_TURN
+  COLLIDE
+  COLLIDEBY
+  CREATE
+  CREATED
+  DEPARTED
+  DESTROY
+  DESTROYED
+  END_TURN
+  FLOATED
+  HIT
+  HITBY
+  INIT
+  JUMPED
+  KEY
+  LASTIMAGE
+  MOVED
+  MOVING
+  PLAYERMOVING
+  POSTINIT
+  SUNK
+
+Input constants:
+  'BACK = 8
+  'TAB = 9
+  'CENTER = 12
+  'ENTER = 13
+  'SHIFT = 16
+  'CTRL = 17
+  'BREAK = 19
+  'CAPSLOCK = 20
+  'SPACE = 32
+  'PGUP = 33
+  'PGDN = 34
+  'END = 35
+  'HOME = 36
+  'LEFT = 37
+  'UP = 38
+  'RIGHT = 39
+  'DOWN = 40
+  'DELETE = 46
+  '0 = 48
+  '1 = 49
+  '2 = 50
+  '3 = 51
+  '4 = 52
+  '5 = 53
+  '6 = 54
+  '7 = 55
+  '8 = 56
+  '9 = 57
+  'A = 65
+  'B = 66
+  'C = 67
+  'D = 68
+  'E = 69
+  'F = 70
+  'G = 71
+  'H = 72
+  'I = 73
+  'J = 74
+  'K = 75
+  'L = 76
+  'M = 77
+  'N = 78
+  'O = 79
+  'P = 80
+  'Q = 81
+  'R = 82
+  'S = 83
+  'T = 84
+  'U = 85
+  'V = 86
+  'W = 87
+  'X = 88
+  'Y = 89
+  'Z = 90
+  'NUMPAD0 = 96
+  'NUMPAD1 = 97
+  'NUMPAD2 = 98
+  'NUMPAD3 = 99
+  'NUMPAD4 = 100
+  'NUMPAD5 = 101
+  'NUMPAD6 = 102
+  'NUMPAD7 = 103
+  'NUMPAD8 = 104
+  'NUMPAD9 = 105
+  'MULTIPLY = 106
+  'DECIMAL = 110
+  'DIVIDE = 111
+  'F9 = 120
+  'F10 = 121
+  'F11 = 122
+  'F12 = 123
+  'NUMLOCK = 144
+  'SCRLOCK = 145
+  'SEMICOLON = 186
+  'EQUALS = 187
+  'COMMA = 188
+  'MINUS = 189
+  'PERIOD = 190
+  'SLASH = 191
+  'TILDE = 192
+  'OBRACKET = 219
+  'BACKSLASH = 220
+  'CBRACKET = 221
+  'QUOTE = 222
+
+Standard sound constants:
+  ANHH
+  BANG
+  BEDOINGNG
+  BEEDEEP
+  BOOOM
+  BOUNCE
+  BRRREEET
+  BRRRT
+  BUZZER
+  BWEEP
+  CHEEP
+  CHYEW
+  CLICK
+  DEEP_POP
+  DINK
+  DOOR
+  DRLRLRINK
+  DYUPE
+  FAROUT
+  FFFFTT
+  FROG
+  GLASS
+  GLISSANT
+  HAWK
+  HEARTBEAT
+  JAYAYAYNG
+  KEWEL
+  KLECK
+  KLINKK
+  LOCK
+  OLDPHONE
+  POUR
+  POWER
+  RATCHET1
+  RATCHET2
+  RATTLE
+  SMALL_POP
+  SPLASH
+  STEAM
+  TAHTASHH
+  THMP_thmp
+  THWIT
+  TICK
+  UH_OH
+  UNCORK
+  UNHH
+  VACUUM
+  WAHOO
+  WHACK
+  YEEHAW
+
+
+=== Variables ===
+
+These are the variables which each object has. Some are marked [ro] below
+because they are read-only. In all cases, you can put , in front to access
+a different object rather than self and = in front to write that variable
+(unless it is read-only). You can also access some of these variables also
+on classes instead of objects; these are always read-only. The variables
+which are available on classes too are marked [c] below.
+
+Some variables list one type, and some list two. If there are two types,
+"int16/int32" means any number written to it is truncated to 16-bits in
+compatible mode, but the full value is retained in incompatible mode. The
+16-bit number is treated as unsigned, so it is zero-extended to 32-bits.
+The notation "int16/any" means the same thing, except that the variable
+is not limited to numbers; non-numbers are never truncated.
+
+A few variables require a direction on the top of the stack, above the
+value if you are writing. These are marked [d] below. These are really
+four variables, one for each direction (not counting diagonals).
+
+If you use the comma prefix to refer to another object, the object to
+refer to is always below the direction and/or value to write on the stack
+(if there are any such values).
+
+In incompatible mode, many "physics" variables are treated as signed.
+
+Most of these variables are state-changing; writing to them is not allowed
+on the same turn as IgnoreKey. Exceptions are Distance and KeyCleared.
+
+%xyz : any
+  A user-defined variable. This variable cannot be accessed on other
+  objects other than this one. You can give it any name with a percentage
+  sign at first. User variables are initialized to zero, and need not be
+  declared anywhere.
+
+Arrivals : int32
+  Only the low 25-bits are used. Each bit which is set indicates that it
+  cares if other objects arrive around it at that relative location, where
+  bit0 is two paces northeast, bit1 is to the west of that, etc, and then
+  bit4 two paces northwest of this object, and bit5 starts on the next
+  row to the south, etc, and bit12 is this object's location.
+
+Arrived : int32
+  When an object arrives in the location where this object cares about
+  arrivals (according to the Arrivals variable), the corresponding bits
+  are set in the Arrived variable. If this value is nonzero, then it will
+  also send a ARRIVED message during the trigger phase. You can write all
+  bits of this variable, but only the low 25-bits can be read back; if you
+  write a nonzero number with only the high bits set, then it will still
+  be triggered but will be read back as zero.
+
+Busy : bool
+  If any object has either the Busy or UserSignal variable set, then the
+  player input is blocked, and the turn may continue. Use this to control
+  the timing of effects in LASTIMAGE blocks.
+
+Class : class [ro]
+  The class of this object.
+
+Climb : int16/int32 [c]
+  In order for this object to move, this object's Climb must equal or
+  exceed the Height of all objects at the target location, otherwise it
+  is prevented from moving.
+
+CollisionLayers : int8 [c] [ro]
+  Any set bit means no other object with that same bit set in this field
+  may exist at the same location.
+
+Compatible : bool [c] [ro]
+  The compatibility flag. Class definitions imported from EKS Hero Mesh
+  always set this flag; in new puzzle sets it is normally not set.
+
+Density : int16/int32 [c]
+  Determines the order that objects are stacked within each cell. When an
+  object is moved or created, its Density is compared with the Density of
+  the objects already present at that location, in order to insert it into
+  the stack of objects there, at the top, bottom, or middle, where lesser
+  numbers mean closer to the top, and greater numbers are deeper. If there
+  are multiple objects of the same Density, the new one goes above others
+  with the same Density. If you change the value of this variable, it will
+  automatically float/sink the object if necessary in order to fit it into
+  the correct stacking order, sending FLOATED and SUNK messages.
+
+Departed : int32
+  This is like Arrived but triggered for departures (as specified by the
+  Departures variable) rather than arrivals.
+
+Departures : int32
+  This is like Arrivals but for positions where it is triggered by objects
+  leaving those locations rather than arriving there.
+
+Destroyed : bool [ro]
+  It is set if this object has been successfully destroyed (but not yet
+  deleted from memory). You must use the Destroy or Assassinate command
+  in order to set this flag; you cannot set it by yourself.
+
+Dir : int3
+  The current direction. When it moves (without teleportation), it will
+  automatically be set to the direction it moved. You can also set this
+  by yourself. Relative directions are relative to this direction. If you
+  set this by yourself to a relative direction, then it will automatically
+  be set to an absolute direction, based on the previous value.
+
+Distance : int16
+  When an object moves (including due to teleportation), the Manhattan
+  distance of the movement is added to the Distance variable. This is
+  reset to zero at the beginning of each turn.
+
+Done : bool [c]
+  This flag is used to determine whether or not to find the object in a
+  for/next loop. It automatically clears all Done flags at the beginning
+  of each turn and at the entry of each for/next loop, so usually you do
+  not need to set this by yourself.
+
+Hard : int16 [c] [d]
+  See Sharp.
+
+Height : int16/int32 [c]
+  Used to block the movement of other objects; see Climb for details. In
+  order for HIT and HITBY messages to work, Height must be positive.
+
+Image : int8
+  The index number of the picture to display. The (Image) block in the
+  class definition specifies which picture to display for each index
+  number, where the first picture is zero. The actual picture being
+  displayed may differ if an animation is in progress, and no picture
+  will be displayed at all if the Invisible flag is set, although this
+  variable still remains available in such circumstances.
+
+Inertia : int16/int32
+  This determines how much "left over" Strength an object has to move.
+  Normally, when an object tries to move, its Inertia is set to the
+  Strength of the object which is moving, and then the Weight of the
+  objects moved are deducted from Inertia. Normally you do not need to
+  set this value by yourself nor to read it, but you might use it in the
+  HIT or HITBY messages to affect how much it can push, or to check the
+  Inertia after the movement is complete to see what is left over.
+
+Invisible : bool [c]
+  If set, then this object is not displayed on the screen. However, it
+  is still present in the level and does everything else that a visible
+  object will do.
+
+KeyCleared : bool
+  The game engine does nothing with this except to automatically clear it
+  between turns, so that you need not do by yourself.
+
+Misc1 : int16/any
+  The game engine does not use this variable; use it for your own use.
+
+Misc2 : int16/any
+  The game engine does not use this variable; use it for your own use.
+
+Misc3 : int16/any
+  The game engine does not use this variable; use it for your own use.
+
+Misc4 : int16/any [c]
+  The game engine does not use this variable; use it for your own use.
+
+Misc5 : int16/any [c]
+  The game engine does not use this variable; use it for your own use.
+
+Misc6 : int16/any [c]
+  The game engine does not use this variable; use it for your own use.
+
+Misc7 : int16/any [c]
+  The game engine does not use this variable; use it for your own use.
+
+Moved : bool
+  After a Move instruction successfully moves this object, it will set
+  this flag. During the trigger phase, it will send the MOVED message
+  to all objects which have moved; you can set or clear this flag by
+  yourself if you want to cause it to trigger even though it didn't
+  move or to not trigger even though it did move.
+
+Player : bool [c] [ro]
+  If this object is the player. This is used implicitly as the From of
+  some messages sent by the game engine, and has a few other purposes.
+  (Normally, a level should have exactly one object of such a class,
+  although this is not mandatory.)
+
+Shape : int8 [c]
+  Defines the shape of the object, which is used when one object tries to
+  move into another one that it can't climb over. The low 2-bits are for
+  east, next 2-bits for north, next 2-bits for west, and finally the high
+  2-bits are for south. Each of these 2-bit values can be 0 for flat (no
+  sliding), 1 for slanted to the left, 2 for slanted to the right, and 3
+  for slanted both left and right. (Left and right are when "facing" that
+  side of the object.)
+
+ShapeDir : int2 [c] [d]
+  Allows accessing the individual 2-bit parts of Shape.
+
+Sharp : int16 [c] [d]
+  When one object tries to move into another object, the Hard and Sharp
+  values for the sides that are touching will be compared. If the Sharp
+  value for one is greater than the Hard of the other, then the object
+  with insufficient Hardness is destroyed.
+
+Shovable : int8 [c]
+  Defines what directions the object may be shoved, where bit0 means east,
+  bit2 means north, bit4 means west, and bit6 means south.
+
+Stealthy : bool [c]
+  If this flag is set, then the Arrived and Departed variables of other
+  objects are not automatically set when this object moves.
+
+Strength : int16/int32 [c]
+  When this object's code tries to move this or other objects by the use
+  of the Move instruction, the Strength must be greater than or equal to
+  the total Weight of all objects being moved, or else it won't move.
+
+Temperature : int16/int32 [c]
+  The game engine does not use this variable; use it for your own use.
+
+UserSignal : bool
+  This variable has the same effect as Busy; see Busy for details. It is
+  still a separate variable though.
+
+UserState : bool [c]
+  The game engine does not use this variable; use it for your own use.
+
+VisualOnly : bool [c]
+  If set, this object is ignored by most operations, although it can still
+  receive messages, and ObjClassAt can still find it. If the Compatible
+  flag is also set, then VisualOnly also has the effects of Stealthy.
+
+Volume : int16/int32 [c]
+  If an object tries to move diagonally, it will not be able to move if
+  the sum of its Volume and the largest Volumes at the orthogonally
+  adjacent cells that it is moving between is greater than the limit
+  (which is normally 10000, but you can redefine it globally). See the
+  documentation about moving objects for further details.
+
+Weight : int16/int32 [c]
+  Determines how much Inertia is required to move this object (and is used
+  up once it has moved, or if it failed to move it). See Strength.
+
+Xloc : int8 [ro]
+  The 1-based X coordinate of this object.
+
+Yloc : int8 [ro]
+  The 1-based Y coordinate of this object (1 is at the top of the screen).
+
+
+=== Instructions ===
+
+For some instructions, a comma prefix means to operate on another object,
+while the lack of the comma means to operate on itself; for some other
+instructions, a comma prefix means to use signed instead of unsigned
+arithmetic. An equal sign prefix usually means to write instead of read.
+
+Some instructions are block instructions; see the next section.
+
+Many instructions are state-changing instructions; these instructions are
+marked with ** in the summary line. Such instructions are not allowed to be
+used on the same turn as the IgnoreKey instruction.
+
+.  ( x -- )
+
++  ( in1 in2 -- out )
+  Add two numbers together.
+
+-  ( in1 in2 -- out )
+  Subtract in2 from in1.
+
+*  ( in1 in2 -- out )
+  Multiply two numbers together.
+
+,*  ( in1 in2 -- out )
+  Signed multiply in1 by in2.
+
+/  ( in1 in2 -- out )
+  Unsigned divide in1 by in2 producing the quotient.
+
+,/  ( in1 in2 -- out )
+  Signed divide in1 by in2 producing the quotient.
+
+Animate  ( flag start end delay -- ) **
+  Start or stop an animation for this object. This also sets the Image
+  variable equal to the start value. The flag can be STOP to stop an
+  animation, ONCE to play the animation once (and to queue a LASTIMAGE
+  event if the animation isn't changed before that happens; note that
+  the message is sent even before the animation is actually visible),
+  LOOP to play it in a loop, or OSCLOOP for an oscillating loop. The
+  delay between frames is in centiseconds; the start and end are the
+  image numbers in this class, and may be ascending or descending.
+
+Arg1  ( -- value )
+  The first message argument.
+
+=Arg1  ( value -- )
+  Allows setting the first message argument. This will last until the
+  current message returns, and does not affect further messages sent; it
+  allows Arg1 to be used as a mutable local variable.
+
+Arg2  ( -- value )
+  The second message argument.
+
+=Arg2  ( value -- )
+  Allows setting the second message argument. This will last until the
+  current message returns, and does not affect further messages sent; it
+  allows Arg2 to be used as a mutable local variable.
+
+Arg3  ( -- value )
+  The third message argument. If the message was sent with only two
+  arguments, then this value is zero by default.
+
+=Arg3  ( value -- )
+  Allows setting the third message argument. This will last until the
+  current message returns, and does not affect further messages sent; it
+  allows Arg3 to be used as a mutable local variable.
+
+Assassinate  ( -- ) **
+  Destroy this object without sending any messages. The object is marked
+  as destroyed, but its variables are still accessible until the garbage
+  collector runs (during the trigger step for combatible objects, and
+  during the cleanup step for all objects). Assassination always succeeds,
+  so there is no result value to indicate success or not.
+
+,Assassinate  ( obj -- ) **
+  Destroy the given object without sending any messages.
+
+band  ( in1 in2 -- out )
+  Bitwise AND.
+
+(bit <numbers>)  ( -- number )
+  Make a number with only the specified bits set, given numbers 0 to 31.
+
+bnot  ( in -- out )
+  Bitwise NOT.
+
+bor  ( in1 in2 -- out )
+  Bitwise OR.
+
+Broadcast  ( class message arg1 arg2 -- count )
+  Send a message to all objects of the specified class (or to all objects
+  of all classes if the specified class is zero), in the reverse order of
+  the creation of the objects. The result value is the number of objects
+  of that class.
+
+(Broadcast <class>)  ( message arg1 arg2 -- count )
+  An alternative syntax for Broadcast (needed only for compatibility with
+  EKS Hero Mesh).
+
+BroadcastEx  ( class message arg1 arg2 arg3 -- count )
+  As Broadcast but with three message arguments.
+
+BroadcastSum  ( class message arg1 arg2 -- total )
+  As Broadcast but the result is the sum of the return values rather than
+  the number of objects. If a return value is a class or object, it is
+  treated as 1. Other non-numeric return values are errors.
+
+BroadcastSumEx  ( class message arg1 arg2 arg3 -- total )
+  As BroadcastSum but with three message arguments.
+
+bxor  ( in1 in2 -- out )
+  Bitwise XOR.
+
+Create  ( class x y image dir -- obj ) **
+  Creates a new object at the specified location, and returns it. The
+  result is zero if the class is zero, the coordinates are out of range,
+  the object cannot be created due to the CollisionLayers, or if the new
+  object is destroyed before its CREATE message returns.
+
+DelInventory  ( class image -- ) **
+  Delete an item from the inventory; see SetInventory for more details.
+
+Delta  ( in1 in2 -- out )
+  Subtracts the smaller input from the larger (unsigned).
+
+Destroy  ( -- value ) **
+  Destroy this object. The variables can still be accessed after it is
+  destroyed until it is garbage collected. This calls the DESTROY message;
+  the return value will be the result of this instruction, and if it is
+  false then it is destroyed, and if true then the destruction fails.
+
+,Destroy  ( object -- value ) **
+  Destroy the specified object (as Destroy but for any object).
+
+dup  ( x -- x x )
+
+eq  ( in1 in2 -- bool )
+  Test if they are equal. Sounds cannot be compared, but you can compare
+  values of any other type. Strings compare as equal if they contain the
+  same text. Object references are only equal if they refer to the same
+  object; objects which no longer exist still compare correctly. Values
+  of two different types are never equal to each other.
+
+FlushClass  ( class -- ) **
+  Resets the Arrived, Busy, Departed, Inertia, Moved, and UserSignal flags
+  of all objects of the specified class to zero. If the class is -1, then
+  all objects are flushed in this way, and during the input phase, it also
+  skips the other phases similarly to IgnoreKey if the class is -1.
+
+FlushObj  ( obj -- ) **
+  Resets the Arrived, Busy, Departed, Inertia, Moved, and UserSignal flags
+  of the specified object only.
+
+From  ( -- obj )
+  The object which send the message to this object. In some cases, this
+  will be zero instead of a valid object.
+
+ge  ( in1 in2 -- bool )
+  Test if first input is greater or equal to second input (unsigned).
+
+,ge  ( in1 in2 -- bool )
+  Test if first input is greater or equal to second input (signed).
+
+GetInventory  ( class image -- value true | false )
+  Read from the inventory, with true if it exists or false if not.
+
+gt  ( in1 in2 -- bool )
+  Test if first input is greater than second input (unsigned).
+
+,gt  ( in1 in2 -- bool )
+  Test if first input is greater than second input (signed).
+
+HeightAt  ( x y -- height )
+  Finds the greatest height among objects at the specified location.
+
+IgnoreKey  ( -- )
+  There is no effect outside of the input phase. During the input phase,
+  indicates that this input is not part of the solution, so it will not
+  be entered into the replay. It is an error to ignore inputs which do
+  cause state changes. Pop-up messages are still allowed, and unlike in
+  EKS Hero Mesh they will not break replayability; the key to dismiss a
+  non-quiz popup is not entered into the replay list, and the key to
+  dismiss a quiz popup will be treated as a non-quiz input. IgnoreKey
+  also causes the rest of the turn after the input phase to be skipped.
+
+IntMove  ( dir -- bool ) **
+  Similar to Move but do not initialize Inertia at all; use the current
+  value of Inertia instead.
+
+,IntMove  ( obj dir -- bool ) **
+  Similar to ,Move but do not initialize Inertia at all; use the current
+  value of Inertia instead.
+
+is  ( x y -- bool )
+  Where x is a class or object or zero, and y is a class, check that it
+  is an object of that class, is the same class, or is a subclass of the
+  class. If y is zero, then it is always true unless x is zero.
+
+JumpTo  ( x y -- bool ) **
+  As MoveTo but sends JUMPED message to that object after it has been
+  successfully teleported.
+
+,JumpTo  ( obj x y -- bool ) **
+  As ,MoveTo but sends JUMPED message to that object after it has been
+  successfully teleported.
+
+Key  ( -- number )
+  During the input phase, the key input. During other phases, zero.
+
+land  ( in1 in2 -- out )
+  Logical AND.
+
+le  ( in1 in2 -- bool )
+  Test if first input is less or equal to second input (unsigned).
+
+,le  ( in1 in2 -- bool )
+  Test if first input is less or equal to second input (signed).
+
+Level  ( -- number )
+  The level code value for this level. The game engine does nothing with
+  this value, but you can use it in class codes if you wish. (For puzzle
+  sets converted from EKS Hero Mesh, this is the zero-based level number;
+  a few badly designed puzzles use it. In Free Hero Mesh, you can set it
+  to whatever 16-bit number you wish in the level editor, and then use it
+  as an additional parameter for the puzzle.)
+
+lnot  ( in -- out )
+  Logical NOT.
+
+Loc  ( -- x y )
+  The X and Y coordinates of this object; same as "Xloc Yloc".
+
+,Loc  ( obj -- x y )
+  The X and Y coordinates of the specified object; same as "dup ,Xloc
+  swap ,Yloc" (but more efficient).
+
+LocateMe  ( -- )
+  Makes the current object especially visible. This is meant to help the
+  player to notice where the "Hero" object is more easily, but you can use
+  it to make other objects noticeable too if that is appropriate.
+
+lor  ( in1 in2 -- out )
+  Logical OR.
+
+LoseLevel  ( -- )
+  Ends all execution and results in loss of game.
+
+lsh  ( in shift -- out )
+  Left shift.
+
+lt  ( in1 in2 -- bool )
+  Test if first input is less than second input (unsigned).
+
+,lt  ( in1 in2 -- bool )
+  Test if first input is less than second input (signed).
+
+lxor  ( in1 in2 -- out )
+  Logical XOR.
+
+MaxInventory  ( number -- )
+  Results in an error and loss of game if the number of different
+  inventory items exceeds the given number, otherwise no effect.
+
+mod  ( in1 in2 -- out )
+  Unsigned divide in1 by in2 producing the remainder.
+
+,mod  ( in1 in2 -- out )
+  Signed divide in1 by in2 producing the remander.
+
+Move  ( dir -- bool ) **
+  Move this object in the given direction (which may be absolute or
+  relative to the current direction). The result will be true if the
+  move is successful or false if it failed. See the section about
+  movement for details.
+
+,Move  ( obj dir -- bool ) **
+  As Move but moves a specified object rather than necessarily this one.
+
+Move+  ( dir -- bool ) **
+  Similar to Move but adds Strength to Inertia without resetting Inertia.
+  (The reason this exists is for compatibility with a bug in EKS Hero
+  Mesh; you probably do not need to use this yourself.)
+
+,Move+  ( obj dir -- bool ) **
+  As Move+ but for a specified object.
+
+MoveNumber  ( -- number )
+  The current move number. This is initially zero, and is advanced after
+  each input phase (before the beginning phase).
+
+MoveTo  ( x y -- bool ) **
+  Teleports this object to the specified coordinates; the MOVING message
+  (and PLAYERMOVING if applicable) are sent to check if it is allowed.
+  This also updates the Distance variable, and will deal with arrivals and
+  departures, and send FLOATED and SUNK messages as appropriate.
+
+,MoveTo  ( obj x y -- bool ) **
+  As MoveTo but for a specified object, not necessarily this one.
+
+Msg  ( -- message )
+  The current message being processed.
+
+ne  ( in1 in2 -- bool )
+  As eq but the result is inverted (like "eq lnot").
+
+neg  ( in -- out )
+  Multiply by negative one.
+
+NewX  ( oldx dir -- newx )
+  Advance the number in the direction as though it is a X coordinate. If
+  the direction is north or south, leaves it alone, but if it is east or
+  west then it is increased or decreased by one.
+
+NewY  ( oldx dir -- newy )
+  Advance the number in the direction as though it is a Y coordinate.
+
+nip  ( x y -- y )
+
+ObjAbove  ( -- obj )
+  The object above this one (0 if this one is at the top). "Above" means
+  it overlaps this object, not upward on the screen (north).
+
+,ObjAbove  ( obj -- obj )
+  The object above the specified object (0 if there isn't any).
+
+ObjBelow  ( -- obj )
+  The object below this one (0 if this one is at the bottom). "Below"
+  means this object overlaps it, not downward on the screen (south).
+
+,ObjBelow  ( obj -- obj )
+  The object below the specified object (0 if there isn't any).
+
+ObjBottomAt  ( x y -- obj )
+  Find the object on the bottom at the specified location. The result will
+  be zero if that location is vacant or out of range.
+
+ObjClassAt  ( class x y -- obj )
+  Find the bottom-most object of the specified class at that location. If
+  there is no object of that class, then the result is zero. This function
+  will find objects with the VisualOnly flag set as well as clear. You may
+  specify zero instead of a class, in which case it finds nothing. Any
+  other number, or any other value that isn't a class, is an error.
+
+ObjDir  ( dir -- obj )
+  Find the top-most object in the cell one step in the specified direction
+  from this object.
+
+,ObjDir  ( obj dir -- obj )
+  Find the top-most object in the cell one step in the specified direction
+  from the specified object.
+
+ObjLayerAt  ( layers x y -- obj )
+  Find an object with the given CollisionLayers bits set at that location.
+  If you specify multiple bits, it finds one with any of those bits. (It
+  is not possible for there to be more than one such object.)
+
+ObjTopAt  ( x y -- obj )
+  Find the object on the top at the specified location. The result will be
+  zero if that location is vacant or out of range.
+
+PopUp  ( value -- )
+  Displays a popup message. Normally, the value is a string, but it can be
+  another type, and it will try to display it. If the text contains any \q
+  commands, then dismissing the popup message will send a KEY message to
+  the object which created the popup message. If there is already another
+  existing popup message, only the first one set up will be displayed, and
+  the others will be ignored. IgnoreKey also affects what happens when a
+  popup message is dismissed; see IgnoreKey for details.
+
+(PopUp <number>)  ( string args... -- )
+  Displays a popup message, like PopUp does. However, this one allows the
+  string to contain substitution codes; see the section below about what
+  substitution codes are allowed in popup messages. Each substitution code
+  consumes some number of arguments, from bottom to top. The number of
+  arguments must be 0 to 32.
+
+QueueTurn  ( key -- ) **
+  Queue another turn after this one, using the specified key code, which
+  must be a number from 0 to 255. The extra turn is not entered into the
+  replay list and does not increase MoveNumber, but otherwise will act
+  like any other turn. Popup messages are not removed; they will be
+  retained, and these extra turns execute the input phase as though there
+  is no popup quiz.
+
+ret  ( -- )
+  Exit the current subroutine. If this is a message block, it must either
+  leave the stack as it is, or leave it but with one extra value pushed
+  which will be the return value from the message call. (This is implied
+  at the end of a code block.)
+
+rot  ( x y z -- y z x )
+
+-rot  ( x y z -- z x y )
+
+rsh  ( in shift -- out )
+  Logical right shift.
+
+,rsh  ( in shift -- out )
+  Arithmetic right shift.
+
+Self  ( -- obj )
+  The reference to the current object.
+
+Send  ( message arg1 arg2 -- value )
+  Similar to ,Send but this object sends the message to itself.
+
+,Send  ( obj message arg1 arg2 -- value )
+  Send a message to the specified object.
+
+SendEx  ( message arg1 arg2 -- value )
+  Similar to ,SendEx but this object sends the message to itself.
+
+,SendEx ( obj message arg1 arg2 arg3 -- value )
+  Send a message to the specified object.
+
+SetInventory  ( class image value -- ) **
+  Sets an inventory item with the specified class and image number to the
+  specified value (which must be a number). If there is no inventory item
+  with that exact class and image, an inventory item will be added,
+  otherwise the existing one is updated to the new value.
+
+Sound  ( sound interruptflag -- )
+  Play a sound; if the interrupt flag is zero then it does not interrupt
+  existing sounds but otherwise it does. It is not an error if the values
+  of the arguments are not valid.
+
+swap  ( x y -- y x )
+
+Synchronize  ( slot startimage -- ) **
+  Start a synchronized animation. Give the slot number of the animation,
+  and the starting image number. The length and speed are defined in a
+  global definition, and the animation is always a non-oscillating loop.
+
+Trace  ( obj arg1 arg2 -- )
+  If tracing is enabled, sends the three values and some other information
+  on stdout. If tracing is disabled, does nothing. This is intended to be
+  used for debugging class codes.
+
+tuck  ( x y -- y x y )
+
+VolumeAt  ( x y -- volume )
+  Finds the greatest volume among objects at the specified location.
+
+WinLevel  ( -- )
+  Ends all execution and accepts the input sequence that resulted in the
+  current game state as a valid solution.
+
+XDir  ( dir -- newx )
+  Finds the X coordinate of the cell in the specified direction.
+
+,XDir  ( obj dir -- newx )
+  Finds the X coordinate of the cell in the specified direction of the
+  specified object.
+
+YDir  ( dir -- newy )
+  Finds the Y coordinate of the cell in the given direction.
+
+,YDir  ( obj dir -- newy )
+  Finds the Y coordinate of the cell in the specified direction of the
+  specified object.
+
+
+=== Block instructions ===
+
+These are block flow controls. They include bodies of other instructions.
+
+begin <body> again  ( -- )
+  Executes <body> an unlimited number of times; it will only stop once some
+  command inside of the loop jumps out, returns, or results in an error.
+
+begin <body> until  ( -- ) ( bool -- )
+  Executes <body>, and then pops one boolean from the stack; if false, then it
+  will be repeated, but if true then it stops.
+
+begin <part1> while <part2> repeat  ( -- ) ( bool -- ) ( -- )
+  Executes <part1>, and then pops one boolean from the stack; if true, then it
+  will execute <part2> and then repeat; if false then it jumps out of the loop
+  and does not execute <part2>.
+
+for <body> next  ( upflag x y -- ) **
+  It starts by saving the inputs into an internal variable (each class has its
+  own such variables, and they are separate for each instance of the word "for"
+  in the program, but they will interfere if the same loop is reentrant on the
+  same object or other objects of the same class), and then resetting the Done
+  flag of all objects at the given (x,y) coordinates. If upflag is false, then
+  it starts at the top, and if true, starts at the bottom. At the beginning of
+  the <body>, the found object is on the stack; you can then use or store it.
+  Once "next" is reached, it finds the next object and goes back.
+
+if <truepart> [el <cond> if <truepart> ...] [else <falsepart>] then  ( bool -- )
+  Takes a boolean value from the stack. If true, then <truepart> is executed;
+  otherwise it tries the other parts; "el" means to execute <cond> and take
+  another boolean, and continue; "else" means always do this if none of the
+  previous parts match.
+
+
+=== Substitution codes ===
+
+%c
+  Display a single character whose code is the low 8-bits of the value.
+
+%d
+  Display a signed decimal number.
+
+%i
+  Display a picture. Consumes two arguments, being first a class and then
+  the image number. If either argument is not valid, displays nothing. The
+  picture may take up multiple lines of space; the lines will be moved
+  farther apart to make room if necessary.
+
+%s
+  Display a string. If the value is not a string, it will display it as
+  whatever type it is.
+
+%u
+  Display a unsigned decimal number.
+
+%x
+  Display a unsigned hexadecimal number in lowercase.
+
+%X
+  Display a unsigned hexadecimal number in uppercase.
+
+%%
+  Display a percentage sign; does not consume an argument.
+
+
+=== Messages ===
+
+This section describes when the various standard messages are sent to
+objects, and what return values are expected. (Do not confuse CREATE with
+CREATED or DESTROY with DESTROYED; they have different purposes.)
+
+ARRIVED
+  
+
+BEGIN_TURN
+  Sent to all objects during the beginning phase (the phase after the
+  input phase). From is an object with the Player flag (if there is any),
+  Arg1 and Arg2 are the X and Y coordinates of that object, and Arg3 is
+  the most recent return value from a KEY message.
+
+COLLIDE
+  Received when this object is trying to move into a location where there
+  is a collision, so it can't move there. Of the return value, bit0 means
+  to prevent the movement (even if the objects are moved out of the way or
+  destroyed in order to make room), bit1 means to not send any COLLIDEBY
+  messages, and bit2 means to pretend the move attempt was successful even
+  if it isn't successful. Even if bit0 is set, that won't prevent sending
+  COLLIDEBY messages unless bit1 is also set.
+
+COLLIDEBY
+  Received when another object is trying to move into the location of this
+  object or trying to be created in the same location as this object, if
+  there is a collision in the CollisionLayers values of those two objects.
+  Of the return value, bit0 means to prevent the movement, bit1 means to
+  not send any more COLLIDEBY messages, bit2 means to pretend the movement
+  attempt is successful even if it isn't (there is no effect for creating
+  objects; this bit is meaningful only for moves), and bit4 means that if
+  necessary, it will try to destroy this object to make room.
+
+CREATE
+  Sent when the object is created by the Create instruction. This is done
+  after the object is created, but before sending any other messages. The
+  From is the object that created it. The return value will be used as the
+  Arg3 of the SUNK and CREATED messages it might send if appropriate.
+
+CREATED
+  
+
+DEPARTED
+  
+
+DESTROY
+  Received when the object is about to be destroyed. Arg3 is the reason:
+  0 for the Destroy or ,Destroy instruction, 1 due to this object moving
+  into something sharp, 2 due to something sharp moving into this one,
+  or 3 for a conflict with CollisionLayers. The return value is false to
+  allow it to be destroyed or true to keep the object.
+
+DESTROYED
+  
+
+END_TURN
+  
+
+FLOATED
+  
+
+HIT
+  Indicates that this object is trying to move into another one; that
+  other object is the From value of the message. Arg1 and Arg2 are the
+  X and Y coordinates of that object, and Arg3 is the current hit value
+  (see below). The return value is ORed with the hit value to make the
+  new hit value.
+
+HITBY
+  Indicates that this object was hit by another object that was trying to
+  move, where From is the object trying to move, Arg1 and Arg2 are the X
+  and Y coordinates of that object, and Arg3 is the current hit value, and
+  the return value is ORed with the hit value to make the new hit value.
+
+INIT
+  Sent to all objects when the level is initialized. Objects which are
+  created during this time will not receive INIT messages, but they will
+  receive POSTINIT messages.
+
+JUMPED
+  Sent after a successful teleport by the JumpTo instruction. Arg1 and
+  Arg2 are the previous X and Y coordinates, and Arg3 (not From) is the
+  object that caused the move.
+
+KEY
+  During the input phase, it sends this message either to all objects with
+  the Input flag set, or to only the current quiz object if there is one
+  (whether or not it has the Input flag). Arg1 is the key code (the Key
+  instruction can also be used), Arg2 is the return value of the previous
+  KEY message (0 for the first one), and Arg3 is zero for normal input or
+  one for a quiz. The return value is passed as Arg2 for the next object.
+
+LASTIMAGE
+  
+
+MOVED
+  
+
+MOVING
+  Called when the object is about to be moved (whether due to Move,
+  MoveTo, JumpTo, or any other reason). From is the object that caused
+  the move, and Arg1 and Arg2 are the target X and Y coordinates. If the
+  return value is true, then the move is aborted.
+
+PLAYERMOVING
+  If an object with the Player flag is about to move, then after the
+  MOVING message is sent, PLAYERMOVING is sent to all objects. From is
+  the object which is moving, Arg1 and Arg2 are where it will be moved to,
+  and Arg3 is the From of the MOVING message. If the return value is true,
+  then the move is aborted.
+
+POSTINIT
+  After all INIT messages are sent when the level is initialized, then it
+  will send POSTINIT to all objects. Objects which are created during this
+  time will not receive POSTINIT messages.
+
+SUNK
+  
+
+
+=== Hit values ===
+
+This section describes the bits of the return value of the HIT and HITBY
+messages; these values are also used as the Arg3 of those messages.
+
+Some descriptions below are marked with an asterisk. If the Compatible
+flag is set for the object that returned this value, then all bits with
+the asterisk in the below descriptions are masked out.
+
+bit0
+  Do not send the HITBY message to the target object.
+
+bit1
+  Do not destroy either object due to hardness/sharpness.
+
+bit2
+  Do not attempt to shove the target object.
+
+bit3
+  Abort the move attempt immediately. Do not send any more HIT or HITBY
+  messages, do not check hardness/sharpness, and do nothing else either.
+
+bit4
+  Do not send the HITBY message to the target object or to any further
+  objects at the target location.
+
+bit5
+  Do not destroy either object due to hardness/sharpness, nor should any
+  further objects at the target location be destroyed due to sharpness.
+
+bit6
+  Do not attempt to shove the target object, nor attempt to shove any
+  other objects at the target location.
+
+bit7 *
+  Do not attempt sliding.
+
+bit8
+  Abort after sending the HITBY message.
+
+bit9
+  Abort after hardness/sharpness checking.
+
+bit10
+  Abort after attempting shoving.
+
+bit11
+  Set by the game engine if the move attempt has been restarted due to
+  bit15 being set during the previous attempt.
+
+bit12 *
+  If the move attempt fails, pretend it was successful, even though the
+  object hasn't actually moved. This means that the result of Move will
+  be 1 and that the MOVED message will trigger; it does not trigger any
+  ARRIVED, DEPARTED, FLOATED, or SUNK, nor does it set Distance.
+
+bit13 *
+  Abort before actually moving the object and before trying sliding.
+
+bit14 *
+  Do not set the Moved flag even if successful.
+
+bit15
+  Try again after trying shoving (whether or not the shoving is
+  successful). If it tries to shove an object and it is successful, then
+  it will automatically set this bit and automatically try again.
+
+bit16
+  Set by the game engine if it is attempting sliding.
+
+bit17 *
+  Do not actually move the object. It still does everything else, but when
+  it is time to move the object, just assume it is successful without even
+  trying. Things that Move and JumpTo have in common aren't done.
+
+bit18 *
+  Do not restart, even if bit15 is set.
+
+bit19
+  Set by the game engine if the requested movement is diagonal.
+
+bit20 *
+  If set, then when the movement attempt is restarted (due to bit15 set),
+  the direction will be reread from the object's Dir variable.
+
+bit21 *
+  Allows the object to move regardless of Height.
+
+bit22 *
+  Prevents movement regardless of Height, but may still allow sliding.
+
+bit23 *
+  Reserved for future.
+
+bit24 *
+  Reserved for future.
+
+bit25 *
+  Reserved for future.
+
+bit26
+  Available for your own use; preserved across restarts.
+
+bit27
+  Available for your own use; preserved across restarts.
+
+bit28
+  Available for your own use.
+
+bit29
+  Available for your own use.
+
+bit30
+  Available for your own use.
+
+bit31
+  Available for your own use.
+
+
+=== Compatibility ===
+
+Compatible objects have the following differences from the default:
+
+* VisualOnly implies Stealthy.
+
+* If the current quiz object is Compatible, The effect of "-1 FlushObj"
+is implied at the beginning of the turn (before the input phase), except
+that Inertia is not reset.
+
+* Some bits are masked out of the return value from HIT and HITBY.
+
+* Many variables are limited to 16-bits.
+
+* Moving objects is not allowed during LASTIMAGE processing.
+
