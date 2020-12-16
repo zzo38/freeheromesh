@@ -1634,7 +1634,7 @@ void load_classes(void) {
           if(i&~7) ParseError("Animation slot number out of range\n");
           nxttok();
           if(tokent!=TF_INT) ParseError("Number expected\n");
-          if(tokenv<1 || tokenv>255) ParseError("Length of synchronized animation too long\n");
+          if(tokenv<1 || tokenv>255) ParseError("Length of synchronized animation out of range\n");
           anim_slot[i].length=tokenv;
           nxttok();
           if(tokent!=TF_INT) ParseError("Number expected\n");

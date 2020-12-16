@@ -82,7 +82,7 @@ static void continue_animation(void) {
   Object*o;
   Animation*a;
   int i;
-  for(i=0;i<8;i++) if(anim_slot[i].length && ++anim_slot[i].vtime==anim_slot[i].speed && ++anim_slot[i].frame==anim_slot[i].length) anim_slot[i].frame=0;
+  for(i=0;i<8;i++) if(anim_slot[i].length && ++anim_slot[i].vtime==anim_slot[i].speed && (anim_slot[i].vtime=0,++anim_slot[i].frame==anim_slot[i].length)) anim_slot[i].frame=0;
   while(n!=VOIDLINK) {
     o=objects[n];
     if((a=o->anim) && (a->status&ANISTAT_VISUAL)) {
@@ -469,6 +469,7 @@ void run_game(void) {
           return;
         }
         redraw_game();
+        timerflag=0;
         break;
     }
   }
