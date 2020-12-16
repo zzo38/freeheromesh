@@ -134,6 +134,10 @@ typedef struct {
   Uint8 cflags,shape,shovable,collisionLayers,nimages;
 } Class;
 
+typedef struct {
+  Uint8 length,speed,vtime,frame;
+} AnimationSlot;
+
 extern Value initglobals[0x800];
 extern Class*classes[0x4000]; // 0 isn't a real class
 extern const char*messages[0x4000]; // index is 256 less than message number
@@ -142,6 +146,7 @@ extern int max_animation; // max steps in animation queue (default 32)
 extern Sint32 max_volume; // max total volume to allow moving diagonally (default 10000)
 extern Uint8 back_color;
 extern char**stringpool;
+extern AnimationSlot anim_slot[8];
 
 Uint16 get_message_ptr(int c,int m);
 void load_classes(void);
@@ -173,9 +178,23 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1);
 #define ANI_ONCE 0x01
 #define ANI_LOOP 0x02
 #define ANI_OSC 0x08
+#define ANI_SYNC 0x80
 
 typedef struct {
-  //TODO
+  Uint8 flag,start,end;
+  union {
+    Uint8 speed; // unsynchronized
+    Uint8 slot; // synchronized
+  };
+} AnimationStep;
+
+#define ANISTAT_LOGICAL 0x01
+#define ANISTAT_VISUAL 0x02
+#define ANISTAT_SYNCHRONIZED 0x80
+
+typedef struct {
+  Uint8 lstep,vstep,status,ltime,vtime,vimage,count;
+  AnimationStep step[0];
 } Animation;
 
 typedef struct {

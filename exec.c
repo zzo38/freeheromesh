@@ -174,9 +174,106 @@ static inline Uint8 resolve_dir(Uint32 n,Uint32 d) {
   return d<8?d:(objects[n]->dir+d)&7;
 }
 
+/*
+  Working of animation: There are two separate animations, being logical
+  and visual animations. New animations replace the current logical
+  animation; if there isn't one, but there is a visual animation, then a
+  new logical animation is added at the end. The logical animation is
+  always at the same step or ahead of the visual animation.
+
+  - lstep - Step number of the logical animation; this cannot equal or
+  exceed max_animation. Only a single logical step is present at once.
+
+  - vstep - Step number of the visual animation; this cannot equal or
+  exceed max_animation. The tail of the visual animation is the same as
+  the head of the logical animation, and the buffer is circular.
+
+  - status - Contains bit flags. If the ANISTAT_LOGICAL flag is set, then
+  it means a logical animation is active. If the ANISTAT_VISUAL flag is
+  set, then it means a visual animation is active. ANISTAT_SYNCHRONIZED
+  is set only for synchronized animations, which are visual only.
+
+  - ltime - Amount of logical time passed
+
+  - vtime - Number of centiseconds elapsed.
+
+  - vimage - If the status field has the ANISTAT_VISUAL bit set, then this
+  will decide the picture to display rather than using the object's image.
+
+  - count - Number of logical animation steps so far this turn. If it is
+  equal to max_animation then no more animations can be added this turn.
+
+  Synchronized animations only use vstep, status, and vimage.
+*/
+
+static Animation*animalloc(void) {
+  Animation*a=malloc(sizeof(Animation)+max_animation*sizeof(AnimationStep));
+  if(!a) fatal("Allocation failed\n");
+  a->lstep=a->vstep=a->ltime=a->vtime=a->status=a->count=0;
+  return a;
+}
+
 static void animate(Uint32 n,Uint32 f,Uint32 a0,Uint32 a1,Uint32 t) {
+  Animation*an=objects[n]->anim;
   objects[n]->image=a0;
-  //TODO
+  f&=0x0A;
+  if(!an) an=objects[n]->anim=animalloc();
+  if(an->status&ANISTAT_SYNCHRONIZED) an->status=0;
+  if(an->count==max_animation) f=ANI_STOP;
+  if(f&(ANI_ONCE|ANI_LOOP)) {
+    switch(an->status) {
+      case 0:
+        an->vtime=an->lstep=an->vstep=0;
+        an->vimage=a0;
+        break;
+      case ANISTAT_LOGICAL:
+        an->vstep=an->lstep;
+        an->vtime=0;
+        an->vimage=a0;
+        break;
+      case ANISTAT_VISUAL:
+        an->lstep++;
+        if(an->lstep>=max_animation) an->lstep=0;
+        if(an->lstep==an->vstep && max_animation>1) {
+          an->vstep++;
+          if(an->vstep==max_animation) an->vstep=0;
+          an->vimage=an->step[an->vstep].start;
+          an->vtime=0;
+        }
+        break;
+      case ANISTAT_VISUAL|ANISTAT_LOGICAL:
+        if(an->lstep==an->vstep) {
+          an->vimage=a0;
+          an->vtime=0;
+        }
+        break;
+    }
+    an->step[an->lstep].flag=f;
+    an->step[an->lstep].start=a0;
+    an->step[an->lstep].end=a1;
+    an->step[an->lstep].speed=t;
+    an->ltime=0;
+    an->status=ANISTAT_VISUAL|ANISTAT_LOGICAL;
+    an->count++;
+  } else if(an->lstep==an->vstep) {
+    an->status=0;
+  } else if(an->status&ANISTAT_LOGICAL) {
+    an->lstep=(an->lstep?:max_animation)-1;
+    an->status&=~ANISTAT_LOGICAL;
+  }
+}
+
+static void animate_sync(Uint32 n,Uint32 sl,Uint32 a0) {
+  Animation*an=objects[n]->anim;
+  objects[n]->image=a0;
+  sl&=7;
+  if(!an) an=objects[n]->anim=animalloc();
+  an->status=ANISTAT_VISUAL|ANISTAT_SYNCHRONIZED;
+  an->vimage=a0+anim_slot[sl].frame;
+  an->lstep=an->vstep=0;
+  an->step->flag=ANI_LOOP|ANI_SYNC;
+  an->step->start=a0;
+  an->step->slot=sl;
 }
 
 static Uint32 obj_above(Uint32 i) {
@@ -947,6 +1044,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_SOUND: StackReq(2,0); t2=Pop(); t1=Pop(); break; // Sound not implemented at this time
     case OP_SUB: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u-t2.u)); break;
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
+    case OP_SYNCHRONIZE: StackReq(2,0); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); animate_sync(obj,t1.u,t2.u); break;
     case OP_TRACE: StackReq(3,0); trace_stack(obj); break;
     case OP_TUCK: StackReq(2,3); t2=Pop(); t1=Pop(); Push(t2); Push(t1); Push(t2); break;
     case OP_USERSIGNAL: StackReq(0,1); if(o->oflags&OF_USERSIGNAL) Push(NVALUE(1)); else Push(NVALUE(0)); break;
@@ -1101,6 +1199,7 @@ const char*execute_turn(int key) {
   for(n=0;n<nobjects;n++) if(objects[n]) {
     objects[n]->distance=0;
     objects[n]->oflags&=~(OF_KEYCLEARED|OF_DONE);
+    if(objects[n]->anim) objects[n]->anim->count=0;
   }
   
   current_key=0;

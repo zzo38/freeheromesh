@@ -343,19 +343,20 @@
 #define OP_SENDEX_CD 43167
 #define OP_SETINVENTORY 32928
 #define OP_SOUND 32929
-#define OP_TRACE 32930
-#define OP_VOLUMEAT 32931
-#define OP_WINLEVEL 32932
-#define OP_XDIR 32933
-#define OP_XDIR_C 34981
-#define OP_YDIR 32934
-#define OP_YDIR_C 34982
-#define OP_FUNCTION 32935
-#define OP_LOCAL 32936
-#define OP_LABEL 32937
-#define OP_STRING 32938
-#define OP_INT16 32939
-#define OP_INT32 32940
+#define OP_SYNCHRONIZE 32930
+#define OP_TRACE 32931
+#define OP_VOLUMEAT 32932
+#define OP_WINLEVEL 32933
+#define OP_XDIR 32934
+#define OP_XDIR_C 34982
+#define OP_YDIR 32935
+#define OP_YDIR_C 34983
+#define OP_FUNCTION 32936
+#define OP_LOCAL 32937
+#define OP_LABEL 32938
+#define OP_STRING 32939
+#define OP_INT16 32940
+#define OP_INT32 32941
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486935},
@@ -538,12 +539,13 @@ static const Op_Names op_names[]={
 {"Sound",8421537},
 {"Stealthy",8618081},
 {"Strength",9142339},
+{"Synchronize",8421538},
 {"TAHTASHH",8389409},
 {"THMP_thmp",8389405},
 {"THWIT",8389384},
 {"TICK",8389391},
 {"Temperature",9142318},
-{"Trace",8421538},
+{"Trace",8421539},
 {"UH_OH",8389382},
 {"UNCORK",8389414},
 {"UNHH",8389381},
@@ -552,15 +554,15 @@ static const Op_Names op_names[]={
 {"VACUUM",8389411},
 {"VisualOnly",8618080},
 {"Volume",9142331},
-{"VolumeAt",8421539},
+{"VolumeAt",8421540},
 {"W",9437188},
 {"WAHOO",8389400},
 {"WHACK",8389423},
 {"Weight",9142333},
-{"WinLevel",8421540},
-{"XDir",8487077},
+{"WinLevel",8421541},
+{"XDir",8487078},
 {"Xloc",8486961},
-{"YDir",8487078},
+{"YDir",8487079},
 {"YEEHAW",8389401},
 {"Yloc",8486962},
 {"again",8683532},
@@ -633,5 +635,5 @@ static const Op_Names op_names[]={
 {"until",8683533},
 {"while",8683534},
 };
-#define N_OP_NAMES 274
+#define N_OP_NAMES 275
 #endif

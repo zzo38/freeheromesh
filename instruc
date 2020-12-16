@@ -229,6 +229,7 @@ QueueTurn ; queue another turn that automatically occurs after this one
 .,SendEx ; send with three arguments
 SetInventory
 Sound
+Synchronize
 Trace
 VolumeAt
 WinLevel

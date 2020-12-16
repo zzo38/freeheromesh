@@ -45,6 +45,7 @@ int max_animation=32;
 Sint32 max_volume=10000;
 Uint8 back_color=1;
 char**stringpool;
+AnimationSlot anim_slot[8];
 
 #define HASH_SIZE 8888
 #define LOCAL_HASH_SIZE 5555
@@ -1623,6 +1624,22 @@ void load_classes(void) {
           if(tokent!=TF_INT) ParseError("Number expected\n");
           if(tokenv<1 || tokenv>256) ParseError("Number of max animation steps out of range\n");
           max_animation=tokenv;
+          nxttok();
+          if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
+          break;
+        case OP_SYNCHRONIZE:
+          nxttok();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          i=tokenv;
+          if(i&~7) ParseError("Animation slot number out of range\n");
+          nxttok();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          if(tokenv<1 || tokenv>255) ParseError("Length of synchronized animation too long\n");
+          anim_slot[i].length=tokenv;
+          nxttok();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          if(tokenv<1 || tokenv>255) ParseError("Synchronized animation speed out of range\n");
+          anim_slot[i].speed=tokenv;
           nxttok();
           if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
           break;

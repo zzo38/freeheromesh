@@ -77,6 +77,51 @@ static void redraw_game(void) {
   set_cursor(XC_arrow);
 }
 
+static void continue_animation(void) {
+  Uint32 n=firstobj;
+  Object*o;
+  Animation*a;
+  int i;
+  for(i=0;i<8;i++) if(anim_slot[i].length && ++anim_slot[i].vtime==anim_slot[i].speed && ++anim_slot[i].frame==anim_slot[i].length) anim_slot[i].frame=0;
+  while(n!=VOIDLINK) {
+    o=objects[n];
+    if((a=o->anim) && (a->status&ANISTAT_VISUAL)) {
+      i=a->vstep;
+      if(a->step[i].flag&ANI_SYNC) {
+        i=anim_slot[a->step[i].slot].frame+a->step[i].start;
+        if(i!=a->vimage) {
+          a->vimage=i;
+          draw_cell(o->x,o->y);
+        }
+      } else if(++a->vtime>=a->step[i].speed) {
+        a->vtime=0;
+        if(a->vimage==a->step[i].end) {
+          if(a->step[i].flag&ANI_ONCE) {
+            if(a->vstep==a->lstep) {
+              a->status&=~ANISTAT_VISUAL;
+            } else {
+              if(++a->vstep==max_animation) a->vstep=0;
+              a->vimage=a->step[a->vstep].start;
+            }
+          } else if(a->step[i].flag&ANI_OSC) {
+            a->step[i].end=a->step[i].start;
+            a->step[i].start=a->vimage;
+            goto advance;
+          } else {
+            a->vimage=a->step[i].start;
+          }
+        } else {
+          advance:
+          if(a->step[i].end>=a->step[i].start) ++a->vimage; else --a->vimage;
+        }
+        draw_cell(o->x,o->y);
+      }
+    }
+    n=o->next;
+  }
+  SDL_Flip(screen);
+}
+
 static void show_mouse_xy(SDL_Event*ev) {
   char buf[32];
   int x,y;
@@ -100,6 +145,7 @@ static void begin_level(int id) {
   } else {
     gameover=0;
   }
+  timerflag=0;
 }
 
 static inline void exam_value(const char*t,int y,Value v) {
@@ -402,7 +448,7 @@ void run_game(void) {
         show_mouse_xy(&ev);
         break;
       case SDL_USEREVENT:
-        //TODO: animation
+        if(!gameover) continue_animation();
         timerflag=0;
         break;
       case SDL_MOUSEBUTTONDOWN:

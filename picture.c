@@ -95,15 +95,16 @@ void draw_cell(int x,int y) {
   // To be called only when screen is unlocked!
   Uint32 o;
   Class*c;
-  SDL_Rect dst={x,y,picture_size,picture_size};
+  int i;
+  SDL_Rect dst={(x-1)*picture_size+left_margin,(y-1)*picture_size,picture_size,picture_size};
   if(x<1 || x>64 || y<1 || y>64) return;
   SDL_FillRect(screen,&dst,back_color);
   o=playfield[y*64+x-65];
   while(o!=VOIDLINK) {
     if(main_options['e'] || !(objects[o]->oflags&OF_INVISIBLE)) {
       c=classes[objects[o]->class];
-      if(objects[o]->image<c->nimages)
-       draw_picture((x-1)*picture_size+left_margin,(y-1)*picture_size,c->images[objects[o]->image]&0x7FFF);
+      if(objects[o]->anim && (objects[o]->anim->status&ANISTAT_VISUAL)) i=objects[o]->anim->vimage; else i=objects[o]->image;
+      if(i<c->nimages) draw_picture((x-1)*picture_size+left_margin,(y-1)*picture_size,c->images[i]&0x7FFF);
     }
     o=objects[o]->up;
   }
