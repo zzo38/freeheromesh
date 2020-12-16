@@ -46,6 +46,7 @@ static Value vstack[VSTACKSIZE];
 static int vstackptr;
 static const char*traceprefix;
 static Uint8 current_key;
+static Value quiz_obj;
 
 #define Throw(x) (my_error=(x),longjmp(my_env,1))
 #define StackReq(x,y) do{ if(vstackptr<(x)) Throw("Stack underflow"); if(vstackptr-(x)+(y)>=VSTACKSIZE) Throw("Stack overflow"); }while(0)
@@ -1152,7 +1153,7 @@ static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value
     p=o->prev;
     if(!c || o->class==c) {
       v=send_message(from,n,msg,arg1,arg2,arg3);
-      if(s>0) {
+      if(s) {
         switch(v.t) {
           case TY_NUMBER: t+=v.u; break;
           case TY_CLASS: t++; break;
@@ -1161,7 +1162,6 @@ static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value
             t++;
         }
       } else {
-        if(s<0) arg2=v;
         t++;
       }
     }
@@ -1187,7 +1187,9 @@ void annihilate(void) {
 }
 
 const char*execute_turn(int key) {
-  Uint32 n;
+  Uint32 m,n;
+  Value v;
+  int i;
   if(!key) return 0;
   if(setjmp(my_env)) return my_error;
   changed=0;
@@ -1201,10 +1203,32 @@ const char*execute_turn(int key) {
     objects[n]->oflags&=~(OF_KEYCLEARED|OF_DONE);
     if(objects[n]->anim) objects[n]->anim->count=0;
   }
-  
+  // Input phase
+  m=VOIDLINK;
+  v=NVALUE(0);
+  if(!quiz_obj.t) {
+    n=lastobj;
+    while(n!=VOIDLINK) {
+      i=classes[objects[n]->class]->cflags;
+      if(i&CF_INPUT) v=send_message(VOIDLINK,n,MSG_KEY,NVALUE(key),v,NVALUE(0));
+      if(i&CF_PLAYER) m=n;
+      n=objects[n]->prev;
+    }
+  } else {
+    n=quiz_obj.u;
+    if(objects[n]->generation!=quiz_obj.t) n=VOIDLINK;
+    quiz_obj=NVALUE(0);
+    //TODO
+    v=send_message(VOIDLINK,n,MSG_KEY,NVALUE(key),NVALUE(0),NVALUE(1));
+  }
   current_key=0;
-  if(key_ignored) return changed?"Invalid use of IgnoreKey":0;
+  if(key_ignored) {
+    quiz_obj=NVALUE(0);
+    return changed?"Invalid use of IgnoreKey":0;
+  }
   move_number++;
+  // Beginning phase
+  if(!all_flushed) broadcast(m,0,MSG_BEGIN_TURN,m==VOIDLINK?NVALUE(objects[m]->x):NVALUE(0),m==VOIDLINK?NVALUE(objects[m]->y):NVALUE(0),v,0);
   
   if(generation_number<=TY_MAXTYPE) return "Too many generations of objects";
   return 0;
@@ -1214,6 +1238,7 @@ const char*init_level(void) {
   if(setjmp(my_env)) return my_error;
   if(main_options['t']) printf("[Level %d restarted]\n",level_id);
   memcpy(globals,initglobals,sizeof(globals));
+  quiz_obj=NVALUE(0);
   gameover=0;
   changed=0;
   key_ignored=0;

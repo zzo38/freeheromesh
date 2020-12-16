@@ -20,6 +20,8 @@ exit
 
 static volatile Uint8 timerflag;
 static int exam_scroll;
+static Uint8*inputs;
+static int inputs_size,inputs_count;
 
 static void redraw_game(void) {
   char buf[32];
@@ -138,6 +140,9 @@ static void show_mouse_xy(SDL_Event*ev) {
 
 static void begin_level(int id) {
   const char*t;
+  free(inputs);
+  inputs=0;
+  inputs_size=inputs_count=0;
   t=load_level(id)?:init_level();
   if(t) {
     gameover=-1;
@@ -384,7 +389,12 @@ static void list_objects_at(int xy) {
 static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
   switch(cmd) {
     case '\' ': // Play a move
-      return number;
+      if(inputs_count>=inputs_size) {
+        inputs=realloc(inputs,inputs_size+=32);
+        if(!inputs) fatal("Allocation failed\n");
+      }
+      inputs[inputs_count++]=number;
+      return 0;
     case '^E': // Edit
       return -2;
     case '^Q': // Quit
@@ -428,6 +438,16 @@ static Uint32 timer_callback(Uint32 n) {
   return n;
 }
 
+static inline void input_move(Uint8 k) {
+  const char*t=execute_turn(k);
+  if(t) {
+    screen_message(t);
+    gameover=-1;
+    return;
+  }
+  //TODO: Record this move, if applicable
+}
+
 void run_game(void) {
   int i;
   SDL_Event ev;
@@ -468,8 +488,13 @@ void run_game(void) {
           SDL_SetTimer(0,0);
           return;
         }
+        if(inputs_count) {
+          //TODO: Check for solution replay
+          for(i=0;i<inputs_count && !gameover;i++) input_move(inputs[i]);
+          inputs_count=0;
+        }
         redraw_game();
-        timerflag=0;
+        timerflag=0; // ensure we have not missed a timer event
         break;
     }
   }
