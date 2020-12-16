@@ -162,10 +162,12 @@ void objtrash(Uint32 n) {
   else objects[o->down]->up=o->up;
   if(o->up!=VOIDLINK) objects[o->up]->down=o->down;
   o->down=o->up=VOIDLINK;
-  if(firstobj==n) firstobj=o->next;
-  if(lastobj==n) lastobj=o->prev;
-  if(o->prev!=VOIDLINK) objects[o->prev]->next=o->next;
-  if(o->next!=VOIDLINK) objects[o->next]->prev=o->prev;
+  if(!(o->oflags&OF_DESTROYED)) {
+    if(firstobj==n) firstobj=o->next;
+    if(lastobj==n) lastobj=o->prev;
+    if(o->prev!=VOIDLINK) objects[o->prev]->next=o->next;
+    if(o->next!=VOIDLINK) objects[o->next]->prev=o->prev;
+  }
   free(o);
   objects[n]=0;
   generation_number_inc=1;
@@ -275,6 +277,34 @@ static void animate_sync(Uint32 n,Uint32 sl,Uint32 a0) {
   an->step->flag=ANI_LOOP|ANI_SYNC;
   an->step->start=a0;
   an->step->slot=sl;
+}
+
+static Sint32 height_at(Uint32 x,Uint32 y) {
+  Sint32 r=0;
+  Object*o;
+  Uint32 i;
+  if(x<1 || x>pfwidth || y<1 || y>pfheight) return 0;
+  i=playfield[x+y*64-65];
+  while(i!=VOIDLINK) {
+    o=objects[i];
+    if(r<o->height && !(o->oflags&(OF_DESTROYED|OF_VISUALONLY))) r=o->height;
+    i=o->up;
+  }
+  return r;
+}
+
+static Sint32 volume_at(Uint32 x,Uint32 y) {
+  Sint32 r=0;
+  Object*o;
+  Uint32 i;
+  if(x<1 || x>pfwidth || y<1 || y>pfheight) return 0;
+  i=playfield[x+y*64-65];
+  while(i!=VOIDLINK) {
+    o=objects[i];
+    if(r<o->volume && !(o->oflags&(OF_DESTROYED|OF_VISUALONLY))) r=o->volume;
+    i=o->up;
+  }
+  return r;
 }
 
 static Uint32 obj_above(Uint32 i) {
@@ -550,11 +580,14 @@ static Value destroy(Uint32 from,Uint32 to,Uint32 why) {
   // EKS Hero Mesh doesn't check if it already destroyed.
   v=why==8?NVALUE(0):send_message(from,to,MSG_DESTROY,NVALUE(0),NVALUE(0),NVALUE(why));
   if(!v_bool(v)) {
+    if(!(o->oflags&OF_DESTROYED)) {
+      if(firstobj==to) firstobj=o->next;
+      if(lastobj==to) lastobj=o->prev;
+      if(o->prev!=VOIDLINK) objects[o->prev]->next=o->next;
+      if(o->next!=VOIDLINK) objects[o->next]->prev=o->prev;
+      // This object is not itself removed from the linked list, since it may be destroyed while enumerating all objects
+    }
     o->oflags|=OF_DESTROYED;
-    if(firstobj==to) firstobj=o->next;
-    if(lastobj==to) lastobj=o->prev;
-    if(o->prev!=VOIDLINK) objects[o->prev]->next=o->next;
-    if(o->next!=VOIDLINK) objects[o->next]->prev=o->prev;
     if(why!=8 && !(o->oflags&OF_VISUALONLY)) {
       // Not checking for stealth; stealth only applies to movement, not destruction
       xx=o->x; yy=o->y;
@@ -637,6 +670,115 @@ static int move_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
   return 1;
 }
 
+static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
+  // This function is complicated, and there may be mistakes.
+  Object*o;
+  Object*oE;
+  Object*oF;
+  Uint32 objE,objF,objLF,objRF;
+  Uint32 hit=0;
+  Uint32 hF,vol;
+  Value v;
+  if(StackProtection()) Throw("Call stack overflow during movement");
+  if(obj==VOIDLINK) return 0;
+  o=objects[obj];
+  o->dir=dir=resolve_dir(obj,dir);
+  if(o->weight>o->inertia) goto fail;
+  o->inertia-=o->weight;
+  restart:
+  if(hit&0x100000) dir=o->dir;
+  objF=obj_dir(obj,dir);
+  if(objF==VOIDLINK) goto fail;
+  oF=objects[objF];
+  hF=height_at(oF->x,oF->y);
+  if(dir&1) {
+    // Diagonal movement
+    objLF=obj_dir(obj,(dir+1)&7);
+    objRF=obj_dir(obj,(dir-1)&7);
+    vol=o->volume;
+    if(objLF!=VOIDLINK) vol+=volume_at(objects[objLF]->x,objects[objLF]->y);
+    if(objRF!=VOIDLINK) vol+=volume_at(objects[objRF]->x,objects[objRF]->y);
+    if(vol<=max_volume) {
+      objE=objF;
+      while(objE!=VOIDLINK) {
+        oE=objects[objE];
+        if(oE->height>0 && !(oE->oflags&(OF_VISUALONLY|OF_DESTROYED))) {
+          v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit|0x80000));
+          if(v.t) Throw("Type mismatch in HIT/HITBY");
+          hit=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xFC098F7F:-1);
+          if(hit&8) goto fail;
+          if(!(hit&0x11)) {
+            v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(hit|0x80000));
+            if(v.t) Throw("Type mismatch in HIT/HITBY");
+            hit=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xFC098F7F:-1);
+            if(hit&8) goto fail;
+          }
+        }
+        objE=obj_below(objE);
+      }
+      if(!(hit&0x402008)) {
+        if(hF<=o->climb || (hit&0x200000)) {
+          if(hit&0x20000) goto success;
+          if(move_to(from,obj,oF->x,oF->y)) goto success; else goto fail;
+        }
+      }
+    } else {
+      
+    }
+  } else {
+    // Orthogonal movement
+    if(hit) hit=(hit&0x0C000000)|0x800;
+    objE=objF;
+    while(objE!=VOIDLINK) {
+      oE=objects[objE];
+      if(oE->height>0 && !(oE->oflags&(OF_VISUALONLY|OF_DESTROYED))) {
+        hit&=~7;
+        // HIT/HITBY messages
+        v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit));
+        if(v.t) Throw("Type mismatch in HIT/HITBY");
+        hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xFC098F7F:-1);
+        if(hit&8) goto fail;
+        if(!(hit&0x11)) {
+          v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(hit));
+          if(v.t) Throw("Type mismatch in HIT/HITBY");
+          hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xFC098F7F:-1);
+        }
+        if(hit&0x108) goto fail;
+        // Hardness/sharpness
+        if(!(hit&0x22)) {
+          if(o->sharp[dir>>1]>oE->hard[(dir^4)>>1] && !v_bool(destroy(obj,objE,2))) hit|=0x8004;
+          if(oE->sharp[(dir^4)>>1]>o->hard[dir>>1] && !v_bool(destroy(objE,obj,1))) hit|=0x4C;
+        }
+        if(hit&0x200) goto fail;
+      }
+      // Shoving
+      if(!(hit&0x44) && (oE->shovable&(1<<dir)) && o->inertia>=oE->weight) {
+        oE->inertia=o->inertia;
+        if(move_dir(obj,objE,dir)) {
+          if(!(oE->oflags&OF_DESTROYED)) o->inertia=oE->inertia;
+          hit|=0x8000;
+        }
+      }
+      if(hit&0x400) goto fail;
+      objE=obj_below(objE);
+    }
+    if(hit&0x2008) goto fail;
+    if((hit&0x48000)==0x8000) goto restart;
+    if(!(hit&0x400000)) {
+      if(hF<=o->climb || (hit&0x200000)) {
+        if(hit&0x20000) goto success;
+        if(move_to(from,obj,oF->x,oF->y)) goto success; else goto fail;
+      }
+    }
+    // Sliding
+    if(hit&0x80) goto fail;
+    hit|=0x10000;
+    
+  }
+  fail: if(hit&0x1000) goto success; o->inertia=0; return 0;
+  success: if(!(hit&0x4000)) o->oflags|=OF_MOVED; return 1;
+}
+
 static int jump_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
   int xx,yy;
   if(n==VOIDLINK) return 0;
@@ -715,12 +857,11 @@ static int v_for(Uint16*code,int ptr,Value v,Value xv,Value yv) {
   int k=code[ptr];
   Uint32 n;
   if(xv.t || yv.t) Throw("Type mismatch");
+  globals[k].t=TY_FOR;
   if(xv.u<1 || xv.u>pfwidth || yv.u<1 || yv.u>pfheight) {
-    globals[k].t=TY_NUMBER;
-    globals[k].u=0;
+    globals[k].s=-1;
     xv.u=yv.u=0;
   } else {
-    globals[k].t=TY_FOR;
     globals[k].u=xv.u+yv.u*64-65;
     if(v_bool(v)) globals[k].u|=0x10000;
   }
@@ -739,6 +880,7 @@ static int v_next(Uint16*code,int ptr) {
   Uint32 n;
   Uint32 r=VOIDLINK;
   if(globals[k].t!=TY_FOR) Throw("Uninitialized for/next loop");
+  if(globals[k].s==-1) return ptr+1;
   n=playfield[globals[k].u&0xFFFF];
   while(n!=VOIDLINK) {
     if(!(objects[n]->oflags&OF_DONE)) {
@@ -876,6 +1018,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_COMPATIBLE_C: StackReq(1,1); GetClassFlagOf(CF_COMPATIBLE); break;
     case OP_CREATE: NoIgnore(); StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_create(obj,t1,t2,t3,t4,t5)); break;
     case OP_CREATE_D: NoIgnore(); StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_create(obj,t1,t2,t3,t4,t5); break;
+    case OP_DELTA: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u>t2.u?t1.u-t2.u:t2.u-t1.u)); break;
     case OP_DENSITY: StackReq(0,1); Push(NVALUE(o->density)); break;
     case OP_DENSITY_C: StackReq(1,1); Push(GetVariableOrAttributeOf(density,NVALUE)); break;
     case OP_DENSITY_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); change_density(obj,t1.s); break;
@@ -933,6 +1076,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_HEIGHT_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->height=t1.u&0xFFFF; break;
     case OP_HEIGHT_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->height=t1.u; break;
     case OP_HEIGHT_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->height=t1.u; break;
+    case OP_HEIGHTAT: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(height_at(t1.u,t2.u))); break;
     case OP_IF: StackReq(1,0); if(v_bool(Pop())) ptr++; else ptr=code[ptr]; break;
     case OP_IGNOREKEY: if(current_key) key_ignored=all_flushed=1; break;
     case OP_IMAGE: StackReq(0,1); Push(NVALUE(o->image)); break;
@@ -947,6 +1091,10 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_INERTIA_EC16: StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->inertia=t1.u&0xFFFF; break;
     case OP_INT16: StackReq(0,1); Push(NVALUE(code[ptr++])); break;
     case OP_INT32: StackReq(0,1); t1=UVALUE(code[ptr++]<<16,TY_NUMBER); t1.u|=code[ptr++]; Push(t1); break;
+    case OP_INTMOVE: NoIgnore(); StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(move_dir(obj,obj,t1.u))); break;
+    case OP_INTMOVE_C: NoIgnore(); StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else Push(NVALUE(move_dir(obj,i,t1.u))); break;
+    case OP_INTMOVE_D: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); move_dir(obj,obj,t1.u); break;
+    case OP_INTMOVE_CD: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) move_dir(obj,i,t1.u); break;
     case OP_INVISIBLE: StackReq(0,1); if(o->oflags&OF_INVISIBLE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_INVISIBLE_C: StackReq(1,1); GetFlagOf(OF_INVISIBLE); break;
     case OP_INVISIBLE_E: NoIgnore(); StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_INVISIBLE; else o->oflags&=~OF_INVISIBLE; break;
@@ -974,11 +1122,19 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_LXOR: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1)?!v_bool(t2):v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_MOD: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u%t2.u)); break;
     case OP_MOD_C: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s%t2.s)); break;
+    case OP_MOVE: NoIgnore(); StackReq(1,1); t1=Pop(); Numeric(t1); o->inertia=o->strength; Push(NVALUE(move_dir(obj,obj,t1.u))); break;
+    case OP_MOVE_C: NoIgnore(); StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else { objects[i]->inertia=o->strength; Push(NVALUE(move_dir(obj,i,t1.u))); } break;
+    case OP_MOVE_D: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->inertia=o->strength; move_dir(obj,obj,t1.u); break;
+    case OP_MOVE_CD: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) { objects[i]->inertia=o->strength; move_dir(obj,i,t1.u); } break;
     case OP_MOVED: StackReq(0,1); if(o->oflags&OF_MOVED) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_MOVED_C: StackReq(1,1); GetFlagOf(OF_MOVED); break;
     case OP_MOVED_E: NoIgnore(); StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_MOVED; else o->oflags&=~OF_MOVED; break;
     case OP_MOVED_EC: NoIgnore(); StackReq(2,0); SetFlagOf(OF_MOVED); break;
     case OP_MOVENUMBER: StackReq(0,1); Push(NVALUE(move_number)); break;
+    case OP_MOVEPLUS: NoIgnore(); StackReq(1,1); t1=Pop(); Numeric(t1); o->inertia+=o->strength; Push(NVALUE(move_dir(obj,obj,t1.u))); break;
+    case OP_MOVEPLUS_C: NoIgnore(); StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else {objects[i]->inertia+=o->strength;Push(NVALUE(move_dir(obj,i,t1.u)));} break;
+    case OP_MOVEPLUS_D: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->inertia+=o->strength; move_dir(obj,obj,t1.u); break;
+    case OP_MOVEPLUS_CD: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) { objects[i]->inertia+=o->strength; move_dir(obj,i,t1.u); } break;
     case OP_MOVETO: NoIgnore(); StackReq(2,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); Push(NVALUE(move_to(obj,obj,t2.u,t3.u))); break;
     case OP_MOVETO_C: NoIgnore(); StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); i=v_object(Pop()); Push(NVALUE(move_to(obj,i,t2.u,t3.u))); break;
     case OP_MOVETO_D: NoIgnore(); StackReq(2,0); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); move_to(obj,obj,t2.u,t3.u); break;
@@ -1046,6 +1202,12 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_SUB: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u-t2.u)); break;
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
     case OP_SYNCHRONIZE: StackReq(2,0); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); animate_sync(obj,t1.u,t2.u); break;
+    case OP_TEMPERATURE: StackReq(0,1); Push(NVALUE(o->temperature)); break;
+    case OP_TEMPERATURE_C: StackReq(1,1); Push(GetVariableOrAttributeOf(temperature,NVALUE)); break;
+    case OP_TEMPERATURE_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->temperature=t1.u; break;
+    case OP_TEMPERATURE_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->temperature=t1.u&0xFFFF; break;
+    case OP_TEMPERATURE_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->temperature=t1.u; break;
+    case OP_TEMPERATURE_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->temperature=t1.u; break;
     case OP_TRACE: StackReq(3,0); trace_stack(obj); break;
     case OP_TUCK: StackReq(2,3); t2=Pop(); t1=Pop(); Push(t2); Push(t1); Push(t2); break;
     case OP_USERSIGNAL: StackReq(0,1); if(o->oflags&OF_USERSIGNAL) Push(NVALUE(1)); else Push(NVALUE(0)); break;
@@ -1066,6 +1228,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_VOLUME_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->volume=t1.u&0xFFFF; break;
     case OP_VOLUME_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->volume=t1.u; break;
     case OP_VOLUME_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->volume=t1.u; break;
+    case OP_VOLUMEAT: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(volume_at(t1.u,t2.u))); break;
     case OP_WEIGHT: StackReq(0,1); Push(NVALUE(o->weight)); break;
     case OP_WEIGHT_C: StackReq(1,1); Push(GetVariableOrAttributeOf(weight,NVALUE)); break;
     case OP_WEIGHT_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->weight=t1.u; break;
@@ -1073,8 +1236,12 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_WEIGHT_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->weight=t1.u; break;
     case OP_WEIGHT_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->weight=t1.u; break;
     case OP_WINLEVEL: key_ignored=0; gameover=1; Throw(0); break;
+    case OP_XDIR: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(o->x+x_delta[resolve_dir(obj,t1.u)])); break;
+    case OP_XDIR_C: StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else Push(NVALUE(objects[i]->x+x_delta[resolve_dir(i,t1.u)])); break;
     case OP_XLOC: StackReq(0,1); Push(NVALUE(o->x)); break;
     case OP_XLOC_C: StackReq(1,1); Push(GetVariableOf(x,NVALUE)); break;
+    case OP_YDIR: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(o->y+y_delta[resolve_dir(obj,t1.u)])); break;
+    case OP_YDIR_C: StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else Push(NVALUE(objects[i]->y+y_delta[resolve_dir(i,t1.u)])); break;
     case OP_YLOC: StackReq(0,1); Push(NVALUE(o->y)); break;
     case OP_YLOC_C: StackReq(1,1); Push(GetVariableOf(y,NVALUE)); break;
 #define MiscVar(a,b) \
@@ -1144,13 +1311,12 @@ static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2
 
 static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value arg3,int s) {
   Uint32 t=0;
-  Uint32 n,p;
+  Uint32 n;
   Object*o;
   Value v;
   if(lastobj==VOIDLINK) return;
   n=lastobj;
   while(o=objects[n]) {
-    p=o->prev;
     if(!c || o->class==c) {
       v=send_message(from,n,msg,arg1,arg2,arg3);
       if(s) {
@@ -1165,8 +1331,8 @@ static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value
         t++;
       }
     }
-    if(p==VOIDLINK) break;
-    n=p;
+    n=o->prev;
+    if(n==VOIDLINK) break;
   }
   return t;
 }
@@ -1230,6 +1396,8 @@ const char*execute_turn(int key) {
   // Beginning phase
   if(!all_flushed) broadcast(m,0,MSG_BEGIN_TURN,m==VOIDLINK?NVALUE(objects[m]->x):NVALUE(0),m==VOIDLINK?NVALUE(objects[m]->y):NVALUE(0),v,0);
   
+  // Cleanup phase
+  for(n=0;n<nobjects;n++) if(objects[n] && (objects[n]->oflags&OF_DESTROYED)) objtrash(n);
   if(generation_number<=TY_MAXTYPE) return "Too many generations of objects";
   return 0;
 }
