@@ -1481,6 +1481,16 @@ const char*execute_turn(int key) {
   int i;
   if(!key) return 0;
   if(setjmp(my_env)) return my_error;
+  if(quiz_text) {
+    sqlite3_free(quiz_text);
+    quiz_text=0;
+    if(key_ignored) {
+      if(quiz_obj.t) quiz_obj=NVALUE(0); else return 0;
+    } else if(!quiz_obj.t) {
+      move_number++;
+      return 0;
+    }
+  }
   changed=0;
   key_ignored=0;
   all_flushed=0;
