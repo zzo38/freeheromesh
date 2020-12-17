@@ -220,7 +220,7 @@ static Animation*animalloc(void) {
 static void animate(Uint32 n,Uint32 f,Uint32 a0,Uint32 a1,Uint32 t) {
   Animation*an=objects[n]->anim;
   objects[n]->image=a0;
-  f&=0x0A;
+  f&=0x0B;
   if(!an) an=objects[n]->anim=animalloc();
   if(an->status&ANISTAT_SYNCHRONIZED) an->status=0;
   if(an->count==max_animation) f=ANI_STOP;
