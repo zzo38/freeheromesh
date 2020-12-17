@@ -724,7 +724,27 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
         }
       }
     } else {
-      
+      // Volume is too much; hit the objects it won't go between
+      objE=objLF;
+      while(objE!=VOIDLINK) {
+        oE=objects[objE];
+        if(oE->height>0 && !(oE->oflags&(OF_VISUALONLY|OF_DESTROYED))) {
+          v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(0x80008));
+          if(v.t) Throw("Type mismatch in HIT/HITBY");
+          if(!(v.u&1)) v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(v.u|0x80008));
+        }
+        objE=obj_below(objE);
+      }
+      objE=objRF;
+      while(objE!=VOIDLINK) {
+        oE=objects[objE];
+        if(oE->height>0 && !(oE->oflags&(OF_VISUALONLY|OF_DESTROYED))) {
+          v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(0x80008));
+          if(v.t) Throw("Type mismatch in HIT/HITBY");
+          if(!(v.u&1)) v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(v.u|0x80008));
+        }
+        objE=obj_below(objE);
+      }
     }
   } else {
     // Orthogonal movement
