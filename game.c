@@ -75,6 +75,7 @@ static void redraw_game(void) {
   else strcpy(buf,"       ");
   draw_text(0,40,buf,0xF0,0xF1);
   SDL_UnlockSurface(screen);
+  if(quiz_text) draw_popup(quiz_text);
   SDL_Flip(screen);
   set_cursor(XC_arrow);
 }
@@ -172,11 +173,8 @@ static inline void exam_value(const char*t,int y,Value v) {
       snprintf(buf,255,"%s%s",v.u<256?"":"#",v.u<256?standard_message_names[v.u]:messages[v.u-256]);
       draw_text(200,y,buf,0xF0,0xFD);
       break;
-    case TY_LEVELSTRING:
-      
-      break;
-    case TY_STRING:
-      
+    case TY_LEVELSTRING: case TY_STRING:
+      draw_text(200,y,"<String>",0xF0,0xF9);
       break;
     case TY_SOUND: case TY_USOUND:
       draw_text(200,y,"<Sound>",0xF0,0xF6);
@@ -257,6 +255,7 @@ static void examine(Uint32 n) {
   exam_value("Self:",0,OVALUE(n));
   exam_value("Class:",1,CVALUE(o->class));
   exam_value("Image:",2,NVALUE(o->image));
+  if(classes[o->class]->cflags&CF_QUIZ) goto quiz;
   exam_value("Dir:",3,NVALUE(o->dir));
   exam_value("Misc1:",4,o->misc1);
   exam_value("Misc2:",5,o->misc2);
@@ -285,6 +284,7 @@ static void examine(Uint32 n) {
     i=sqlite3_column_int(st,1);
     exam_value(sqlite3_column_text(st,0),i+28,o->uservars[i]);
   }
+  quiz:
   sqlite3_reset(st);
   SDL_UnlockSurface(screen);
   SDL_Flip(screen);
@@ -345,8 +345,8 @@ static void list_objects_at(int xy) {
   for(i=0;i<scroll && n!=VOIDLINK;i++) n=objects[n]->down;
   for(i=0;i<screen->h/8 && n!=VOIDLINK;i++) {
     o=objects[n];
-    snprintf(buf,255," %8d: %-14.14s %3d %s",n,classes[o->class]->name,o->image,dirs[o->dir&7]);
-    draw_text(24,r.y,buf,0xF1,o->generation?0xFF:0xF8);
+    snprintf(buf,255," %8d: %-14.14s %3d %s",n,classes[o->class]->name,o->image,classes[o->class]->cflags&CF_QUIZ?"":dirs[o->dir&7]);
+    draw_text(24,r.y,buf,0xF1,o->generation?(classes[o->class]->cflags&CF_PLAYER?0xFE:0xFF):0xF8);
     n=o->down;
     r.y+=8;
   }
@@ -399,6 +399,9 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       return -2;
     case '^Q': // Quit
       return -1;
+    case '^T': // Show title
+      modal_draw_popup(level_title);
+      return prev;
     case '^o': // List objects
       list_objects_at(number-65);
       return prev;
@@ -468,7 +471,7 @@ void run_game(void) {
         show_mouse_xy(&ev);
         break;
       case SDL_USEREVENT:
-        if(!gameover) continue_animation();
+        if(!gameover && !quiz_text) continue_animation();
         timerflag=0;
         break;
       case SDL_MOUSEBUTTONDOWN:

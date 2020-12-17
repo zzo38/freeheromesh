@@ -547,3 +547,231 @@ int scrollbar(int*cur,int page,int max,SDL_Event*ev,SDL_Rect*re) {
   set_cursor(XC_sb_right_arrow);
   return 1;
 }
+
+// Popup text
+
+/*
+  \0 to \7 (1 to 8) - Colours
+  \b (15) - Horizontal line
+  \c (12) - Centre align
+  \i (14) - Image of class
+  \l (11) - Left align
+  \n (10) - Line break
+  \q (16) - Quiz button
+  \x (31) - Hex escape
+*/
+
+typedef struct {
+  Uint8 a,h;
+  Uint16 w;
+} PopLine;
+
+static void pop_bar(int x,int y,PopLine*li,int w) {
+  
+}
+
+static void pop_char(int x,int y,PopLine*li,Uint8 c,Uint8 v) {
+  Uint8*p=screen->pixels;
+  Uint16 pitch=screen->pitch;
+  int xx,yy;
+  const unsigned char*f=fontdata+(v<<3);
+  if(li->h>8) y+=(li->h-8)/2;
+  if(y+8>=screen->h || x+8>=screen->w) return;
+  p+=y*pitch+x;
+  for(yy=0;yy<8;yy++) {
+    for(xx=0;xx<8;xx++) p[xx]=(*f<<xx)&128?c:0xF7;
+    p+=pitch;
+    ++f;
+  }
+}
+
+static void pop_image(int x,int y,PopLine*li,const unsigned char*t) {
+  const unsigned char*p=strchr(t,':');
+  int i,n;
+  if(!p) return;
+  n=strtol(p+1,0,10);
+  if(li->h>picture_size) y+=(li->h-picture_size)/2;
+  if(y+picture_size>=screen->h || x+picture_size>=screen->w) return;
+  SDL_UnlockSurface(screen);
+  if(p==t+1 && *t==7) {
+    // This case is used for %i substitutions
+    draw_picture(x,y,n);
+  } else if(p) {
+    for(i=1;i<0x4000;i++) if(classes[i]) {
+      if(strlen(classes[i]->name)==p-t && !memcmp(t,classes[i]->name,p-t)) {
+        if(n>=0 && n<classes[i]->nimages) draw_picture(x,y,classes[i]->images[n]&0x7FFF);
+        break;
+      }
+    }
+  }
+  SDL_LockSurface(screen);
+}
+
+static void pop_quiz(int x,int y,PopLine*li,Uint8 c,Uint8 v) {
+  
+}
+
+void draw_popup(const unsigned char*txt) {
+  static colo[8]={1,144,188,173,83,98,218,15};
+  static PopLine li[64];
+  SDL_Rect r;
+  int bx,by,x,y,c;
+  int ln=0; // line number
+  int lh=8; // height of current line
+  int th=0; // total height
+  int lw=0; // width of current line
+  int tw=0; // total width
+  const unsigned char*p=txt;
+  li[0].w=li[0].h=li[0].a=0;
+  // Figure out size
+  while(ln<64 && *p) switch(*p++) {
+    case 1 ... 8:
+      // needing doing nothing yet
+      break;
+    case 10:
+      th+=lh;
+      li[ln].h=lh;
+      li[ln].w=lw;
+      if(tw<lw) tw=lw;
+      if(*p && *p!=15) lh=8; else lh=0;
+      lw=0;
+      ln++;
+      if(ln<64) li[ln].a=li[ln-1].a;
+      break;
+    case 11: case 12:
+      li[ln].a=p[-1]-11;
+      break;
+    case 14:
+      if(lh<picture_size) lh=picture_size;
+      lw+=picture_size;
+      p=strchr(p,'\\')?:"";
+      if(*p) p++;
+      break;
+    case 15:
+      th+=lh+8;
+      li[ln].h=lh;
+      li[ln].w=lw;
+      if(tw<lw) tw=lw;
+      lh=8;
+      lw=0;
+      ln++;
+      if(ln<64) li[ln].a=li[ln-1].a;
+      break;
+    case 16:
+      lw+=24;
+      if(lh<16) lh=16;
+      if(*p) p++;
+      break;
+    case 31:
+      lw+=8;
+      if(*p) p++;
+      break;
+    default:
+      lw+=8;
+  }
+  done:
+  if(ln<64) li[ln].h=lh,li[ln].w=lw;
+  p=txt;
+  th+=lh;
+  if(tw<lw) tw=lw;
+  if(tw>screen->w-32) tw=screen->w-32;
+  if(th>screen->h-32) th=screen->h-32;
+  bx=(screen->w-tw-8)/2;
+  by=(screen->h-th-8)/2;
+  // Draw box
+  r.x=bx; r.y=by; r.w=tw+16; r.h=th+16;
+  SDL_FillRect(screen,&r,0xF7);
+  r.w=tw+16; r.h=1; SDL_FillRect(screen,&r,0x0F);
+  r.w=1; r.h=th+16; SDL_FillRect(screen,&r,0x0F);
+  r.x++; r.y++;
+  r.w=tw+14; r.h=1; SDL_FillRect(screen,&r,0x0D);
+  r.w=1; r.h=th+14; SDL_FillRect(screen,&r,0x0D);
+  r.x++; r.y++;
+  r.w=tw+12; r.h=1; SDL_FillRect(screen,&r,0x0B);
+  r.w=1; r.h=th+12; SDL_FillRect(screen,&r,0x0B);
+  r.x=bx+tw+15; r.y=by;
+  r.w=1; r.h=th+16; SDL_FillRect(screen,&r,0x02);
+  r.x--; r.y++; r.h-=2; SDL_FillRect(screen,&r,0x05);
+  r.x--; r.y++; r.h-=2; SDL_FillRect(screen,&r,0x08);
+  r.x=bx; r.y=by+th+15;
+  r.w=tw+16; r.h=1; SDL_FillRect(screen,&r,0x02);
+  r.x++; r.y--; r.w-=2; SDL_FillRect(screen,&r,0x05);
+  r.x++; r.y--; r.w-=2; SDL_FillRect(screen,&r,0x08);
+  // Draw text
+  bx+=8; by+=8; tw-=8; th-=8;
+  x=bx; y=by;
+  c=colo[0];
+  ln=0;
+  SDL_LockSurface(screen);
+  while(*p && ln<64 && y+li[ln].h<screen->h) switch(*p++) {
+    case 1 ... 8:
+      c=colo[p[-1]-1];
+      break;
+    case 10:
+      y+=li[ln++].h;
+      if(ln<64) x=li[ln].a?bx+(tw-li[ln].w)/2:bx;
+      break;
+    case 11:
+      // do nothing
+      break;
+    case 12:
+      if(x==bx) x+=(tw-li[ln].w)/2;
+      break;
+    case 14:
+      pop_image(x,y,li+ln,p);
+      x+=picture_size;
+      p=strchr(p,'\\')?:"";
+      if(*p) p++;
+      break;
+    case 15:
+      y+=li[ln++].h;
+      pop_bar(bx,y,li+ln,tw);
+      y+=8;
+      if(ln<64) x=li[ln].a?bx+(tw-li[ln].w)/2:bx;
+      break;
+    case 16:
+      pop_quiz(x,y,li+ln,c,*p);
+      if(*p) p++;
+      x+=24;
+      break;
+    case 31:
+      pop_char(x,y,li+ln,c,*p);
+      if(*p) p++;
+      x+=8;
+    default:
+      pop_char(x,y,li+ln,c,p[-1]);
+      x+=8;
+      break;
+  }
+  SDL_UnlockSurface(screen);
+}
+
+int modal_draw_popup(const unsigned char*txt) {
+  SDL_Event ev;
+  SDL_Rect r;
+  r.x=r.y=0;
+  r.w=screen->w;
+  r.h=4;
+  SDL_FillRect(screen,&r,0xFE);
+  set_cursor(XC_iron_cross);
+  redraw:
+  draw_popup(txt);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) switch(ev.type) {
+    case SDL_QUIT:
+      SDL_PushEvent(&ev);
+      return -1;
+    case SDL_KEYDOWN:
+      switch(ev.key.keysym.sym) {
+        case SDLK_RETURN: case SDLK_KP_ENTER: case SDLK_ESCAPE:
+          return 0;
+      }
+      break;
+    case SDL_MOUSEBUTTONDOWN:
+      return 0;
+    case SDL_VIDEOEXPOSE:
+      goto redraw;
+  }
+  return -1;
+}
+

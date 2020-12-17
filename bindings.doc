@@ -59,6 +59,9 @@ to ask the user for the value to use.
 '= ' <count>
   Restart and replay that many moves.
 
+'^T'
+  Display the level title popup.
+
 '^o' <location>
   List objects at the specified coordinates.
 

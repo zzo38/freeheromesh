@@ -31,6 +31,7 @@ Uint8 pfwidth,pfheight;
 Sint8 gameover,key_ignored;
 Uint8 generation_number_inc;
 Uint32 move_number;
+unsigned char*quiz_text;
 
 typedef struct {
   Uint16 msg;
@@ -914,6 +915,120 @@ static inline Value v_send_self(Uint32 from,Value msg,Value arg1,Value arg2,Valu
   return send_message(from,from,msg.u,arg1,arg2,arg3);
 }
 
+static void v_set_popup(Uint32 from,int argc) {
+  const unsigned char*t;
+  const unsigned char*u;
+  sqlite3_str*s;
+  Value v;
+  int argi=1;
+  if(argc>32 || argc<0) Throw("Too many arguments");
+  vstackptr-=argc;
+  v=Pop();
+  if(quiz_text) return;
+  if(argc) {
+    argc++;
+    if(v.t!=TY_STRING && v.t!=TY_LEVELSTRING) Throw("Type mismatch");
+    s=sqlite3_str_new(userdb);
+    t=value_string_ptr(v);
+    while(*t) {
+      if(u=strchr(t,'%')) {
+        sqlite3_str_append(s,t,u-t);
+        t=u+2;
+        switch(u[1]) {
+          case 0:
+            t=u+1;
+            break;
+          case 'c':
+            if(argi==argc) break;
+            v=vstack[vstackptr+argi++];
+            if(v.t==TY_NUMBER) {
+              sqlite3_str_appendchar(s,1,31);
+              sqlite3_str_appendchar(s,1,v.u&255?:255);
+            }
+            break;
+          case 'd':
+            if(argi==argc) break;
+            v=vstack[vstackptr+argi++];
+            if(v.t==TY_NUMBER) sqlite3_str_appendf(s,"%d",(signed int)v.s);
+            break;
+          case 'i':
+            if(argi>=argc-1) break;
+            if(vstack[vstackptr+argi].t==TY_CLASS && vstack[vstackptr+argi+1].t==TY_NUMBER) {
+              Class*c=classes[vstack[vstackptr+argi].u];
+              int n=vstack[vstackptr+argi+1].u&255;
+              if(n<c->nimages) sqlite3_str_appendf(s,"\x0E\x07:%d\\",c->images[n]&0x7FFF);
+            }
+            argi+=2;
+            break;
+          case 's':
+            if(argi==argc) break;
+            v=vstack[vstackptr+argi++];
+            switch(v.t) {
+              case TY_STRING: case TY_LEVELSTRING:
+                sqlite3_str_appendf(s,"%s",value_string_ptr(v));
+                break;
+              case TY_NUMBER:
+                sqlite3_str_appendf(s,"%llu",(sqlite3_int64)v.u);
+                break;
+              case TY_CLASS:
+                sqlite3_str_appendf(s,"%s",classes[v.u]->name);
+                break;
+              default:
+                Throw("Type mismatch");
+            }
+            break;
+          case 'u':
+            if(argi==argc) break;
+            v=vstack[vstackptr+argi++];
+            if(v.t==TY_NUMBER) sqlite3_str_appendf(s,"%u",(unsigned int)v.u);
+            break;
+          case 'x':
+            if(argi==argc) break;
+            v=vstack[vstackptr+argi++];
+            if(v.t==TY_NUMBER) sqlite3_str_appendf(s,"%x",(unsigned int)v.u);
+            break;
+          case 'X':
+            if(argi==argc) break;
+            v=vstack[vstackptr+argi++];
+            if(v.t==TY_NUMBER) sqlite3_str_appendf(s,"%X",(unsigned int)v.u);
+            break;
+          case '%':
+            sqlite3_str_appendchar(s,1,'%');
+            break;
+        }
+      } else {
+        sqlite3_str_appendall(s,t);
+        break;
+      }
+    }
+    sqlite3_str_appendchar(s,1,0);
+    quiz_text=sqlite3_str_finish(s);
+  } else {
+    switch(v.t) {
+      case TY_STRING: case TY_LEVELSTRING:
+        quiz_text=sqlite3_mprintf("%s",value_string_ptr(v));
+        break;
+      case TY_NUMBER:
+        quiz_text=sqlite3_mprintf("%llu",(sqlite3_int64)v.u);
+        break;
+      case TY_CLASS:
+        quiz_text=sqlite3_mprintf("%s",classes[v.u]->name);
+        break;
+      default:
+        Throw("Type mismatch");
+    }
+  }
+  if(!quiz_text) fatal("Allocation failed\n");
+  t=quiz_text;
+  while(*t) {
+    if(*t==16) {
+      quiz_obj.t=objects[from]->generation?:1;
+      quiz_obj.u=from;
+    }
+    if(*t==31 && t[1]) t+=2; else t+=1;
+  }
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -1158,6 +1273,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_OBJTOPAT: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); i=obj_top_at(t1.u,t2.u); Push(OVALUE(i)); break;
     case OP_PLAYER: StackReq(0,1); if(classes[o->class]->cflags&CF_PLAYER) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_PLAYER_C: StackReq(1,1); GetClassFlagOf(CF_PLAYER); break;
+    case OP_POPUP: StackReq(1,0); v_set_popup(obj,0); break;
+    case OP_POPUPARGS: i=code[ptr++]; StackReq(i+1,0); v_set_popup(obj,i); break;
     case OP_RET: return;
     case OP_ROT: StackReq(3,3); t3=Pop(); t2=Pop(); t1=Pop(); Push(t2); Push(t3); Push(t1); break;
     case OP_ROTBACK: StackReq(3,3); t3=Pop(); t2=Pop(); t1=Pop(); Push(t3); Push(t1); Push(t2); break;
@@ -1198,6 +1315,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_STRENGTH_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->strength=t1.u&0xFFFF; break;
     case OP_STRENGTH_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->strength=t1.u; break;
     case OP_STRENGTH_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->strength=t1.u; break;
+    case OP_STRING: StackReq(0,1); Push(UVALUE(code[ptr++],TY_STRING)); break;
     case OP_SOUND: StackReq(2,0); t2=Pop(); t1=Pop(); break; // Sound not implemented at this time
     case OP_SUB: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u-t2.u)); break;
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
@@ -1341,6 +1459,10 @@ void annihilate(void) {
   Uint32 i;
   for(i=0;i<64*64;i++) playfield[i]=VOIDLINK;
   firstobj=lastobj=VOIDLINK;
+  if(quiz_text) {
+    sqlite3_free(quiz_text);
+    quiz_text=0;
+  }
   if(!objects) return;
   for(i=0;i<nobjects;i++) if(objects[i]) {
     animfree(objects[i]->anim);
@@ -1395,6 +1517,11 @@ const char*execute_turn(int key) {
   move_number++;
   // Beginning phase
   if(!all_flushed) broadcast(m,0,MSG_BEGIN_TURN,m==VOIDLINK?NVALUE(objects[m]->x):NVALUE(0),m==VOIDLINK?NVALUE(objects[m]->y):NVALUE(0),v,0);
+  // Trigger phase
+  
+  // Ending phase
+  
+  // Animation phase
   
   // Cleanup phase
   for(n=0;n<nobjects;n++) if(objects[n] && (objects[n]->oflags&OF_DESTROYED)) objtrash(n);

@@ -95,6 +95,9 @@ void load_pictures(void);
 
 int scrollbar(int*cur,int page,int max,SDL_Event*ev,SDL_Rect*re);
 
+void draw_popup(const unsigned char*txt);
+int modal_draw_popup(const unsigned char*txt);
+
 // == class ==
 
 #define CF_PLAYER 0x01
@@ -225,6 +228,7 @@ extern Uint8 pfwidth,pfheight;
 extern Sint8 gameover,key_ignored;
 extern Uint8 generation_number_inc;
 extern Uint32 move_number;
+extern unsigned char*quiz_text;
 
 const char*value_string_ptr(Value v);
 void pfunlink(Uint32 n);
