@@ -615,7 +615,7 @@ static int move_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
   Value v;
   if(n==VOIDLINK || (objects[n]->oflags&OF_DESTROYED)) return 0;
   o=objects[n];
-  if(lastimage_processing && (classes[o->class]->cflags&CF_COMPATIBLE)) Throw("Can't move during animation processing");
+  if(lastimage_processing) Throw("Can't move during animation processing");
   if(x<1 || y<1 || x>pfwidth || y>pfheight) return 0;
   if(v_bool(send_message(from,n,MSG_MOVING,NVALUE(x),NVALUE(y),NVALUE(0)))) return 0;
   if(classes[o->class]->cflags&CF_PLAYER) {
@@ -833,7 +833,7 @@ static void trace_stack(Uint32 obj) {
 
 static void flush_object(Uint32 n) {
   Object*o=objects[n];
-  o->arrived=o->arrived2=o->departed=o->departed2=0;
+  o->arrived=o->departed=0;
   o->oflags&=~(OF_MOVED|OF_BUSY|OF_USERSIGNAL);
   o->inertia=0;
 }
@@ -846,7 +846,7 @@ static void flush_class(Uint16 c) {
   while(o=objects[n]) {
     p=o->prev;
     if(!c || o->class==c) {
-      o->arrived=o->arrived2=o->departed=o->departed2=0;
+      o->arrived=o->departed=0;
       o->oflags&=~(OF_MOVED|OF_BUSY|OF_USERSIGNAL);
       o->inertia=0;
     }
@@ -1066,7 +1066,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
   if(StackProtection()) Throw("Call stack overflow");
   // Note about bit shifting: At least when running Hero Mesh in DOSBOX, out of range bit shifts produce zero.
   // I don't know if this is true on all computers that Hero Mesh runs on, though. (Some documents suggest that x86 doesn't work this way)
-  // The below code assumes that signed right shifting is available.
+  // The below code assumes that signed right shifting is available on the computer that Free Hero Mesh runs on.
   for(;;) switch(code[ptr++]) {
     case 0x0000 ... 0x00FF: StackReq(0,1); Push(NVALUE(code[ptr-1])); break;
     case 0x0100 ... 0x01FF: StackReq(0,1); Push(NVALUE(code[ptr-1]-0x200)); break;
@@ -1495,8 +1495,30 @@ void annihilate(void) {
   gameover=0;
 }
 
+static Uint8 execute_animation(Uint8 clock,Uint32 obj) {
+  Object*o=objects[obj];
+  Animation*a=o->anim;
+  if(!(a->step[a->lstep].flag&ANI_ONCE)) return clock;
+  if(a->ltime>=a->step[a->lstep].speed) {
+    a->ltime=0;
+    if(o->image==a->step[a->lstep].end) {
+      a->status&=~ANISTAT_LOGICAL;
+      if(classes[o->class]->cflags&CF_COMPATIBLE) lastimage_processing=1;
+      send_message(VOIDLINK,obj,MSG_LASTIMAGE,NVALUE(0),NVALUE(0),NVALUE(0));
+      lastimage_processing=0;
+    } else {
+      if(a->step[a->lstep].start>a->step[a->lstep].end) --o->image; else ++o->image;
+    }
+  }
+  if(!(a->status&ANISTAT_LOGICAL) || !(a->step[a->lstep].flag&ANI_ONCE)) return clock;
+  if(clock>a->step[a->lstep].speed-a->ltime) return a->step[a->lstep].speed-a->ltime;
+  return clock;
+}
+
 const char*execute_turn(int key) {
-  Uint32 m,n;
+  Uint8 busy,clock;
+  Uint32 m,n,turn;
+  Object*o;
   Value v;
   int i;
   if(!key) return 0;
@@ -1517,10 +1539,10 @@ const char*execute_turn(int key) {
   lastimage_processing=0;
   vstackptr=0;
   current_key=key;
-  for(n=0;n<nobjects;n++) if(objects[n]) {
-    objects[n]->distance=0;
-    objects[n]->oflags&=~(OF_KEYCLEARED|OF_DONE);
-    if(objects[n]->anim) objects[n]->anim->count=0;
+  for(n=0;n<nobjects;n++) if(o=objects[n]) {
+    o->distance=0;
+    o->oflags&=~(OF_KEYCLEARED|OF_DONE);
+    if(o->anim) o->anim->count=0;
   }
   // Input phase
   m=VOIDLINK;
@@ -1537,7 +1559,7 @@ const char*execute_turn(int key) {
     n=quiz_obj.u;
     if(objects[n]->generation!=quiz_obj.t) n=VOIDLINK;
     quiz_obj=NVALUE(0);
-    //TODO
+    if(classes[objects[n]->class]->cflags&CF_COMPATIBLE) all_flushed=1;
     v=send_message(VOIDLINK,n,MSG_KEY,NVALUE(key),NVALUE(0),NVALUE(1));
   }
   current_key=0;
@@ -1548,15 +1570,93 @@ const char*execute_turn(int key) {
   move_number++;
   // Beginning phase
   if(!all_flushed) broadcast(m,0,MSG_BEGIN_TURN,m==VOIDLINK?NVALUE(objects[m]->x):NVALUE(0),m==VOIDLINK?NVALUE(objects[m]->y):NVALUE(0),v,0);
+  turn=0;
   // Trigger phase
-  
+  trig:
+  busy=0;
+  clock=255;
+  for(i=0;i<64*pfheight;i++) {
+    n=playfield[i];
+    while(n!=VOIDLINK) {
+      o=objects[n];
+      m=o->up;
+      if(o->oflags&OF_DESTROYED) {
+        objtrash(n);
+      } else if(classes[o->class]->cflags&CF_COMPATIBLE) {
+        if(o->oflags&OF_MOVED) {
+          o->oflags&=~OF_MOVED;
+          send_message(VOIDLINK,n,MSG_MOVED,NVALUE(0),NVALUE(0),NVALUE(turn));
+          busy=1;
+        }
+        if(o->departed) {
+          send_message(VOIDLINK,n,MSG_DEPARTED,NVALUE(0),NVALUE(0),NVALUE(turn));
+          o->departed=0;
+          busy=1;
+        }
+        if(o->arrived) {
+          send_message(VOIDLINK,n,MSG_ARRIVED,NVALUE(0),NVALUE(0),NVALUE(turn));
+          o->arrived=0;
+          busy=1;
+        }
+        if(o->anim && (o->anim->status&ANISTAT_LOGICAL)) clock=execute_animation(clock,n);
+        if(o->oflags&(OF_BUSY|OF_USERSIGNAL)) busy=1;
+      } else {
+        o->departed2=o->departed;
+        o->departed=0;
+        o->arrived2=o->arrived;
+        o->arrived=0;
+        if(o->oflags&OF_MOVED) o->oflags=(o->oflags|OF_MOVED2)&~OF_MOVED;
+      }
+      n=m;
+    }
+  }
+  n=lastobj;
+  while(n!=VOIDLINK) {
+    o=objects[n];
+    if(!(classes[o->class]->cflags&CF_COMPATIBLE)) {
+      if(o->oflags&OF_MOVED2) send_message(VOIDLINK,n,MSG_MOVED,NVALUE(0),NVALUE(0),NVALUE(turn)),busy=1;
+      if(o->departed2) send_message(VOIDLINK,n,MSG_DEPARTED,NVALUE(o->departed2),NVALUE(0),NVALUE(turn)),busy=1;
+      if(o->arrived2) send_message(VOIDLINK,n,MSG_ARRIVED,NVALUE(o->arrived2),NVALUE(0),NVALUE(turn)),busy=1;
+      o->oflags&=~OF_MOVED2;
+      o->arrived2=o->departed2=0;
+      if(o->anim && (o->anim->status&ANISTAT_LOGICAL)) clock=execute_animation(clock,n);
+      if(o->oflags&(OF_BUSY|OF_USERSIGNAL)) busy=1;
+    }
+    n=o->prev;
+  }
   // Ending phase
-  
-  // Animation phase
-  
+  if(!busy && !all_flushed) {
+    n=lastobj;
+    while(n!=VOIDLINK) {
+      v=send_message(VOIDLINK,n,MSG_END_TURN,NVALUE(turn),NVALUE(0),NVALUE(0));
+      if(v_bool(v) || objects[n]->arrived || objects[n]->departed) busy=1;
+      if(objects[n]->oflags&(OF_BUSY|OF_USERSIGNAL|OF_MOVED)) busy=1;
+      n=objects[n]->prev;
+    }
+    turn++;
+    if(!busy) all_flushed=1;
+  }
+  // Clock phase
+  if(!clock) clock=1;
+  n=lastobj;
+  while(n!=VOIDLINK) {
+    o=objects[n];
+    if(o->oflags&(OF_BUSY|OF_USERSIGNAL|OF_MOVED)) busy=1;
+    if(o->arrived || o->departed) busy=1;
+    if(o->anim && (o->anim->status&ANISTAT_LOGICAL)) {
+      if(o->anim->step[o->anim->lstep].flag&ANI_ONCE) {
+        i=o->anim->ltime+clock;
+        o->anim->ltime=i>255?255:i;
+        busy=1;
+      }
+    }
+    n=o->prev;
+  }
+  if(busy) goto trig;
   // Cleanup phase
   for(n=0;n<nobjects;n++) if(objects[n] && (objects[n]->oflags&OF_DESTROYED)) objtrash(n);
   if(generation_number<=TY_MAXTYPE) return "Too many generations of objects";
+  // Finished
   return 0;
 }
 

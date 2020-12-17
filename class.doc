@@ -846,7 +846,7 @@ FlushClass  ( class -- ) **
   Resets the Arrived, Busy, Departed, Inertia, Moved, and UserSignal flags
   of all objects of the specified class to zero. If the class is -1, then
   all objects are flushed in this way, and during the input phase, it also
-  skips the other phases similarly to IgnoreKey if the class is -1.
+  skips the beginning and ending phases if the class is -1.
 
 FlushObj  ( -- ) **
   Resets this object's Arrived, Departed, Inertia, Moved, and UserSignal.
@@ -950,7 +950,8 @@ LoseLevel  ( -- )
   Ends all execution and results in loss of game.
 
 lsh  ( in shift -- out )
-  Left shift.
+  Left shift. If the shift amount is out of range 0-31, all bits are
+  shifted out, and the result is zero.
 
 lt  ( in1 in2 -- bool )
   Test if first input is less than second input (unsigned).
@@ -1097,10 +1098,13 @@ rot  ( x y z -- y z x )
 -rot  ( x y z -- z x y )
 
 rsh  ( in shift -- out )
-  Logical right shift.
+  Logical right shift. If the shift amount is out of the range 0-31,
+  then all bits are shifted out and the result is zero.
 
 ,rsh  ( in shift -- out )
-  Arithmetic right shift.
+  Arithmetic right shift. If the shift amount is out of the range 0-31,
+  then all bits are shifted out; the result will be -1 if the input is
+  negative, or 0 otherwise.
 
 Self  ( -- obj )
   The reference to the current object.
@@ -1484,4 +1488,6 @@ that Inertia is not reset.
 * Many variables are limited to 16-bits.
 
 * Moving objects is not allowed during LASTIMAGE processing.
+
+* The way that the trigger phase works is different.
 
