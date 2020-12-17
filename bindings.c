@@ -160,14 +160,21 @@ const UserCommand*find_key_binding(SDL_Event*ev,int editing) {
 static void sql_interactive(void) {
   const char*t=screen_prompt("<SQL>");
   const char*u;
+  char*err=0;
+  char**tab=0;
   SDL_Rect r;
   SDL_Event ev;
-  sqlite3_stmt*st=0;
-  int i,j,y;
+  int n,i,j,y;
   int k=0;
+  int nr=0;
+  int nc=0;
   if(!t) return;
-  if(sqlite3_prepare_v2(userdb,t,-1,&st,0)) screen_message(sqlite3_errmsg(userdb));
-  if(!st) return;
+  sqlite3_get_table(userdb,t,&tab,&nr,&nc,&err);
+  if(!tab) {
+    if(err) screen_message(err);
+    sqlite3_free(err);
+    return;
+  }
   redraw:
   r.x=r.y=0;
   r.w=screen->w;
@@ -176,11 +183,11 @@ static void sql_interactive(void) {
   SDL_LockSurface(screen);
   if(!k) draw_text(0,0,t,0xF8,0xFB);
   y=8-k;
-  while((i=sqlite3_step(st))==SQLITE_ROW) {
+  for(n=0;n<nr;n++) {
     if(y>=0) {
       if(y>screen->h-8) break;
-      for(i=j=0;i<sqlite3_data_count(st);i++) {
-        u=sqlite3_column_text(st,i);
+      for(i=j=0;i<nc;i++) {
+        u=tab[nc*(n+1)+i];
         draw_text(j,y,"\xB3",0xF0,0xF9),j+=8;
         if(u) draw_text(j,y,u,0xF0,0xF7),j+=strlen(u)*8; else draw_text(j,y,"\x04",0xF0,0xF4),j+=8;
       }
@@ -188,10 +195,9 @@ static void sql_interactive(void) {
     y+=8;
   }
   if(y>=0 && y<=screen->h-8) {
-    if(i==SQLITE_DONE) draw_text(0,y,"--END--",0xF8,0xFA); else draw_text(0,y,sqlite3_errmsg(userdb),0xF8,0xFC);
+    if(!err) draw_text(0,y,"--END--",0xF8,0xFA); else draw_text(0,y,err,0xF8,0xFC);
   }
   SDL_UnlockSurface(screen);
-  sqlite3_reset(st);
   SDL_Flip(screen);
   while(SDL_WaitEvent(&ev)) switch(ev.type) {
     case SDL_KEYDOWN:
@@ -210,8 +216,7 @@ static void sql_interactive(void) {
       SDL_PushEvent(&ev);
       goto done;
   }
-  done:
-  sqlite3_finalize(st);
+  done: if(tab) sqlite3_free_table(tab); sqlite3_free(err);
 }
 
 int exec_key_binding(SDL_Event*ev,int editing,int x,int y,int(*cb)(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux),void*aux) {
