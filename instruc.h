@@ -290,6 +290,7 @@
 #define OP_DESTROY_CD 43139
 #define OP_FLUSHCLASS 32900
 #define OP_FLUSHOBJ 32901
+#define OP_FLUSHOBJ_C 34949
 #define OP_GETINVENTORY 32902
 #define OP_HEIGHTAT 32903
 #define OP_IGNOREKEY 32904
@@ -433,7 +434,7 @@ static const Op_Names op_names[]={
 {"FLOATED",8389132},
 {"FROG",8389383},
 {"FlushClass",8421508},
-{"FlushObj",8421509},
+{"FlushObj",8487045},
 {"From",8421482},
 {"GLASS",8389379},
 {"GLISSANT",8389419},

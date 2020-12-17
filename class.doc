@@ -848,7 +848,10 @@ FlushClass  ( class -- ) **
   all objects are flushed in this way, and during the input phase, it also
   skips the other phases similarly to IgnoreKey if the class is -1.
 
-FlushObj  ( obj -- ) **
+FlushObj  ( -- ) **
+  Resets this object's Arrived, Departed, Inertia, Moved, and UserSignal.
+
+,FlushObj  ( obj -- ) **
   Resets the Arrived, Busy, Departed, Inertia, Moved, and UserSignal flags
   of the specified object only.
 

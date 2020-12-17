@@ -8,6 +8,7 @@ exit
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define HEROMESH_MAIN
 #include "names.h"
 
 #define fatal(...) do{ fprintf(stderr,__VA_ARGS__); exit(1); }while(0)
@@ -739,7 +740,7 @@ static void class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned ch
         fprintf(fp," FlushClass");
         st=0; break;
       case 131:
-        fprintf(fp," FlushObj");
+        fprintf(fp," ,FlushObj");
         st=0; break;
       case 132:
         fprintf(fp," SetInventory 5 MaxInventory");

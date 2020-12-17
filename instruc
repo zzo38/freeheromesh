@@ -200,7 +200,7 @@ DelInventory
 Delta
 .,Destroy
 FlushClass
-FlushObj
+,FlushObj
 GetInventory
 HeightAt
 IgnoreKey
