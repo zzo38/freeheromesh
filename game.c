@@ -183,7 +183,7 @@ static inline void exam_value(const char*t,int y,Value v) {
       snprintf(buf,80,"<%lu:%lu>",(long)v.u,(long)v.t);
       draw_text(200,y,buf,0xF0,0xFA);
       i=strlen(buf)*8+208;
-      if(v.u<nobjects && objects[v.u]) {
+      if(v.u<nobjects && objects[v.u] && objects[v.u]->generation==v.t) {
         snprintf(buf,80,"@ (%d,%d)",objects[v.u]->x,objects[v.u]->y);
         draw_text(i,y,buf,0xF0,0xF2);
       } else {
