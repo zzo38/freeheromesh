@@ -162,7 +162,6 @@ void objtrash(Uint32 n) {
   if(o->down==VOIDLINK) playfield[o->x+o->y*64-65]=o->up;
   else objects[o->down]->up=o->up;
   if(o->up!=VOIDLINK) objects[o->up]->down=o->down;
-  o->down=o->up=VOIDLINK;
   if(!(o->oflags&OF_DESTROYED)) {
     if(firstobj==n) firstobj=o->next;
     if(lastobj==n) lastobj=o->prev;
@@ -402,8 +401,8 @@ static void sink(Uint32 x,Uint32 y) {
   o->down=p->down;
   o->up=y;
   p->down=x;
-  if(o->down==VOIDLINK && !(o->oflags&OF_BIZARRO)) playfield[i]=x;
-  if(p->down==VOIDLINK && !(p->oflags&OF_BIZARRO)) playfield[i]=y;
+  if(o->down==VOIDLINK) playfield[i]=x; else objects[o->down]->up=x;
+  if(p->up!=VOIDLINK) objects[p->up]->down=y;
   v=send_message(x,y,MSG_FLOATED,NVALUE(0),NVALUE(0),NVALUE(0));
   if(!((o->oflags|p->oflags)&(OF_VISUALONLY|OF_DESTROYED))) send_message(y,x,MSG_SUNK,NVALUE(0),NVALUE(0),v);
 }
