@@ -449,8 +449,10 @@ static Uint32 v_object(Value v) {
     if(v.u) Throw("Cannot convert non-zero number to object");
     return VOIDLINK;
   } else if(v.t>TY_MAXTYPE) {
-    if(v.u>=nobjects || !objects[v.u]) Throw("Attempt to use a nonexistent object");
-    if(objects[v.u]->generation!=v.t) Throw("Attempt to use a nonexistent object");
+    if(v.u>=nobjects || !objects[v.u] || objects[v.u]->generation!=v.t) {
+      if(main_options['t']) printf("Object %lu in generation %lu does not exist\n",(long)v.u,(long)v.t);
+      Throw("Attempt to use a nonexistent object");
+    }
     return v.u;
   } else {
     Throw("Cannot convert non-object to object");
@@ -750,6 +752,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
   } else {
     // Orthogonal movement
     if(hit) hit=(hit&0x0C000000)|0x800;
+    if(!oF) goto fail;
     objE=objF;
     while(objE!=VOIDLINK) {
       oE=objects[objE];
@@ -789,7 +792,6 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
     if(!(hit&0x400000)) {
       if(hF<=o->climb || (hit&0x200000)) {
         if(hit&0x20000) goto success;
-        if(!oF) goto fail;
         if(move_to(from,obj,oF->x,oF->y)) goto success; else goto fail;
       }
     }
