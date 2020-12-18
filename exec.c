@@ -690,7 +690,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
   objF=obj_dir(obj,dir);
   if(objF==VOIDLINK) goto fail;
   oF=objects[objF];
-  hF=height_at(oF->x,oF->y);
+  hF=oF?height_at(oF->x,oF->y):0;
   if(dir&1) {
     // Diagonal movement
     objLF=obj_dir(obj,(dir+1)&7);
@@ -702,7 +702,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
       objE=objF;
       while(objE!=VOIDLINK) {
         oE=objects[objE];
-        if(oE->height>0 && !(oE->oflags&(OF_VISUALONLY|OF_DESTROYED))) {
+        if(oE->height>0) {
           v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit|0x80000));
           if(v.t) Throw("Type mismatch in HIT/HITBY");
           hit=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xFC098F7F:-1);
@@ -719,6 +719,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
       if(!(hit&0x402008)) {
         if(hF<=o->climb || (hit&0x200000)) {
           if(hit&0x20000) goto success;
+          if(!oF) goto fail;
           if(move_to(from,obj,oF->x,oF->y)) goto success; else goto fail;
         }
       }
@@ -727,7 +728,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
       objE=objLF;
       while(objE!=VOIDLINK) {
         oE=objects[objE];
-        if(oE->height>0 && !(oE->oflags&(OF_VISUALONLY|OF_DESTROYED))) {
+        if(oE->height>0) {
           v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(0x80008));
           if(v.t) Throw("Type mismatch in HIT/HITBY");
           if(!(v.u&1)) v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(v.u|0x80008));
@@ -737,7 +738,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
       objE=objRF;
       while(objE!=VOIDLINK) {
         oE=objects[objE];
-        if(oE->height>0 && !(oE->oflags&(OF_VISUALONLY|OF_DESTROYED))) {
+        if(oE->height>0) {
           v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(0x80008));
           if(v.t) Throw("Type mismatch in HIT/HITBY");
           if(!(v.u&1)) v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(v.u|0x80008));
@@ -751,7 +752,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
     objE=objF;
     while(objE!=VOIDLINK) {
       oE=objects[objE];
-      if(oE->height>0 && !(oE->oflags&(OF_VISUALONLY|OF_DESTROYED))) {
+      if(oE->height>0) {
         hit&=~7;
         // HIT/HITBY messages
         v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit));
@@ -787,6 +788,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
     if(!(hit&0x400000)) {
       if(hF<=o->climb || (hit&0x200000)) {
         if(hit&0x20000) goto success;
+        if(!oF) goto fail;
         if(move_to(from,obj,oF->x,oF->y)) goto success; else goto fail;
       }
     }
@@ -1494,10 +1496,10 @@ void annihilate(void) {
   gameover=0;
 }
 
-static Uint8 execute_animation(Uint8 clock,Uint32 obj) {
+static void execute_animation(Uint32 obj) {
   Object*o=objects[obj];
   Animation*a=o->anim;
-  if(!(a->step[a->lstep].flag&ANI_ONCE)) return clock;
+  if(!(a->step[a->lstep].flag&ANI_ONCE)) return;
   if(a->ltime>=a->step[a->lstep].speed) {
     a->ltime=0;
     if(o->image==a->step[a->lstep].end) {
@@ -1509,9 +1511,6 @@ static Uint8 execute_animation(Uint8 clock,Uint32 obj) {
       if(a->step[a->lstep].start>a->step[a->lstep].end) --o->image; else ++o->image;
     }
   }
-  if(!(a->status&ANISTAT_LOGICAL) || !(a->step[a->lstep].flag&ANI_ONCE)) return clock;
-  if(clock>a->step[a->lstep].speed-a->ltime) return a->step[a->lstep].speed-a->ltime;
-  return clock;
 }
 
 const char*execute_turn(int key) {
@@ -1520,7 +1519,11 @@ const char*execute_turn(int key) {
   Object*o;
   Value v;
   int i;
-  if(!key) return 0;
+  if(!key) {
+    // This is part of initialization; if anything triggered, it must be executed now
+    all_flushed=1;
+    goto trig;
+  }
   if(setjmp(my_env)) return my_error;
   if(quiz_text) {
     sqlite3_free(quiz_text);
@@ -1597,7 +1600,7 @@ const char*execute_turn(int key) {
           o->arrived=0;
           busy=1;
         }
-        if(o->anim && (o->anim->status&ANISTAT_LOGICAL)) clock=execute_animation(clock,n);
+        if(o->anim && (o->anim->status&ANISTAT_LOGICAL)) execute_animation(n);
         if(o->oflags&(OF_BUSY|OF_USERSIGNAL)) busy=1;
       } else {
         o->departed2=o->departed;
@@ -1618,7 +1621,7 @@ const char*execute_turn(int key) {
       if(o->arrived2) send_message(VOIDLINK,n,MSG_ARRIVED,NVALUE(o->arrived2),NVALUE(0),NVALUE(turn)),busy=1;
       o->oflags&=~OF_MOVED2;
       o->arrived2=o->departed2=0;
-      if(o->anim && (o->anim->status&ANISTAT_LOGICAL)) clock=execute_animation(clock,n);
+      if(o->anim && (o->anim->status&ANISTAT_LOGICAL)) execute_animation(n);
       if(o->oflags&(OF_BUSY|OF_USERSIGNAL)) busy=1;
     }
     n=o->prev;
@@ -1636,18 +1639,26 @@ const char*execute_turn(int key) {
     if(!busy) all_flushed=1;
   }
   // Clock phase
-  if(!clock) clock=1;
+  n=lastobj;
+  while(n!=VOIDLINK) {
+    o=objects[n];
+    if(o->arrived || o->departed) goto trig;
+    if(o->oflags&OF_MOVED) goto trig;
+    if(o->anim && (o->anim->status&ANISTAT_LOGICAL) && (o->anim->step[o->anim->lstep].flag&ANI_ONCE)) {
+      if(o->anim->ltime>=o->anim->step[o->anim->lstep].speed) goto trig;
+      if(clock>o->anim->step[o->anim->lstep].speed-o->anim->ltime) clock=o->anim->step[o->anim->lstep].speed-o->anim->ltime;
+    }
+    n=o->prev;
+  }
   n=lastobj;
   while(n!=VOIDLINK) {
     o=objects[n];
     if(o->oflags&(OF_BUSY|OF_USERSIGNAL|OF_MOVED)) busy=1;
     if(o->arrived || o->departed) busy=1;
-    if(o->anim && (o->anim->status&ANISTAT_LOGICAL)) {
-      if(o->anim->step[o->anim->lstep].flag&ANI_ONCE) {
-        i=o->anim->ltime+clock;
-        o->anim->ltime=i>255?255:i;
-        busy=1;
-      }
+    if(o->anim && (o->anim->status&ANISTAT_LOGICAL) && (o->anim->step[o->anim->lstep].flag&ANI_ONCE)) {
+      i=o->anim->ltime+clock;
+      o->anim->ltime=i>255?255:i;
+      busy=1;
     }
     n=o->prev;
   }
@@ -1674,6 +1685,6 @@ const char*init_level(void) {
   current_key=0;
   broadcast(VOIDLINK,0,MSG_INIT,NVALUE(0),NVALUE(0),NVALUE(0),0);
   broadcast(VOIDLINK,0,MSG_POSTINIT,NVALUE(0),NVALUE(0),NVALUE(0),0);
-  if(generation_number<=TY_MAXTYPE) return "Too many generations of objects";
-  return 0;
+  if(gameover) return 0;
+  return execute_turn(0);
 }

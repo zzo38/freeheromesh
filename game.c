@@ -493,7 +493,7 @@ void run_game(void) {
         }
         if(inputs_count) {
           //TODO: Check for solution replay
-          for(i=0;i<inputs_count && !gameover;i++) input_move(inputs[i]);
+          for(i=0;i<inputs_count && !gameover;i++) if(inputs[i]) input_move(inputs[i]);
           inputs_count=0;
         }
         redraw_game();
