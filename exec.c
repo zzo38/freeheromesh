@@ -48,6 +48,7 @@ static int vstackptr;
 static const char*traceprefix;
 static Uint8 current_key;
 static Value quiz_obj;
+static Value traced_obj;
 
 #define Throw(x) (my_error=(x),longjmp(my_env,1))
 #define StackReq(x,y) do{ if(vstackptr<(x)) Throw("Stack underflow"); if(vstackptr-(x)+(y)>=VSTACKSIZE) Throw("Stack overflow"); }while(0)
@@ -158,6 +159,10 @@ Uint32 objalloc(Uint16 c) {
 void objtrash(Uint32 n) {
   Object*o=objects[n];
   if(!o) return;
+  if(n==traced_obj.u && o->generation==traced_obj.t && main_options['t'] && !main_options['e']) {
+    printf("# Object traced at (%d,%d)\n",o->x,o->y);
+    Throw("Object traced");
+  }
   animfree(o->anim);
   if(o->down==VOIDLINK) playfield[o->x+o->y*64-65]=o->up;
   else objects[o->down]->up=o->up;
@@ -450,7 +455,7 @@ static Uint32 v_object(Value v) {
     return VOIDLINK;
   } else if(v.t>TY_MAXTYPE) {
     if(v.u>=nobjects || !objects[v.u] || objects[v.u]->generation!=v.t) {
-      if(main_options['t']) printf("Object %lu in generation %lu does not exist\n",(long)v.u,(long)v.t);
+      if(main_options['t']) printf("[Object %lu in generation %lu does not exist]\n",(long)v.u,(long)v.t);
       Throw("Attempt to use a nonexistent object");
     }
     return v.u;
@@ -1675,7 +1680,20 @@ const char*execute_turn(int key) {
 
 const char*init_level(void) {
   if(setjmp(my_env)) return my_error;
-  if(main_options['t']) printf("[Level %d restarted]\n",level_id);
+  if(main_options['t']) {
+    printf("[Level %d restarted]\n",level_id);
+    if(!traced_obj.t) {
+      const char*s;
+      optionquery[1]=Q_traceObject;
+      if(s=xrm_get_resource(resourcedb,optionquery,optionquery,2)) {
+        traced_obj.u=strtol(s,(char**)&s,10);
+        if(*s==':') traced_obj.t=strtol(s+1,0,10);
+        printf("Tracing object <%ld:%ld>\n",(long)traced_obj.u,(long)traced_obj.t);
+      } else {
+        traced_obj.t=TY_FOR;
+      }
+    }
+  }
   memcpy(globals,initglobals,sizeof(globals));
   quiz_obj=NVALUE(0);
   gameover=0;

@@ -214,4 +214,5 @@ tracePrefix
 stackProtection
 maxObjects
 traceAll
+traceObject
 
