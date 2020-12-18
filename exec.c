@@ -667,6 +667,7 @@ static int move_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
     }
   }
   // The OF_MOVED flag is set elsewhere, not here
+  o->oflags&=~OF_DONE;
   return 1;
 }
 
