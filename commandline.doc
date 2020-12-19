@@ -39,6 +39,9 @@ and <resources> is optional resources to override.
 -n (not implemented yet)
   Create a new puzzle set.
 
+-r
+  Open in read-only mode.
+
 -t
   Enable tracing.
 

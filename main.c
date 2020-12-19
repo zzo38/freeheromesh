@@ -145,7 +145,7 @@ unsigned char*read_lump(int sol,int lvl,long*sz,sqlite3_value**us) {
       const unsigned char*con=sqlite3_column_blob(readusercachest,5);
       *sz=sqlite3_column_bytes(readusercachest,5);
       buf=malloc(*sz);
-      if(*sz && !buf) fatal("Allocation failed");
+      if(*sz && !buf) fatal("Allocation failed\n");
       memcpy(buf,con,*sz);
     } else {
       FILE*fp=sol?solutionfp:levelfp;
@@ -388,9 +388,11 @@ static void flush_usercache_1(int sol) {
     fputc(j>>16,fp); fputc(j>>24,fp); fputc(j,fp); fputc(j>>8,fp);
     ofs[i++]=ftell(fp);
     fwrite(sqlite3_column_blob(st,2),1,j,fp);
+    if(ferror(fp)) fatal("I/O error: %m\n");
   }
   if(e!=SQLITE_DONE) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
   if(ftruncate(fd,ftell(fp))) fatal("I/O error: %m\n");
+  rewind(fp);
   sqlite3_finalize(st);
   if(e=sqlite3_prepare_v2(userdb,"UPDATE `USERCACHEDATA` SET `OFFSET` = ?2 WHERE `ID` = ?1;",-1,&st,0)) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
   i=0;
@@ -440,8 +442,8 @@ static void init_usercache(void) {
   if(!nam1) fatal("Allocation failed\n");
   nam2=realpath(nam1,0);
   if(!nam2) fatal("Cannot find real path of '%s': %m\n",nam1);
-  levelfp=fopen(nam2,"r");
-  if(!levelfp) fatal("Cannot open '%s' for reading: %m\n",nam2);
+  levelfp=fopen(nam2,main_options['r']?"r":"r+");
+  if(!levelfp) fatal("Cannot open '%s' for reading%s: %m\n",nam2,main_options['r']?"":"/writing");
   sqlite3_free(nam1);
   sqlite3_bind_text(st,1,nam2,-1,0);
   z=sqlite3_step(st);
@@ -459,8 +461,8 @@ static void init_usercache(void) {
   nam3=realpath(nam1,0);
   if(!nam3) fatal("Cannot find real path of '%s': %m\n",nam1);
   if(!strcmp(nam2,nam3)) fatal("Level and solution files seem to be the same file\n");
-  solutionfp=fopen(nam3,"r");
-  if(!solutionfp) fatal("Cannot open '%s' for reading: %m\n",nam3);
+  solutionfp=fopen(nam3,main_options['r']?"r":"r+");
+  if(!solutionfp) fatal("Cannot open '%s' for reading%s: %m\n",nam3,main_options['r']?"":"/writing");
   sqlite3_free(nam1);
   sqlite3_bind_text(st,1,nam3,-1,0);
   z=sqlite3_step(st);
@@ -477,7 +479,6 @@ static void init_usercache(void) {
   if(!fst.st_size) fatal("File '%s' has zero size\n",nam2);
   if(fst.st_mtime>t1 || fst.st_ctime>t1) leveluc=reset_usercache(levelfp,nam2,&fst,".LVL");
   if(stat(nam3,&fst)) fatal("Unable to stat '%s': %m\n",nam3);
-  if(!fst.st_size) fatal("File '%s' has zero size\n",nam2);
   if(fst.st_mtime>t2 || fst.st_ctime>t2) solutionuc=reset_usercache(solutionfp,nam3,&fst,".SOL");
   free(nam2);
   free(nam3);
