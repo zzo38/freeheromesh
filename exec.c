@@ -1579,7 +1579,7 @@ const char*execute_turn(int key) {
   }
   move_number++;
   // Beginning phase
-  if(!all_flushed) broadcast(m,0,MSG_BEGIN_TURN,m==VOIDLINK?NVALUE(objects[m]->x):NVALUE(0),m==VOIDLINK?NVALUE(objects[m]->y):NVALUE(0),v,0);
+  if(!all_flushed) broadcast(m,0,MSG_BEGIN_TURN,m!=VOIDLINK?NVALUE(objects[m]->x):NVALUE(0),m!=VOIDLINK?NVALUE(objects[m]->y):NVALUE(0),v,0);
   turn=0;
   // Trigger phase
   trig:
