@@ -440,9 +440,9 @@ static void init_usercache(void) {
   if(z=sqlite3_prepare_v2(userdb,"SELECT `ID`, `TIME` FROM `USERCACHEINDEX` WHERE `NAME` = ?1;",-1,&st,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   nam1=sqlite3_mprintf("%s.level",basefilename);
   if(!nam1) fatal("Allocation failed\n");
-  nam2=realpath(nam1,0);
+  nam2=main_options['n']?strdup(nam1):realpath(nam1,0);
   if(!nam2) fatal("Cannot find real path of '%s': %m\n",nam1);
-  levelfp=fopen(nam2,main_options['r']?"r":"r+");
+  levelfp=fopen(nam2,main_options['n']?"w+x":main_options['r']?"r":"r+");
   if(!levelfp) fatal("Cannot open '%s' for reading%s: %m\n",nam2,main_options['r']?"":"/writing");
   sqlite3_free(nam1);
   sqlite3_bind_text(st,1,nam2,-1,0);
@@ -456,12 +456,13 @@ static void init_usercache(void) {
     fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   }
   sqlite3_reset(st);
+  if(main_options['n']) write_empty_level_set(levelfp);
   nam1=sqlite3_mprintf("%s.solution",basefilename);
   if(!nam1) fatal("Allocation failed\n");
-  nam3=realpath(nam1,0);
+  nam3=main_options['n']?strdup(nam1):realpath(nam1,0);
   if(!nam3) fatal("Cannot find real path of '%s': %m\n",nam1);
   if(!strcmp(nam2,nam3)) fatal("Level and solution files seem to be the same file\n");
-  solutionfp=fopen(nam3,main_options['r']?"r":"r+");
+  solutionfp=fopen(nam3,main_options['n']?"w+x":main_options['r']?"r":"r+");
   if(!solutionfp) fatal("Cannot open '%s' for reading%s: %m\n",nam3,main_options['r']?"":"/writing");
   sqlite3_free(nam1);
   sqlite3_bind_text(st,1,nam3,-1,0);
@@ -832,6 +833,10 @@ int main(int argc,char**argv) {
     globalclassname=strrchr(basefilename,'/');
     globalclassname=globalclassname?globalclassname+1:basefilename;
   }
+  if(main_options['n']) {
+    if(main_options['r']) fatal("Switches -r and -n are conflicting\n");
+    main_options['x']=1;
+  }
   if(!main_options['c']) load_options();
   if(argc>optind) read_options(argc-optind,argv+optind);
   *optionquery=xrm_make_quark(globalclassname,0)?:xrm_anyq;
@@ -852,6 +857,7 @@ int main(int argc,char**argv) {
     return 0;
   }
   init_usercache();
+  if(main_options['n']) return 0;
   load_classes();
   load_level_index();
   optionquery[1]=Q_maxObjects;

@@ -247,4 +247,5 @@ void run_game(void);
 // == edit ==
 
 void run_editor(void);
+void write_empty_level_set(FILE*);
 

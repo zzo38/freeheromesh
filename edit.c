@@ -390,3 +390,21 @@ void run_editor(void) {
     }
   }
 }
+
+void write_empty_level_set(FILE*fp) {
+  static const unsigned char d[]=
+    "CLASS.DEF\0\x00\x00\x02\x00"
+    "\x00\x00" // no classes or messages
+    "LEVEL.IDX\0\x00\x00\x02\x00"
+    "\x00\x00" // only one level
+    "0.LVL\0\x00\x00\x0D\x00"
+    "\x00\x00" // level version
+    "\x00\x00" // level code
+    "\x00\x00" // width/height
+    "Blank\0" // title
+    "\xFF" // objects
+  ;
+  fwrite(d,1,sizeof(d)-1,fp);
+  fflush(fp);
+  rewind(fp);
+}

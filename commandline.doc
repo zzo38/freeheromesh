@@ -36,8 +36,10 @@ and <resources> is optional resources to override.
 -e
   Start in the editor instead of game.
 
--n (not implemented yet)
-  Create a new puzzle set.
+-n
+  Create a new puzzle set. The .xclass and .class files should already
+  exist; the .level and .solution files should not already exist, and will
+  be created with minimal data.
 
 -r
   Open in read-only mode.
