@@ -1674,6 +1674,7 @@ const char*execute_turn(int key) {
   // Cleanup phase
   for(n=0;n<nobjects;n++) if(objects[n] && (objects[n]->oflags&OF_DESTROYED)) objtrash(n);
   if(generation_number<=TY_MAXTYPE) return "Too many generations of objects";
+  if(firstobj==VOIDLINK) return "Game cannot continue with no objects";
   // Finished
   return 0;
 }
