@@ -567,7 +567,11 @@ typedef struct {
 } PopLine;
 
 static void pop_bar(int x,int y,PopLine*li,int w) {
-  
+  Uint8*p=screen->pixels;
+  Uint16 pitch=screen->pitch;
+  if(x+w>=screen->w || y+8>screen->h) return;
+  p+=(y+3)*pitch+x;
+  while(w--) *p++=w&1?7:5;
 }
 
 static void pop_char(int x,int y,PopLine*li,Uint8 c,Uint8 v) {
@@ -741,7 +745,7 @@ void draw_popup(const unsigned char*txt) {
       break;
     case 15:
       y+=li[ln++].h;
-      pop_bar(bx,y,li+ln,tw);
+      pop_bar(bx-8,y,li+ln,tw+22);
       y+=8;
       if(ln<64) x=li[ln].a?bx+(tw-li[ln].w)/2:bx;
       break;

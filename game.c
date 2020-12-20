@@ -386,6 +386,21 @@ static void list_objects_at(int xy) {
   }
 }
 
+static void describe_at(int xy) {
+  unsigned char*s;
+  Uint32 n;
+  if(xy<0 || xy>=64*64) return;
+  n=playfield[xy];
+  if(n==VOIDLINK) return;
+  while(n!=VOIDLINK && objects[n]->up!=VOIDLINK) n=objects[n]->up;
+  if(!classes[objects[n]->class]->gamehelp) return;
+  s=sqlite3_mprintf("\x0C\x0E%s:%d\\ %s\x0B\x0F%s",classes[objects[n]->class]->name,objects[n]->image,classes[objects[n]->class]->name,classes[objects[n]->class]->gamehelp);
+  if(!s) fatal("Allocation failed\n");
+  
+  modal_draw_popup(s);
+  sqlite3_free(s);
+}
+
 static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
   switch(cmd) {
     case '\' ': // Play a move
@@ -401,6 +416,9 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       return -1;
     case '^T': // Show title
       modal_draw_popup(level_title);
+      return prev;
+    case '^d': // Describe object
+      describe_at(number-65);
       return prev;
     case '^o': // List objects
       list_objects_at(number-65);
