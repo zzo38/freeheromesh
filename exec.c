@@ -710,6 +710,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
     if(vol<=max_volume) {
       objE=objF;
       while(objE!=VOIDLINK) {
+        if(o->oflags&(OF_DESTROYED|OF_VISUALONLY)) break;
         oE=objects[objE];
         if(oE->height>0) {
           v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit|0x80000));
@@ -734,6 +735,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
       }
     } else {
       // Volume is too much; hit the objects it won't go between
+      if(o->oflags&(OF_DESTROYED|OF_VISUALONLY)) goto fail;
       objE=objLF;
       while(objE!=VOIDLINK) {
         oE=objects[objE];
@@ -744,6 +746,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
         }
         objE=obj_below(objE);
       }
+      if(o->oflags&(OF_DESTROYED|OF_VISUALONLY)) goto fail;
       objE=objRF;
       while(objE!=VOIDLINK) {
         oE=objects[objE];
@@ -761,6 +764,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
     if(!oF) goto fail;
     objE=objF;
     while(objE!=VOIDLINK) {
+      if(o->oflags&(OF_DESTROYED|OF_VISUALONLY)) break;
       oE=objects[objE];
       if(oE->height>0) {
         hit&=~7;
