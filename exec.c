@@ -34,6 +34,8 @@ Uint32 move_number;
 unsigned char*quiz_text;
 Inventory*inventory;
 Uint32 ninventory;
+char**levelstrings;
+Uint16 nlevelstrings;
 
 typedef struct {
   Uint16 msg;
@@ -71,7 +73,7 @@ static const Sint8 y_delta[8]={0,-1,-1,-1,0,1,1,1};
 const char*value_string_ptr(Value v) {
   switch(v.t) {
     case TY_STRING: return stringpool[v.u];
-    //TODO: Level strings
+    case TY_LEVELSTRING: return v.u<nlevelstrings?levelstrings[v.u]:"<Invalid level string>";
     default: fatal("Internal confusion: Trying to get string pointer for a non-string\n");
   }
 }
@@ -1560,6 +1562,8 @@ void annihilate(void) {
   objects=0;
   gameover=0;
   clear_inventory();
+  for(i=0;i<nlevelstrings;i++) free(levelstrings[i]);
+  nlevelstrings=0;
 }
 
 static void execute_animation(Uint32 obj) {

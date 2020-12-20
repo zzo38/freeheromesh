@@ -200,6 +200,7 @@ const char*load_level(int lvl) {
   unsigned char*buf=lvl>=0?read_lump(FIL_LEVEL,lvl,&sz,0):0;
   unsigned char*p=buf;
   unsigned char*end=buf+sz;
+  unsigned char*q;
   int i,n,x,y,z;
   Uint16 lo=0;
   Uint32 o;
@@ -312,7 +313,20 @@ const char*load_level(int lvl) {
       }
     }
   }
-  // skip level strings for now
+  // Level strings
+  i=0;
+  while(p<end) {
+    if(i>=max_objects) goto bad3;
+    q=memchr(p,0,end-p);
+    if(!q) goto bad1;
+    levelstrings=realloc(levelstrings,(i+1)*sizeof(char*));
+    if(!levelstrings) fatal("Allocation failed\n");
+    levelstrings[i]=strdup(p);
+    if(!levelstrings[i]) fatal("Allocation failed\n");
+    p=q+1;
+    i++;
+  }
+  nlevelstrings=i;
   if(p>end) goto bad1;
   free(buf);
   level_id=lvl;

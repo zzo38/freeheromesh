@@ -608,7 +608,23 @@ static void pop_image(int x,int y,PopLine*li,const unsigned char*t) {
 }
 
 static void pop_quiz(int x,int y,PopLine*li,Uint8 c,Uint8 v) {
-  
+  SDL_Rect r;
+  Uint8*p=screen->pixels;
+  Uint16 pitch=screen->pitch;
+  int xx,yy;
+  const unsigned char*f=fontdata+(v<<3);
+  if(li->h>16) y+=(li->h-16)/2;
+  r.x=x;
+  r.y=y;
+  r.w=r.h=16;
+  SDL_FillRect(screen,&r,0x07);
+  if(y+16>=screen->h || x+24>=screen->w) return;
+  p+=(y+4)*pitch+x+4;
+  for(yy=0;yy<8;yy++) {
+    for(xx=0;xx<8;xx++) p[xx]=(*f<<xx)&128?c:0x07;
+    p+=pitch;
+    ++f;
+  }
 }
 
 void draw_popup(const unsigned char*txt) {

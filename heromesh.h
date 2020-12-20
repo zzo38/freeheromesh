@@ -237,6 +237,8 @@ extern Uint32 move_number;
 extern unsigned char*quiz_text;
 extern Inventory*inventory;
 extern Uint32 ninventory;
+extern char**levelstrings;
+extern Uint16 nlevelstrings;
 
 const char*value_string_ptr(Value v);
 void pfunlink(Uint32 n);
