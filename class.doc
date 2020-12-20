@@ -1125,7 +1125,8 @@ SetInventory  ( class image value -- ) **
   Sets an inventory item with the specified class and image number to the
   specified value (which must be a number). If there is no inventory item
   with that exact class and image, an inventory item will be added,
-  otherwise the existing one is updated to the new value.
+  otherwise the existing one is updated to the new value. Inventory values
+  are always unsigned 16-bit numbers.
 
 Sound  ( sound interruptflag -- )
   Play a sound; if the interrupt flag is zero then it does not interrupt

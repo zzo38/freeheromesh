@@ -218,6 +218,11 @@ typedef struct {
 // destroyed. In this case, their "generation" value is zero, and they will always
 // have the OF_DESTROYED flag.
 
+typedef struct {
+  Uint16 class,value;
+  Uint8 image;
+} Inventory;
+
 extern Uint32 max_objects;
 extern Uint32 generation_number;
 extern Object**objects;
@@ -230,6 +235,8 @@ extern Sint8 gameover,key_ignored;
 extern Uint8 generation_number_inc;
 extern Uint32 move_number;
 extern unsigned char*quiz_text;
+extern Inventory*inventory;
+extern Uint32 ninventory;
 
 const char*value_string_ptr(Value v);
 void pfunlink(Uint32 n);

@@ -32,6 +32,8 @@ Sint8 gameover,key_ignored;
 Uint8 generation_number_inc;
 Uint32 move_number;
 unsigned char*quiz_text;
+Inventory*inventory;
+Uint32 ninventory;
 
 typedef struct {
   Uint16 msg;
@@ -176,6 +178,12 @@ void objtrash(Uint32 n) {
   free(o);
   objects[n]=0;
   generation_number_inc=1;
+}
+
+static inline void clear_inventory(void) {
+  free(inventory);
+  inventory=0;
+  ninventory=0;
 }
 
 static inline Uint8 resolve_dir(Uint32 n,Uint32 d) {
@@ -546,7 +554,7 @@ static Uint32 create(Uint32 from,Uint16 c,Uint32 x,Uint32 y,Uint32 im,Uint32 d) 
     if(collide_with(xx,VOIDLINK,x,y,c)&0x01) return VOIDLINK;
   }
   n=objalloc(c);
-  if(n==VOIDLINK) return VOIDLINK;
+  if(n==VOIDLINK) Throw("Error creating object");
   o=objects[n];
   o->x=x;
   o->y=y;
@@ -949,6 +957,46 @@ static inline Value v_send_self(Uint32 from,Value msg,Value arg1,Value arg2,Valu
   return send_message(from,from,msg.u,arg1,arg2,arg3);
 }
 
+static void v_delete_inventory(Value cl,Value im) {
+  int i;
+  if(!cl.t && !cl.u) return;
+  if(cl.t!=TY_CLASS || im.t!=TY_NUMBER) Throw("Type mismatch");
+  for(i=0;i<ninventory;i++) if(inventory[i].class==cl.u && inventory[i].image==im.u) {
+    --ninventory;
+    if(i!=ninventory) inventory[i]=inventory[ninventory];
+    return;
+  }
+}
+
+static Value v_get_inventory(Value cl,Value im) {
+  int i;
+  if(cl.t!=TY_CLASS || im.t!=TY_NUMBER) Throw("Type mismatch");
+  for(i=0;i<ninventory;i++) if(inventory[i].class==cl.u && inventory[i].image==im.u) {
+    Push(NVALUE(inventory[i].value));
+    Push(NVALUE(1));
+    return;
+  }
+  Push(NVALUE(0));
+}
+
+static void v_set_inventory(Value cl,Value im,Value va) {
+  int i;
+  if(!cl.t && !cl.u) return;
+  if(cl.t!=TY_CLASS || im.t!=TY_NUMBER || va.t!=TY_NUMBER) Throw("Type mismatch");
+  im.u&=0xFF;
+  va.u&=0xFFFF;
+  if(ninventory>=max_objects) Throw("Inventory exceeds max_objects");
+  for(i=0;i<ninventory;i++) if(inventory[i].class==cl.u && inventory[i].image==im.u) {
+    inventory[i].value=va.u;
+    return;
+  }
+  inventory=realloc(inventory,++ninventory*sizeof(Inventory));
+  if(!inventory) fatal("Allocation failed\n");
+  inventory[i].class=cl.u;
+  inventory[i].image=im.u;
+  inventory[i].value=va.u;
+}
+
 static void v_set_popup(Uint32 from,int argc) {
   const unsigned char*t;
   const unsigned char*u;
@@ -1167,6 +1215,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_COMPATIBLE_C: StackReq(1,1); GetClassFlagOf(CF_COMPATIBLE); break;
     case OP_CREATE: NoIgnore(); StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_create(obj,t1,t2,t3,t4,t5)); break;
     case OP_CREATE_D: NoIgnore(); StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_create(obj,t1,t2,t3,t4,t5); break;
+    case OP_DELINVENTORY: StackReq(2,0); t2=Pop(); t1=Pop(); v_delete_inventory(t1,t2); break;
     case OP_DELTA: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u>t2.u?t1.u-t2.u:t2.u-t1.u)); break;
     case OP_DENSITY: StackReq(0,1); Push(NVALUE(o->density)); break;
     case OP_DENSITY_C: StackReq(1,1); Push(GetVariableOrAttributeOf(density,NVALUE)); break;
@@ -1213,6 +1262,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_FROM: StackReq(0,1); Push(OVALUE(msgvars.from)); break;
     case OP_GE: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t2,t1)?0:1)); break;
     case OP_GE_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t2,t1)?0:1)); break;
+    case OP_GETINVENTORY: StackReq(2,2); t2=Pop(); t1=Pop(); v_get_inventory(t1,t2); break;
     case OP_GOTO: ptr=code[ptr]; break;
     case OP_GT: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t1,t2)?1:0)); break;
     case OP_GT_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t1,t2)?1:0)); break;
@@ -1270,6 +1320,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_LT: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t2,t1)?1:0)); break;
     case OP_LT_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t2,t1)?1:0)); break;
     case OP_LXOR: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1)?!v_bool(t2):v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_MAXINVENTORY: StackReq(1,0); t1=Pop(); Numeric(t1); if(ninventory>t1.u) Throw("Inventory overflow"); break;
     case OP_MOD: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u%t2.u)); break;
     case OP_MOD_C: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s%t2.s)); break;
     case OP_MOVE: NoIgnore(); StackReq(1,1); t1=Pop(); Numeric(t1); o->inertia=o->strength; Push(NVALUE(move_dir(obj,obj,t1.u))); break;
@@ -1324,6 +1375,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_SENDEX_C: StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_send_message(obj,t1,t2,t3,t4,t5)); break;
     case OP_SENDEX_D: StackReq(4,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); v_send_self(obj,t2,t3,t4,t5); break;
     case OP_SENDEX_CD: StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_send_message(obj,t1,t2,t3,t4,t5); break;
+    case OP_SETINVENTORY: StackReq(3,0); t3=Pop(); t2=Pop(); t1=Pop(); v_set_inventory(t1,t2,t3); break;
     case OP_SHAPE: StackReq(0,1); Push(NVALUE(o->shape)); break;
     case OP_SHAPE_C: StackReq(1,1); Push(GetVariableOrAttributeOf(shape,NVALUE)); break;
     case OP_SHAPE_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->shape=t1.u; break;
@@ -1507,6 +1559,7 @@ void annihilate(void) {
   free(objects);
   objects=0;
   gameover=0;
+  clear_inventory();
 }
 
 static void execute_animation(Uint32 obj) {
@@ -1686,6 +1739,7 @@ const char*execute_turn(int key) {
 
 const char*init_level(void) {
   if(setjmp(my_env)) return my_error;
+  clear_inventory();
   if(main_options['t']) {
     printf("[Level %d restarted]\n",level_id);
     if(!traced_obj.t) {
