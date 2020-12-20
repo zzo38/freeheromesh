@@ -228,6 +228,7 @@ static void animate(Uint32 n,Uint32 f,Uint32 a0,Uint32 a1,Uint32 t) {
   if(!an) an=objects[n]->anim=animalloc();
   if(an->status&ANISTAT_SYNCHRONIZED) an->status=0;
   if(an->count==max_animation) f=ANI_STOP;
+  if(!an->count && (an->status&ANISTAT_VISUAL)) an->status=0;
   if(f&(ANI_ONCE|ANI_LOOP)) {
     switch(an->status) {
       case 0:
