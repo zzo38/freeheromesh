@@ -400,6 +400,16 @@ static Uint32 obj_dir(Uint32 n,Uint32 d) {
   return obj_top_at(objects[n]->x+x_delta[d],objects[n]->y+y_delta[d]);
 }
 
+static Sint16 new_x(Sint16 n,Uint8 d) {
+  n+=x_delta[d];
+  return n<0?0:n>pfwidth?pfwidth+1:n;
+}
+
+static Sint16 new_y(Sint16 n,Uint8 d) {
+  n+=y_delta[d];
+  return n<0?0:n>pfheight?pfheight+1:n;
+}
+
 static void change_shape(Uint32 n,int d,int v) {
   v&=3;
   v<<=d+d;
@@ -1347,6 +1357,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_MUL_C: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s*t2.s)); break;
     case OP_NE: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_equal(t1,t2)?0:1)); break;
     case OP_NEG: StackReq(1,1); t1=Pop(); Numeric(t1); t1.s=-t1.s; Push(t1); break;
+    case OP_NEWX: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(new_x(t1.u,resolve_dir(obj,t2.u)))); break;
+    case OP_NEWY: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(new_y(t1.u,resolve_dir(obj,t2.u)))); break;
     case OP_NEXT: StackReq(0,1); ptr=v_next(code,ptr); break;
     case OP_NIP: StackReq(2,1); t1=Pop(); Pop(); Push(t1); break;
     case OP_OBJABOVE: StackReq(0,1); i=obj_above(obj); Push(OVALUE(i)); break;

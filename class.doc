@@ -1014,7 +1014,8 @@ neg  ( in -- out )
 NewX  ( oldx dir -- newx )
   Advance the number in the direction as though it is a X coordinate. If
   the direction is north or south, leaves it alone, but if it is east or
-  west then it is increased or decreased by one.
+  west then it is increased or decreased by one. The output is never less
+  than zero nor exceeding the playfield width by more than one.
 
 NewY  ( oldx dir -- newy )
   Advance the number in the direction as though it is a Y coordinate.
