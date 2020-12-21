@@ -8,6 +8,7 @@ exit
 */
 
 #define HEROMESH_BINDINGS
+#include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -273,6 +274,7 @@ int exec_key_binding(SDL_Event*ev,int editing,int x,int y,int(*cb)(int prev,int 
                 case ';': i=SQLITE_DONE; goto done;
                 case '?': if(i>1) puts(sqlite3_column_text(cmd->stmt,1)?:(const unsigned char*)"(null)"); break;
                 case 'm': if(i>1) screen_message(sqlite3_column_text(cmd->stmt,1)?:(const unsigned char*)"(null)"); break;
+                case 's': malloc_stats(); fprintf(stderr,"SQLite memory use: %lld %lld\n",(long long)sqlite3_memory_used(),(long long)sqlite3_memory_highwater(1)); break;
                 case 'x': sql_interactive(); break;
               }
             } else {

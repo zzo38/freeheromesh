@@ -63,16 +63,32 @@ to ask the user for the value to use.
   Display the level title popup.
 
 '^d' <location>
-  Display the help text of the object at the location.
+  Display the pop-up help text of the object at the location.
 
 '^o' <location>
-  List objects at the specified coordinates.
+  List objects at the specified coordinates, to examine their values.
 
 
 === Editor commands ===
 
 '^c'
   Display the class selection menu.
+
+
+=== Commands available in game and editor ===
+
+'^E'
+  Switch to the editor.
+
+'^P'
+  Switch to the game play.
+
+'^Q'
+  Quit.
+
+'go' <level>
+  Go to the specified level. If the level number is negative, then it is
+  a level order number, otherwise it is a level ID number.
 
 
 === Mode-independent commands ===
@@ -89,19 +105,9 @@ to ask the user for the value to use.
 ':m' <text>
   Display text on the screen, wait to push enter to continue.
 
+':s'
+  Write memory allocation status to stderr.
+
 ':x'
   Ask for a SQL statement, execute it, and display the results.
-
-'^E'
-  Switch to the editor.
-
-'^P'
-  Switch to the game play.
-
-'^Q'
-  Quit.
-
-'go' <level>
-  Go to the specified level. If the level number is negative, then it is
-  a level order number, otherwise it is a level ID number.
 
