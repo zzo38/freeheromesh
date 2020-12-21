@@ -520,3 +520,37 @@ void run_game(void) {
     }
   }
 }
+
+void locate_me(int x,int y) {
+  Uint8 c=7;
+  SDL_Rect r,rh,rv;
+  SDL_Event ev;
+  if(!screen) return;
+  redraw_game();
+  r.x=(x-1)*picture_size+left_margin;
+  r.y=(y-1)*picture_size;
+  r.w=r.h=picture_size;
+  rh.x=0;
+  rh.y=r.y+picture_size/2;
+  rh.w=screen->w;
+  rh.h=1;
+  rv.x=r.x+picture_size/2;
+  rv.y=0;
+  rv.w=1;
+  rv.h=screen->h;
+  show:
+  timerflag=0;
+  SDL_FillRect(screen,&rh,c+45);
+  SDL_FillRect(screen,&rv,c+67);
+  SDL_FillRect(screen,&r,c);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) switch(ev.type) {
+    case SDL_USEREVENT:
+      if(c>240) return;
+      c+=15;
+      goto show;
+    case SDL_KEYDOWN: case SDL_QUIT: case SDL_MOUSEBUTTONDOWN:
+      SDL_PushEvent(&ev);
+      return;
+  }
+}

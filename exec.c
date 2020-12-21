@@ -1326,6 +1326,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_LEVEL: StackReq(0,1); Push(NVALUE(level_code)); break;
     case OP_LNOT: StackReq(1,1); if(v_bool(Pop())) Push(NVALUE(0)); else Push(NVALUE(1)); break;
     case OP_LOC: StackReq(0,2); Push(NVALUE(o->x)); Push(NVALUE(o->y)); break;
+    case OP_LOCATEME: locate_me(o->x,o->y); break;
     case OP_LOR: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1) || v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_LOSELEVEL: gameover=-1; Throw(0); break;
     case OP_LSH: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t2.u&~31?0:t1.u<<t2.u)); break;

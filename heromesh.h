@@ -252,6 +252,7 @@ const char*init_level(void);
 // == game ==
 
 void run_game(void);
+void locate_me(int x,int y);
 
 // == edit ==
 
