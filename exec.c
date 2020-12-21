@@ -188,7 +188,7 @@ static inline void clear_inventory(void) {
   ninventory=0;
 }
 
-static inline Uint8 resolve_dir(Uint32 n,Uint32 d) {
+static inline Uint8 resolve_dir(Uint32 n,Uint16 d) {
   return d<8?d:(objects[n]->dir+d)&7;
 }
 

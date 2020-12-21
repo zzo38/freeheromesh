@@ -205,10 +205,10 @@ typedef struct {
   Sint32 height,weight,climb,density,volume,strength,arrivals,departures,temperature,inertia;
   Uint32 arrived,departed,arrived2,departed2,generation;
   Uint32 up,down,prev,next; // links to other objects
-  Uint16 class,oflags,distance;
+  Uint16 class,oflags,distance,shape,shovable,image;
   Uint16 sharp[4];
   Uint16 hard[4];
-  Uint8 x,y,shape,shovable,image,dir;
+  Uint8 x,y,dir;
   Animation*anim;
   Value misc1,misc2,misc3,misc4,misc5,misc6,misc7;
   Value uservars[0];
