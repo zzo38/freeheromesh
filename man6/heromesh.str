@@ -1,0 +1,5 @@
+\# The distributor of Free Hero Nesh must edit this file in order to
+\# specify the correct directories. These are used in the man pages of
+\# Free Hero Mesh to tell the user where to look for the files. Do not
+\# include the trailing slash in the directory names.
+.ds Document_Dir ~/freeheromesh

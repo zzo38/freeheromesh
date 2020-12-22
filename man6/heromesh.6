@@ -1,0 +1,61 @@
+.TH HEROMESH 6 "December 22, 2020"
+.so man6/heromesh.str
+.SH NAME
+heromesh \- Free Hero Mesh (a puzzle game engine)
+.SH SYNOPSYS
+.B heromesh
+.RI "[" "options" "] " "basename" " [" "resources" "]"
+.SH DESCRIPTION
+Free Hero Mesh is a puzzle game engine, for turn-based grid-based puzzle games.
+It is fully deterministic and depends only on the sequence of inputs, not on time or randomness.
+Free Hero Mesh allows you to define your own classes of objects using the included programming language.
+.PP
+The "basename" above is the filename of the puzzle set without the extension.
+A puzzle set consists of four files.
+.PP
+The "resources" above is optional resources to override, in the X resource manager format.
+.SH OPTIONS
+.IP -C
+Dump all class data.
+.IP -H
+Dump the hash table.
+.IP -L
+Display all tokens being read from the class definition file.
+.IP -a
+Autotest levels, ensuring that the provided solution is valid.
+(Not implemented yet)
+.IP -c
+Only load classes and then terminate.
+This can be used to verify that the class definition file does not contain syntax errors.
+You can also use it with some other options to display details.
+.IP -e
+Start the level editor.
+.IP -n
+Create a new puzzle set.
+The class definition file and image set must already exist.
+.IP -r
+Open in read-only mode.
+.IP -t
+Enable message tracing.
+.IP -v
+More verbose error logging.
+.IP -x
+Does not start the GUI; instead, accepts SQL statements from stdin.
+.SH FILES
+A puzzle set consists of four files, with filename suffixes
+.BR ".class" ", " ".xclass" ", " ".level" ", and " ".solution" "."
+.TP
+.I ~/.heromeshrc
+The configuration file, in X resource manager format.
+.TP
+.I ~/.heromeshsession
+A SQLite database containing user cache data.
+.TP
+.I \*[Document_Dir]/*.doc
+Documentation.
+.SH ENVIRONMENT
+.TP
+.B HOME
+The home directory; used to find .heromeshrc and .heromeshsession files.
+.PP
+Any of the SDL environment variables can also be used.
