@@ -574,7 +574,7 @@ Height : int16/int32 [c]
   Used to block the movement of other objects; see Climb for details. In
   order for HIT and HITBY messages to work, Height must be positive.
 
-Image : int8
+Image : int16
   The index number of the picture to display. The (Image) block in the
   class definition specifies which picture to display for each index
   number, where the first picture is zero. The actual picture being
@@ -634,7 +634,7 @@ Player : bool [c] [ro]
   (Normally, a level should have exactly one object of such a class,
   although this is not mandatory.)
 
-Shape : int8 [c]
+Shape : int16 [c]
   Defines the shape of the object, which is used when one object tries to
   move into another one that it can't climb over. The low 2-bits are for
   east, next 2-bits for north, next 2-bits for west, and finally the high
@@ -652,7 +652,7 @@ Sharp : int16 [c] [d]
   value for one is greater than the Hard of the other, then the object
   with insufficient Hardness is destroyed.
 
-Shovable : int8 [c]
+Shovable : int16 [c]
   Defines what directions the object may be shoved, where bit0 means east,
   bit2 means north, bit4 means west, and bit6 means south.
 
