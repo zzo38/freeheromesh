@@ -495,6 +495,8 @@ int scrollbar(int*cur,int page,int max,SDL_Event*ev,SDL_Rect*re) {
   int y1=re?re->y+re->h:screen->h;
   int y;
   double f;
+  max-=page;
+  if(max<0) max=0;
   switch(ev?ev->type:SDL_VIDEOEXPOSE) {
     case SDL_MOUSEMOTION:
       if(ev->motion.x<x0 || ev->motion.x>x1 || ev->motion.y<y0 || ev->motion.y>=y1) return 0;
