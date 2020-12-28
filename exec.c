@@ -275,7 +275,7 @@ static void animate(Uint32 n,Uint32 f,Uint32 a0,Uint32 a1,Uint32 t) {
     an->status=ANISTAT_VISUAL|ANISTAT_LOGICAL;
     an->count++;
   } else if(an->lstep==an->vstep) {
-    an->status=0;
+    if(an->status&ANISTAT_LOGICAL) an->status=0;
   } else if(an->status&ANISTAT_LOGICAL) {
     an->lstep=(an->lstep?:max_animation)-1;
     an->status&=~ANISTAT_LOGICAL;
