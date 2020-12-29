@@ -519,6 +519,18 @@ static Uint32 v_is(Value x,Value y) {
   }
 }
 
+static Uint32 v_destroyed(Value v) {
+  if(v.t==TY_NUMBER) {
+    if(v.u) Throw("Cannot convert non-zero number to object");
+    return 0;
+  } else if(v.t>TY_MAXTYPE) {
+    if(v.u>=nobjects || !objects[v.u] || objects[v.u]->generation!=v.t) return 1;
+    return objects[v.u]->oflags&OF_DESTROYED?1:0;
+  } else {
+    Throw("Cannot convert non-object to object");
+  }
+}
+
 static Uint8 collisions_at(Uint32 x,Uint32 y) {
   Uint8 c=0;
   Uint32 n;
@@ -1266,7 +1278,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_DESTROY_D: NoIgnore(); destroy(obj,obj,0); break;
     case OP_DESTROY_CD: NoIgnore(); StackReq(1,0); i=v_object(Pop()); destroy(obj,i,0); break;
     case OP_DESTROYED: StackReq(0,1); if(o->oflags&OF_DESTROYED) Push(NVALUE(1)); else Push(NVALUE(0)); break;
-    case OP_DESTROYED_C: StackReq(1,1); GetFlagOf(OF_DESTROYED); break;
+    case OP_DESTROYED_C: StackReq(1,1); t1=Pop(); Push(NVALUE(v_destroyed(t1))); break;
     case OP_DIR: StackReq(0,1); Push(NVALUE(o->dir)); break;
     case OP_DIR_C: StackReq(1,1); Push(GetVariableOf(dir,NVALUE)); break;
     case OP_DIR_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->dir=resolve_dir(obj,t1.u); break;

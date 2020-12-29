@@ -547,7 +547,9 @@ Departures : int32
 Destroyed : bool [ro]
   It is set if this object has been successfully destroyed (but not yet
   deleted from memory). You must use the Destroy or Assassinate command
-  in order to set this flag; you cannot set it by yourself.
+  in order to set this flag; you cannot set it by yourself. Unlike all
+  other variables, you can access this variable even for an object that
+  does not exist; it returns 1 in that case.
 
 Dir : int3
   The current direction. When it moves (without teleportation), it will
