@@ -501,6 +501,24 @@ static inline int v_unsigned_greater(Value x,Value y) {
   return x.u>y.u;
 }
 
+static Uint32 v_is(Value x,Value y) {
+  Uint32 n;
+  if(x.t==TY_NUMBER && !x.u) {
+    return 0;
+  } else if(x.t>TY_MAXTYPE && y.t==TY_CLASS) {
+    n=v_object(x);
+    return (objects[n]->class==y.u)?1:0;
+    //TODO: subclassing (using CF_GROUP)
+  } else if((x.t>TY_MAXTYPE || x.t==TY_CLASS) && y.t==TY_NUMBER && !y.u) {
+    return 1;
+  } else if(x.t==TY_CLASS && y.t==TY_CLASS) {
+    return (x.u==y.u)?1:0;
+    //TODO: subclassing (using CF_GROUP)
+  } else {
+    Throw("Type mismatch");
+  }
+}
+
 static Uint8 collisions_at(Uint32 x,Uint32 y) {
   Uint8 c=0;
   Uint32 n;
@@ -581,7 +599,7 @@ static Uint32 create(Uint32 from,Uint16 c,Uint32 x,Uint32 y,Uint32 im,Uint32 d) 
     m=playfield[xx+yy*64-65];
     while(m!=VOIDLINK) {
       p=objects[m];
-      if(p->arrivals&(1<<i)) send_message(n,m,MSG_CREATED,NVALUE(x),NVALUE(y),v);
+      if(p->arrivals&(1<<i)) if(m!=n) send_message(n,m,MSG_CREATED,NVALUE(x),NVALUE(y),v);
       m=p->up;
     }
   }
@@ -1311,6 +1329,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_INVISIBLE_C: StackReq(1,1); GetFlagOf(OF_INVISIBLE); break;
     case OP_INVISIBLE_E: NoIgnore(); StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_INVISIBLE; else o->oflags&=~OF_INVISIBLE; break;
     case OP_INVISIBLE_EC: NoIgnore(); StackReq(2,0); SetFlagOf(OF_INVISIBLE); break;
+    case OP_IS: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_is(t1,t2))); break;
     case OP_JUMPTO: NoIgnore(); StackReq(2,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); Push(NVALUE(jump_to(obj,obj,t2.u,t3.u))); break;
     case OP_JUMPTO_C: NoIgnore(); StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); i=v_object(Pop()); Push(NVALUE(jump_to(obj,i,t2.u,t3.u))); break;
     case OP_JUMPTO_D: NoIgnore(); StackReq(2,0); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); jump_to(obj,obj,t2.u,t3.u); break;
