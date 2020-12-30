@@ -1628,7 +1628,7 @@ static void execute_animation(Uint32 obj) {
 }
 
 const char*execute_turn(int key) {
-  Uint8 busy,clock;
+  Uint8 busy,clock,x,y;
   Uint32 m,n,turn;
   Object*o;
   Value v;
@@ -1685,7 +1685,10 @@ const char*execute_turn(int key) {
   }
   move_number++;
   // Beginning phase
-  if(!all_flushed) broadcast(m,0,MSG_BEGIN_TURN,m!=VOIDLINK?NVALUE(objects[m]->x):NVALUE(0),m!=VOIDLINK?NVALUE(objects[m]->y):NVALUE(0),v,0);
+  if(!all_flushed) {
+    if(m==VOIDLINK) x=0,y=0; else x=objects[m]->x,y=objects[m]->y;
+    broadcast(m,0,MSG_BEGIN_TURN,NVALUE(x),NVALUE(y),v,0);
+  }
   turn=0;
   // Trigger phase
   trig:
