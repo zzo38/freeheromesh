@@ -1658,7 +1658,10 @@ const char*execute_turn(int key) {
   for(n=0;n<nobjects;n++) if(o=objects[n]) {
     o->distance=0;
     o->oflags&=~(OF_KEYCLEARED|OF_DONE);
-    if(o->anim) o->anim->count=0;
+    if(o->anim) {
+      o->anim->count=0;
+      if(o->anim->status==ANISTAT_VISUAL) o->anim->status=0;
+    }
   }
   // Input phase
   m=VOIDLINK;
