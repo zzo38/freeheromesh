@@ -1444,7 +1444,8 @@ bit20 *
   the direction will be reread from the object's Dir variable.
 
 bit21 *
-  Allows the object to move regardless of Height.
+  Allows the object to move regardless of Height. The game engine sets
+  this bit if currently the Climb/Height is OK for moving.
 
 bit22 *
   Prevents movement regardless of Height, but may still allow sliding.

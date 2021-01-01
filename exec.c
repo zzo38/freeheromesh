@@ -736,7 +736,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
   Object*oF;
   Uint32 objE,objF,objLF,objRF;
   Uint32 hit=0;
-  Uint32 hF,vol;
+  Uint32 vol;
   Value v;
   if(StackProtection()) Throw("Call stack overflow during movement");
   if(obj==VOIDLINK) return 0;
@@ -748,10 +748,12 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
   if(hit&0x100000) dir=o->dir;
   objF=obj_dir(obj,dir);
   if(objF==VOIDLINK) goto fail;
+  if(hit) hit=(hit&0x0C000000)|0x800;
   oF=objects[objF];
-  hF=oF?height_at(oF->x,oF->y):0;
+  if(height_at(oF->x,oF->y)<=o->climb) hit|=0x200000;
   if(dir&1) {
     // Diagonal movement
+    hit|=0x80000;
     objLF=obj_dir(obj,(dir+1)&7);
     objRF=obj_dir(obj,(dir-1)&7);
     vol=o->volume;
@@ -763,25 +765,24 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
         if(o->oflags&(OF_DESTROYED|OF_VISUALONLY)) break;
         oE=objects[objE];
         if(oE->height>0) {
-          v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit|0x80000));
+          hit&=0xFC287000;
+          v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit));
           if(v.t) Throw("Type mismatch in HIT/HITBY");
-          hit=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xFC098F7F:-1);
+          hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xFC098F7F:-1);
           if(hit&8) goto fail;
           if(!(hit&0x11)) {
-            v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(hit|0x80000));
+            v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(hit));
             if(v.t) Throw("Type mismatch in HIT/HITBY");
-            hit=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xFC098F7F:-1);
+            hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xFC098F7F:-1);
             if(hit&8) goto fail;
           }
         }
         objE=obj_below(objE);
       }
-      if(!(hit&0x402008)) {
-        if(hF<=o->climb || (hit&0x200000)) {
-          if(hit&0x20000) goto success;
-          if(!oF) goto fail;
-          if(move_to(from,obj,oF->x,oF->y)) goto success; else goto fail;
-        }
+      if((hit&0x200000) && !(hit&0x402008)) {
+        if(hit&0x20000) goto success;
+        if(!oF) goto fail;
+        if(move_to(from,obj,oF->x,oF->y)) goto success; else goto fail;
       }
     } else {
       // Volume is too much; hit the objects it won't go between
@@ -810,7 +811,6 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
     }
   } else {
     // Orthogonal movement
-    if(hit) hit=(hit&0x0C000000)|0x800;
     if(!oF) goto fail;
     objE=objF;
     while(objE!=VOIDLINK) {
@@ -849,11 +849,9 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
     }
     if(hit&0x2008) goto fail;
     if((hit&0x48000)==0x8000) goto restart;
-    if(!(hit&0x400000)) {
-      if(hF<=o->climb || (hit&0x200000)) {
-        if(hit&0x20000) goto success;
-        if(move_to(from,obj,oF->x,oF->y)) goto success; else goto fail;
-      }
+    if((hit&0x200000) && !(hit&0x400000)) {
+      if(hit&0x20000) goto success;
+      if(move_to(from,obj,oF->x,oF->y)) goto success; else goto fail;
     }
     // Sliding
     if(hit&0x80) goto fail;
