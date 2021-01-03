@@ -1454,16 +1454,24 @@ bit23 *
   Reserved for future.
 
 bit24 *
-  Reserved for future.
+  Allows sliding to the left regardless of Height; the other attributes
+  still need to be correct (unless bit26 is set). The game engine sets
+  this bit if the Climb/Height is OK for moving.
 
 bit25 *
-  Reserved for future.
+  Allows sliding to the right regardless of Height; the other attributes
+  still need to be correct (unless bit27 is set). The game engine sets
+  this bit if the Climb/Height is OK for moving.
 
-bit26
-  Available for your own use; preserved across restarts.
+bit26 *
+  Allows hitting to the left regardless of Shape, Volume, etc. In order
+  to actually move when sliding to the left, both bit24 and bit26 must
+  be set, and bit7 must be clear.
 
-bit27
-  Available for your own use; preserved across restarts.
+bit27 *
+  Allows hitting to the right regardless of Shape, Volume, etc. In order
+  to actually move when sliding to the right, both bit25 and bit27 must
+  be set, and bit7 must be clear.
 
 bit28
   Available for your own use.

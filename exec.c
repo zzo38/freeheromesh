@@ -729,6 +729,15 @@ static int move_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
   return 1;
 }
 
+static inline int slide_test(Object*o,Object*oF,Uint32 d1,Uint32 d2,Uint32 vol) {
+  // Checks if sliding is possible, except the height of the target location.
+  Uint8 m=(o->shape&(1<<d1))|(oF->shape&(1<<(4^d1)));
+  if(!(m&(m-1))) return 0;
+  if(!(o->shovable&(1<<d2))) return 0;
+  if(height_at(o->x+x_delta[d2],o->y+y_delta[d2])<=o->climb) return 1;
+  return vol+volume_at(o->x+x_delta[d2],o->y+y_delta[d2])<=max_volume;
+}
+
 static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
   // This function is complicated, and there may be mistakes.
   Object*o;
@@ -748,14 +757,14 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
   if(hit&0x100000) dir=o->dir;
   objF=obj_dir(obj,dir);
   if(objF==VOIDLINK) goto fail;
-  if(hit) hit=(hit&0x0C000000)|0x800;
+  if(hit) hit=0x800;
   oF=objects[objF];
+  objLF=obj_dir(obj,(dir+1)&7);
+  objRF=obj_dir(obj,(dir-1)&7);
   if(height_at(oF->x,oF->y)<=o->climb) hit|=0x200000;
   if(dir&1) {
     // Diagonal movement
     hit|=0x80000;
-    objLF=obj_dir(obj,(dir+1)&7);
-    objRF=obj_dir(obj,(dir-1)&7);
     vol=o->volume;
     if(objLF!=VOIDLINK) vol+=volume_at(objects[objLF]->x,objects[objLF]->y);
     if(objRF!=VOIDLINK) vol+=volume_at(objects[objRF]->x,objects[objRF]->y);
@@ -768,12 +777,12 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
           hit&=0xFC287000;
           v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit));
           if(v.t) Throw("Type mismatch in HIT/HITBY");
-          hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xFC098F7F:-1);
+          hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xF0098F7F:-1);
           if(hit&8) goto fail;
           if(!(hit&0x11)) {
             v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(hit));
             if(v.t) Throw("Type mismatch in HIT/HITBY");
-            hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xFC098F7F:-1);
+            hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xF0098F7F:-1);
             if(hit&8) goto fail;
           }
         }
@@ -812,6 +821,20 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
   } else {
     // Orthogonal movement
     if(!oF) goto fail;
+    if(o->shape) {
+      // Check if attributes allow sliding
+      vol=o->volume+volume_at(oF->x,oF->y);
+      if(objLF!=VOIDLINK && slide_test(o,oF,dir,(dir+2)&7,vol)) {
+        hit|=0x4000000;
+        oE=objects[objLF];
+        if(height_at(oE->x,oE->y)<=o->climb) hit|=0x1000000;
+      }
+      if(objRF!=VOIDLINK && slide_test(o,oF,dir|1,(dir-2)&7,vol)) {
+        hit|=0x8000000;
+        oE=objects[objRF];
+        if(height_at(oE->x,oE->y)<=o->climb) hit|=0x2000000;
+      }
+    }
     objE=objF;
     while(objE!=VOIDLINK) {
       if(o->oflags&(OF_DESTROYED|OF_VISUALONLY)) break;
@@ -821,12 +844,12 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
         // HIT/HITBY messages
         v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit));
         if(v.t) Throw("Type mismatch in HIT/HITBY");
-        hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xFC098F7F:-1);
+        hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xF0098F7F:-1);
         if(hit&8) goto fail;
         if(!(hit&0x11)) {
           v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(hit));
           if(v.t) Throw("Type mismatch in HIT/HITBY");
-          hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xFC098F7F:-1);
+          hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xF0098F7F:-1);
         }
         if(hit&0x108) goto fail;
         // Hardness/sharpness
@@ -856,7 +879,75 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
     // Sliding
     if(hit&0x80) goto fail;
     hit|=0x10000;
-    
+    if(hit&0x8000000) {
+      hit&=0xF010000;
+      objE=objRF;
+      while(objE!=VOIDLINK) {
+        if(o->oflags&(OF_DESTROYED|OF_VISUALONLY)) break;
+        oE=objects[objE];
+        if(oE->height>0) {
+          hit&=~7;
+          // HIT/HITBY messages
+          v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit));
+          if(v.t) Throw("Type mismatch in HIT/HITBY");
+          hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xF0098F7F:-1);
+          if(hit&8) goto otherside;
+          if(!(hit&0x11)) {
+            v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(hit));
+            if(v.t) Throw("Type mismatch in HIT/HITBY");
+            hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xF0098F7F:-1);
+          }
+          if(hit&0x108) goto otherside;
+          // Hardness/sharpness
+          if(!(hit&0x22)) {
+            if(o->sharp[dir>>1]>oE->hard[(dir^4)>>1] && !v_bool(destroy(obj,objE,2))) hit|=0x8004;
+            if(oE->sharp[(dir^4)>>1]>o->hard[dir>>1] && !v_bool(destroy(objE,obj,1))) hit|=0x4C;
+          }
+        }
+        if(hit&0x600) goto otherside;
+        objE=obj_below(objE);
+      }
+      if((hit&0x48000)==0x8000) goto restart;
+      if((hit&0x2000000) && !(hit&0x400080)) {
+        if(hit&0x20000) goto success;
+        if(move_to(from,obj,objects[objRF]->x,objects[objRF]->y)) goto success;
+      }
+    }
+    otherside:
+    if(hit&0x4000000) {
+      hit&=0xF010000;
+      objE=objLF;
+      while(objE!=VOIDLINK) {
+        if(o->oflags&(OF_DESTROYED|OF_VISUALONLY)) break;
+        oE=objects[objE];
+        if(oE->height>0) {
+          hit&=~7;
+          // HIT/HITBY messages
+          v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit));
+          if(v.t) Throw("Type mismatch in HIT/HITBY");
+          hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xF0098F7F:-1);
+          if(hit&8) goto fail;
+          if(!(hit&0x11)) {
+            v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(hit));
+            if(v.t) Throw("Type mismatch in HIT/HITBY");
+            hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xF0098F7F:-1);
+          }
+          if(hit&0x108) goto fail;
+          // Hardness/sharpness
+          if(!(hit&0x22)) {
+            if(o->sharp[dir>>1]>oE->hard[(dir^4)>>1] && !v_bool(destroy(obj,objE,2))) hit|=0x8004;
+            if(oE->sharp[(dir^4)>>1]>o->hard[dir>>1] && !v_bool(destroy(objE,obj,1))) hit|=0x4C;
+          }
+        }
+        if(hit&0x600) goto fail;
+        objE=obj_below(objE);
+      }
+      if((hit&0x48000)==0x8000) goto restart;
+      if((hit&0x1000000) && !(hit&0x400080)) {
+        if(hit&0x20000) goto success;
+        if(move_to(from,obj,objects[objLF]->x,objects[objLF]->y)) goto success;
+      }
+    }
   }
   fail: if(hit&0x1000) goto success; o->inertia=0; return 0;
   success: if(!(hit&0x4000)) o->oflags|=OF_MOVED; return 1;
