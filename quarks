@@ -215,4 +215,5 @@ stackProtection
 maxObjects
 traceAll
 traceObject
+showInventory
 

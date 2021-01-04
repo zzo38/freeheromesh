@@ -25,6 +25,14 @@ static volatile Uint8 timerflag;
 static int exam_scroll;
 static Uint8*inputs;
 static int inputs_size,inputs_count;
+static Uint8 side_mode=255;
+
+static void setup_game(void) {
+  const char*v;
+  optionquery[1]=Q_showInventory;
+  v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
+  side_mode=boolxrm(v,1);
+}
 
 static void redraw_game(void) {
   char buf[32];
@@ -77,7 +85,30 @@ static void redraw_game(void) {
   if(x>0 && y>0 && x<=pfwidth && y<=pfheight) snprintf(buf,8,"(%2d,%2d)",x,y);
   else strcpy(buf,"       ");
   draw_text(0,40,buf,0xF0,0xF1);
-  SDL_UnlockSurface(screen);
+  if(side_mode) {
+    // Inventory
+    x=20-(left_margin-picture_size)/8;
+    if(x>19) x=19;
+    if(x<0) x=0;
+    for(y=0;y<ninventory;y++) {
+      if(y*picture_size+60>=screen->h) break;
+      snprintf(buf,22,"%20d",inventory[y].value);
+      draw_text(picture_size,y*picture_size+52,buf+x,0xF8,0xFE);
+    }
+    SDL_UnlockSurface(screen);
+    r.x=0; r.y=52; r.w=picture_size; r.h=screen->h-52;
+    SDL_FillRect(screen,&r,inv_back_color);
+    for(y=0;y<ninventory;y++) {
+      if(y*picture_size+60>=screen->h) break;
+      if(classes[inventory[y].class]->nimages<inventory[y].image) continue;
+      draw_picture(0,y*picture_size+52,classes[inventory[y].class]->images[inventory[y].image]&0x7FFF);
+    }
+  } else {
+    // Move list
+    
+    SDL_UnlockSurface(screen);
+    
+  }
   if(quiz_text) draw_popup(quiz_text);
   SDL_Flip(screen);
   set_cursor(XC_arrow);
@@ -444,6 +475,9 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       goto replay;
     case '^E': // Edit
       return -2;
+    case '^I': // Toggle inventory display
+      side_mode^=1;
+      return prev;
     case '^M': // Mark replay position
       replay_mark=replay_pos+inputs_count;
       return prev;
@@ -516,6 +550,7 @@ void run_game(void) {
   int i;
   SDL_Event ev;
   set_caption();
+  if(side_mode==255) setup_game();
   begin_level(level_id);
   redraw_game();
   timerflag=0;

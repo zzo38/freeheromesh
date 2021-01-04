@@ -44,6 +44,7 @@ Uint16 functions[0x4000];
 int max_animation=32;
 Sint32 max_volume=10000;
 Uint8 back_color=1;
+Uint8 inv_back_color=9;
 char**stringpool;
 AnimationSlot anim_slot[8];
 
@@ -1615,8 +1616,13 @@ void load_classes(void) {
           nxttok();
           if(tokent!=TF_INT) ParseError("Number expected\n");
           if(tokenv&~255) ParseError("Background color out of range\n");
-          back_color=tokenv;
+          back_color=inv_back_color=tokenv;
           nxttok();
+          if(tokent==TF_INT) {
+            if(tokenv&~255) ParseError("Background color out of range\n");
+            inv_back_color=tokenv;
+            nxttok();
+          }
           if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
           break;
         case OP_ANIMATE:

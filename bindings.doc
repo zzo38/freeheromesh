@@ -65,6 +65,9 @@ to ask the user for the value to use.
 '^>'
   Replay to mark.
 
+'^I'
+  Toggle the inventory/move-list display.
+
 '^M'
   Set the replay mark position.
 

@@ -194,8 +194,10 @@ These are the global definitions in the class definition file.
 (Animate <limit>)
   Set the limit for logical animations, from 1 to 255. The default is 32.
 
-(Background <number>)
-  Set the background colour, from 0 to 255. The default value is 1.
+(Background <number> [<number>])
+  Set the background colour, from 0 to 255. The default value is 1. You
+  can optionally specify a second number, which is the background colour
+  for the inventory; if not specified, uses the same colour for both.
 
 (Synchronize <slot> <length> <speed>)
   Define an animation slot for synchronized animation. The slot number can

@@ -152,7 +152,7 @@ extern const char*messages[0x4000]; // index is 256 less than message number
 extern Uint16 functions[0x4000];
 extern int max_animation; // max steps in animation queue (default 32)
 extern Sint32 max_volume; // max total volume to allow moving diagonally (default 10000)
-extern Uint8 back_color;
+extern Uint8 back_color,inv_back_color;
 extern char**stringpool;
 extern AnimationSlot anim_slot[8];
 
