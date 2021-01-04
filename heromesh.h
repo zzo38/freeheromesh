@@ -86,9 +86,13 @@ extern SDL_Surface*screen;
 extern Uint16 picture_size;
 extern int left_margin;
 
+// Use only when screen is unlocked
 void draw_picture(int x,int y,Uint16 img);
-void draw_text(int x,int y,const unsigned char*t,int bg,int fg);
 void draw_cell(int x,int y);
+
+// Use only when screen is locked
+void draw_text(int x,int y,const unsigned char*t,int bg,int fg);
+
 const char*screen_prompt(const char*txt);
 int screen_message(const char*txt);
 void load_pictures(void);
@@ -213,10 +217,6 @@ typedef struct {
   Value misc1,misc2,misc3,misc4,misc5,misc6,misc7;
   Value uservars[0];
 } Object;
-
-// Some objects may remain in memory for animation purposes even after they have been
-// destroyed. In this case, their "generation" value is zero, and they will always
-// have the OF_DESTROYED flag.
 
 typedef struct {
   Uint16 class,value;
