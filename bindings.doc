@@ -59,6 +59,15 @@ to ask the user for the value to use.
 '= ' <count>
   Restart and replay that many moves.
 
+'^<'
+  Rewind to mark.
+
+'^>'
+  Replay to mark.
+
+'^M'
+  Set the replay mark position.
+
 '^T'
   Display the level title popup.
 

@@ -411,8 +411,9 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       }
       inputs[inputs_count++]=number;
       return 0;
-    case '+ ': // Replay
+    case '+ ': replay: // Replay
       if(number>replay_count-replay_pos) number=replay_count-replay_pos;
+      if(number<=0) return prev;
       if(inputs_count+number>=inputs_size) {
         inputs=realloc(inputs,inputs_size+=number+1);
         if(!inputs) fatal("Allocation failed\n");
@@ -424,7 +425,7 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       number=replay_pos-number;
       if(number<0) number=0;
       //fallthru
-    case '= ': // Restart
+    case '= ': restart: // Restart
       begin_level(level_id);
       if(!number) return 1;
       if(number>replay_count) number=replay_count;
@@ -434,8 +435,18 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       }
       memcpy(inputs,replay_list,inputs_count=number);
       return 1;
+    case '^<': // Rewind to mark
+      number=replay_mark;
+      goto restart;
+    case '^>': // Replay to mark
+      inputs_count=0;
+      number=replay_mark-replay_pos;
+      goto replay;
     case '^E': // Edit
       return -2;
+    case '^M': // Mark replay position
+      replay_mark=replay_pos+inputs_count;
+      return prev;
     case '^Q': // Quit
       return -1;
     case '^T': // Show title
