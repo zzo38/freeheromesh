@@ -18,6 +18,9 @@ exit
 #include "cursorshapes.h"
 #include "names.h"
 
+Uint8*replay_list;
+Uint16 replay_size,replay_count,replay_pos,replay_mark;
+
 static volatile Uint8 timerflag;
 static int exam_scroll;
 static Uint8*inputs;
@@ -141,9 +144,8 @@ static void show_mouse_xy(SDL_Event*ev) {
 
 static void begin_level(int id) {
   const char*t;
-  free(inputs);
-  inputs=0;
-  inputs_size=inputs_count=0;
+  inputs_count=0;
+  replay_pos=0;
   t=load_level(id)?:init_level();
   if(t) {
     gameover=-1;
@@ -396,7 +398,6 @@ static void describe_at(int xy) {
   if(!classes[objects[n]->class]->gamehelp) return;
   s=sqlite3_mprintf("\x0C\x0E%s:%d\\ %s\x0B\x0F%s",classes[objects[n]->class]->name,objects[n]->image,classes[objects[n]->class]->name,classes[objects[n]->class]->gamehelp);
   if(!s) fatal("Allocation failed\n");
-  
   modal_draw_popup(s);
   sqlite3_free(s);
 }
@@ -410,6 +411,29 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       }
       inputs[inputs_count++]=number;
       return 0;
+    case '+ ': // Replay
+      if(number>replay_count-replay_pos) number=replay_count-replay_pos;
+      if(inputs_count+number>=inputs_size) {
+        inputs=realloc(inputs,inputs_size+=number+1);
+        if(!inputs) fatal("Allocation failed\n");
+      }
+      memcpy(inputs+inputs_count,replay_list+replay_pos,number);
+      inputs_count+=number;
+      return 0;
+    case '- ': // Rewind
+      number=replay_pos-number;
+      if(number<0) number=0;
+      //fallthru
+    case '= ': // Restart
+      begin_level(level_id);
+      if(!number) return 1;
+      if(number>replay_count) number=replay_count;
+      if(number>=inputs_size) {
+        inputs=realloc(inputs,inputs_size=number+1);
+        if(!inputs) fatal("Allocation failed\n");
+      }
+      memcpy(inputs,replay_list,inputs_count=number);
+      return 1;
     case '^E': // Edit
       return -2;
     case '^Q': // Quit
@@ -461,12 +485,20 @@ static Uint32 timer_callback(Uint32 n) {
 
 static inline void input_move(Uint8 k) {
   const char*t=execute_turn(k);
+  if(replay_pos==65534 && !gameover) t="Too many moves played";
   if(t) {
     screen_message(t);
     gameover=-1;
     return;
   }
-  //TODO: Record this move, if applicable
+  if(!key_ignored) {
+    if(replay_pos>=replay_size) {
+      replay_list=realloc(replay_list,replay_size+=0x200);
+      if(!replay_list) fatal("Allocation failed\n");
+    }
+    replay_list[replay_pos++]=k;
+    if(replay_pos>replay_count) replay_count=replay_pos;
+  }
 }
 
 void run_game(void) {

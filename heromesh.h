@@ -251,6 +251,9 @@ const char*init_level(void);
 
 // == game ==
 
+extern Uint8*replay_list;
+extern Uint16 replay_size,replay_count,replay_pos,replay_mark;
+
 void run_game(void);
 void locate_me(int x,int y);
 
