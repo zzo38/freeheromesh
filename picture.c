@@ -19,6 +19,7 @@ exit
 #include "quarks.h"
 #include "heromesh.h"
 #include "cursorshapes.h"
+#include "keyicons.xbm"
 
 SDL_Surface*screen;
 Uint16 picture_size;
@@ -132,6 +133,24 @@ void draw_text(int x,int y,const unsigned char*t,int bg,int fg) {
     t++;
     if(!--len) return;
     pix+=8;
+  }
+}
+
+void draw_key(int x,int y,int k,int bg,int fg) {
+  // To be called only when screen is locked!
+  Uint8*p=screen->pixels;
+  Uint16 pitch=screen->pitch;
+  int xx,yy;
+  const unsigned char*f;
+  if(x<0 || y<0 || x+16>screen->w || y+16>screen->h) return;
+  p+=y*pitch+x;
+  f=keyicons_bits+(k<<5);
+  for(yy=0;yy<16;yy++) {
+    for(xx=0;xx<8;xx++) p[xx]=(*f>>xx)&1?fg:bg;
+    ++f;
+    for(xx=0;xx<8;xx++) p[xx+8]=(*f>>xx)&1?fg:bg;
+    p+=pitch;
+    ++f;
   }
 }
 

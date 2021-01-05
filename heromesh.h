@@ -92,6 +92,7 @@ void draw_cell(int x,int y);
 
 // Use only when screen is locked
 void draw_text(int x,int y,const unsigned char*t,int bg,int fg);
+void draw_key(int x,int y,int k,int bg,int fg);
 
 const char*screen_prompt(const char*txt);
 int screen_message(const char*txt);

@@ -105,9 +105,18 @@ static void redraw_game(void) {
     }
   } else {
     // Move list
-    
+    snprintf(buf,8,"%5d",replay_pos);
+    draw_text(8,52,buf,0xF0,0xF9);
+    snprintf(buf,8,"%5d",replay_count);
+    draw_text(8,screen->h-8,buf,0xF0,0xFC);
+    for(y=44,x=replay_pos-(screen->h-68)/32;;x++) {
+      y+=16;
+      if(y+24>screen->h) break;
+      if(x>=0 && x<replay_count) draw_key(16,y,replay_list[x],0xF8,0xFB);
+      if(x==replay_pos) draw_text(0,y,"~~",0xF0,0xFE);
+      if(x==replay_mark) draw_text(32,y,"~~",0xF0,0xFD);
+    }
     SDL_UnlockSurface(screen);
-    
   }
   if(quiz_text) draw_popup(quiz_text);
   SDL_Flip(screen);
