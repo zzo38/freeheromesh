@@ -219,6 +219,170 @@ These are the global definitions in the class definition file.
   their own code for this message.
 
 
+=== Class definitions ===
+
+Within a class definition, the following definitions can be used. See also
+the section about variables; many of these definitions are used to specify
+the initial value for variables of objects of this class.
+
+Outside of code blocks, named constants are not normally interchangeable
+with the numbers having the same value.
+
+Abstract
+  (Not implemented yet.)
+
+(Arrivals InPlace)
+  This is an abbreviation for (Arrivals 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0
+  0 0 0 0 0 0 0 0).
+
+(Arrivals <numbers...>)
+  Define the Arrivals variable for this class. This is twenty-five numbers
+  each of which is either zero or one. They are meant to be on five lines
+  of five numbers each, making a 5x5 matrix, where the centre means this
+  object's location.
+
+(Climb <number>)
+  Define the Climb variable for this class.
+
+Compatible
+  Sets the Compatible flag for this class.
+
+,Compatible
+  Sets the Compatible flag for this class, but removes the restriction of
+  some variables limited to 16-bits.
+
+(DefaultImage <list...>)
+  Each entry is either a number of an image in this class, or two
+  numbers in parentheses giving a range of images, or () to indicate
+  that there are no default images. This specifies which images can
+  be used in objects of this class which are initially present on
+  the level (placed in the editor). If () is used, then this class
+  is not available in the editor. If there is no (DefaultImage) block,
+  all images are available. The (Image) block must come before this one.
+
+(Density <number>)
+  Define the Density variable for this class. If you want the Density to
+  be different in the editor, specify the value to use in the editor here,
+  and then change the Density value in the INIT block.
+
+(Departures InPlace)
+  This is an abbreviation for (Departures 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0
+  0 0 0 0 0 0 0 0 0).
+
+(Departures <numbers...>)
+  Define the Departures variable for this class. The format is the same as
+  for the Arrivals variable; see above.
+
+(EditorHelp <strings...>)
+  A help message to display in the level editor; normally, this would
+  explain what values are expected for Misc1, Misc2, Misc3, and Dir.
+  Each string is one line of text.
+
+(Hard <number>)
+  Define the hardness of this object on all four sides.
+
+(Hard <pairs...>)
+  Define the hardness per direction. Each pair is in parentheses, and is
+  a direction (E, N, W, or S) followed by a 16-bit number. If any
+  direction is not specified, then the hardness is zero in that direction.
+
+(Height <number>)
+  Define the Height variable for this class.
+
+(Help <strings...>)
+  A help message for the game player, which would normally explain what
+  this object does. Each string is one line of text.
+
+(Image <strings...>)
+  Specify strings with the names of images. The first string is the
+  name of the image numbered 0, next for the image numbered 1, etc.
+
+Input
+  Set the Input flag for this class.
+
+Invisible
+  Set the Invisible flag for this class.
+
+(Misc4 <numbers...>)
+  Specify any combination of numbers and/or bit constants. Defines the
+  Misc4 variable of this class to be the bitwise OR of the listed numbers.
+
+(Misc5 <numbers...>)
+  Define the Misc5 variable for this class; see Misc4 above for details.
+
+(Misc6 <numbers...>)
+  Define the Misc6 variable for this class; see Misc4 above for details.
+
+(Misc7 <numbers...>)
+  Define the Misc7 variable for this class; see Misc4 above for details.
+
+Player
+  Set the Player flag for this class.
+
+Quiz
+  If specified, the internal variables of objects of this class cannot
+  normally be examined by the player. However, the player can override
+  this definition at run time; you cannot rely on it. Class codes cannot
+  read the value of this flag.
+
+(Shape <number>)
+  Define the shape of this object on all four sides, where 0 means flat,
+  1 means slanted to left, 2 means slanted to right, and 3 means slanted
+  both left and right.
+
+(Shape <pairs...>)
+  Define the shape of this object per side, similar to the (Hard) block.
+
+(Sharp <number>)
+  Define the sharpness of this object on all four sides.
+
+(Sharp <pairs...>)
+  Define sharpness per direction, as for the (Hard) block.
+
+Shovable
+  Set the Shovable variable for this class to 0x55 (meaning it is shovable
+  in all four directions).
+
+(Shovable <dir...>)
+  Set this object to be shovable in the specified directions, which can be
+  E, N, W, or S (diagonals are not allowed).
+
+(Shovable <number>)
+  Set the Shovable variable to the specified 8-bit number. (You cannot set
+  the initial value of any other bits; they are always clear.)
+
+Stealthy
+  Set the Stealthy flag for this class.
+
+(Strength <number>)
+  Define the Strength variable for this class.
+
+(SUBS <code...>)
+  Make a code block with no entry point. This isn't very useful, but it
+  is provided for compatibility with Hero Mesh.
+
+(Temperature <number>)
+  Define the Temperature variable for this class.
+
+VisualOnly
+  Set the VisualOnly flag for this class.
+
+(Volume <number>)
+  Define the Volume variable for this class.
+
+(Weight <number>)
+  Define the Weight variable for this class.
+
+(<label> <code...>)
+  Make a code block whose entry point is the specified label.
+
+(<message> <code...>)
+  Make a code block whose entry point is the specified message.
+
+(<key> <code...>)
+  (This is not implemented yet.)
+
+
 === Data types ===
 
 The following data types are available:
@@ -1090,7 +1254,8 @@ QueueTurn  ( key -- ) **
   replay list and does not increase MoveNumber, but otherwise will act
   like any other turn. Popup messages are not removed; they will be
   retained, and these extra turns execute the input phase as though there
-  is no popup quiz.
+  is no popup quiz. (Not implemented yet. Details described here might be
+  changed when it is implemented.)
 
 ret  ( -- )
   Exit the current subroutine. If this is a message block, it must either
@@ -1246,13 +1411,16 @@ objects, and what return values are expected. (Do not confuse CREATE with
 CREATED or DESTROY with DESTROYED; they have different purposes.)
 
 ARRIVED
-  
+  Sent during the trigger phase if the Arrived value is nonzero. Arg1 is
+  the saved Arrived value. The Arrived variable will usually be set
+  automatically; see the section about variables.
 
 BEGIN_TURN
   Sent to all objects during the beginning phase (the phase after the
   input phase). From is an object with the Player flag (if there is any),
   Arg1 and Arg2 are the X and Y coordinates of that object, and Arg3 is
-  the most recent return value from a KEY message.
+  the most recent return value from a KEY message. The beginning phase may
+  be suppressed; if it is, then the ending phase is also suppressed.
 
 COLLIDE
   Received when this object is trying to move into a location where there
@@ -1280,10 +1448,15 @@ CREATE
   Arg3 of the SUNK and CREATED messages it might send if appropriate.
 
 CREATED
-  
+  Sent to all objects whose Arrivals care about objects in the location
+  where an object has just been created. From is the newly created object,
+  Arg1 and Arg2 are the X and Y coordinates where the object was created,
+  and Arg3 is the return value from the CREATE message.
 
 DEPARTED
-  
+  Sent during the trigger phase if the Departed value is nonzero. Arg1 is
+  the saved Departed value. The Departed variable will usually be set
+  automatically; see the section about variables.
 
 DESTROY
   Received when the object is about to be destroyed. Arg3 is the reason:
@@ -1293,13 +1466,34 @@ DESTROY
   allow it to be destroyed or true to keep the object.
 
 DESTROYED
-  
+  Sent to all objects whose Departures care about objects in the location
+  where an object has just been destroyed (if its VisualOnly flag isn't
+  set). From is the object which has just been destroyed. Arg3 is the
+  reason, as for the DESTROY message.
 
 END_TURN
-  
+  During the trigger phase, if no objects are busy, then the ending phase
+  will be executed next. This message is sent to all objects during the
+  ending phase (unless the ending phase has been suppressed). Arg1 is the
+  phase number; this is initially zero at the beginning of each turn, but
+  after each ending phase completes, this number is incremented. If the
+  return value is true, or if this object has Arrived, Busy, Departed,
+  Moved, or UserSignal variables set to nonzero, it will not suppress the
+  next ending phase. Otherwise, if this is not the case for any of the
+  objects checked, it will suppress the ending phase for the rest of this
+  turn (although other phases may still work).
 
 FLOATED
-  
+  This message is used in three cases. If an object's Density variable is
+  changed, then as each pair is being exchanged, it sends the FLOATED
+  message to the object which now has less density. From is the object
+  which it has been exchanged with. The return value is used as the Arg3
+  of the corresponding SUNK message. The other case this is used is when
+  an object moves or is created but is not the least dense object at that
+  location. In this case, From is the object which has been moved or
+  created, Arg3 is the return value of the corresponding SUNK message,
+  and the return value is not used. (The FLOATED and SUNK messages have
+  nothing to do with floating and sinking in water.)
 
 HIT
   Indicates that this object is trying to move into another one; that
@@ -1333,10 +1527,21 @@ KEY
   one for a quiz. The return value is passed as Arg2 for the next object.
 
 LASTIMAGE
-  
+  Called during the trigger phase if this object has a one-shot logical
+  animation whose logical timer has expired. New animations played during
+  or after this time will retain any existing visual animation, but the
+  new logical animation replaces the old one. However, there is a maximum
+  number of animations that may be sequenced together in this way.
 
 MOVED
-  
+  Sent during the trigger phase to all objects which have the Moved flag
+  set; this flag is cleared before sending the message, so if it moves
+  again it will remember that it moved again. It will not send this
+  message again during the same trigger phase, even if the Compatible
+  flag is set; it will wait until all other objects have been processed
+  during the same trigger phase first. Arg3 is the phase number (see the
+  description of END_TURN for details). The Moved variable will usually
+  be set automatically; see the section about variables for details.
 
 MOVING
   Called when the object is about to be moved (whether due to Move,
@@ -1357,7 +1562,15 @@ POSTINIT
   time will not receive POSTINIT messages.
 
 SUNK
-  
+  This message is used in three cases. If an object's Density variable is
+  changed, then as each pair is being exchanged, it sends the SUNK message
+  to the object which now has more density. From is the object which it
+  has been exchanged with. Arg3 is the return value from the corresponding
+  FLOATED message. The other cases this is used is when an object moves or
+  is created but is not the least dense object at that location. In this
+  case, From is zero, and the return value is not used. For creation, Arg3
+  is the return value of the corresponding CREATE message; for movement,
+  Arg3 is always zero. (This has nothing to do with sinking in water.)
 
 
 === Hit values ===
@@ -1505,4 +1718,6 @@ that Inertia is not reset.
 * Moving objects is not allowed during LASTIMAGE processing.
 
 * The way that the trigger phase works is different.
+
+* In the ARRIVED and DEPARTED messages, Arg1 is always zero.
 

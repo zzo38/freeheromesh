@@ -22,8 +22,8 @@ Offset  Type      Description
 File version is 15 for Hero Mesh version 1.1c, and is 16 for Hero Mesh
 version 2.0. Other versions (if any) are unknown. The rest of this
 document is applicable to file version 16 (differences, if any, are
-unknown; file version 15 does not seem to have any differences as far as
-I can tell).
+unknown; file version 15 does not seem to have any differences as far
+as I can tell).
 
 Puzzle set number is a number that can be read by the class codes but
 otherwise does nothing. It is used by the Hero Hearts puzzle sets to
