@@ -1352,7 +1352,9 @@ VolumeAt  ( x y -- volume )
 
 WinLevel  ( -- )
   Ends all execution and accepts the input sequence that resulted in the
-  current game state as a valid solution.
+  current game state as a valid solution. (In other words, the goal of the
+  game is to find a sequence of inputs that result in the execution of a
+  WinLevel instruction, without causing any errors or executing LoseLevel.)
 
 XDir  ( dir -- newx )
   Finds the X coordinate of the cell in the specified direction.
