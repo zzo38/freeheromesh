@@ -605,13 +605,14 @@ static Uint32 create(Uint32 from,Uint16 c,Uint32 x,Uint32 y,Uint32 im,Uint32 d) 
   pflink(n);
   v=send_message(from,n,MSG_CREATE,NVALUE(0),NVALUE(0),NVALUE(0));
   if(o->oflags&OF_DESTROYED) return VOIDLINK;
-  for(i=25;i>=0;i--) {
-    xx=x+Xbit(i); yy=y+Ybit(i);
+  for(y=0;y<5;y++) for(x=0;x<5;x++) {
+    xx=o->x+x-2; yy=o->y+y-2;
     if(xx<1 || xx>pfwidth || yy<1 || yy>pfheight) continue;
+    i=4-x+5*y;
     m=playfield[xx+yy*64-65];
     while(m!=VOIDLINK) {
       p=objects[m];
-      if(p->arrivals&(1<<i)) if(m!=n) send_message(n,m,MSG_CREATED,NVALUE(x),NVALUE(y),v);
+      if(p->arrivals&(1<<i)) if(m!=n) send_message(n,m,MSG_CREATED,NVALUE(o->x),NVALUE(o->y),v);
       m=p->up;
     }
   }
@@ -648,10 +649,10 @@ static Value destroy(Uint32 from,Uint32 to,Uint32 why) {
     o->oflags|=OF_DESTROYED;
     if(why!=8 && !(o->oflags&OF_VISUALONLY)) {
       // Not checking for stealth; stealth only applies to movement, not destruction
-      xx=o->x; yy=o->y;
-      for(i=25;i>=0;i--) {
-        x=xx+Xbit(i); y=yy+Ybit(i);
+      for(yy=0;yy<5;yy++) for(xx=0;xx<5;xx++) {
+        x=o->x+xx-2; y=o->y+yy-2;
         if(x<1 || x>pfwidth || y<1 || y>pfheight) continue;
+        i=4-xx+5*yy;
         n=playfield[x+y*64-65];
         while(n!=VOIDLINK) {
           o=objects[n];
