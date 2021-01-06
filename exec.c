@@ -1251,7 +1251,8 @@ static void v_set_popup(Uint32 from,int argc) {
 #define DivideBy(a) do{ Numeric(a); if(!(a).u) Throw("Division by zero"); }while(0)
 #define GetFlagOf(a) t2=Pop(),Push(t2.t==TY_CLASS?NVALUE(classes[t2.u]->oflags&a?1:0):(i=v_object(t2),i==VOIDLINK?NVALUE(0):NVALUE(objects[i]->oflags&a?1:0)))
 #define GetClassFlagOf(a) t2=Pop(),Push(t2.t==TY_CLASS?NVALUE(classes[t2.u]->cflags&a?1:0):(i=v_object(t2),i==VOIDLINK?NVALUE(0):NVALUE(classes[objects[i]->class]->cflags&a?1:0)))
-#define SetFlagOf(a) do { t2=Pop(); i=v_object(Pop()); if(i!=VOIDLINK) { if(v_bool(t2)) objects[i]->oflags|=a; else objects[i]->oflags&=~a; } }while(0)
+#define SetFlagOf(a) do{ t2=Pop(); i=v_object(Pop()); if(i!=VOIDLINK) { if(v_bool(t2)) objects[i]->oflags|=a; else objects[i]->oflags&=~a; } }while(0)
+#define NotSound(a) do{ if((a).t==TY_SOUND || (a).t==TY_USOUND) Throw("Cannot convert sound to type"); }while(0)
 static void execute_program(Uint16*code,int ptr,Uint32 obj) {
   Uint32 i,j;
   Object*o=objects[obj];
@@ -1497,6 +1498,13 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_PLAYER_C: StackReq(1,1); GetClassFlagOf(CF_PLAYER); break;
     case OP_POPUP: StackReq(1,0); v_set_popup(obj,0); break;
     case OP_POPUPARGS: i=code[ptr++]; StackReq(i+1,0); v_set_popup(obj,i); break;
+    case OP_QC: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t==TY_CLASS) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_QCZ: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t==TY_CLASS || (t1.t==TY_NUMBER && !t1.u)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_QM: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t==TY_MESSAGE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_QN: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t==TY_NUMBER) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_QO: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t>TY_MAXTYPE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_QOZ: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t>TY_MAXTYPE || (t1.t==TY_NUMBER && !t1.u)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_QS: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t==TY_STRING || t1.t==TY_LEVELSTRING) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_RET: return;
     case OP_ROT: StackReq(3,3); t3=Pop(); t2=Pop(); t1=Pop(); Push(t2); Push(t3); Push(t1); break;
     case OP_ROTBACK: StackReq(3,3); t3=Pop(); t2=Pop(); t1=Pop(); Push(t3); Push(t1); Push(t2); break;

@@ -123,6 +123,15 @@ ne
 ,le
 is
 
+; Type checks
+qn "n?"
+qc "c?"
+qcz "cz?"
+qm "m?"
+qs "s?"
+qo "o?"
+qoz "oz?"
+
 ; Standard variables
 ,Class
 ,=!Temperature

@@ -980,11 +980,19 @@ BroadcastSumEx  ( class message arg1 arg2 arg3 -- total )
 bxor  ( in1 in2 -- out )
   Bitwise XOR.
 
+c?  ( any -- bool )
+  True if the value is a class, or false if it is any other type. Error if
+  it is a sound.
+
 Create  ( class x y image dir -- obj ) **
   Creates a new object at the specified location, and returns it. The
   result is zero if the class is zero, the coordinates are out of range,
   the object cannot be created due to the CollisionLayers, or if the new
   object is destroyed before its CREATE message returns.
+
+cz?  ( any -- bool )
+  True if the value is a class or zero, or false if it is neither a class
+  nor zero. Error if it is a sound.
 
 DelInventory  ( class image -- ) **
   Delete an item from the inventory; see SetInventory for more details.
@@ -1130,6 +1138,10 @@ lt  ( in1 in2 -- bool )
 lxor  ( in1 in2 -- out )
   Logical XOR.
 
+m?  ( any -- bool )
+  True if the value is a message, or false if it is any other type. Error
+  if it is a sound.
+
 MaxInventory  ( number -- )
   Results in an error and loss of game if the number of different
   inventory items exceeds the given number, otherwise no effect.
@@ -1173,6 +1185,10 @@ MoveTo  ( x y -- bool ) **
 Msg  ( -- message )
   The current message being processed.
 
+n?  ( any -- bool )
+  True if the value is a number, or false if it is any other type. Error
+  if it is a sound.
+
 ne  ( in1 in2 -- bool )
   As eq but the result is inverted (like "eq lnot").
 
@@ -1189,6 +1205,10 @@ NewY  ( oldx dir -- newy )
   Advance the number in the direction as though it is a Y coordinate.
 
 nip  ( x y -- y )
+
+o?  ( any -- bool )
+  True if the value is an object (whether or not it has been garbage
+  collected), or false for any other type. Error if it is a sound.
 
 ObjAbove  ( -- obj )
   The object above this one (0 if this one is at the top). "Above" means
@@ -1231,6 +1251,11 @@ ObjLayerAt  ( layers x y -- obj )
 ObjTopAt  ( x y -- obj )
   Find the object on the top at the specified location. The result will be
   zero if that location is vacant or out of range.
+
+oz?  ( any -- bool )
+  True if the value is an object or zero, or false if it is neither an
+  object nor zero. (Even if the object has been garbage collected, it is
+  still true.) Error if it is a sound.
 
 PopUp  ( value -- )
   Displays a popup message. Normally, the value is a string, but it can be
@@ -1275,6 +1300,11 @@ rsh  ( in shift -- out )
   Arithmetic right shift. If the shift amount is out of the range 0-31,
   then all bits are shifted out; the result will be -1 if the input is
   negative, or 0 otherwise.
+
+s?  ( any -- bool )
+  True if the value is a string (which may be either a string in the class
+  codes or a string in the level), or false if it is any other type. Error
+  if it is a sound.
 
 Self  ( -- obj )
   The reference to the current object.
