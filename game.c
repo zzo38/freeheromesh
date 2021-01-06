@@ -173,9 +173,22 @@ static void show_mouse_xy(SDL_Event*ev) {
   int x,y;
   x=(ev->motion.x-left_margin)/picture_size+1;
   y=ev->motion.y/picture_size+1;
-  if(ev->motion.x<left_margin) x=0;
-  if(x>0 && y>0 && x<=pfwidth && y<=pfheight) snprintf(buf,8,"(%2d,%2d)",x,y);
-  else strcpy(buf,"       ");
+  if(ev->motion.x<left_margin) {
+    if(ev->button.y<48) {
+      strcpy(buf,"       ");
+    } else if(side_mode) {
+      // Inventory
+      x=(ev->button.y-52)/picture_size;
+      if(x<0 || x>=ninventory) strcpy(buf,"       "); else snprintf(buf,8,"%7d",inventory[x].value);
+    } else {
+      // Move list
+      x=replay_pos+(ev->button.y+4)/16-(screen->h-68)/32-4;
+      if(x<0 || x>replay_count) strcpy(buf,"       "); else snprintf(buf,8,"=%6d",x);
+    }
+  } else {
+    if(x>0 && y>0 && x<=pfwidth && y<=pfheight) snprintf(buf,8,"(%2d,%2d)",x,y);
+    else strcpy(buf,"       ");
+  }
   SDL_LockSurface(screen);
   draw_text(0,40,buf,0xF0,0xF1);
   SDL_UnlockSurface(screen);
@@ -581,7 +594,16 @@ void run_game(void) {
         break;
       case SDL_MOUSEBUTTONDOWN:
         if(ev.button.x<left_margin) {
-          
+          if(ev.button.y<48) break;
+          if(side_mode) {
+            // Inventory
+            
+          } else {
+            // Move list
+            i=(ev.button.y+4)/16-(screen->h-68)/32-4;
+            if(i<0) game_command(0,'- ',-i,0,0,0); else if(i>0) game_command(0,'+ ',i,0,0,0);
+            goto replay;
+          }
           break;
         } else {
           i=exec_key_binding(&ev,0,(ev.button.x-left_margin)/picture_size+1,ev.button.y/picture_size+1,game_command,0);
@@ -596,6 +618,7 @@ void run_game(void) {
           SDL_SetTimer(0,0);
           return;
         }
+      replay:
         if(inputs_count) {
           //TODO: Check for solution replay
           for(i=0;i<inputs_count && !gameover;i++) if(inputs[i]) input_move(inputs[i]);
