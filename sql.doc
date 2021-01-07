@@ -127,6 +127,8 @@ CREATE TABLE "USERCACHEDATA"("ID" INTEGER PRIMARY KEY, "FILE" INT,
   then it will be set to null again. USERSTATE contains user data such as
   the list of moves made by the player. FILE is the ID in the user cache
   index, and indicates which Hamster archive file this lump belongs to.
+  (The USERSTATE column of this SQL table is not related to the UserState
+  variable of objects in the game.)
 
 CREATE TABLE "USERCACHEINDEX"("ID" INTEGER PRIMARY KEY, "NAME" TEXT,
 "TIME" INT);

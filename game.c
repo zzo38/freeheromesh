@@ -113,6 +113,7 @@ static void redraw_game(void) {
       y+=16;
       if(y+24>screen->h) break;
       if(x>=0 && x<replay_count) draw_key(16,y,replay_list[x],0xF8,0xFB);
+      if(x==replay_count) draw_key(16,y,1,0xF0,0xF8);
       if(x==replay_pos) draw_text(0,y,"~~",0xF0,0xFE);
       if(x==replay_mark) draw_text(32,y,"~~",0xF0,0xFD);
     }
@@ -183,7 +184,7 @@ static void show_mouse_xy(SDL_Event*ev) {
     } else {
       // Move list
       x=replay_pos+(ev->button.y+4)/16-(screen->h-68)/32-4;
-      if(x<0 || x>replay_count) strcpy(buf,"       "); else snprintf(buf,8,"=%6d",x);
+      if(x<0 || x>replay_count) strcpy(buf,"       "); else snprintf(buf,8,"%c%6d",x<replay_pos?0xAE:x>replay_pos?0xAF:0xFE,x);
     }
   } else {
     if(x>0 && y>0 && x<=pfwidth && y<=pfheight) snprintf(buf,8,"(%2d,%2d)",x,y);
