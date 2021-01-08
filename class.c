@@ -1449,6 +1449,10 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
             pushback=1;
             ptr=parse_instructions(cla,ptr,hash,compat);
             break;
+          case OP_COLLISIONLAYERS:
+            cl->collisionLayers=i=class_def_misc();
+            if(i&~255) ParseError("CollisionLayers out of range\n");
+            break;
           case 0x0200 ... 0x02FF:
             set_message_ptr(cla,tokenv&255,ptr);
             ptr=parse_instructions(cla,ptr,hash,compat);

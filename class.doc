@@ -244,6 +244,10 @@ Abstract
 (Climb <number>)
   Define the Climb variable for this class.
 
+(CollisionLayers <numbers...>)
+  Define the CollisionLayers variable for this class. The format is the
+  same as for Misc4 (see below), but only the low 8-bits are usable.
+
 Compatible
   Sets the Compatible flag for this class.
 
