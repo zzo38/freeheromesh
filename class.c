@@ -1504,7 +1504,7 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
 static void load_class_numbers(void) {
   int i,n;
   long size=0;
-  unsigned char*data=read_lump(FIL_LEVEL,LUMP_CLASS_DEF,&size,0);
+  unsigned char*data=read_lump(FIL_LEVEL,LUMP_CLASS_DEF,&size);
   unsigned char*p;
   if(!data) return;
   for(i=0;i<size-3;) {

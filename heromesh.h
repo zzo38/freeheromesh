@@ -69,8 +69,9 @@ extern void*stack_protect_high;
 #define StackProtection() 0
 #endif
 
-unsigned char*read_lump(int sol,int lvl,long*sz,sqlite3_value**us);
+unsigned char*read_lump_or_userstate(int sol,int lvl,long*sz,char us);
 void write_lump(int sol,int lvl,long sz,const unsigned char*data);
+void write_userstate(int sol,int lvl,long sz,const unsigned char*data);
 const char*load_level(int lvl);
 void set_cursor(int id);
 const char*log_if_error(const char*t);
@@ -79,6 +80,9 @@ const char*log_if_error(const char*t);
 #define FIL_LEVEL 0
 #define LUMP_LEVEL_IDX (-1)
 #define LUMP_CLASS_DEF (-2)
+
+#define read_lump(a,b,c) read_lump_or_userstate(a,b,c,0)
+#define read_userstate(a,b,c) read_lump_or_userstate(a,b,c,1)
 
 // == picture ==
 

@@ -130,27 +130,29 @@ static sqlite3_int64 reset_usercache(FILE*fp,const char*nam,struct stat*stats,co
   return id;
 }
 
-unsigned char*read_lump(int sol,int lvl,long*sz,sqlite3_value**us) {
+unsigned char*read_lump_or_userstate(int sol,int lvl,long*sz,char us) {
   // Returns a pointer to the data; must be freed using free().
   // If there is no data, returns null and sets *sz and *us to zero.
   // Third argument is a pointer to a variable to store the data size (must be not null).
-  // Fourth argument may be null, and is user state (use sqlite3_value_free() to free it).
+  // Fourth argument is 1 for user state or 0 for lump data.
   unsigned char*buf=0;
   sqlite3_reset(readusercachest);
   sqlite3_bind_int64(readusercachest,1,sol?solutionuc:leveluc);
   sqlite3_bind_int(readusercachest,2,lvl);
+  sqlite3_bind_int(readusercachest,3,us);
   if(sqlite3_step(readusercachest)==SQLITE_ROW) {
-    if(us) *us=sqlite3_value_dup(sqlite3_column_value(readusercachest,6));
-    if(sqlite3_column_type(readusercachest,5)==SQLITE_BLOB) {
-      const unsigned char*con=sqlite3_column_blob(readusercachest,5);
-      *sz=sqlite3_column_bytes(readusercachest,5);
+    if(sqlite3_column_type(readusercachest,1)==SQLITE_BLOB) {
+      const unsigned char*con=sqlite3_column_blob(readusercachest,1);
+      *sz=sqlite3_column_bytes(readusercachest,1);
       buf=malloc(*sz);
       if(*sz && !buf) fatal("Allocation failed\n");
       memcpy(buf,con,*sz);
+    } else if(us) {
+      *sz=0;
     } else {
       FILE*fp=sol?solutionfp:levelfp;
       rewind(fp);
-      fseek(fp,sqlite3_column_int64(readusercachest,4)-4,SEEK_SET);
+      fseek(fp,sqlite3_column_int64(readusercachest,0)-4,SEEK_SET);
       *sz=fgetc(fp)<<16; *sz|=fgetc(fp)<<24; *sz|=fgetc(fp); *sz|=fgetc(fp)<<8;
       if(feof(fp) || *sz<0) fatal("Invalid Hamster archive\n");
       buf=malloc(*sz);
@@ -160,7 +162,6 @@ unsigned char*read_lump(int sol,int lvl,long*sz,sqlite3_value**us) {
     }
   } else {
     *sz=0;
-    if(us) *us=0;
   }
   sqlite3_reset(readusercachest);
   return buf;
@@ -182,10 +183,23 @@ void write_lump(int sol,int lvl,long sz,const unsigned char*data) {
   sqlite3_finalize(st);
 }
 
+void write_userstate(int sol,int lvl,long sz,const unsigned char*data) {
+  sqlite3_stmt*st;
+  int e;
+  if(e=sqlite3_prepare_v2(userdb,"UPDATE `USERCACHEDATA` SET `USERSTATE` = ?3"
+   " WHERE `FILE` = ?1 AND `LEVEL` = ?2;",-1,&st,0)) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  sqlite3_bind_int64(st,1,sol?solutionuc:leveluc);
+  sqlite3_bind_int(st,2,lvl);
+  sqlite3_bind_blob64(st,3,data,sz,0);
+  while((e=sqlite3_step(st))==SQLITE_ROW);
+  if(e!=SQLITE_DONE) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  sqlite3_finalize(st);
+}
+
 static void load_level_index(void) {
   long sz;
   int i;
-  unsigned char*data=read_lump(0,LUMP_LEVEL_IDX,&sz,0);
+  unsigned char*data=read_lump(FIL_LEVEL,LUMP_LEVEL_IDX,&sz);
   if(!data) return;
   if(sz>65536) fatal("Too many levels\n");
   level_index=malloc((level_nindex=sz>>1)*sizeof(Uint16));
@@ -197,7 +211,7 @@ static void load_level_index(void) {
 const char*load_level(int lvl) {
   // Load level by ID. Returns null pointer if successful, or an error message if it failed.
   long sz=0;
-  unsigned char*buf=lvl>=0?read_lump(FIL_LEVEL,lvl,&sz,0):0;
+  unsigned char*buf=lvl>=0?read_lump(FIL_LEVEL,lvl,&sz):0;
   unsigned char*p=buf;
   unsigned char*end=buf+sz;
   unsigned char*q;
@@ -208,7 +222,7 @@ const char*load_level(int lvl) {
   if(lvl<0 && level_index && -lvl<=level_nindex) {
     lo=-lvl;
     lvl=level_index[~lvl];
-    p=buf=read_lump(FIL_LEVEL,lvl,&sz,0);
+    p=buf=read_lump(FIL_LEVEL,lvl,&sz);
     end=buf+sz;
   }
   if(lvl<0) return "Invalid level ID";
@@ -497,7 +511,8 @@ static void init_usercache(void) {
   if(fst.st_mtime>t2 || fst.st_ctime>t2) solutionuc=reset_usercache(solutionfp,nam3,&fst,".SOL");
   free(nam2);
   free(nam3);
-  if(z=sqlite3_prepare_v3(userdb,"SELECT * FROM `USERCACHEDATA` WHERE `FILE` = ?1 AND `LEVEL` = ?2;",-1,SQLITE_PREPARE_PERSISTENT,&readusercachest,0)) {
+  if(z=sqlite3_prepare_v3(userdb,"SELECT `OFFSET`, CASE WHEN ?3 THEN `DATA` ELSE `USERSTATE` END "
+   "FROM `USERCACHEDATA` WHERE `FILE` = ?1 AND `LEVEL` = ?2;",-1,SQLITE_PREPARE_PERSISTENT,&readusercachest,0)) {
     fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   }
   if(z=sqlite3_exec(userdb,"COMMIT;",0,0,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
