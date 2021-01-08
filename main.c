@@ -511,7 +511,7 @@ static void init_usercache(void) {
   if(fst.st_mtime>t2 || fst.st_ctime>t2) solutionuc=reset_usercache(solutionfp,nam3,&fst,".SOL");
   free(nam2);
   free(nam3);
-  if(z=sqlite3_prepare_v3(userdb,"SELECT `OFFSET`, CASE WHEN ?3 THEN `DATA` ELSE `USERSTATE` END "
+  if(z=sqlite3_prepare_v3(userdb,"SELECT `OFFSET`, CASE WHEN ?3 THEN `USERSTATE` ELSE `DATA` END "
    "FROM `USERCACHEDATA` WHERE `FILE` = ?1 AND `LEVEL` = ?2;",-1,SQLITE_PREPARE_PERSISTENT,&readusercachest,0)) {
     fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   }

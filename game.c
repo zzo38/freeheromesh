@@ -196,11 +196,40 @@ static void show_mouse_xy(SDL_Event*ev) {
   SDL_Flip(screen);
 }
 
+static void end_level(void) {
+  long sz=replay_size;
+  if(!replay_list) return;
+  if(sz<replay_count+4) {
+    replay_list=realloc(replay_list,sz=replay_count+4);
+    if(!replay_list) fatal("Allocation failed\n");
+    replay_size=(sz>0xFFFF?0xFFFF:sz);
+  }
+  sz=replay_count+4;
+  replay_list[sz-4]=replay_mark>>8;
+  replay_list[sz-3]=replay_mark;
+  replay_list[sz-2]=replay_count>>8;
+  replay_list[sz-1]=replay_count;
+  write_userstate(FIL_LEVEL,level_id,sz,replay_list);
+}
+
 static void begin_level(int id) {
   const char*t;
+  long sz;
+  if(replay_count) end_level();
   inputs_count=0;
   replay_pos=0;
   t=load_level(id)?:init_level();
+  free(replay_list);
+  replay_list=read_userstate(FIL_LEVEL,level_id,&sz);
+  if(sz>=2) {
+    replay_size=(sz>0xFFFF?0xFFFF:sz);
+    replay_count=(replay_list[sz-2]<<8)|replay_list[sz-1];
+    if(sz-replay_count>=4) replay_mark=(replay_list[replay_count]<<8)|replay_list[replay_count+1]; else replay_mark=0;
+  } else {
+    replay_count=replay_mark=replay_size=0;
+    free(replay_list);
+    replay_list=0;
+  }
   if(t) {
     gameover=-1;
     screen_message(t);
@@ -561,6 +590,8 @@ static inline void input_move(Uint8 k) {
   }
   if(!key_ignored) {
     if(replay_pos>=replay_size) {
+      if(replay_size>0xFDFF) replay_size=0xFDFF;
+      if(replay_size+0x200<=replay_pos) fatal("Confusion in input_move function\n");
       replay_list=realloc(replay_list,replay_size+=0x200);
       if(!replay_list) fatal("Allocation failed\n");
     }
@@ -584,7 +615,7 @@ void run_game(void) {
         redraw_game();
         break;
       case SDL_QUIT:
-        exit(0);
+        goto quit;
         break;
       case SDL_MOUSEMOTION:
         show_mouse_xy(&ev);
@@ -613,7 +644,7 @@ void run_game(void) {
       case SDL_KEYDOWN:
         i=exec_key_binding(&ev,0,0,0,game_command,0);
       command:
-        if(i==-1) exit(0);
+        if(i==-1) goto quit;
         if(i==-2) {
           main_options['e']=1;
           SDL_SetTimer(0,0);
@@ -630,6 +661,9 @@ void run_game(void) {
         break;
     }
   }
+  quit:
+  end_level();
+  exit(0);
 }
 
 void locate_me(int x,int y) {
