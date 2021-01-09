@@ -579,8 +579,7 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       return prev;
     case '^s': // Toggle solution replay
       solution_replay^=1;
-      replay_count=0;
-      if(replay_count) begin_level(level_id); else load_replay();
+      if(replay_count) replay_count=0,begin_level(level_id); else load_replay();
       return 1;
     case 'go': // Select level
       begin_level(number);
