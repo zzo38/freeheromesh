@@ -20,6 +20,7 @@ exit
 
 Uint8*replay_list;
 Uint16 replay_size,replay_count,replay_pos,replay_mark;
+Uint8 solution_replay=255;
 
 static volatile Uint8 timerflag;
 static int exam_scroll;
@@ -32,6 +33,7 @@ static void setup_game(void) {
   optionquery[1]=Q_showInventory;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
   side_mode=boolxrm(v,1);
+  solution_replay=0;
 }
 
 static void redraw_game(void) {
@@ -108,7 +110,7 @@ static void redraw_game(void) {
     snprintf(buf,8,"%5d",replay_pos);
     draw_text(8,52,buf,0xF0,0xF9);
     snprintf(buf,8,"%5d",replay_count);
-    draw_text(8,screen->h-8,buf,0xF0,0xFC);
+    draw_text(8,screen->h-8,buf,0xF0,solution_replay?0xFA:0xFC);
     for(y=44,x=replay_pos-(screen->h-68)/32;;x++) {
       y+=16;
       if(y+24>screen->h) break;
@@ -196,9 +198,9 @@ static void show_mouse_xy(SDL_Event*ev) {
   SDL_Flip(screen);
 }
 
-static void end_level(void) {
+static void save_replay(void) {
   long sz=replay_size;
-  if(!replay_list) return;
+  if(solution_replay || !replay_list) return;
   if(sz<replay_count+4) {
     replay_list=realloc(replay_list,sz=replay_count+4);
     if(!replay_list) fatal("Allocation failed\n");
@@ -212,24 +214,51 @@ static void end_level(void) {
   write_userstate(FIL_LEVEL,level_id,sz,replay_list);
 }
 
+static void load_replay(void) {
+  long sz;
+  int i;
+  free(replay_list);
+  if(solution_replay) {
+    replay_list=read_lump(FIL_SOLUTION,level_id,&sz);
+    // Solution format: version (16-bits), flag (8-bits), user name (null-terminated), timestamp (64-bits), move list
+    if(sz>3) {
+      i=replay_list[0]|(replay_list[1]<<8);
+      if(i!=level_version) goto notfound;
+      i=3;
+      if(replay_list[2]&1) {
+        while(i<sz && replay_list[i]) i++;
+        i++;
+      }
+      if(replay_list[2]&2) i+=8;
+      if(i>=sz || sz-i>0xFFFF) goto notfound;
+      replay_size=(sz>0xFFFF?0xFFFF:sz);
+      memmove(replay_list,replay_list+i,replay_count=sz-i);
+      replay_mark=0;
+    } else {
+      goto notfound;
+    }
+  } else {
+    replay_list=read_userstate(FIL_LEVEL,level_id,&sz);
+    if(sz>=2) {
+      replay_size=(sz>0xFFFF?0xFFFF:sz);
+      replay_count=(replay_list[sz-2]<<8)|replay_list[sz-1];
+      if(sz-replay_count>=4) replay_mark=(replay_list[replay_count]<<8)|replay_list[replay_count+1]; else replay_mark=0;
+    } else {
+      notfound:
+      replay_count=replay_mark=replay_size=0;
+      free(replay_list);
+      replay_list=0;
+    }
+  }
+}
+
 static void begin_level(int id) {
   const char*t;
-  long sz;
-  if(replay_count) end_level();
+  if(replay_count) save_replay();
   inputs_count=0;
   replay_pos=0;
   t=load_level(id)?:init_level();
-  free(replay_list);
-  replay_list=read_userstate(FIL_LEVEL,level_id,&sz);
-  if(sz>=2) {
-    replay_size=(sz>0xFFFF?0xFFFF:sz);
-    replay_count=(replay_list[sz-2]<<8)|replay_list[sz-1];
-    if(sz-replay_count>=4) replay_mark=(replay_list[replay_count]<<8)|replay_list[replay_count+1]; else replay_mark=0;
-  } else {
-    replay_count=replay_mark=replay_size=0;
-    free(replay_list);
-    replay_list=0;
-  }
+  load_replay();
   if(t) {
     gameover=-1;
     screen_message(t);
@@ -488,6 +517,10 @@ static void describe_at(int xy) {
 static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
   switch(cmd) {
     case '\' ': // Play a move
+      if(solution_replay) {
+        screen_message("You cannot play your own moves during the solution replay");
+        return -3;
+      }
       if(inputs_count>=inputs_size) {
         inputs=realloc(inputs,inputs_size+=32);
         if(!inputs) fatal("Allocation failed\n");
@@ -544,6 +577,11 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
     case '^o': // List objects
       list_objects_at(number-65);
       return prev;
+    case '^s': // Toggle solution replay
+      solution_replay^=1;
+      replay_count=0;
+      if(replay_count) begin_level(level_id); else load_replay();
+      return 1;
     case 'go': // Select level
       begin_level(number);
       return 1;
@@ -662,7 +700,7 @@ void run_game(void) {
     }
   }
   quit:
-  end_level();
+  save_replay();
   exit(0);
 }
 
