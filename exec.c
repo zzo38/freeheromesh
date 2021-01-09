@@ -608,7 +608,7 @@ static Uint32 create(Uint32 from,Uint16 c,Uint32 x,Uint32 y,Uint32 im,Uint32 d) 
   for(y=0;y<5;y++) for(x=0;x<5;x++) {
     xx=o->x+x-2; yy=o->y+y-2;
     if(xx<1 || xx>pfwidth || yy<1 || yy>pfheight) continue;
-    i=4-x+5*y;
+    i=x+5*(4-y);
     m=playfield[xx+yy*64-65];
     while(m!=VOIDLINK) {
       p=objects[m];
@@ -650,9 +650,9 @@ static Value destroy(Uint32 from,Uint32 to,Uint32 why) {
     if(why!=8 && !(o->oflags&OF_VISUALONLY)) {
       // Not checking for stealth; stealth only applies to movement, not destruction
       for(yy=0;yy<5;yy++) for(xx=0;xx<5;xx++) {
-        x=o->x+xx-2; y=o->y+yy-2;
+        x=objects[to]->x+xx-2; y=objects[to]->y+yy-2;
         if(x<1 || x>pfwidth || y<1 || y>pfheight) continue;
-        i=4-xx+5*yy;
+        i=xx+5*(4-yy);
         n=playfield[x+y*64-65];
         while(n!=VOIDLINK) {
           o=objects[n];
