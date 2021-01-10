@@ -26,7 +26,8 @@ and <resources> is optional resources to override.
   probably do not need to use this mode yourself.
 
 -a
-  Autotest levels, ensuring that the provided solution is valid.
+  Autotest levels, ensuring that the provided solution is valid. Lines
+  that don't match /^Level [0-9]+\.*: OK$/ denote errors.
 
 -c
   Only load classes and then terminate. This can be used to test that
