@@ -261,6 +261,7 @@ extern Uint16 replay_size,replay_count,replay_pos,replay_mark;
 extern Uint8 solution_replay;
 
 void run_game(void);
+void run_auto_test(void);
 void locate_me(int x,int y);
 
 // == edit ==

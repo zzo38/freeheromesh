@@ -25,7 +25,7 @@ and <resources> is optional resources to override.
   Mode for testing some internal functions of Free Hero Mesh and SDL. You
   probably do not need to use this mode yourself.
 
--a (not implemented yet)
+-a
   Autotest levels, ensuring that the provided solution is valid.
 
 -c

@@ -866,6 +866,7 @@ int main(int argc,char**argv) {
     if(main_options['r']) fatal("Switches -r and -n are conflicting\n");
     main_options['x']=1;
   }
+  if(main_options['a']) main_options['r']=main_options['x']=1;
   if(!main_options['c']) load_options();
   if(argc>optind) read_options(argc-optind,argv+optind);
   *optionquery=xrm_make_quark(globalclassname,0)?:xrm_anyq;
@@ -895,6 +896,7 @@ int main(int argc,char**argv) {
   annihilate();
   optionquery[1]=Q_level;
   if(level_ord=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,10)) log_if_error(load_level(-level_ord));
+  if(main_options['a']) run_auto_test();
   if(main_options['x']) {
     fprintf(stderr,"Ready for executing SQL statements.\n");
     do_sql_mode();

@@ -703,6 +703,64 @@ void run_game(void) {
   exit(0);
 }
 
+void run_auto_test(void) {
+  Uint8 rc=0;
+  int lvl,pro,i,n;
+  const char*t;
+  setbuf(stdout,0);
+  solution_replay=1;
+  optionquery[1]=Q_progress;
+  t=xrm_get_resource(resourcedb,optionquery,optionquery,2);
+  pro=t?strtol(t,0,10):0;
+  optionquery[1]=Q_level;
+  t=xrm_get_resource(resourcedb,optionquery,optionquery,2);
+  if(n=lvl=t?strtol(t,0,10):0) goto start;
+  for(n=1;n<=level_nindex;n++) {
+    if(lvl) break;
+    start:
+    printf("Level %d",n);
+    if(t=load_level(-n)) {
+      printf(": Error during loading: %s\n",t);
+      rc=1; continue;
+    }
+    load_replay();
+    if(!replay_count) {
+      printf(": Solution is absent, invalid, or for wrong version of this level\n");
+      rc=1; continue;
+    }
+    if(t=init_level()) {
+      printf(": Error during initialization: %s\n",t);
+      rc=1; continue;
+    }
+    if(gameover==-1) {
+      printf(": Lose during initialization\n");
+      rc=1; continue;
+    }
+    for(i=0;i<replay_count;i++) {
+      if(gameover) {
+        printf(": Premature termination on move %d\n",i);
+        rc=1; goto cont;
+      }
+      if(pro && !(i%pro)) putchar('.');
+      if(t=execute_turn(replay_list[i])) {
+        printf(": Error on move %d: %s\n",i+1,t);
+        rc=1; goto cont;
+      }
+      if(gameover==-1) {
+        printf(": Game loss on move %d\n",i+1);
+        rc=1; goto cont;
+      }
+    }
+    if(gameover<=0) {
+      printf(": Game not terminated after %d moves\n",replay_count);
+      rc=1; continue;
+    }
+    printf(": OK\n");
+    cont: ;
+  }
+  exit(rc);
+}
+
 void locate_me(int x,int y) {
   Uint8 c=7;
   SDL_Rect r,rh,rv;

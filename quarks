@@ -216,4 +216,5 @@ maxObjects
 traceAll
 traceObject
 showInventory
+progress
 

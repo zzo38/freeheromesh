@@ -1,0 +1,122 @@
+Configuration can be set in two ways. There is the .heromeshrc file in
+your home directory, which is a X resource manager file, and you can also
+specify settings in command-line arguments after the puzzle set name, each
+of which is a X resource manager string.
+
+In the .heromeshrc file, the first component of each resource is the name
+of the puzzle set (you can use ? for all puzzle sets); in command-line,
+that is omitted, and the setting name is the first component.
+
+Some settings are boolean. For boolean settings, anything that starts with
+"0", "n", "N", "f", or "F" is false, and anything that starts with "1",
+"y", "Y", "t", or "T" is true. If neither, the default setting is used.
+
+See bindings.doc for key/mouse bindings.
+
+
+=== Resources ===
+
+.altImage
+  If the puzzle set contains multiple pictures with the same name and size
+  then this resource controls which of those pictures is selected. The
+  default setting is zero.
+
+.editTitle
+  The window title to use in edit mode. A tilde is replaced by the name of
+  the puzzle set.
+
+.gameTitle
+  The window title to use in game mode. A tilde is replaced by the name of
+  the puzzle set.
+
+.gamma
+  Gamma setting. If this is set, colours are gamma corrected by the number
+  specified here. The default setting is 1.0.
+
+.imageSize
+  The picture size to use, up to 255. If the puzzle set contains pictures
+  of the requested size, it will use those, otherwise it will try to make
+  the pictures it does have larger by integer scaling; if that also does
+  not work, then it is an error.
+
+.keyRepeat
+  The keyboard repeat rate, which are two numbers, first the key repeating
+  delay and then the key repeating interval.
+
+.level
+  Specifies the 1-based order number of the level to start at.
+
+.margin
+  The X coordinate of the left margin. To the left is the status area, and
+  to the right of the margin is the playfield. This should be at least 64,
+  or the picture size, whichever is greater.
+
+.palette
+  If defined, the file name of the palette to use (if not set, then the
+  internal palette is used instead). The file format is hex rrggbb format
+  separated by any kind of whitespaces.
+
+.progress
+  If nonzero, how many steps between dots in the progress report for the
+  auto testing most.
+
+.screenFlags
+  SDL flags: d = double buffer, f = full screen, h = use hardware surface,
+  n = no window frame, p = hardware palette, r = allow the window to be
+  resized, y = asynchronous blit, z = no parachute. Some flags might not
+  work if the window manager does not support them.
+
+.screenHeight
+  Height of the window (not counting the border), in pixels.
+
+.screenWidth
+  Width of the window (not counting the border), in pixels.
+
+.showInventory
+  True means to show the inventory in the margin by default; false means
+  to show the move list in the margin by default. Either way, it is
+  possible to change the display at run time.
+
+.sqlCoveringIndexScan
+  Boolean controlling if SQLite will use covering index scans.
+
+.sqlExtensions
+  Names of SQLite extensions with spaces in between.
+
+.sqlFile
+  Name of the user cache database. If not set, then it will use the file
+  called .heromeshsession in the home directory.
+
+.sqlInit
+  SQL codes to execute when Free Hero Mesh starts.
+
+.sqlMemStatus
+  Boolean controlling if SQL memory status is available.
+
+.sqlSmallAllocations
+  Boolean controlling if SQLite will try to make small allocations.
+
+.stackProtection
+  Controls protection from stack overflows; this only works if the C
+  compiler supports this feature, otherwise there is no effect. If the
+  first character is ? then the stack protection test mode will be
+  activated; it will display the call stack usage. The first character
+  may also be < or > for a stack growing down or up, followed by the
+  maximum number of bytes to use (in decimal, or hexadecimal with "0x"
+  at first). Note that not all C functions will check for the stack
+  protection, so it will use a small amount more than specified here.
+
+.traceAll
+  If true, then all classes and messages are allowed for tracing. However,
+  there is no effect unless tracing is enabled.
+
+.traceObject
+  If defined, and tracing is enabled, then it is an error for the
+  specified object to be freed during the game; you can use this to
+  debug errors with the use of a specific non-existent objects. You
+  specify as the object ID number and generation number, separated by
+  a colon. (This is how it is displayed in the examination screen.)
+
+.tracePrefix
+  If defined, trace output is prefixed by the specified text.
+
