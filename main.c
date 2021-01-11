@@ -1,5 +1,5 @@
 #if 0
-gcc ${CFLAGS:--s -O2} -o ${EXE:-~/bin/heromesh} main.c class.o picture.o bindings.o function.o exec.o game.o edit.o smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread
+gcc ${CFLAGS:--s -O2} -o ${EXE:-~/bin/heromesh} main.c class.o picture.o bindings.o function.o exec.o game.o edit.o picedit.o smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread
 exit
 #endif
 
@@ -867,6 +867,7 @@ int main(int argc,char**argv) {
     main_options['x']=1;
   }
   if(main_options['a']) main_options['r']=main_options['x']=1;
+  if(main_options['p']) main_options['r']=1;
   if(!main_options['c']) load_options();
   if(argc>optind) read_options(argc-optind,argv+optind);
   *optionquery=xrm_make_quark(globalclassname,0)?:xrm_anyq;
@@ -881,6 +882,10 @@ int main(int argc,char**argv) {
   init_sql();
   load_key_bindings();
   init_screen();
+  if(main_options['p']) {
+    run_picture_editor();
+    return 0;
+  }
   load_pictures();
   if(main_options['T']) {
     test_mode();

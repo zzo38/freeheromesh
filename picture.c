@@ -52,7 +52,7 @@ static const char default_palette[]=
   "555555 5555FF 55FF55 55FFFF FF5555 FF55FF FFFF55 FFFFFF "
 ;
 
-static void init_palette(void) {
+void init_palette(void) {
   double gamma;
   int usegamma=1;
   int i,j;

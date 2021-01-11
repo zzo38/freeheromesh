@@ -90,6 +90,10 @@ extern SDL_Surface*screen;
 extern Uint16 picture_size;
 extern int left_margin;
 
+void init_palette(void);
+void init_screen(void);
+void load_pictures(void);
+
 // Use only when screen is unlocked
 void draw_picture(int x,int y,Uint16 img);
 void draw_cell(int x,int y);
@@ -100,7 +104,6 @@ void draw_key(int x,int y,int k,int bg,int fg);
 
 const char*screen_prompt(const char*txt);
 int screen_message(const char*txt);
-void load_pictures(void);
 
 int scrollbar(int*cur,int page,int max,SDL_Event*ev,SDL_Rect*re);
 
@@ -268,4 +271,8 @@ void locate_me(int x,int y);
 
 void run_editor(void);
 void write_empty_level_set(FILE*);
+
+// == picedit ==
+
+void run_picture_editor(void);
 

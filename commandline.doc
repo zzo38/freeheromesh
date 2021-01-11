@@ -42,6 +42,9 @@ and <resources> is optional resources to override.
   exist; the .level and .solution files should not already exist, and will
   be created with minimal data.
 
+-p
+  Start the picture editor.
+
 -r
   Open in read-only mode.
 
