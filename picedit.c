@@ -18,8 +18,8 @@ exit
 #include "cursorshapes.h"
 
 typedef struct {
-  Uint8 size;
-  Uint8 data[0];
+  Uint8 size,meth;
+  Uint8 data[0]; // the first row is all 0, since the compression algorithm requires this
 } Picture;
 
 static int load_picture_file(void) {
@@ -133,7 +133,140 @@ static sqlite3_int64 ask_picture_id(const char*t) {
   return id;
 }
 
+static void uncompress_picture(FILE*fp,Picture*pic) {
+  Uint8*p=pic->data+pic->size;
+  int c,n,t,x,y;
+  n=t=0;
+  y=pic->size*pic->size;
+  while(y--) {
+    if(!n) {
+      n=fgetc(fp);
+      if(n<85) {
+        // Homogeneous run
+        n++;
+        x=fgetc(fp);
+        if(t==1 && x==c) n*=85; else n++;
+        c=x;
+        t=1;
+      } else if(n<170) {
+        // Heterogeneous run
+        n-=84;
+        t=2;
+      } else {
+        // Copy-above run
+        n-=169;
+        if(t==3) n*=85;
+        t=3;
+      }
+    }
+    n--;
+    if(t==2) c=fgetc(fp);
+    if(t==3) c=p[-pic->size];
+    *p++=c;
+  }
+}
+
+static void load_picture_lump(const unsigned char*data,int len,Picture**pict) {
+  Uint8 buf[32];
+  FILE*fp;
+  int i,j,n;
+  if(!len) return;
+  fp=fmemopen((unsigned char*)data,len,"r");
+  if(!fp) fatal("Failed to open in-memory stream of size %d\n",len);
+  *buf=fgetc(fp);
+  n=*buf&15;
+  fread(buf+1,1,n+(n>>1),fp);
+  for(i=0;i<n;i++) {
+    j=buf[i+1];
+    pict[i]=malloc(sizeof(Picture)+(j+1)*j);
+    if(!pict[i]) fatal("Allocation failed\n");
+    memset(pict[i]->data,0,pict[i]->size=j);
+    j=(i?buf[n+1+((i-1)>>1)]>>(i&1?0:4):*buf>>4);
+    pict[i]->meth=j^((j==5 || j==6)?3:0);
+  }
+  for(i=0;i<n;i++) {
+    j=pict[i]->size;
+    if(pict[i]->meth==15) fread(pict[i]->data+j,j,j,fp),pict[i]->meth=0; else uncompress_picture(fp,pict[i]);
+    // Rotation
+    
+  }
+  fclose(fp);
+}
+
+static inline void edit_picture_1(Picture**pict,const char*name) {
+  static Picture*pclip=0;
+  Uint8 sel=0;
+  SDL_Rect r;
+  SDL_Event ev;
+  int i,j,x;
+  unsigned char buf[256];
+  set_cursor(XC_arrow);
+  redraw:
+  SDL_LockSurface(screen);
+  r.x=r.y=0; r.w=screen->w; r.h=screen->h;
+  SDL_FillRect(screen,&r,0xF0);
+  draw_text(0,0,name,0xF0,0xF5);
+  x=strlen(name)+1;
+  for(i=0;i<16;i++) if(pict[i]) {
+    j=snprintf(buf,255,"%c%d%c",i==sel?'<':' ',pict[i]->size,i==sel?'>':' ');
+    draw_text(x<<3,0,buf,0xF0,i==sel?0xFF:0xF8);
+    x+=j;
+  }
+  
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) {
+    switch(ev.type) {
+      case SDL_QUIT:
+        exit(0);
+        return;
+      case SDL_KEYDOWN:
+        switch(ev.key.keysym.sym) {
+          case SDLK_ESCAPE: return;
+        }
+        break;
+      case SDL_VIDEOEXPOSE:
+        goto redraw;
+    }
+  }
+}
+
 static void edit_picture(sqlite3_int64 id) {
+  sqlite3_stmt*st;
+  Picture*pict[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  char*name;
+  const unsigned char*data;
+  int i;
+  if(i=sqlite3_prepare_v2(userdb,"SELECT SUBSTR(`NAME`,1,LENGTH(`NAME`)-4),`DATA` FROM `PICEDIT` WHERE `ID`=?1;",-1,&st,0)) {
+    screen_message(sqlite3_errmsg(userdb));
+    return;
+  }
+  sqlite3_bind_int64(st,1,id);
+  i=sqlite3_step(st);
+  if(i!=SQLITE_ROW) {
+    screen_message(i==SQLITE_DONE?"No such ID":sqlite3_errmsg(userdb));
+    sqlite3_finalize(st);
+    return;
+  }
+  data=sqlite3_column_blob(st,1);
+  i=sqlite3_column_bytes(st,1);
+  load_picture_lump(data,i,pict);
+  name=strdup(sqlite3_column_text(st,0)?:(const unsigned char*)"???");
+  if(!name) fatal("Allocation failed\n");
+  sqlite3_finalize(st);
+  if(!*pict) {
+    i=picture_size;
+    *pict=malloc(sizeof(Picture)+(i+1)*i);
+    if(!*pict) fatal("Allocation failed");
+    pict[0]->size=i;
+    memset(pict[0]->data,0,(i+1)*i);
+  }
+  edit_picture_1(pict,name);
+  free(name);
+  for(i=0;i<16;i++) {
+    
+    free(pict[i]);
+  }
   
 }
 
@@ -152,6 +285,8 @@ void run_picture_editor(void) {
   int max=load_picture_file();
   int i,n;
   init_palette();
+  optionquery[1]=Q_imageSize;
+  picture_size=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"16",0,10);
   set_cursor(XC_arrow);
   set_caption();
   i=sqlite3_prepare_v3(userdb,"SELECT `ID`,SUBSTR(`NAME`,1,LENGTH(`NAME`)-4),`TYPE` FROM `PICEDIT` WHERE `TYPE` ORDER BY `NAME` LIMIT ?1 OFFSET ?2;",-1,SQLITE_PREPARE_PERSISTENT,&st,0);
