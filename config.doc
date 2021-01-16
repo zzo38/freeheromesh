@@ -67,10 +67,12 @@ See bindings.doc for key/mouse bindings.
   work if the window manager does not support them.
 
 .screenHeight
-  Height of the window (not counting the border), in pixels.
+  Height of the window (not counting the border), in pixels. This should
+  be at least 480; the default is 600.
 
 .screenWidth
-  Width of the window (not counting the border), in pixels.
+  Width of the window (not counting the border), in pixels. This should
+  be at least 640; the default is 800.
 
 .showInventory
   True means to show the inventory in the margin by default; false means

@@ -166,6 +166,28 @@ static void uncompress_picture(FILE*fp,Picture*pic) {
   }
 }
 
+static inline void load_rotate(Picture*pic) {
+  int x,y;
+  int m=pic->meth;
+  int s=pic->size;
+  Uint8*d=pic->data+s;
+  static Uint8*buf;
+  Uint8*p;
+  if(!buf) {
+    buf=malloc(255*255);
+    if(!buf) fatal("Allocation failed\n");
+  }
+  p=buf;
+  for(y=0;y<s;y++) for(x=0;x<s;x++) {
+    if(m&1) x=s-x-1;
+    if(m&2) y=s-y-1;
+    *p++=d[m&4?x*s+y:y*s+x];
+    if(m&1) x=s-x-1;
+    if(m&2) y=s-y-1;
+  }
+  memcpy(d,buf,s*s);
+}
+
 static void load_picture_lump(const unsigned char*data,int len,Picture**pict) {
   Uint8 buf[32];
   FILE*fp;
@@ -181,28 +203,57 @@ static void load_picture_lump(const unsigned char*data,int len,Picture**pict) {
     pict[i]=malloc(sizeof(Picture)+(j+1)*j);
     if(!pict[i]) fatal("Allocation failed\n");
     memset(pict[i]->data,0,pict[i]->size=j);
-    j=(i?buf[n+1+((i-1)>>1)]>>(i&1?0:4):*buf>>4);
+    j=(i?buf[n+1+((i-1)>>1)]>>(i&1?0:4):*buf>>4)&15;
     pict[i]->meth=j^((j==5 || j==6)?3:0);
   }
   for(i=0;i<n;i++) {
     j=pict[i]->size;
     if(pict[i]->meth==15) fread(pict[i]->data+j,j,j,fp),pict[i]->meth=0; else uncompress_picture(fp,pict[i]);
-    // Rotation
-    
+    if(pict[i]->meth) load_rotate(pict[i]);
   }
   fclose(fp);
 }
 
+static inline void show_cursor_xy(int x,int y) {
+  char buf[64];
+  if(x>=0) snprintf(buf,64,"(%d,%d)%63s",x,y,"");
+  else snprintf(buf,64,"%63s","");
+  SDL_LockSurface(screen);
+  draw_text(0,32,buf,0xF0,0xF9);
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+}
+
 static inline void edit_picture_1(Picture**pict,const char*name) {
+  static const Uint8 shade[64]=
+    "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F"
+    "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F"
+    "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F"
+    "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F"
+  ;
+  static const Uint8 gridlines[32]=
+    "\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF"
+    "\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF"
+  ;
   static Picture*pclip=0;
+  Uint8*p;
+  Uint8*q;
   Uint8 sel=0;
+  Uint8 cc=0;
   SDL_Rect r;
   SDL_Event ev;
-  int i,j,x;
+  int i,j,x,y,z;
   unsigned char buf[256];
   set_cursor(XC_arrow);
   redraw:
+  if((sel&~15) || !pict[sel]) sel=0;
+  z=screen->w-pict[sel]->size-169;
+  if(z>screen->h-49) z=screen->h-49;
+  z/=pict[sel]->size;
+  if(z<2) return;
+  if(z>32) z=32;
   SDL_LockSurface(screen);
+  p=screen->pixels;
   r.x=r.y=0; r.w=screen->w; r.h=screen->h;
   SDL_FillRect(screen,&r,0xF0);
   draw_text(0,0,name,0xF0,0xF5);
@@ -212,7 +263,47 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
     draw_text(x<<3,0,buf,0xF0,i==sel?0xFF:0xF8);
     x+=j;
   }
-  
+  p=screen->pixels+40*screen->pitch;
+  q=pict[sel]->data+pict[sel]->size;
+  for(y=0;y<pict[sel]->size;y++) {
+    memcpy(p,q,pict[sel]->size);
+    p+=screen->pitch;
+    q+=pict[sel]->size;
+  }
+  p=screen->pixels+40*screen->pitch-screen->w-161;
+  for(x=0;x<256;x++) {
+    for(y=0;y<10;y++) memset(p+y*screen->pitch,x,10);
+    if(x==cc) {
+      memset(p+1,0xF0,8);
+      for(y=1;y<9;y++) {
+        p[y*screen->pitch]=0xF0;
+        p[y*screen->pitch+(y&1)+4]=(y&1)+0xF7;
+        p[y*screen->pitch+9]=0xFF;
+      }
+      memset(p+9*screen->pitch+1,0xFF,8);
+    }
+    if(15&~x) p+=10; else p+=10*screen->pitch-150;
+  }
+  p=screen->pixels+41*screen->pitch+pict[sel]->size+2;
+  q=pict[sel]->data+pict[sel]->size;
+  for(y=0;y<pict[sel]->size;y++) {
+    for(x=0;x<pict[sel]->size;x++) {
+      memcpy(p,gridlines,z);
+      for(i=1;i<z;i++) {
+        p[i*screen->pitch]=i&1?0xF8:0xFF;
+        if(*q) memset(p+i*screen->pitch+1,*q,z-1);
+        else memcpy(p+i*screen->pitch+1,shade+(i&15),z-1);
+      }
+      p+=z;
+      q++;
+    }
+    for(i=1;i<z;i++) p[i*screen->pitch]=i&1?0xF8:0xFF;
+    p+=z*(screen->pitch-pict[sel]->size);
+  }
+  for(x=0;x<pict[sel]->size;x++) {
+    memcpy(p,gridlines,z);
+    p+=z;
+  }
   SDL_UnlockSurface(screen);
   SDL_Flip(screen);
   while(SDL_WaitEvent(&ev)) {
@@ -220,9 +311,35 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
       case SDL_QUIT:
         exit(0);
         return;
+      case SDL_MOUSEMOTION:
+        if(ev.motion.x<pict[sel]->size+2 || ev.motion.x>=pict[sel]->size*(z+1)+2
+         || ev.motion.y<41 || ev.motion.y>=z*pict[sel]->size+41) {
+          x=-1;
+          set_cursor(XC_arrow);
+        } else {
+          x=(ev.motion.x-pict[sel]->size-2)/z;
+          y=(ev.motion.y-41)/z;
+          set_cursor(XC_tcross);
+        }
+        show_cursor_xy(x,y);
+        break;
+      case SDL_MOUSEBUTTONDOWN:
+        if(ev.button.x>=screen->w-161 && ev.button.x<screen->w-1 && ev.button.y>=40 && ev.button.y<200) {
+          x=(ev.button.x+161-screen->w)/10;
+          y=(ev.button.y-40)/10;
+          i=y*16+x;
+          switch(ev.button.button) {
+            case 1: cc=i; break;
+          }
+          goto redraw;
+        }
+        break;
       case SDL_KEYDOWN:
         switch(ev.key.keysym.sym) {
           case SDLK_ESCAPE: return;
+          case SDLK_LEFTBRACKET: case SDLK_LEFTPAREN: --sel; goto redraw;
+          case SDLK_RIGHTBRACKET: case SDLK_RIGHTPAREN: ++sel; goto redraw;
+          case SDLK_1 ... SDLK_9: sel=ev.key.keysym.sym-SDLK_1; goto redraw;
         }
         break;
       case SDL_VIDEOEXPOSE:
@@ -295,7 +412,7 @@ void run_picture_editor(void) {
   if(!ids) fatal("Allocation failed\n");
   redraw:
   sqlite3_reset(st);
-  if(sc>max-screen->h/8) sc=max-screen->h/8;
+  if(sc>max-screen->h/8+1) sc=max-screen->h/8+1;
   if(sc<0) sc=0;
   sqlite3_bind_int(st,1,screen->h/8-1);
   sqlite3_bind_int(st,2,sc);
@@ -328,12 +445,12 @@ void run_picture_editor(void) {
             if(!(ev.key.keysym.mod&KMOD_CTRL)) break;
             if(!(ev.key.keysym.mod&KMOD_SHIFT)) save_picture_file();
             return;
-          case SDLK_HOME: sc=0; goto redraw;
-          case SDLK_UP: if(sc) --sc; goto redraw;
-          case SDLK_DOWN: ++sc; goto redraw;
-          case SDLK_END: sc=max-screen->h/8; goto redraw;
-          case SDLK_PAGEUP: sc-=screen->h/8-1; goto redraw;
-          case SDLK_PAGEDOWN: sc+=screen->h/8-1; goto redraw;
+          case SDLK_HOME: case SDLK_KP7: sc=0; goto redraw;
+          case SDLK_UP: case SDLK_KP8: if(sc) --sc; goto redraw;
+          case SDLK_DOWN: case SDLK_KP2: ++sc; goto redraw;
+          case SDLK_END: case SDLK_KP1: sc=max-screen->h/8+1; goto redraw;
+          case SDLK_PAGEUP: case SDLK_KP9: sc-=screen->h/8-1; goto redraw;
+          case SDLK_PAGEDOWN: case SDLK_KP3: sc+=screen->h/8-1; goto redraw;
           case SDLK_F3:
             *ids=ask_picture_id("Edit:");
             if(*ids) edit_picture(*ids);
