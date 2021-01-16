@@ -214,14 +214,32 @@ static void load_picture_lump(const unsigned char*data,int len,Picture**pict) {
   fclose(fp);
 }
 
-static inline void show_cursor_xy(int x,int y) {
+static inline void show_cursor_xy(int x,int y,int xx,int yy) {
   char buf[64];
-  if(x>=0) snprintf(buf,64,"(%d,%d)%63s",x,y,"");
+  if(x>=0 && xx>=0) snprintf(buf,64,"[%d,%d]:(%d,%d)%63s",xx,yy,x,y,"");
+  else if(x>=0) snprintf(buf,64,"(%d,%d)%63s",x,y,"");
+  else if(xx>=0) snprintf(buf,64,"[%d,%d]%63s",xx,yy,"");
   else snprintf(buf,64,"%63s","");
   SDL_LockSurface(screen);
   draw_text(0,32,buf,0xF0,0xF9);
   SDL_UnlockSurface(screen);
   SDL_Flip(screen);
+}
+
+static void draw_line(Uint8*p,Uint8 s,Uint8 x0,Uint8 y0,Uint8 x1,Uint8 y1,Uint8 c) {
+  int dx=abs(x1-x0);
+  int sx=x0<x1?1:-1;
+  int dy=-abs(y1-y0);
+  int sy=y0<y1?1:-1;
+  int e=dx+dy;
+  int e2;
+  for(;;) {
+    p[y0*s+x0]=c;
+    if(x0==x1 && y0==y1) break;
+    e2=e+e;
+    if(e2>=dy) e+=dy,x0+=sx;
+    if(e2<=dx) e+=dx,y0+=sy;
+  }
 }
 
 static inline void edit_picture_1(Picture**pict,const char*name) {
@@ -235,22 +253,38 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
     "\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF"
     "\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF"
   ;
+  static const char*const tool[10]={
+    "Draw",
+    "Mark",
+    "Pick",
+    "Line",
+    "Rect",
+    "Fillrect",
+    "Circle",
+    "fIllcirc",
+    "Ellipse",
+    "fillellipSe",
+  };
   static Picture*pclip=0;
   Uint8*p;
   Uint8*q;
   Uint8 sel=0;
   Uint8 cc=0;
-  SDL_Rect r;
+  Uint8 t=2;
+  SDL_Rect r,m;
   SDL_Event ev;
   int i,j,x,y,z;
+  int xx=-1;
+  int yy=-1;
   unsigned char buf[256];
+  m.x=m.y=m.w=m.h=0;
   set_cursor(XC_arrow);
   redraw:
   if((sel&~15) || !pict[sel]) sel=0;
   z=screen->w-pict[sel]->size-169;
   if(z>screen->h-49) z=screen->h-49;
   z/=pict[sel]->size;
-  if(z<2) return;
+  if(z<3) return;
   if(z>32) z=32;
   SDL_LockSurface(screen);
   p=screen->pixels;
@@ -261,6 +295,14 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
   for(i=0;i<16;i++) if(pict[i]) {
     j=snprintf(buf,255,"%c%d%c",i==sel?'<':' ',pict[i]->size,i==sel?'>':' ');
     draw_text(x<<3,0,buf,0xF0,i==sel?0xFF:0xF8);
+    x+=j;
+  }
+  draw_text(0,8,"<ESC> Exit  <1-9> Sel  <SP> Unmark  <RET> Copy  <INS> Paste  <DEL> Erase",0xF0,0xFB);
+  draw_text(0,16,"<F1> CW  <F2> CCW  <F3> \x12  <F4> \x1D  <F5> Size  <F6> Add  <F7> Del  <F8> All",0xF0,0xFB);
+  x=0;
+  for(i=0;i<10;i++) {
+    j=snprintf(buf,255,"%c%s%c",i==t?'<':' ',tool[i],i==t?'>':' ');
+    draw_text(x<<3,24,buf,0xF0,i==t?0xFE:0xF8);
     x+=j;
   }
   p=screen->pixels+40*screen->pitch;
@@ -294,6 +336,11 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
         if(*q) memset(p+i*screen->pitch+1,*q,z-1);
         else memcpy(p+i*screen->pitch+1,shade+(i&15),z-1);
       }
+      if(xx==x && yy==y) {
+        memset(p+(z/2)*screen->pitch,0xFA,z);
+        memset(p+(z/2+1)*screen->pitch,0xF2,z);
+        for(i=1;i<z;i++) memcpy(p+i*screen->pitch+z/2,"\xF2\xFA",2);
+      }
       p+=z;
       q++;
     }
@@ -304,6 +351,19 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
     memcpy(p,gridlines,z);
     p+=z;
   }
+  if(m.h) {
+    r.x=m.x*z+pict[sel]->size+4;
+    r.y=m.y*z+43;
+    r.w=m.w*z-4;
+    r.h=m.h*z-4;
+    p=screen->pixels+r.y*screen->pitch+r.x;
+    for(i=0;i<r.w;i++) p[i]=i&1?0xFE:0xF6;
+    for(i=0;i<r.h;i++) {
+      *p=p[r.w]=i&1?0xF6:0xFE;
+      p+=screen->pitch;
+    }
+    for(i=0;i<r.w;i++) p[i]=i&1?0xFE:0xF6;
+  }
   SDL_UnlockSurface(screen);
   SDL_Flip(screen);
   while(SDL_WaitEvent(&ev)) {
@@ -312,24 +372,82 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
         exit(0);
         return;
       case SDL_MOUSEMOTION:
-        if(ev.motion.x<pict[sel]->size+2 || ev.motion.x>=pict[sel]->size*(z+1)+2
-         || ev.motion.y<41 || ev.motion.y>=z*pict[sel]->size+41) {
+        if(ev.motion.x<pict[sel]->size+2 || ev.motion.x>=pict[sel]->size*(z+1)+2 || ev.motion.y<41 || ev.motion.y>=z*pict[sel]->size+41) {
           x=-1;
           set_cursor(XC_arrow);
         } else {
           x=(ev.motion.x-pict[sel]->size-2)/z;
           y=(ev.motion.y-41)/z;
           set_cursor(XC_tcross);
+          if(ev.motion.state && !t) {
+            pict[sel]->data[(y+1)*pict[sel]->size+x]=(ev.motion.state&SDL_BUTTON(1)?cc:0);
+            goto redraw;
+          }
         }
-        show_cursor_xy(x,y);
+        show_cursor_xy(x,y,xx,yy);
         break;
       case SDL_MOUSEBUTTONDOWN:
         if(ev.button.x>=screen->w-161 && ev.button.x<screen->w-1 && ev.button.y>=40 && ev.button.y<200) {
           x=(ev.button.x+161-screen->w)/10;
           y=(ev.button.y-40)/10;
           i=y*16+x;
+          pick:
           switch(ev.button.button) {
             case 1: cc=i; break;
+            case 2:
+              for(x=(m.y+1)*pict[sel]->size+m.x;x<pict[sel]->size*(pict[sel]->size+1);x++) {
+                if(pict[sel]->data[x]==cc) pict[sel]->data[x]=i;
+                if(m.w && x%pict[sel]->size==m.x+m.w-1) x+=pict[sel]->size-m.w;
+                if(m.h && x/pict[sel]->size>m.h+m.y) break;
+              }
+              break;
+            case 3:
+              for(x=(m.y+1)*pict[sel]->size+m.x;x<pict[sel]->size*(pict[sel]->size+1);x++) {
+                if(pict[sel]->data[x]==cc) pict[sel]->data[x]=i;
+                else if(pict[sel]->data[x]==i) pict[sel]->data[x]=cc;
+                if(m.w && x%pict[sel]->size==m.x+m.w-1) x+=pict[sel]->size-m.w;
+                if(m.h && x/pict[sel]->size>m.h+m.y) break;
+              }
+              break;
+          }
+          goto redraw;
+        } else if(ev.button.x>=pict[sel]->size+2 && ev.button.x<pict[sel]->size*(z+1)+2 && ev.button.y>=41 && ev.button.y<z*pict[sel]->size+41) {
+          x=(ev.button.x-pict[sel]->size-2)/z;
+          y=(ev.button.y-41)/z;
+          i=ev.button.button;
+          if(i>3) break;
+          switch(t) {
+            case 0: // Draw
+              pict[sel]->data[(y+1)*pict[sel]->size+x]=(i==1?cc:0);
+              break;
+            case 1: // Mark
+              if(i==1) {
+                xx=x; yy=y;
+              } else if(i==3) {
+                m.x=(x<xx?x:xx); m.y=(y<yy?y:yy);
+                m.w=abs(x-xx)+1; m.h=abs(y-yy)+1;
+              }
+              break;
+            case 2: // Pick
+              i=pict[sel]->data[(y+1)*pict[sel]->size+x];
+              goto pick;
+            case 3: // Line
+              if((i&2) && xx!=-1) draw_line(pict[sel]->data+pict[sel]->size,pict[sel]->size,x,y,xx,yy,cc);
+              if(i&1) xx=x,yy=y;
+              break;
+            case 4: // Rect
+              if(i==1) {
+                xx=x; yy=y;
+              } else if(xx!=-1) {
+                p=pict[sel]->data+(j=pict[sel]->size);
+                if(xx<x) i=x,x=xx,xx=i;
+                if(yy<y) i=y,y=yy,yy=i;
+                memset(p+y*j+x,cc,xx+1-x);
+                memset(p+yy*j+x,cc,xx+1-x);
+                while(y<=yy) p[y*j+x]=p[y*j+xx]=cc,y++;
+                xx=yy=-1;
+              }
+              break;
           }
           goto redraw;
         }
@@ -337,9 +455,68 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
       case SDL_KEYDOWN:
         switch(ev.key.keysym.sym) {
           case SDLK_ESCAPE: return;
-          case SDLK_LEFTBRACKET: case SDLK_LEFTPAREN: --sel; goto redraw;
-          case SDLK_RIGHTBRACKET: case SDLK_RIGHTPAREN: ++sel; goto redraw;
-          case SDLK_1 ... SDLK_9: sel=ev.key.keysym.sym-SDLK_1; goto redraw;
+          case SDLK_LEFTBRACKET: case SDLK_LEFTPAREN: --sel; m.x=m.y=m.w=m.h=0; goto redraw;
+          case SDLK_RIGHTBRACKET: case SDLK_RIGHTPAREN: ++sel; m.x=m.y=m.w=m.h=0; goto redraw;
+          case SDLK_1 ... SDLK_9: sel=ev.key.keysym.sym-SDLK_1; m.x=m.y=m.w=m.h=0; goto redraw;
+          case SDLK_c: t=6; xx=yy=-1; goto redraw;
+          case SDLK_d: t=0; xx=yy=-1; goto redraw;
+          case SDLK_e: t=8; xx=yy=-1; goto redraw;
+          case SDLK_f: t=5; xx=yy=-1; goto redraw;
+          case SDLK_i: t=7; xx=yy=-1; goto redraw;
+          case SDLK_l: t=3; xx=yy=-1; goto redraw;
+          case SDLK_m: t=1; xx=yy=-1; goto redraw;
+          case SDLK_p: t=2; xx=yy=-1; goto redraw;
+          case SDLK_r: t=4; xx=yy=-1; goto redraw;
+          case SDLK_s: t=9; xx=yy=-1; goto redraw;
+          case SDLK_TAB: if(ev.key.keysym.mod&KMOD_SHIFT) --sel; else ++sel; m.x=m.y=m.w=m.h=0; goto redraw;
+          case SDLK_SPACE:
+            m.x=m.y=m.w=m.h=0;
+            xx=yy=-1;
+            goto redraw;
+          case SDLK_RETURN: case SDLK_KP_ENTER:
+            if(!m.w) m.w=m.h=pict[sel]->size;
+            free(pclip);
+            pclip=malloc(sizeof(Picture)+(m.h+1)*m.w);
+            if(!pclip) fatal("Allocation failed\n");
+            pclip->meth=m.w;
+            pclip->size=m.h;
+            memset(pclip->data,0,m.w);
+            p=pict[sel]->data+(m.y+1)*pict[sel]->size+m.x;
+            q=pclip->data+m.w;
+            for(y=0;y<m.h;y++) {
+              memcpy(q,p,m.w);
+              p+=pict[sel]->size;
+              q+=m.w;
+            }
+            goto redraw;
+          case SDLK_INSERT: case SDLK_KP0: paste:
+            if(!pclip) break;
+            if(!m.w) {
+              m.w=pclip->meth;
+              m.h=pclip->size;
+              if(m.w>pict[sel]->size) m.w=pict[sel]->size;
+              if(m.h>pict[sel]->size) m.h=pict[sel]->size;
+            }
+            p=pclip->data+pclip->meth;
+            q=pict[sel]->data+(m.y+1)*pict[sel]->size+m.x;
+            for(y=0;y<m.h;y++) {
+              for(x=0;x<m.w;x++) {
+                i=(x*pclip->meth)/m.w;
+                j=(y*pclip->size)/m.h;
+                q[x]=p[j*pclip->meth+i];
+              }
+              q+=pict[sel]->size;
+            }
+            goto redraw;
+          case SDLK_DELETE: case SDLK_KP_PERIOD:
+            if(!m.w) break;
+            p=pict[sel]->data+(m.y+1)*pict[sel]->size+m.x;
+            for(y=0;y<m.h;y++) memset(p,0,m.w),p+=pict[sel]->size;
+            goto redraw;
+          case SDLK_F8:
+            m.x=m.y=0;
+            m.w=m.h=pict[sel]->size;
+            goto redraw;
         }
         break;
       case SDL_VIDEOEXPOSE:
