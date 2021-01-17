@@ -8,6 +8,7 @@ exit
 */
 
 #include "SDL.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -216,7 +217,7 @@ static void load_picture_lump(const unsigned char*data,int len,Picture**pict) {
 
 static inline void show_cursor_xy(int x,int y,int xx,int yy) {
   char buf[64];
-  if(x>=0 && xx>=0) snprintf(buf,64,"[%d,%d]:(%d,%d)%63s",xx,yy,x,y,"");
+  if(x>=0 && xx>=0) snprintf(buf,64,"[%d,%d]:(%d,%d) %+d%+d%63s",xx,yy,x,y,x-xx,y-yy,"");
   else if(x>=0) snprintf(buf,64,"(%d,%d)%63s",x,y,"");
   else if(xx>=0) snprintf(buf,64,"[%d,%d]%63s",xx,yy,"");
   else snprintf(buf,64,"%63s","");
@@ -239,6 +240,29 @@ static void draw_line(Uint8*p,Uint8 s,Uint8 x0,Uint8 y0,Uint8 x1,Uint8 y1,Uint8 
     e2=e+e;
     if(e2>=dy) e+=dy,x0+=sx;
     if(e2<=dx) e+=dx,y0+=sy;
+  }
+}
+
+static void draw_circle(Uint8*p,Uint8 s,Uint8 x0,Uint8 y0,Uint32 r,Uint8 c) {
+  int i,j,x,y;
+  for(i=0;i<s && r>=0;i++) {
+    j=sqrt(r);
+    r-=i+i+1;
+    x=x0+i,y=y0+j; if(x>=0 && x<s && y>=0 && y<s) p[y*s+x]=c;
+    x=x0-i,y=y0+j; if(x>=0 && x<s && y>=0 && y<s) p[y*s+x]=c;
+    x=x0+i,y=y0-j; if(x>=0 && x<s && y>=0 && y<s) p[y*s+x]=c;
+    x=x0-i,y=y0-j; if(x>=0 && x<s && y>=0 && y<s) p[y*s+x]=c;
+    x=x0+j,y=y0+i; if(x>=0 && x<s && y>=0 && y<s) p[y*s+x]=c;
+    x=x0-j,y=y0+i; if(x>=0 && x<s && y>=0 && y<s) p[y*s+x]=c;
+    x=x0+j,y=y0-i; if(x>=0 && x<s && y>=0 && y<s) p[y*s+x]=c;
+    x=x0-j,y=y0-i; if(x>=0 && x<s && y>=0 && y<s) p[y*s+x]=c;
+  }
+}
+
+static void fill_circle(Uint8*p,Uint8 s,Uint8 x0,Uint8 y0,Uint32 r,Uint8 c) {
+  int x,y;
+  for(y=0;y<s;y++) for(x=0;x<s;x++) {
+    if((x-x0)*(x-x0)+(y-y0)*(y-y0)<=r) p[y*s+x]=c;
   }
 }
 
@@ -298,7 +322,7 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
     x+=j;
   }
   draw_text(0,8,"<ESC> Exit  <1-9> Sel  <SP> Unmark  <RET> Copy  <INS> Paste  <DEL> Erase",0xF0,0xFB);
-  draw_text(0,16,"<F1> CW  <F2> CCW  <F3> \x12  <F4> \x1D  <F5> Size  <F6> Add  <F7> Del  <F8> All",0xF0,0xFB);
+  draw_text(0,16,"<F1> CW  <F2> CCW  <F3> \x12  <F4> \x1D  <F5> Size  <F6> Add  <F7> Del  <F8> Mark",0xF0,0xFB);
   x=0;
   for(i=0;i<10;i++) {
     j=snprintf(buf,255,"%c%s%c",i==t?'<':' ',tool[i],i==t?'>':' ');
@@ -380,6 +404,7 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
           y=(ev.motion.y-41)/z;
           set_cursor(XC_tcross);
           if(ev.motion.state && !t) {
+            if(ev.motion.state&SDL_BUTTON(2)) break;
             pict[sel]->data[(y+1)*pict[sel]->size+x]=(ev.motion.state&SDL_BUTTON(1)?cc:0);
             goto redraw;
           }
@@ -418,7 +443,8 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
           if(i>3) break;
           switch(t) {
             case 0: // Draw
-              pict[sel]->data[(y+1)*pict[sel]->size+x]=(i==1?cc:0);
+              if(i==2) cc=pict[sel]->data[(y+1)*pict[sel]->size+x];
+              else pict[sel]->data[(y+1)*pict[sel]->size+x]=(i==1?cc:0);
               break;
             case 1: // Mark
               if(i==1) {
@@ -444,8 +470,37 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
                 if(yy<y) i=y,y=yy,yy=i;
                 memset(p+y*j+x,cc,xx+1-x);
                 memset(p+yy*j+x,cc,xx+1-x);
-                while(y<=yy) p[y*j+x]=p[y*j+xx]=cc,y++;
+                while(y<yy) p[y*j+x]=p[y*j+xx]=cc,y++;
                 xx=yy=-1;
+              }
+              break;
+            case 5: // Fillrect
+              if(i==1) {
+                xx=x; yy=y;
+              } else if(xx!=-1) {
+                p=pict[sel]->data+(j=pict[sel]->size);
+                if(xx<x) i=x,x=xx,xx=i;
+                if(yy<y) i=y,y=yy,yy=i;
+                while(y<yy) memset(p+y*j+x,cc,xx+1-x),y++;
+                xx=yy=-1;
+              }
+              break;
+            case 6: // Circle
+              if(i==1) {
+                xx=x; yy=y;
+              } else if(i==2) {
+                draw_circle(pict[sel]->data+pict[sel]->size,pict[sel]->size,x,y,(x-xx)*(x-xx)+(y-yy)*(y-yy),cc);
+              } else if(i==3) {
+                draw_circle(pict[sel]->data+pict[sel]->size,pict[sel]->size,xx,yy,(x-xx)*(x-xx)+(y-yy)*(y-yy),cc);
+              }
+              break;
+            case 7: // Fillcircle
+              if(i==1) {
+                xx=x; yy=y;
+              } else if(i==2) {
+                fill_circle(pict[sel]->data+pict[sel]->size,pict[sel]->size,x,y,(x-xx)*(x-xx)+(y-yy)*(y-yy),cc);
+              } else if(i==3) {
+                fill_circle(pict[sel]->data+pict[sel]->size,pict[sel]->size,xx,yy,(x-xx)*(x-xx)+(y-yy)*(y-yy),cc);
               }
               break;
           }
@@ -492,6 +547,11 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
           case SDLK_INSERT: case SDLK_KP0: paste:
             if(!pclip) break;
             if(!m.w) {
+              if(xx!=-1) {
+                if(xx+pclip->meth>pict[sel]->size || yy+pclip->size>pict[sel]->size) break;
+                m.x=xx;
+                m.y=yy;
+              }
               m.w=pclip->meth;
               m.h=pclip->size;
               if(m.w>pict[sel]->size) m.w=pict[sel]->size;
@@ -513,10 +573,43 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
             p=pict[sel]->data+(m.y+1)*pict[sel]->size+m.x;
             for(y=0;y<m.h;y++) memset(p,0,m.w),p+=pict[sel]->size;
             goto redraw;
-          case SDLK_F8:
+          case SDLK_F5: resize:
+            m.x=m.y=m.w=m.h=0; xx=yy=-1;
+            p=(Uint8*)screen_prompt("Size? (1 to 255, or P to paste)");
+            if(!p || !*p) goto redraw;
+            if(*p=='p' || *p=='P') {
+              if(!pclip || pclip->meth!=pclip->size) goto redraw;
+              i=pclip->size;
+            } else {
+              i=strtol(p,0,10);
+            }
+            if(i<1 || i>255) goto redraw;
+            free(pict[sel]);
+            pict[sel]=malloc(sizeof(Picture)+(i+1)*i);
+            if(!pict[sel]) fatal("Allocation failed\n");
+            pict[sel]->size=i;
+            if(*p=='p' || *p=='P') memcpy(pict[sel]->data,pclip->data,(i+1)*i);
+            else memset(pict[sel]->data,0,(i+1)*i);
+            goto redraw;
+          case SDLK_F6:
+            if(pict[15]) break;
+            for(sel=0;sel<15;sel++) if(!pict[sel]) break;
+            goto resize;
+          case SDLK_F7:
+            if(!sel && !pict[1]) break;
+            free(pict[sel]);
+            for(i=sel;i<15;i++) pict[i]=pict[i+1];
+            pict[15]=0;
+            goto redraw;
+          case SDLK_F8: case SDLK_KP_MULTIPLY:
             m.x=m.y=0;
             m.w=m.h=pict[sel]->size;
             goto redraw;
+          case SDLK_LEFT: case SDLK_KP4: --cc; goto redraw;
+          case SDLK_RIGHT: case SDLK_KP6: ++cc; goto redraw;
+          case SDLK_UP: case SDLK_KP8: cc-=16; goto redraw;
+          case SDLK_DOWN: case SDLK_KP2: cc+=16; goto redraw;
+          case SDLK_HOME: case SDLK_KP7: cc=0; goto redraw;
         }
         break;
       case SDL_VIDEOEXPOSE:
