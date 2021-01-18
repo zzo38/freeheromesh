@@ -79,6 +79,14 @@ done:
   free(nam);
   free(buf);
   fprintf(stderr,"Done\n");
+  sqlite3_exec(userdb,
+    "CREATE TRIGGER `PICEDIT_T1` BEFORE INSERT ON `PICEDIT` BEGIN"
+    "  SELECT RAISE(FAIL,'Duplicate name') FROM `PICEDIT` WHERE `NAME`=NEW.`NAME`;"
+    "END;"
+    "CREATE TRIGGER `PICEDIT_T2` BEFORE UPDATE OF `NAME` ON `PICEDIT` BEGIN"
+    "  SELECT RAISE(FAIL,'Duplicate name') FROM `PICEDIT` WHERE `NAME`=NEW.`NAME`;"
+    "END;"
+  ,0,0,0);
   return r;
 }
 
@@ -187,6 +195,28 @@ static inline void load_rotate(Picture*pic) {
     if(m&2) y=s-y-1;
   }
   memcpy(d,buf,s*s);
+}
+
+static void block_rotate(Uint8*d,Uint8 s,Uint8 w,Uint8 h,Uint8 m) {
+  Uint8*b=malloc(w*h);
+  Uint8*p=b;
+  int x,y;
+  if(!b) fatal("Allocation failed\n");
+  if(w!=h && (m&4)) goto end;
+  for(y=0;y<h;y++) for(x=0;x<w;x++) {
+    if(m&1) x=w-x-1;
+    if(m&2) y=h-y-1;
+    *p++=d[m&4?x*s+y:y*s+x];
+    if(m&1) x=w-x-1;
+    if(m&2) y=h-y-1;
+  }
+  p=b;
+  for(y=0;y<h;y++) {
+    memcpy(d,p,w);
+    p+=w;
+    d+=s;
+  }
+  end: free(b);
 }
 
 static void load_picture_lump(const unsigned char*data,int len,Picture**pict) {
@@ -573,6 +603,22 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
             p=pict[sel]->data+(m.y+1)*pict[sel]->size+m.x;
             for(y=0;y<m.h;y++) memset(p,0,m.w),p+=pict[sel]->size;
             goto redraw;
+          case SDLK_F1:
+            if(!m.w) m.w=m.h=pict[sel]->size;
+            block_rotate(pict[sel]->data+(m.y+1)*pict[sel]->size+m.x,pict[sel]->size,m.w,m.h,5);
+            goto redraw;
+          case SDLK_F2:
+            if(!m.w) m.w=m.h=pict[sel]->size;
+            block_rotate(pict[sel]->data+(m.y+1)*pict[sel]->size+m.x,pict[sel]->size,m.w,m.h,6);
+            goto redraw;
+          case SDLK_F3:
+            if(!m.w) m.w=m.h=pict[sel]->size;
+            block_rotate(pict[sel]->data+(m.y+1)*pict[sel]->size+m.x,pict[sel]->size,m.w,m.h,2);
+            goto redraw;
+          case SDLK_F4:
+            if(!m.w) m.w=m.h=pict[sel]->size;
+            block_rotate(pict[sel]->data+(m.y+1)*pict[sel]->size+m.x,pict[sel]->size,m.w,m.h,1);
+            goto redraw;
           case SDLK_F5: resize:
             m.x=m.y=m.w=m.h=0; xx=yy=-1;
             p=(Uint8*)screen_prompt("Size? (1 to 255, or P to paste)");
@@ -592,7 +638,7 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
             else memset(pict[sel]->data,0,(i+1)*i);
             goto redraw;
           case SDLK_F6:
-            if(pict[15]) break;
+            if(pict[14]) break;
             for(sel=0;sel<15;sel++) if(!pict[sel]) break;
             goto resize;
           case SDLK_F7:
@@ -655,6 +701,45 @@ static void edit_picture(sqlite3_int64 id) {
     free(pict[i]);
   }
   
+}
+
+static int add_picture(int t) {
+  sqlite3_stmt*st;
+  const char*s=screen_prompt("Enter name of new picture:");
+  int i;
+  if(!s || !*s) return 0;
+  if(sqlite3_prepare_v2(userdb,"INSERT INTO `PICEDIT`(`NAME`,`TYPE`,`DATA`) SELECT REPLACE(?1||'.IMG','.IMG.IMG','.IMG'),1,X'';",-1,&st,0)) {
+    screen_message(sqlite3_errmsg(userdb));
+    return 0;
+  }
+  sqlite3_bind_text(st,1,s,-1,0);
+  i=sqlite3_step(st);
+  sqlite3_finalize(st);
+  if(i!=SQLITE_DONE) {
+    screen_message(sqlite3_errmsg(userdb));
+    return 0;
+  }
+  edit_picture(sqlite3_last_insert_rowid(userdb));
+  return 1;
+}
+
+static int delete_picture(void) {
+  sqlite3_stmt*st;
+  const char*s=screen_prompt("Enter name of picture to delete:");
+  int i;
+  if(!s || !*s) return 0;
+  if(sqlite3_prepare_v2(userdb,"DELETE FROM `PICEDIT` WHERE `NAME`=REPLACE(?1||'.IMG','.IMG.IMG','.IMG');",-1,&st,0)) {
+    screen_message(sqlite3_errmsg(userdb));
+    return 0;
+  }
+  sqlite3_bind_text(st,1,s,-1,0);
+  i=sqlite3_step(st);
+  sqlite3_finalize(st);
+  if(i!=SQLITE_DONE) {
+    screen_message(sqlite3_errmsg(userdb));
+    return 0;
+  }
+  return 1;
 }
 
 static void set_caption(void) {
@@ -721,6 +806,13 @@ void run_picture_editor(void) {
           case SDLK_END: case SDLK_KP1: sc=max-screen->h/8+1; goto redraw;
           case SDLK_PAGEUP: case SDLK_KP9: sc-=screen->h/8-1; goto redraw;
           case SDLK_PAGEDOWN: case SDLK_KP3: sc+=screen->h/8-1; goto redraw;
+          case SDLK_F1:
+            if(max<65535) max+=add_picture(1);
+            else screen_message("Too many pictures");
+            goto redraw;
+          case SDLK_F2:
+            max-=delete_picture();
+            goto redraw;
           case SDLK_F3:
             *ids=ask_picture_id("Edit:");
             if(*ids) edit_picture(*ids);

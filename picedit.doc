@@ -4,6 +4,14 @@ To start the picture editor, use the -p switch. In this case, the puzzle
 set files are not required to exist; the .xclass file will be created if
 necessary, and the other ones are ignored.
 
+This allows creating the graphics for the classes of objects in the puzzle
+set. The class definition file will associate one or more pictures with
+each class, using the names given in the picture file.
+
+Each named picture can have up to fifteen variants. Only one variant is
+used; which one is used depends on the .altImage and .imageSize settings,
+which can be defined by the end user.
+
 
 === Main menu ===
 
@@ -56,6 +64,20 @@ Arrows
 Home
   Selects transparency as the current colour.
 
+F1
+  Rotate marked area clockwise by 90 degrees. The marked area must be
+  square in order for this to work.
+
+F2
+  Rotate marked area counterclockwise by 90 degrees. The marked area must
+  be square in order for this to work.
+
+F3
+  Flip marked area verticaly.
+
+F4
+  Flip marked area horizontally.
+
 F5
   Resizes the current image variant. It will ask for the size; enter a
   number from 1 to 255 to set the size (which is always square), and then
@@ -66,7 +88,7 @@ F5
 F6
   Add a new image variant. It will ask for the size, like with F5, except
   this adds a new one rather than replacing the existing one. The maximum
-  number of image variants is sixteen.
+  number of image variants is fifteen.
 
 F7
   Delete the current image variant. You cannot delete all of the variants
