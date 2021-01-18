@@ -296,6 +296,45 @@ static void fill_circle(Uint8*p,Uint8 s,Uint8 x0,Uint8 y0,Uint32 r,Uint8 c) {
   }
 }
 
+static void draw_ellipse(Uint8*p,Uint8 s,Uint8 x0,Uint8 y0,Uint8 x1,Uint8 y1,Uint8 c) {
+  double cx,cy,rx,ry,v;
+  int x,y;
+  if(x1<x0) x=x1,x1=x0,x0=x;
+  if(y1<y0) y=y1,y1=y0,y0=y;
+  cx=0.5*(x1+x0);
+  cy=0.5*(y1+y0);
+  rx=0.5*(x1-x0);
+  ry=0.5*(y1-y0);
+  for(y=y0;y<=y1;y++) {
+    v=(y-cy)/ry; v*=v;
+    if(v>1.0) continue;
+    v=rx*sqrt(1.0-v);
+    x=round(cx-v); if(x>=0 && x<s) p[y*s+x]=c;
+    x=round(cx+v); if(x>=0 && x<s) p[y*s+x]=c;
+  }
+  for(x=x0;x<=x1;x++) {
+    v=(x-cx)/rx; v*=v;
+    if(v>1.0) continue;
+    v=ry*sqrt(1.0-v);
+    y=round(cy-v); if(y>=0 && y<s) p[y*s+x]=c;
+    y=round(cy+v); if(y>=0 && y<s) p[y*s+x]=c;
+  }
+}
+
+static void fill_ellipse(Uint8*p,Uint8 s,Uint8 x0,Uint8 y0,Uint8 x1,Uint8 y1,Uint8 c) {
+  double cx,cy,rx,ry;
+  int x,y;
+  if(x1<x0) x=x1,x1=x0,x0=x;
+  if(y1<y0) y=y1,y1=y0,y0=y;
+  cx=0.5*(x1+x0);
+  cy=0.5*(y1+y0);
+  rx=0.5*(x1-x0);
+  ry=0.5*(y1-y0);
+  for(y=y0;y<=y1;y++) for(x=x0;x<=x1;x++) {
+    if(pow((x-cx)/rx,2.0)+pow((y-cy)/ry,2.0)<=1.0) p[y*s+x]=c;
+  }
+}
+
 static inline void edit_picture_1(Picture**pict,const char*name) {
   static const Uint8 shade[64]=
     "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F"
@@ -491,7 +530,7 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
               if((i&2) && xx!=-1) draw_line(pict[sel]->data+pict[sel]->size,pict[sel]->size,x,y,xx,yy,cc);
               if(i&1) xx=x,yy=y;
               break;
-            case 4: // Rect
+            case 4: // Rectangle
               if(i==1) {
                 xx=x; yy=y;
               } else if(xx!=-1) {
@@ -504,7 +543,7 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
                 xx=yy=-1;
               }
               break;
-            case 5: // Fillrect
+            case 5: // Fill rectangle
               if(i==1) {
                 xx=x; yy=y;
               } else if(xx!=-1) {
@@ -524,13 +563,28 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
                 draw_circle(pict[sel]->data+pict[sel]->size,pict[sel]->size,xx,yy,(x-xx)*(x-xx)+(y-yy)*(y-yy),cc);
               }
               break;
-            case 7: // Fillcircle
+            case 7: // Fill circle
               if(i==1) {
                 xx=x; yy=y;
               } else if(i==2) {
                 fill_circle(pict[sel]->data+pict[sel]->size,pict[sel]->size,x,y,(x-xx)*(x-xx)+(y-yy)*(y-yy),cc);
               } else if(i==3) {
                 fill_circle(pict[sel]->data+pict[sel]->size,pict[sel]->size,xx,yy,(x-xx)*(x-xx)+(y-yy)*(y-yy),cc);
+              }
+              break;
+            case 8: // Ellipse
+              if(i==1) {
+                xx=x; yy=y;
+              } else if(xx!=-1) {
+                draw_ellipse(pict[sel]->data+pict[sel]->size,pict[sel]->size,x,y,xx,yy,cc);
+              }
+              break;
+            case 9: // Fill ellipse
+              if(i==1) {
+                xx=x; yy=y;
+              } else if(xx!=-1) {
+                fill_ellipse(pict[sel]->data+pict[sel]->size,pict[sel]->size,x,y,xx,yy,cc);
+                draw_ellipse(pict[sel]->data+pict[sel]->size,pict[sel]->size,x,y,xx,yy,cc);
               }
               break;
           }
