@@ -1,0 +1,131 @@
+This document describes the picture editor of Free Hero Mesh.
+
+To start the picture editor, use the -p switch. In this case, the puzzle
+set files are not required to exist; the .xclass file will be created if
+necessary, and the other ones are ignored.
+
+
+=== Main menu ===
+
+The main menu displays the list of the names of all pictures. This list is
+sorted by name.
+
+You can push escape to quit and save, or shift+escape quits without saving.
+
+The F3 key allows entering a name of a picture to edit.
+
+
+=== Drawing ===
+
+The following keyboard commands are available:
+
+Esc
+  Leave the drawing screen.
+
+Shift+Tab or [
+  Select the previous image variant.
+
+Tab or ]
+  Select the next image variant.
+
+1 to 9
+  Select one of the first nine image variants.
+
+Space
+  Unmark the block and point.
+
+Return
+  Copy the marked part of the picture to the clipboard. This will discard
+  the previous contents of the clipboard (if any). This is separate from
+  the operating system clipboard; it is local to Free Hero Mesh, and is
+  lost when Free Hero Mesh is restarted.
+
+Insert
+  Paste from the clipboard. If a block is marked, it will stretch the
+  pasted image to fit the area. If a point is marked but not a block, that
+  point will be the upper left corner of the paste position. If neither,
+  then it is pasted with its upper left corner at the upper left corner of
+  the current image buffer.
+
+Delete
+  Erase the pixels marked block, making all of the pixels transparent.
+
+Arrows
+  Allows selecting a colour without using the mouse.
+
+Home
+  Selects transparency as the current colour.
+
+F5
+  Resizes the current image variant. It will ask for the size; enter a
+  number from 1 to 255 to set the size (which is always square), and then
+  it will resize and clear the image. If you enter P then it will become
+  a copy of the contents of the clipboard; this won't work if the contents
+  of the clipboard is not square.
+
+F6
+  Add a new image variant. It will ask for the size, like with F5, except
+  this adds a new one rather than replacing the existing one. The maximum
+  number of image variants is sixteen.
+
+F7
+  Delete the current image variant. You cannot delete all of the variants
+  of an image; you must have at least one.
+
+F8 or number pad *
+  Mark the entire image as a block.
+
+Click in the colour palette on the right to select a colour. With the left
+button, that colour is selected as the current colour. The middle button
+will replace everything of the current colour with the clicked colour, and
+the right button will exchange pixels between the current colour and the
+clicked colour; in either case, if any block is marked, only the marked
+block will be affected.
+
+You can type alphabets to select the drawing mode. The available drawing
+modes are as follows:
+
+Draw (D)
+  The left mouse button draws with the current colour, and the right mouse
+  button draws transparent pixels; you can also hold and drag the mouse to
+  draw multiple pixels. Clicking with the middle button will select the
+  clicked colour as the current colour.
+
+Mark (M)
+  Select a point with the left button, and then the right button selects
+  the opposite corner of the rectangular area to mark.
+
+Pick (P)
+  Clicking in the picture editing area will have the same effect as
+  clicking in the colour palette, on the same colour as the pixel.
+
+Line (L)
+  Click the left button on the initial point of the line, and then click
+  the middle or right button on the final point of the line. If the right
+  button is used then the new point is the new initial point for further
+  lines, otherwise a further line will use the old initial point.
+
+Hollow rectangle (R)
+  Click the left button on the first corner and the right button on the
+  other corner.
+
+Filled rectangle (F)
+  Click the left button on the first corner and the right button on the
+  other corner.
+
+Hollow circle (C)
+  Click the left button at the centre of the circle and the right button
+  at the radius, or you can click the left button at the radius and the
+  middle button at the centre.
+
+Filled circle (I)
+  Click the left button at the centre of the circle and the right button
+  at the radius, or you can click the left button at the radius and the
+  middle button at the centre.
+
+Hollow ellipse (E)
+  
+
+Filled ellipse (S)
+  
+
