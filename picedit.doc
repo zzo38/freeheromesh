@@ -97,6 +97,15 @@ F7
 F8 or number pad *
   Mark the entire image as a block.
 
+F9
+  Import a picture. At the prompt, you must enter a system command which
+  will produce a square farbfeld picture on stdout. The imported picture
+  will replace the current picture variant.
+
+F10
+  Export a picture. At the prompt, you must enter a system command which
+  will read a farbfeld picture from stdin.
+
 Click in the colour palette on the right to select a colour. With the left
 button, that colour is selected as the current colour. The middle button
 will replace everything of the current colour with the clicked colour, and

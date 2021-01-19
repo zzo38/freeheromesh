@@ -335,6 +335,74 @@ static void fill_ellipse(Uint8*p,Uint8 s,Uint8 x0,Uint8 y0,Uint8 x1,Uint8 y1,Uin
   }
 }
 
+static Picture*do_import(Picture*pic) {
+  SDL_Color*pal=screen->format->palette->colors;
+  int a,b,i,j,x,y;
+  Uint8 buf[16];
+  Uint8*q;
+  const char*cmd=screen_prompt("Import?");
+  FILE*fp;
+  if(!cmd || !*cmd) return pic;
+  fp=popen(cmd,"r");
+  if(!fp) {
+    screen_message("Import failed");
+    return pic;
+  }
+  if(fread(buf,1,16,fp)!=16 || memcmp("farbfeld",buf,8)) {
+    screen_message("Invalid format");
+    goto end;
+  }
+  if(buf[8] || buf[9] || buf[10] || buf[12] || buf[13] || buf[14] || !buf[15] || buf[11]!=buf[15]) {
+    screen_message("Invalid size");
+    goto end;
+  }
+  if(pic->size!=buf[15]) {
+    pic=realloc(pic,sizeof(Picture)+(buf[15]+1)*buf[15]);
+    if(!pic) fatal("Allocation failed\n");
+    pic->size=buf[15];
+    memset(pic->data+pic->size,0,pic->size);
+  }
+  q=pic->data+pic->size;
+  for(y=0;y<pic->size;y++) for(x=0;x<pic->size;x++) {
+    fread(buf,1,8,fp);
+    if(buf[6]&0x80) {
+      for(i=1;i<255;i++) if(buf[0]==pal[i].r && buf[1]==pal[i].g && buf[2]==pal[i].b) goto found;
+      i=1;
+      a=0x300000;
+      for(j=1;j<255;j++) {
+        b=abs(buf[0]-pal[j].r)+abs(buf[2]-pal[j].g)+abs(buf[4]-pal[j].b);
+        if(b<=a) a=b,i=j;
+      }
+      found: *q++=i;
+    } else {
+      *q++=0;
+    }
+  }
+  end:
+  pclose(fp);
+  return pic;
+}
+
+static void do_export(Picture*pic) {
+  SDL_Color*pal=screen->format->palette->colors;
+  Uint8*q=pic->data+pic->size;
+  int c,x,y;
+  const char*cmd=screen_prompt("Export?");
+  FILE*fp;
+  if(!cmd || !*cmd) return;
+  fp=popen(cmd,"w");
+  fwrite("farbfeld\0\0\0",1,11,fp); fputc(pic->size,fp);
+  fwrite("\0\0\0",1,3,fp); fputc(pic->size,fp);
+  for(y=0;y<pic->size;y++) for(x=0;x<pic->size;x++) {
+    c=*q++;
+    fputc(pal[c].r,fp); fputc(pal[c].r,fp);
+    fputc(pal[c].g,fp); fputc(pal[c].g,fp);
+    fputc(pal[c].b,fp); fputc(pal[c].b,fp);
+    fputc(c?255:0,fp); fputc(c?255:0,fp);
+  }
+  pclose(fp);
+}
+
 static inline void edit_picture_1(Picture**pict,const char*name) {
   static const Uint8 shade[64]=
     "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F"
@@ -391,7 +459,7 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
     x+=j;
   }
   draw_text(0,8,"<ESC> Exit  <1-9> Sel  <SP> Unmark  <RET> Copy  <INS> Paste  <DEL> Erase",0xF0,0xFB);
-  draw_text(0,16,"<F1> CW  <F2> CCW  <F3> \x12  <F4> \x1D  <F5> Size  <F6> Add  <F7> Del  <F8> Mark",0xF0,0xFB);
+  draw_text(0,16,"<F1> CW  <F2> CCW  <F3> \x12  <F4> \x1D  <F5> Size  <F6> Add  <F7> Del  <F8> Mark  <F9> In  <F10> Out",0xF0,0xFB);
   x=0;
   for(i=0;i<10;i++) {
     j=snprintf(buf,255,"%c%s%c",i==t?'<':' ',tool[i],i==t?'>':' ');
@@ -704,6 +772,14 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
           case SDLK_F8: case SDLK_KP_MULTIPLY:
             m.x=m.y=0;
             m.w=m.h=pict[sel]->size;
+            goto redraw;
+          case SDLK_F9:
+            xx=yy=-1;
+            m.x=m.y=m.w=m.h=0;
+            pict[sel]=do_import(pict[sel]);
+            goto redraw;
+          case SDLK_F10:
+            do_export(pict[sel]);
             goto redraw;
           case SDLK_LEFT: case SDLK_KP4: --cc; goto redraw;
           case SDLK_RIGHT: case SDLK_KP6: ++cc; goto redraw;
