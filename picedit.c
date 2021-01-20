@@ -175,7 +175,7 @@ static void uncompress_picture(FILE*fp,Picture*pic) {
   }
 }
 
-static inline void load_rotate(Picture*pic) {
+static void load_rotate(Picture*pic) {
   int x,y;
   int m=pic->meth;
   int s=pic->size;
@@ -195,6 +195,73 @@ static inline void load_rotate(Picture*pic) {
     if(m&2) y=s-y-1;
   }
   memcpy(d,buf,s*s);
+}
+
+static void out_run(FILE*fp,int ch,int am,const Uint8*d,int le) {
+  int n=am%85?:85;
+  fputc(ch+n-1,fp);
+  if(le) fwrite(d,1,le<n?le:n,fp);
+  if(ch) d+=n,le-=n;
+  while(am-=n) {
+    n=am>7225?7225:am;
+    fputc(ch+n/85-1,fp);
+    if(le>0) fwrite(d,1,le<n?le:n,fp);
+    if(ch) d+=n,le-=n;
+  }
+}
+
+static void compress_picture_1(FILE*fp,Picture*pic) {
+  int ps=pic->size;
+  int ms=ps*ps;
+  const Uint8*d=pic->data+ps;
+  int i=0;
+  int ca,homo,hetero;
+  while(i<ms) {
+    ca=0;
+    while(i+ca<ms && d[i+ca]==d[i+ca-ps]) ca++;
+    homo=1;
+    while(i+homo<ms && d[i+homo]==d[i]) homo++;
+    hetero=1;
+    while(i+hetero<ms) {
+      if(d[i+hetero]==d[i+hetero-ps] && d[i+hetero+1]==d[i+hetero+1-ps]) break;
+      if(d[i+hetero]==d[i+hetero+1] && i+hetero==ms-1) break;
+      if(d[i+hetero]==d[i+hetero+1] && d[i+hetero]==d[i+hetero+2]) break;
+      hetero++;
+    }
+    if(ca>=homo && (ca>=hetero || homo>1)) {
+      out_run(fp,170,ca,0,0);
+      i+=ca;
+    } else if(homo>1) {
+      out_run(fp,0,homo-1,d+i,1);
+      i+=homo;
+    } else {
+      if(hetero>85) hetero=85;
+      out_run(fp,85,hetero,d+i,hetero);
+      i+=hetero;
+    }
+  }
+}
+
+static void compress_picture(FILE*out,Picture*pic) {
+  int bm=15;
+  int bs=pic->size*pic->size;
+  FILE*fp=fmemopen(0,bs,"w");
+  int i,j;
+  if(!fp) fatal("Error with fmemopen");
+  for(i=0;i<8;i++) {
+    compress_picture_1(fp,pic);
+    if(!ferror(fp)) {
+      j=ftell(fp);
+      if(j>0 && j<bs) bs=j,bm=i;
+    }
+    rewind(fp);
+    pic->meth="\1\3\1\7\1\3\1\7"[i];
+    load_rotate(pic);
+  }
+  pic->meth=bm;
+  if(bm && bm!=15) load_rotate(pic);
+  fclose(fp);
+  if(bm==15) fwrite(pic->data+pic->size,pic->size,pic->size,out); else compress_picture_1(out,pic);
 }
 
 static void block_rotate(Uint8*d,Uint8 s,Uint8 w,Uint8 h,Uint8 m) {
@@ -799,7 +866,10 @@ static void edit_picture(sqlite3_int64 id) {
   Picture*pict[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   char*name;
   const unsigned char*data;
-  int i;
+  Uint8*buf=0;
+  size_t size=0;
+  FILE*fp;
+  int i,n;
   if(i=sqlite3_prepare_v2(userdb,"SELECT SUBSTR(`NAME`,1,LENGTH(`NAME`)-4),`DATA` FROM `PICEDIT` WHERE `ID`=?1;",-1,&st,0)) {
     screen_message(sqlite3_errmsg(userdb));
     return;
@@ -826,11 +896,28 @@ static void edit_picture(sqlite3_int64 id) {
   }
   edit_picture_1(pict,name);
   free(name);
-  for(i=0;i<16;i++) {
-    
-    free(pict[i]);
+  fp=open_memstream((char**)&buf,&size);
+  if(!fp) fatal("Cannot open memory stream\n");
+  for(i=n=0;i<16;i++) if(pict[i]) n++;
+  fputc(n,fp);
+  for(i=0;i<n;i++) fputc(pict[i]->size,fp);
+  for(i=0;i<n>>1;i++) fputc(0,fp);
+  for(i=0;i<n;i++) compress_picture(fp,pict[i]);
+  fclose(fp);
+  if(!buf || !size) fatal("Allocation failed\n");
+  *buf|=pict[0]->meth<<4;
+  for(i=1;i<n;i++) buf[n+1+((i-1)>>1)]|=pict[i]->meth<<(i&1?0:4);
+  for(i=0;i<16;i++) free(pict[i]);
+  if(i=sqlite3_prepare_v2(userdb,"UPDATE `PICEDIT` SET `DATA`=?2 WHERE ID=?1;",-1,&st,0)) {
+    screen_message(sqlite3_errmsg(userdb));
+    free(buf);
+    return;
   }
-  
+  sqlite3_bind_int64(st,1,id);
+  sqlite3_bind_blob(st,2,buf,size,free);
+  i=sqlite3_step(st);
+  if(i!=SQLITE_DONE) screen_message(sqlite3_errmsg(userdb));
+  sqlite3_finalize(st);
 }
 
 static int add_picture(int t) {
