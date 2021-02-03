@@ -371,7 +371,12 @@ void run_editor(void) {
         break;
       case SDL_MOUSEBUTTONDOWN:
         if(ev.button.x<left_margin) {
-          
+          if(ev.button.y<56) break;
+          i=(ev.button.y-56)/picture_size;
+          if(i>=0 && i<MRUCOUNT) {
+            curmru=i;
+            redraw_editor();
+          }
           break;
         } else {
           i=exec_key_binding(&ev,1,(ev.button.x-left_margin)/picture_size+1,ev.button.y/picture_size+1,editor_command,0);
