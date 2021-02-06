@@ -89,6 +89,13 @@ to ask the user for the value to use.
 '^c'
   Display the class selection menu.
 
+'mR' <number>
+  Select a relative MRU. Negative numbers move up the list, and positive
+  numbers move down the list.
+
+'mr' <number>
+  Select a MRU, given the MRU number (0 to 31; the top is zero).
+
 
 === Commands available in game and editor ===
 

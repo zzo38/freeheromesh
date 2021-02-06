@@ -345,6 +345,12 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
     case 'go': // Select level
       load_level(number);
       return 1;
+    case 'mR': // Select MRU relative
+      number+=curmru;
+      // fall through
+    case 'mr': // Select MRU absolute
+      if(number>=0 && number<MRUCOUNT) curmru=number;
+      return 0;
     default:
       return prev;
   }
