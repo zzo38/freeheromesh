@@ -27,6 +27,69 @@ typedef struct {
 static MRU mru[MRUCOUNT];
 static int curmru;
 
+static void rewrite_class_def(void) {
+  Uint32 i,n;
+  Uint8 cu[0x4000/8];
+  Uint8 mu[0x4000/8];
+  Object*o;
+  long size=0;
+  unsigned char*data=read_lump(FIL_LEVEL,LUMP_CLASS_DEF,&size);
+  sqlite3_str*s=sqlite3_str_new(0);
+  memset(cu,0,0x4000/8);
+  memset(mu,0,0x4000/8);
+  if(data && size) {
+    for(i=0;i<size-3;) {
+      n=data[i]|(data[i+1]<<8);
+      if(!n) break;
+      i+=2;
+      while(i<size && data[i++]);
+      cu[n/8]|=1<<(n&7);
+    }
+    i+=2;
+    for(;i<size-3;) {
+      n=data[i]|(data[i+1]<<8);
+      n-=256;
+      i+=2;
+      while(i<size && data[i++]);
+      if(n>=0) mu[n/8]|=1<<(n&7);
+    }
+  }
+  free(data);
+  for(i=0;i<nobjects;i++) if(o=objects[i]) {
+    cu[o->class/8]|=1<<(o->class&7);
+#define DoMisc(a) \
+  if(o->a.t==TY_CLASS) { \
+    cu[o->a.u/8]|=1<<(o->a.u&7); \
+  } else if(o->a.t==TY_MESSAGE && o->a.u>=256) { \
+    mu[(o->a.u-256)/8]|=1<<(o->a.u&7); \
+  }
+    DoMisc(misc1)
+    DoMisc(misc2)
+    DoMisc(misc3)
+#undef DoMisc
+  }
+  // Now write out the new data
+  for(i=0;i<0x4000;i++) if(cu[i/8]&(1<<(i&7))) {
+    sqlite3_str_appendchar(s,1,i&255);
+    sqlite3_str_appendchar(s,1,i>>8);
+    sqlite3_str_appendall(s,classes[i]->name);
+    sqlite3_str_appendchar(s,1,0);
+  }
+  sqlite3_str_appendchar(s,2,0);
+  for(i=0;i<0x4000;i++) if(mu[i/8]&(1<<(i&7))) {
+    sqlite3_str_appendchar(s,1,i&255);
+    sqlite3_str_appendchar(s,1,i>>8);
+    sqlite3_str_appendall(s,messages[i]);
+    sqlite3_str_appendchar(s,1,0);
+  }
+  // End of data
+  size=sqlite3_str_length(s);
+  data=sqlite3_str_finish(s);
+  if(!size || !data) fatal("Error in string builder\n");
+  write_lump(FIL_LEVEL,LUMP_CLASS_DEF,size,data);
+  free(data);
+}
+
 static void redraw_editor(void) {
   char buf[32];
   SDL_Rect r;
