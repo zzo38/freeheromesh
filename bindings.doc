@@ -83,6 +83,18 @@ to ask the user for the value to use.
 '^s'
   Toggle solution replay.
 
+'mi' <command>
+  Import a move list. The argument is a operating system command, that
+  when executed will write the move list to stdout, with one byte per
+  move (the Hero Mesh key codes).
+
+'ml' <blob>
+  Load a move list from a SQL blob.
+
+'mx' <command>
+  Export a move list. The argument is a operating system command that
+  will receive the move list (in the same format as above) on stdin.
+
 
 === Editor commands ===
 

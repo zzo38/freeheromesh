@@ -514,6 +514,47 @@ static void describe_at(int xy) {
   sqlite3_free(s);
 }
 
+static void do_import_moves(const char*arg) {
+  FILE*fp;
+  int i;
+  if(!arg || !arg[strspn(arg," \t")]) return;
+  fp=popen(arg,"r");
+  if(!fp) {
+    screen_message("Unable to open pipe for reading");
+    return;
+  }
+  replay_list=realloc(replay_list,0x10000);
+  if(!replay_list) fatal("Allocation failed");
+  replay_mark=0;
+  replay_size=0xFFFF;
+  i=fread(replay_list,1,0xFFFD,fp);
+  if(i&~0xFFFF) i=0;
+  replay_count=i;
+  pclose(fp);
+}
+
+static void do_export_moves(const char*arg) {
+  FILE*fp;
+  int i;
+  if(!arg || !arg[strspn(arg," \t")]) return;
+  fp=popen(arg,"w");
+  if(!fp) {
+    screen_message("Unable to open pipe for writing");
+    return;
+  }
+  if(replay_count) fwrite(replay_list,1,replay_count,fp);
+  pclose(fp);
+}
+
+static void do_load_moves(sqlite3_stmt*st) {
+  int i=sqlite3_column_bytes(st,1);
+  if(i&~0xFFFF) return;
+  if(replay_size<i) replay_list=realloc(replay_list,replay_size=i);
+  if(!replay_list) fatal("Allocation failed");
+  replay_count=i;
+  if(i) memcpy(replay_list,sqlite3_column_blob(st,1),i);
+}
+
 static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
   switch(cmd) {
     case '\' ': // Play a move
@@ -584,6 +625,20 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
     case 'go': // Select level
       begin_level(number);
       return 1;
+    case 'mi': // Move list import
+      if(argc<2 || solution_replay) break;
+      if(replay_pos) begin_level(level_id);
+      do_import_moves(sqlite3_column_text(args,1));
+      return 1;
+    case 'ml': // Move list load
+      if(argc<2 || solution_replay) break;
+      if(replay_pos) begin_level(level_id);
+      do_load_moves(args);
+      return 1;
+    case 'mx': // Move list export
+      if(argc<2) break;
+      do_export_moves(sqlite3_column_text(args,1));
+      return 0;
     default:
       return prev;
   }
