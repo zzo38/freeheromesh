@@ -302,7 +302,8 @@ Compatible
   name of the image numbered 0, next for the image numbered 1, etc.
 
 Input
-  Set the Input flag for this class.
+  Set the Input flag for this class. This causes it to receive a KEY
+  message during the input phase of each turn.
 
 Invisible
   Set the Invisible flag for this class.
