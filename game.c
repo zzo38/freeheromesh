@@ -721,7 +721,7 @@ void run_game(void) {
           if(ev.button.y<48) break;
           if(side_mode) {
             // Inventory
-            
+            //TODO
           } else {
             // Move list
             i=(ev.button.y+4)/16-(screen->h-68)/32-4;

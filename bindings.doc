@@ -98,8 +98,16 @@ to ask the user for the value to use.
 
 === Editor commands ===
 
+'^a' <location>
+  Add an object with the current MRU values to that location, if there
+  is not already another object of the same class there.
+
 '^c'
   Display the class selection menu.
+
+'^u' <location>
+  Add an object with the current MRU values to that location, even if
+  there is already another object of the same class at that location.
 
 'mR' <number>
   Select a relative MRU. Negative numbers move up the list, and positive

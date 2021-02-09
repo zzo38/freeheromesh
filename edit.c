@@ -396,10 +396,40 @@ static void class_image_select(void) {
   }
 }
 
+static void add_object_at(int x,int y,MRU*m,int d) {
+  Uint32 n;
+  if(x<1 || x>pfwidth || y<1 || y>pfheight || !m || !m->class) return;
+  if(d) {
+    n=playfield[y*64+x-65];
+    while(n!=VOIDLINK) {
+      if(objects[n]->class==m->class) return;
+      n=objects[n]->up;
+    }
+  }
+  n=objalloc(m->class);
+  if(n==VOIDLINK) return;
+  objects[n]->x=x;
+  objects[n]->y=y;
+  objects[n]->image=m->img;
+  objects[n]->dir=m->dir;
+  objects[n]->misc1=m->misc1;
+  objects[n]->misc2=m->misc2;
+  objects[n]->misc3=m->misc3;
+  pflink(n);
+}
+
 static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
   switch(cmd) {
+    case '^a': // Add object (no duplicates)
+      if(prev) return prev;
+      add_object_at(number&63?:64,number/64?:64,mru+curmru,1);
+      return 0;
     case '^c': // Select class/image
       class_image_select();
+      return 0;
+    case '^u': // Add object (allow duplicates)
+      if(prev) return prev;
+      add_object_at(number&63?:64,number/64?:64,mru+curmru,0);
       return 0;
     case '^P': // Play
       return -2;
