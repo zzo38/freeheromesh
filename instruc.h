@@ -327,44 +327,46 @@
 #define OP_MOVETO_D 41112
 #define OP_MOVETO_CD 43160
 #define OP_NEWX 32921
-#define OP_NEWY 32922
-#define OP_OBJABOVE 32923
-#define OP_OBJABOVE_C 34971
-#define OP_OBJBELOW 32924
-#define OP_OBJBELOW_C 34972
-#define OP_OBJBOTTOMAT 32925
-#define OP_OBJCLASSAT 32926
-#define OP_OBJDIR 32927
-#define OP_OBJDIR_C 34975
-#define OP_OBJLAYERAT 32928
-#define OP_OBJTOPAT 32929
-#define OP_POPUP 32930
-#define OP_POPUPARGS 32931
-#define OP_QUEUETURN 32932
-#define OP_SEND 32933
-#define OP_SEND_C 34981
-#define OP_SEND_D 41125
-#define OP_SEND_CD 43173
-#define OP_SENDEX 32934
-#define OP_SENDEX_C 34982
-#define OP_SENDEX_D 41126
-#define OP_SENDEX_CD 43174
-#define OP_SETINVENTORY 32935
-#define OP_SOUND 32936
-#define OP_SYNCHRONIZE 32937
-#define OP_TRACE 32938
-#define OP_VOLUMEAT 32939
-#define OP_WINLEVEL 32940
-#define OP_XDIR 32941
-#define OP_XDIR_C 34989
-#define OP_YDIR 32942
-#define OP_YDIR_C 34990
-#define OP_FUNCTION 32943
-#define OP_LOCAL 32944
-#define OP_LABEL 32945
-#define OP_STRING 32946
-#define OP_INT16 32947
-#define OP_INT32 32948
+#define OP_NEWXY 32922
+#define OP_NEWY 32923
+#define OP_OBJABOVE 32924
+#define OP_OBJABOVE_C 34972
+#define OP_OBJBELOW 32925
+#define OP_OBJBELOW_C 34973
+#define OP_OBJBOTTOMAT 32926
+#define OP_OBJCLASSAT 32927
+#define OP_OBJDIR 32928
+#define OP_OBJDIR_C 34976
+#define OP_OBJLAYERAT 32929
+#define OP_OBJTOPAT 32930
+#define OP_POPUP 32931
+#define OP_POPUPARGS 32932
+#define OP_QUEUETURN 32933
+#define OP_SEND 32934
+#define OP_SEND_C 34982
+#define OP_SEND_D 41126
+#define OP_SEND_CD 43174
+#define OP_SENDEX 32935
+#define OP_SENDEX_C 34983
+#define OP_SENDEX_D 41127
+#define OP_SENDEX_CD 43175
+#define OP_SETINVENTORY 32936
+#define OP_SOUND 32937
+#define OP_SYNCHRONIZE 32938
+#define OP_TRACE 32939
+#define OP_VOLUMEAT 32940
+#define OP_WINLEVEL 32941
+#define OP_XDIR 32942
+#define OP_XDIR_C 34990
+#define OP_XYDIR 32943
+#define OP_YDIR 32944
+#define OP_YDIR_C 34992
+#define OP_FUNCTION 32945
+#define OP_LOCAL 32946
+#define OP_LABEL 32947
+#define OP_STRING 32948
+#define OP_INT16 32949
+#define OP_INT32 32950
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486935},
@@ -501,25 +503,26 @@ static const Op_Names op_names[]={
 {"NE",9437185},
 {"NW",9437187},
 {"NewX",8421529},
-{"NewY",8421530},
+{"NewXY",8421530},
+{"NewY",8421531},
 {"OLDPHONE",8389402},
 {"ONCE",8388609},
 {"OSC",8388616},
 {"OSCLOOP",8388618},
-{"ObjAbove",8487067},
-{"ObjBelow",8487068},
-{"ObjBottomAt",8421533},
-{"ObjClassAt",8421534},
-{"ObjDir",8487071},
-{"ObjLayerAt",8421536},
-{"ObjTopAt",8421537},
+{"ObjAbove",8487068},
+{"ObjBelow",8487069},
+{"ObjBottomAt",8421534},
+{"ObjClassAt",8421535},
+{"ObjDir",8487072},
+{"ObjLayerAt",8421537},
+{"ObjTopAt",8421538},
 {"PLAYERMOVING",8389133},
 {"POSTINIT",8389138},
 {"POUR",8389377},
 {"POWER",8389386},
 {"Player",8487020},
-{"PopUp",8421538},
-{"QueueTurn",8421540},
+{"PopUp",8421539},
+{"QueueTurn",8421541},
 {"Quiz",8683642},
 {"R",9437198},
 {"RATCHET1",8389418},
@@ -537,23 +540,23 @@ static const Op_Names op_names[]={
 {"SUNK",8389131},
 {"SW",9437189},
 {"Self",8421487},
-{"Send",10584229},
-{"SendEx",10584230},
-{"SetInventory",8421543},
+{"Send",10584230},
+{"SendEx",10584231},
+{"SetInventory",8421544},
 {"Shape",8618039},
 {"ShapeDir",8618062},
 {"Sharp",8618061},
 {"Shovable",8618063},
-{"Sound",8421544},
+{"Sound",8421545},
 {"Stealthy",8618088},
 {"Strength",9142346},
-{"Synchronize",8421545},
+{"Synchronize",8421546},
 {"TAHTASHH",8389409},
 {"THMP_thmp",8389405},
 {"THWIT",8389384},
 {"TICK",8389391},
 {"Temperature",9142325},
-{"Trace",8421546},
+{"Trace",8421547},
 {"UH_OH",8389382},
 {"UNCORK",8389414},
 {"UNHH",8389381},
@@ -562,15 +565,16 @@ static const Op_Names op_names[]={
 {"VACUUM",8389411},
 {"VisualOnly",8618087},
 {"Volume",9142338},
-{"VolumeAt",8421547},
+{"VolumeAt",8421548},
 {"W",9437188},
 {"WAHOO",8389400},
 {"WHACK",8389423},
 {"Weight",9142340},
-{"WinLevel",8421548},
-{"XDir",8487085},
+{"WinLevel",8421549},
+{"XDir",8487086},
+{"XYDir",8421551},
 {"Xloc",8486968},
-{"YDir",8487086},
+{"YDir",8487088},
 {"YEEHAW",8389401},
 {"Yloc",8486969},
 {"again",8683532},
@@ -650,5 +654,5 @@ static const Op_Names op_names[]={
 {"until",8683533},
 {"while",8683534},
 };
-#define N_OP_NAMES 282
+#define N_OP_NAMES 284
 #endif

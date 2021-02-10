@@ -1206,7 +1206,10 @@ NewX  ( oldx dir -- newx )
   west then it is increased or decreased by one. The output is never less
   than zero nor exceeding the playfield width by more than one.
 
-NewY  ( oldx dir -- newy )
+NewXY  ( oldx oldy dir -- newx newy )
+  NewX and NewY together.
+
+NewY  ( oldy dir -- newy )
   Advance the number in the direction as though it is a Y coordinate.
 
 nip  ( x y -- y )
@@ -1367,6 +1370,9 @@ XDir  ( dir -- newx )
 ,XDir  ( obj dir -- newx )
   Finds the X coordinate of the cell in the specified direction of the
   specified object.
+
+XYDir  ( dir -- newx newy )
+  Finds the X and Y coordinates of the cell in the given direction.
 
 YDir  ( dir -- newy )
   Finds the Y coordinate of the cell in the given direction.

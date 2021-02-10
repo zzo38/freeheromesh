@@ -223,6 +223,7 @@ MaxInventory ; error if more than that many slots in inventory
 .,MovePlus "Move+" ; obj.Inertia+=Strength instead of obj.Inertia=Strength
 .,MoveTo ; the internal MoveTo() function
 NewX
+NewXY
 NewY
 ,ObjAbove
 ,ObjBelow
@@ -243,6 +244,7 @@ Trace
 VolumeAt
 WinLevel
 ,XDir
+XYDir
 ,YDir
 
 ; Specials
