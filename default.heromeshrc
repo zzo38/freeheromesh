@@ -1,0 +1,153 @@
+! Hero Mesh configuration settings
+?.screenWidth: 800
+?.screenHeight: 600
+?.imageSize: 24
+?.traceAll: true
+?.showInventory: 0
+
+! Game inputs
+?.gameKey.A: 'A
+?.gameKey.B: 'B
+?.gameKey.C: 'C
+?.gameKey.D: 'D
+?.gameKey.E: 'E
+?.gameKey.F: 'F
+?.gameKey.G: 'G
+?.gameKey.H: 'H
+?.gameKey.I: 'I
+?.gameKey.J: 'J
+?.gameKey.K: 'K
+?.gameKey.L: 'L
+?.gameKey.M: 'M
+?.gameKey.N: 'N
+?.gameKey.O: 'O
+?.gameKey.P: 'P
+?.gameKey.Q: 'Q
+?.gameKey.R: 'R
+?.gameKey.S: 'S
+?.gameKey.T: 'T
+?.gameKey.U: 'U
+?.gameKey.V: 'V
+?.gameKey.W: 'W
+?.gameKey.X: 'X
+?.gameKey.Y: 'Y
+?.gameKey.Z: 'Z
+?.gameKey.0: '0
+?.gameKey.1: '1
+?.gameKey.2: '2
+?.gameKey.3: '3
+?.gameKey.4: '4
+?.gameKey.5: '5
+?.gameKey.6: '6
+?.gameKey.7: '7
+?.gameKey.8: '8
+?.gameKey.9: '9
+?.gameKey.backquote: 'TILDE
+?.gameKey.backslash: 'BACKSLASH
+?.gameKey.backspace: 'BACK
+?.gameKey.comma: 'COMMA
+?.gameKey.down: 'DOWN
+?.gameKey.end: 'END
+?.gameKey.equals: 'EQUALS
+?.gameKey.home: 'HOME
+?.gameKey.kp1: 'END
+?.gameKey.kp2: 'DOWN
+?.gameKey.kp3: 'PGDN
+?.gameKey.kp4: 'LEFT
+?.gameKey.kp5: 'CENTER
+?.gameKey.kp6: 'RIGHT
+?.gameKey.kp7: 'HOME
+?.gameKey.kp8: 'UP
+?.gameKey.kp9: 'PGUP
+?.gameKey.kp_divide: 'DIVIDE
+?.gameKey.kp_multiply: 'MULTIPLY
+?.gameKey.left: 'LEFT
+?.gameKey.leftbracket: 'OBRACKET
+?.gameKey.minus: 'MINUS
+?.gameKey.numLock.kp0: 'NUMPAD0
+?.gameKey.numLock.kp1: 'NUMPAD1
+?.gameKey.numLock.kp2: 'NUMPAD2
+?.gameKey.numLock.kp3: 'NUMPAD3
+?.gameKey.numLock.kp4: 'NUMPAD4
+?.gameKey.numLock.kp5: 'NUMPAD5
+?.gameKey.numLock.kp6: 'NUMPAD6
+?.gameKey.numLock.kp7: 'NUMPAD7
+?.gameKey.numLock.kp8: 'NUMPAD8
+?.gameKey.numLock.kp9: 'NUMPAD9
+?.gameKey.numLock.kp_period: 'DECIMAL
+?.gameKey.pagedown: 'PGDN
+?.gameKey.pageup: 'PGUP
+?.gameKey.period: 'PERIOD
+?.gameKey.quote: 'QUOTE
+?.gameKey.return: 'ENTER
+?.gameKey.right: 'RIGHT
+?.gameKey.rightbracket: 'CBRACKET
+?.gameKey.semicolon: 'SEMICOLON
+?.gameKey.slash: 'SLASH
+?.gameKey.space: 'SPACE
+?.gameKey.up: 'UP
+
+! Game inputs with alt
+?.gameKey.alt.9: 'F9
+?.gameKey.alt.0: 'F10
+?.gameKey.alt.1: 'F11
+?.gameKey.alt.2: 'F12
+?.gameKey.alt.B: 'BREAK
+?.gameKey.alt.C: 'CAPSLOCK
+?.gameKey.alt.D: 'DELETE
+?.gameKey.alt.N: 'NUMLOCK
+?.gameKey.alt.O: 'SCRLOCK
+?.gameKey.alt.S: 'SHIFT
+?.gameKey.alt.T: 'TAB
+?.gameKey.alt.Z: 'CTRL
+
+! Game key bindings
+?.gameKey.ctrl.E: ^E
+?.gameKey.ctrl.I: select 'mi',:import_move_list;
+?.gameKey.ctrl.Q: ^Q
+?.gameKey.ctrl.T: ^T
+?.gameKey.ctrl.X: select 'mx',:export_move_list;
+?.gameClick.right: ^o
+?.gameClick.middle: ^d
+?.gameKey.kp_enter: =0
+?.gameKey.escape: =0
+?.gameKey.f1: +1
+?.gameKey.f2: +10
+?.gameKey.f3: +100
+?.gameKey.f4: +1000
+?.gameKey.shift.f1: -1
+?.gameKey.shift.f2: -10
+?.gameKey.shift.f3: -100
+?.gameKey.shift.f4: -1000
+?.gameKey.f5: ^M
+?.gameKey.f6: ^<
+?.gameKey.f7: ^>
+?.gameKey.f8: ^s
+?.gameKey.tab: ^I
+
+! Editor key bindings
+?.editKey.1: select 'mr',0;
+?.editKey.2: select 'mr',1;
+?.editKey.3: select 'mr',2;
+?.editKey.4: select 'mr',3;
+?.editKey.5: select 'mr',4;
+?.editKey.6: select 'mr',5;
+?.editKey.7: select 'mr',6;
+?.editKey.8: select 'mr',7;
+?.editKey.9: select 'mr',8;
+?.editKey.up: select 'mR',-1;
+?.editKey.down: select 'mR',+1;
+?.editKey.ctrl.P: ^P
+?.editKey.ctrl.Q: ^Q
+?.editKey.space: ^c
+?.editClick.left: ^a
+?.editClick.alt.left: ^u
+?.editClick.right: delete from objects where x=$X and y=$Y and up is null;
+
+! Global key bindings
+?.?.kp_minus: select 'go',-(level()-1);
+?.?.kp_plus: select 'go',-(level()+1);
+?.?.ctrl.G: select 'go',-:Go_To_Level where :Go_To_Level=cast(:Go_To_Level as int) and cast(:Go_To_Level as int)>0;
+?.?.shift.ctrl.M: select ':s';
+?.?.f10: select ':x';
+
