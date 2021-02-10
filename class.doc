@@ -385,7 +385,16 @@ VisualOnly
   Make a code block whose entry point is the specified message.
 
 (<key> <code...>)
-  (This is not implemented yet.)
+  Add a code block for key dispatch. This cannot be combined with a KEY
+  message in the same class; it causes the KEY message to be automatically
+  defined for this class. If this class has the Input flag and the first
+  instruction is not IgnoreKey, then it is entered into an internal list
+  of key codes to not ignore. Otherwise, the automatic KEY messages (for
+  all classes with them, not only this one) will have the effect of the
+  IgnoreKey instruction when an unrecognized key is specified. You can
+  still call the KEY message by yourself; Arg1 is the key code, and if
+  Arg3 is true then the implicit IgnoreKey will not be executed (although
+  any explicit IgnoreKey will still work).
 
 
 === Data types ===
@@ -405,7 +414,8 @@ standard message names have no prefix.
 * String: A string in quotation marks. There are no string manipulation
 functions; the only thing that can be done with a string is to display it.
 
-* Sound: A sound.
+* Sound: A named sound effect. Values of this type cannot be compared with
+anything, even other values of the same type.
 
 Some things are not their own types, and are other uses of numbers:
 

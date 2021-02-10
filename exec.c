@@ -1243,6 +1243,18 @@ static void v_set_popup(Uint32 from,int argc) {
   }
 }
 
+static int v_dispatch(const Uint16*code) {
+  int i=msgvars.arg1.u;
+  if(msgvars.arg1.t!=TY_NUMBER) Throw("Type mismatch");
+  if(msgvars.arg1.u&~0xFF) {
+    if(current_key && !v_bool(msgvars.arg3)) key_ignored=all_flushed=1;
+    return 0;
+  }
+  if(!i) return 0;
+  if(current_key && !v_bool(msgvars.arg3) && !(keymask[i>>3]&(1<<(i&7)))) key_ignored=all_flushed=1;
+  return code[i];
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -1374,6 +1386,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_DIR_C: StackReq(1,1); Push(GetVariableOf(dir,NVALUE)); break;
     case OP_DIR_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->dir=resolve_dir(obj,t1.u); break;
     case OP_DIR_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->dir=resolve_dir(i,t1.u); break;
+    case OP_DISPATCH: ptr=v_dispatch(code+ptr-1); if(!ptr) return; break;
     case OP_DISTANCE: StackReq(0,1); Push(NVALUE(o->distance)); break;
     case OP_DISTANCE_C: StackReq(1,1); Push(GetVariableOf(distance,NVALUE)); break;
     case OP_DISTANCE_E: StackReq(1,0); t1=Pop(); Numeric(t1); o->distance=t1.u; break;

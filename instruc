@@ -254,4 +254,5 @@ XYDir
 *String
 *Int16
 *Int32
+*Dispatch
 

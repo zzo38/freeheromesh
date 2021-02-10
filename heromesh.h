@@ -163,6 +163,7 @@ extern Sint32 max_volume; // max total volume to allow moving diagonally (defaul
 extern Uint8 back_color,inv_back_color;
 extern char**stringpool;
 extern AnimationSlot anim_slot[8];
+extern Uint8 keymask[256/8];
 
 Uint16 get_message_ptr(int c,int m);
 void load_classes(void);

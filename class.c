@@ -15,6 +15,7 @@ exit
 #include "sqlite3.h"
 #include "smallxrm.h"
 #include "heromesh.h"
+#include "names.h"
 
 #define TF_COMMA 0x0001 // has a comma modifier
 #define TF_EQUAL 0x0002 // has an equal sign modifier
@@ -47,6 +48,7 @@ Uint8 back_color=1;
 Uint8 inv_back_color=9;
 char**stringpool;
 AnimationSlot anim_slot[8];
+Uint8 keymask[256/8];
 
 #define HASH_SIZE 8888
 #define LOCAL_HASH_SIZE 5555
@@ -1359,6 +1361,7 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
   int ptr=0;
   int compat=0;
   int i;
+  char disp=0;
   if(!hash) fatal("Allocation failed\n");
   if(!cl) fatal("Confusion of class definition somehow\n");
   if(cl->cflags&(CF_NOCLASS1|CF_NOCLASS2)) {
@@ -1375,7 +1378,27 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
       ParseError("Unexpected macro token\n");
     } else if(Tokenf(TF_OPEN)) {
       nxttok();
-      if(Tokenf(TF_NAME)) {
+      if(Tokenf(TF_KEY)) {
+        if(!disp) {
+          cl->codes=realloc(cl->codes,0x10000*sizeof(Uint16));
+          if(!cl->codes) fatal("Allocation failed\n");
+          if(get_message_ptr(cla,MSG_KEY)!=0xFFFF) ParseError("Class $%s has a KEY message already\n",cl->name);
+          if(ptr>0xFDFF) ParseError("Out of code space\n");
+          disp=1;
+          set_message_ptr(cla,MSG_KEY,ptr);
+          cl->codes[ptr]=OP_DISPATCH;
+          for(i=1;i<256;i++) cl->codes[ptr+i]=0;
+          ptr+=256;
+        }
+        i=tokenv&255;
+        cl->codes[cl->messages[MSG_KEY]+i]=ptr;
+        if(cl->cflags&CF_INPUT) {
+          nxttok();
+          if(tokent!=TF_NAME || tokenv!=OP_IGNOREKEY) keymask[i>>3]|=1<<(i&7);
+          pushback=1;
+        }
+        ptr=parse_instructions(cla,ptr,hash,compat);
+      } else if(Tokenf(TF_NAME)) {
         switch(tokenv) {
           case OP_IMAGE:
             class_def_image(cla);
