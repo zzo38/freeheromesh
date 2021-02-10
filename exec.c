@@ -1448,6 +1448,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_LEVEL: StackReq(0,1); Push(NVALUE(level_code)); break;
     case OP_LNOT: StackReq(1,1); if(v_bool(Pop())) Push(NVALUE(0)); else Push(NVALUE(1)); break;
     case OP_LOC: StackReq(0,2); Push(NVALUE(o->x)); Push(NVALUE(o->y)); break;
+    case OP_LOC_C: StackReq(1,2); i=v_object(Pop()); Push(NVALUE(i==VOIDLINK?0:objects[i]->x)); Push(NVALUE(i==VOIDLINK?0:objects[i]->y)); break;
     case OP_LOCATEME: locate_me(o->x,o->y); break;
     case OP_LOR: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1) || v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_LOSELEVEL: gameover=-1; Throw(0); break;
