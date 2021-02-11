@@ -407,13 +407,13 @@ static void add_object_at(int x,int y,MRU*m,int d) {
     if(d && objects[n]->class==m->class) return;
     if(c->collisionLayers&classes[objects[n]->class]->collisionLayers) {
       u=objects[n]->up;
-      pfunlink(n);
-      free(objects[n]);
+      objtrash(n);
       n=u;
     } else {
       n=objects[n]->up;
     }
   }
+  generation_number_inc=0;
   n=objalloc(m->class);
   if(n==VOIDLINK) return;
   objects[n]->x=x;

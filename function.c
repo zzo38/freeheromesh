@@ -870,9 +870,7 @@ static int vt1_objects_update(sqlite3_vtab*vt,int argc,sqlite3_value**argv,sqlit
   if(argc==1) {
     // DELETE
     id=sqlite3_value_int64(argv[0]);
-    pfunlink(id);
-    free(objects[id]);
-    objects[id]=0;
+    objtrash(id);
   } else if(sqlite3_value_type(argv[0])==SQLITE_NULL) {
     // INSERT
     if(sqlite3_value_type(argv[1])!=SQLITE_NULL || sqlite3_value_type(argv[2])!=SQLITE_NULL) return SQLITE_CONSTRAINT_VTAB;
