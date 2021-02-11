@@ -1275,6 +1275,10 @@ oz?  ( any -- bool )
   object nor zero. (Even if the object has been garbage collected, it is
   still true.) Error if it is a sound.
 
+pick  ( index -- any )
+  Copy a value from the specified index from the top of the stack, where 0
+  means the top of the stack, 1 means the one below, etc.
+
 PopUp  ( value -- )
   Displays a popup message. Normally, the value is a string, but it can be
   another type, and it will try to display it. If the text contains any \q

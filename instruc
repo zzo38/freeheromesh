@@ -74,6 +74,7 @@ nip
 tuck
 rot
 rotback "-rot"
+pick
 
 ; Flow controls
 -if
