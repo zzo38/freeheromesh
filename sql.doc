@@ -49,6 +49,9 @@ MVALUE(number)
 MODSTATE()
   The SDL keyboard modifier state.
 
+MOVE_LIST()
+  Return the current move list as a blob.
+
 MOVENUMBER()
   Return the number of moves executed so far since the level restarted.
 

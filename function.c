@@ -242,6 +242,10 @@ static void fn_modstate(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_result_int(cxt,SDL_GetModState());
 }
 
+static void fn_move_list(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  if(replay_count) sqlite3_result_blob(cxt,replay_list,replay_count,SQLITE_TRANSIENT);
+}
+
 static void fn_movenumber(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_result_int(cxt,replay_pos);
 }
@@ -941,6 +945,7 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"LEVEL_TITLE",0,SQLITE_UTF8,0,fn_level_title,0,0);
   sqlite3_create_function(userdb,"LOAD_LEVEL",1,SQLITE_UTF8,0,fn_load_level,0,0);
   sqlite3_create_function(userdb,"MODSTATE",0,SQLITE_UTF8,0,fn_modstate,0,0);
+  sqlite3_create_function(userdb,"MOVE_LIST",0,SQLITE_UTF8,0,fn_move_list,0,0);
   sqlite3_create_function(userdb,"MOVENUMBER",0,SQLITE_UTF8,0,fn_movenumber,0,0);
   sqlite3_create_function(userdb,"MVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_mvalue,0,0);
   sqlite3_create_function(userdb,"NVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_zero_extend,0,0);
