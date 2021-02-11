@@ -397,12 +397,20 @@ static void class_image_select(void) {
 }
 
 static void add_object_at(int x,int y,MRU*m,int d) {
-  Uint32 n;
+  Uint32 n,u;
+  Class*c;
   if(x<1 || x>pfwidth || y<1 || y>pfheight || !m || !m->class) return;
-  if(d) {
-    n=playfield[y*64+x-65];
-    while(n!=VOIDLINK) {
-      if(objects[n]->class==m->class) return;
+  c=classes[m->class];
+  if(!c) return;
+  n=playfield[y*64+x-65];
+  while(n!=VOIDLINK) {
+    if(d && objects[n]->class==m->class) return;
+    if(c->collisionLayers&classes[objects[n]->class]->collisionLayers) {
+      u=objects[n]->up;
+      pfunlink(n);
+      free(objects[n]);
+      n=u;
+    } else {
       n=objects[n]->up;
     }
   }
