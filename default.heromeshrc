@@ -140,6 +140,7 @@
 ?.editKey.ctrl.P: ^P
 ?.editKey.ctrl.Q: ^Q
 ?.editKey.space: ^c
+?.editKey.return: ^e
 ?.editClick.left: ^a
 ?.editClick.alt.left: ^u
 ?.editClick.right: delete from objects where x=$X and y=$Y and up is null;

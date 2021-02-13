@@ -396,6 +396,120 @@ static void class_image_select(void) {
   }
 }
 
+static Value ask_value(const char*s) {
+  int i;
+  s=screen_prompt(s);
+  if(!s || !*s) return UVALUE(0,4);
+  if(*s=='-' || *s=='+' || (*s>='0' && *s<='9')) {
+    if(*s=='0' && s[1]=='x') return NVALUE(strtol(s+2,0,16)&0xFFFF);
+    if(*s=='0' && s[1]=='o') return NVALUE(strtol(s+2,0,8)&0xFFFF);
+    return NVALUE(strtol(s,0,10)&0xFFFF);
+  } else if(*s=='$') {
+    for(i=1;i<0x4000;i++) {
+      if(classes[i] && !(classes[i]->cflags&CF_NOCLASS2) && !strcmp(s+1,classes[i]->name)) return CVALUE(i);
+    }
+    screen_message("Undefined class");
+  } else if(*s=='#') {
+    for(i=0;i<0x4000;i++) {
+      if(messages[i] && !strcmp(s+1,messages[i])) return MVALUE(i+256);
+    }
+    screen_message("Undefined message");
+  } else if(*s>='A' && *s<='Z') {
+    for(i=0;i<N_MESSAGES;i++) {
+      if(!strcmp(s,standard_message_names[i])) return MVALUE(i);
+    }
+    screen_message("Undefined message");
+  } else if(*s=='\'') {
+    for(i=0;i<256;i++) {
+      if(heromesh_key_names[i] && !strcmp(s+1,heromesh_key_names[i])) return NVALUE(i);
+    }
+    screen_message("Invalid key");
+  } else {
+    screen_message("Syntax error");
+  }
+  return UVALUE(0,4);
+}
+
+static void mru_edit(MRU*m) {
+  SDL_Event ev;
+  SDL_Rect r;
+  char buf[256];
+  int i,j;
+  Value v;
+  if(!m->class) return;
+  redraw:
+  set_cursor(XC_arrow);
+  r.x=r.y=0;
+  r.w=screen->w;
+  r.h=screen->h;
+  SDL_FillRect(screen,&r,0xF0);
+  SDL_LockSurface(screen);
+  draw_text(0,0,"Class:",0xF0,0xF7);
+  draw_text(64,0,"$",0xF0,0xFB);
+  draw_text(72,0,classes[m->class]->name,0xF0,0xFB);
+  draw_text(0,8,"Image:",0xF0,0xF7);
+  snprintf(buf,255,"%d",m->img);
+  draw_text(64,8,buf,0xF0,0xFE);
+  draw_text(0,24,"Dir:",0xF0,0xF7);
+  snprintf(buf,255,"%2.2s","E NEN NWW SWS SE"+(m->dir&7)*2);
+  draw_text(64,24,buf,0xF0,0xFF);
+  for(i=32;i<56;i+=8) {
+    switch(i) {
+      case 32: v=m->misc1; draw_text(0,32,"Misc1:",0xF0,0xF7); break;
+      case 40: v=m->misc2; draw_text(0,40,"Misc2:",0xF0,0xF7); break;
+      case 48: v=m->misc3; draw_text(0,48,"Misc3:",0xF0,0xF7); break;
+    }
+    switch(v.t) {
+      case TY_NUMBER:
+        snprintf(buf,255,"%u",(int)v.u);
+        draw_text(64,i,buf,0xF0,0xFE);
+        break;
+      case TY_CLASS:
+        draw_text(64,i,"$",0xF0,0xFB);
+        draw_text(72,i,classes[v.u]->name,0xF0,0xFB);
+        break;
+      case TY_MESSAGE:
+        snprintf(buf,255,"%s%s",v.u<256?"":"#",v.u<256?standard_message_names[v.u]:messages[v.u-256]);
+        draw_text(64,i,buf,0xF0,0xFD);
+        break;
+      case TY_LEVELSTRING:
+        snprintf(buf,255,"String %u",(int)v.u);
+        draw_text(200,i,buf,0xF0,0xF9);
+        break;
+    }
+  }
+  draw_text(0,64,"Str:",0xF0,0xF7);
+  snprintf(buf,255,"%d",nlevelstrings);
+  draw_text(64,64,buf,0xF0,0xF7);
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) switch(ev.type) {
+    case SDL_KEYDOWN:
+      switch(ev.key.keysym.sym) {
+        case SDLK_RETURN: case SDLK_KP_ENTER: case SDLK_ESCAPE: return;
+        case SDLK_1: v=ask_value("Misc1:"); if(v.t<4) m->misc1=v; break;
+        case SDLK_2: v=ask_value("Misc2:"); if(v.t<4) m->misc2=v; break;
+        case SDLK_3: v=ask_value("Misc3:"); if(v.t<4) m->misc3=v; break;
+        case SDLK_KP1: m->dir=5; break;
+        case SDLK_KP2: m->dir=6; break;
+        case SDLK_KP3: m->dir=7; break;
+        case SDLK_KP4: m->dir=4; break;
+        case SDLK_KP6: m->dir=0; break;
+        case SDLK_KP7: m->dir=3; break;
+        case SDLK_KP8: m->dir=2; break;
+        case SDLK_KP9: m->dir=1; break;
+        case SDLK_KP_PLUS: m->dir=(m->dir+1)&7; break;
+        case SDLK_KP_MINUS: m->dir=(m->dir-1)&7; break;
+      }
+      goto redraw;
+    case SDL_VIDEOEXPOSE:
+      goto redraw;
+    case SDL_QUIT:
+      exit(0);
+      break;
+  }
+}
+
 static void add_object_at(int x,int y,MRU*m,int d) {
   Uint32 n,u;
   Class*c;
@@ -434,6 +548,9 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
       return 0;
     case '^c': // Select class/image
       class_image_select();
+      return 0;
+    case '^e': // Edit Misc/Dir of MRU slot
+      mru_edit(mru+curmru);
       return 0;
     case '^u': // Add object (allow duplicates)
       if(prev) return prev;
@@ -482,6 +599,7 @@ void run_editor(void) {
           i=(ev.button.y-56)/picture_size;
           if(i>=0 && i<MRUCOUNT) {
             curmru=i;
+            if(ev.button.button==3) mru_edit(mru+i);
             redraw_editor();
           }
           break;
