@@ -92,8 +92,17 @@ static void fn_class_data(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
 static void fn_cvalue(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   int a;
   if(sqlite3_value_type(*argv)==SQLITE_NULL) return;
-  a=sqlite3_value_int(*argv)&0xFFFF;
-  sqlite3_result_int64(cxt,a|((sqlite3_int64)TY_CLASS<<32));
+  if(sqlite3_value_type(*argv)==SQLITE_TEXT || sqlite3_value_type(*argv)==SQLITE_BLOB) {
+    const char*s=sqlite3_value_text(*argv);
+    for(a=1;a<0x4000;a++) {
+      if(classes[a] && !(classes[a]->cflags&CF_NOCLASS2) && !strcmp(s,classes[a]->name)) goto found;;
+    }
+    return;
+  } else {
+    a=sqlite3_value_int(*argv)&0xFFFF;
+    if(!a || (a&~0x3FFF) || !classes[a] || (classes[a]->cflags&CF_NOCLASS2)) return;
+  }
+  found: sqlite3_result_int64(cxt,a|((sqlite3_int64)TY_CLASS<<32));
 }
 
 static void fn_heromesh_escape(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
@@ -881,7 +890,7 @@ static int vt1_objects_update(sqlite3_vtab*vt,int argc,sqlite3_value**argv,sqlit
     x=sqlite3_value_int(argv[9]);
     y=sqlite3_value_int(argv[10]);
     if(x<1 || x>pfwidth || y<1 || y>pfheight) return SQLITE_CONSTRAINT_CHECK;
-    z=sqlite3_value_type(argv[3]);
+    z=sqlite3_value_int(argv[3]);
     if(z<=0 || z>=0x4000 || !classes[z]) return SQLITE_CONSTRAINT_FOREIGNKEY;
     if(sqlite3_value_int(argv[7])<0 || sqlite3_value_int(argv[7])>=classes[z]->nimages) return SQLITE_CONSTRAINT_CHECK;
     id=objalloc(z);

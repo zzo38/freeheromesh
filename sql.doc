@@ -15,7 +15,8 @@ CLASS_DATA(id,info)
   Returns data about a class.
 
 CVALUE(number)
-  Makes a game value of type 'class', given the class number.
+  Makes a game value of type 'class', given the class number. You can also
+  specify the class name instead of the number.
 
 HEROMESH_ESCAPE(blob)
   Converts blob representation of a game string into escaped format.
