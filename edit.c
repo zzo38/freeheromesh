@@ -197,6 +197,7 @@ static void set_caption(void) {
 
 static void add_mru(int cl,int img) {
   int i;
+  if(!cl) return;
   for(i=0;i<MRUCOUNT-1;i++) if(mru[i].class==cl && mru[i].img==img) break;
   memmove(mru+1,mru,i*sizeof(MRU));
   mru[0].class=cl;
