@@ -541,6 +541,7 @@ static void add_object_at(int x,int y,MRU*m,int d) {
 }
 
 static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
+  int x,y;
   switch(cmd) {
     case '^a': // Add object (no duplicates)
       if(prev) return prev;
@@ -568,6 +569,15 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
       // fall through
     case 'mr': // Select MRU absolute
       if(number>=0 && number<MRUCOUNT) curmru=number;
+      return 0;
+    case 're': // Resize and clear
+      if(argc<3) return 0;
+      x=sqlite3_column_int(args,1);
+      y=sqlite3_column_int(args,2);
+      if(x<1 || y<1 || x>64 || y>64) return 0;
+      annihilate();
+      pfwidth=x;
+      pfheight=y;
       return 0;
     default:
       return prev;

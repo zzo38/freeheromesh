@@ -121,6 +121,10 @@ to ask the user for the value to use.
 'mr' <number>
   Select a MRU, given the MRU number (0 to 31; the top is zero).
 
+'re' <width> <height>
+  Remove all objects from the level and resize the level. The minimum size
+  is 1x1 and the maximum size is 64x64.
+
 
 === Commands available in game and editor ===
 

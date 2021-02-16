@@ -85,6 +85,7 @@ TRACE_ON()
 XY(x,y)
   Many bindings require a position as their first argument; use this
   function to combine X/Y coordinates into a single value for this.
+  Coordinates are one-based. This is the same as (x+y*64).
 
 ZERO_EXTEND(number)
   Zero extends a 32-bit number to 64-bits. Same as NVALUE.
