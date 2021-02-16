@@ -326,6 +326,11 @@ static void fn_trace_on(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   if(main_options['t']=*v) puts("[Tracing enabled]"); else puts("[Tracing disabled]");
 }
 
+static void fn_xy(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  if(sqlite3_value_type(argv[0])==SQLITE_NULL || sqlite3_value_type(argv[1])==SQLITE_NULL) return;
+  sqlite3_result_int(cxt,sqlite3_value_int(argv[0])+sqlite3_value_int(argv[1])*64);
+}
+
 static void fn_zero_extend(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_int64 a;
   if(sqlite3_value_type(*argv)==SQLITE_NULL) return;
@@ -966,6 +971,7 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"SOLUTION_CACHEID",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,ptr1,fn_cacheid,0,0);
   sqlite3_create_function(userdb,"TRACE_OFF",0,SQLITE_UTF8,"",fn_trace_on,0,0);
   sqlite3_create_function(userdb,"TRACE_ON",0,SQLITE_UTF8,"\x01",fn_trace_on,0,0);
+  sqlite3_create_function(userdb,"XY",2,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_xy,0,0);
   sqlite3_create_function(userdb,"ZERO_EXTEND",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_zero_extend,0,0);
   sqlite3_create_module(userdb,"CLASSES",&vt_classes,"CREATE TABLE `CLASSES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `EDITORHELP` TEXT, `HELP` TEXT,"
    "`INPUT` INT, `QUIZ` INT, `TRACEIN` INT, `TRACEOUT` INT, `GROUP` TEXT, `PLAYER` INT);");
