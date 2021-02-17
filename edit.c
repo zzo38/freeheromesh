@@ -531,6 +531,7 @@ static void add_object_at(int x,int y,MRU*m,int d) {
   generation_number_inc=0;
   n=objalloc(m->class);
   if(n==VOIDLINK) return;
+  level_changed=1;
   objects[n]->x=x;
   objects[n]->y=y;
   objects[n]->image=m->img;
@@ -576,6 +577,7 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
       x=sqlite3_column_int(args,1);
       y=sqlite3_column_int(args,2);
       if(x<1 || y<1 || x>64 || y>64) return 0;
+      level_changed=1;
       annihilate();
       pfwidth=x;
       pfheight=y;

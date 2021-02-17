@@ -933,6 +933,7 @@ static int vt1_objects_update(sqlite3_vtab*vt,int argc,sqlite3_value**argv,sqlit
     objects[id]->misc3.t=sqlite3_value_int64(argv[6])>>32;
     if(objects[id]->misc3.t&~3) objects[id]->misc3=NVALUE(0);
   }
+  level_changed=1;
   return SQLITE_OK;
 }
 

@@ -47,6 +47,7 @@ Uint16 level_id,level_ord,level_version,level_code;
 unsigned char*level_title;
 Uint16*level_index;
 int level_nindex;
+char level_changed;
 
 #ifdef __GNUC__
 char stack_protect_mode=0;
@@ -227,6 +228,7 @@ const char*load_level(int lvl) {
   }
   if(lvl<0) return "Invalid level ID";
   if(!buf) return "Cannot find level";
+  level_changed=1;
   free(level_title);
   level_title=0;
   annihilate();
@@ -351,6 +353,7 @@ const char*load_level(int lvl) {
       break;
     }
   }
+  level_changed=0;
   return 0;
 bad1:
   free(buf);

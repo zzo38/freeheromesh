@@ -49,6 +49,7 @@ extern Uint16 level_id,level_ord,level_version,level_code;
 extern unsigned char*level_title;
 extern Uint16*level_index;
 extern int level_nindex;
+extern char level_changed; // 1 if solution is potentially invalidated by edits
 
 #ifdef __GNUC__
 extern char stack_protect_mode;
