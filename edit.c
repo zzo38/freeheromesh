@@ -566,6 +566,14 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
     case 'go': // Select level
       load_level(number);
       return 1;
+    case 'lc': // Set level code
+      level_code=number;
+      level_changed=1;
+      return 0;
+    case 'lv': // Set level version
+      level_version=number;
+      level_changed=0;
+      return 0;
     case 'mR': // Select MRU relative
       number+=curmru;
       // fall through

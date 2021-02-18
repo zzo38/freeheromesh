@@ -137,6 +137,7 @@
 ?.editKey.9: select 'mr',8;
 ?.editKey.up: select 'mR',-1;
 ?.editKey.down: select 'mR',+1;
+?.editKey.C: select 'lc',:level_code where :level_code=cast(:level_code as int);
 ?.editKey.shift.F: with n(n) as (select 65 union all select n+1 h from n where h<=64*pfheight()+65) select '^a',n from n;
 ?.editKey.ctrl.X: select 're',pfwidth(),pfheight();
 ?.editKey.ctrl.P: ^P
