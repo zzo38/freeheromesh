@@ -510,9 +510,15 @@ static void class_image_select(void) {
               goto setclass;
             }
             break;
-          case SDLK_RETURN:
+          case SDLK_RETURN: case SDLK_KP_ENTER:
             add_mru(cl,img);
             return;
+          case SDLK_F1:
+            if(cl && classes[cl] && classes[cl]->gamehelp) modal_draw_popup(classes[cl]->gamehelp);
+            goto redraw;
+          case SDLK_F2:
+            if(cl && classes[cl] && classes[cl]->edithelp) modal_draw_popup(classes[cl]->edithelp);
+            goto redraw;
           default:
             j=ev.key.keysym.unicode;
             if(j=='$' || j==21) {
@@ -646,6 +652,8 @@ static void mru_edit(MRU*m) {
         case SDLK_KP9: m->dir=1; break;
         case SDLK_KP_PLUS: m->dir=(m->dir+1)&7; break;
         case SDLK_KP_MINUS: m->dir=(m->dir-1)&7; break;
+        case SDLK_F1: case SDLK_g: if(classes[m->class]->gamehelp) modal_draw_popup(classes[m->class]->gamehelp); break;
+        case SDLK_F2: case SDLK_h: if(classes[m->class]->edithelp) modal_draw_popup(classes[m->class]->edithelp); break;
       }
       goto redraw;
     case SDL_VIDEOEXPOSE:

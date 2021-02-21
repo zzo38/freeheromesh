@@ -204,11 +204,11 @@ static void sql_interactive(void) {
     case SDL_KEYDOWN:
       switch(ev.key.keysym.sym) {
         case SDLK_ESCAPE: case SDLK_RETURN: case SDLK_KP_ENTER: goto done;
-        case SDLK_UP: k-=8; if(k<0) k=0; break;
-        case SDLK_DOWN: k+=8; break;
-        case SDLK_HOME: k=0; break;
-        case SDLK_PAGEUP: k-=screen->h; if(k<0) k=0; break;
-        case SDLK_PAGEDOWN: k+=screen->h; break;
+        case SDLK_UP: case SDLK_KP8: k-=8; if(k<0) k=0; break;
+        case SDLK_DOWN: case SDLK_KP2: k+=8; break;
+        case SDLK_HOME: case SDLK_KP7: k=0; break;
+        case SDLK_PAGEUP: case SDLK_KP9: k-=screen->h; if(k<0) k=0; break;
+        case SDLK_PAGEDOWN: case SDLK_KP3: k+=screen->h; break;
       }
       goto redraw;
     case SDL_VIDEOEXPOSE:
