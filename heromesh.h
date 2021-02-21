@@ -33,6 +33,7 @@ typedef struct {
 #define ZVALUE(x) UVALUE(x,TY_STRING)
 #define OVALUE(x) ((x)==VOIDLINK?NVALUE(0):UVALUE(x,objects[x]->generation))
 #define ValueTo64(v) (((sqlite3_int64)((v).u))|(((sqlite3_int64)((v).t))<<32))
+#define ValueEq(x,y) ((x).t==(y).t && (x).u==(y).u)
 
 #define N_MESSAGES 24
 extern const char*const standard_message_names[];

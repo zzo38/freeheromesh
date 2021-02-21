@@ -34,7 +34,7 @@ static void rewrite_class_def(void) {
   Object*o;
   long size=0;
   unsigned char*data=read_lump(FIL_LEVEL,LUMP_CLASS_DEF,&size);
-  sqlite3_str*s=sqlite3_str_new(0);
+  sqlite3_str*s;
   memset(cu,0,0x4000/8);
   memset(mu,0,0x4000/8);
   if(data && size) {
@@ -69,6 +69,7 @@ static void rewrite_class_def(void) {
 #undef DoMisc
   }
   // Now write out the new data
+  s=sqlite3_str_new(0);
   for(i=0;i<0x4000;i++) if(cu[i/8]&(1<<(i&7))) {
     sqlite3_str_appendchar(s,1,i&255);
     sqlite3_str_appendchar(s,1,i>>8);
@@ -87,7 +88,151 @@ static void rewrite_class_def(void) {
   data=sqlite3_str_finish(s);
   if(!size || !data) fatal("Error in string builder\n");
   write_lump(FIL_LEVEL,LUMP_CLASS_DEF,size,data);
-  free(data);
+  sqlite3_free(data);
+}
+
+static inline void version_change(void) {
+  long sz=0;
+  unsigned char*buf=read_lump(FIL_SOLUTION,level_id,&sz);
+  if(!buf) return;
+  if(sz>2 && (buf[0]|(buf[1]<<8))==level_version) ++level_version;
+  free(buf);
+}
+
+static void save_obj(sqlite3_str*s,const Object*o,const Object**m,Uint8 x,Uint8 y) {
+  static Uint8 r=0;
+  static Uint8 rx,ry;
+  const Object*p=0;
+  Uint8 b;
+  Uint16 c;
+  if(!o) goto nrle;
+  b=o->dir&7;
+  if(o->x==x+1) b|=0x40; else if(o->x!=x) b|=0x20;
+  if(o->y!=y) b|=0x10;
+  p=m[b&0x70?0:1];
+  if((b&0x70)!=0x20 || !r || !p) goto nrle;
+  if(o->class!=p->class || o->image!=p->image || !ValueEq(o->misc1,p->misc1) || !ValueEq(o->misc2,p->misc2) || !ValueEq(o->misc3,p->misc3)) goto nrle;
+  if(0x0F&~r) {
+    r++;
+  } else {
+    sqlite3_str_appendchar(s,1,r);
+    if(r&0x20) sqlite3_str_appendchar(s,1,rx);
+    if(r&0x10) sqlite3_str_appendchar(s,1,ry);
+    r=0x20;
+  }
+  return;
+  nrle:
+  if(r) {
+    sqlite3_str_appendchar(s,1,r);
+    if(r&0x20) sqlite3_str_appendchar(s,1,rx);
+    if(r&0x10) sqlite3_str_appendchar(s,1,ry);
+  }
+  r=0;
+  if(!o) return;
+  if(o->misc1.t|o->misc1.u|o->misc2.t|o->misc2.u|o->misc3.t|o->misc3.u) b|=0x08;
+  if(p && o->class==p->class && o->image==p->image && ValueEq(o->misc1,p->misc1) && ValueEq(o->misc2,p->misc2) && ValueEq(o->misc3,p->misc3)) {
+    // Use RLE
+    r=0x80|b&0xF0;
+    rx=o->x;
+    ry=o->y;
+    return;
+  }
+  m[b&0x70?0:1]=o;
+  sqlite3_str_appendchar(s,1,b);
+  if(b&0x20) sqlite3_str_appendchar(s,1,o->x);
+  if(b&0x10) sqlite3_str_appendchar(s,1,o->y);
+  c=o->class;
+  for(x=0;x<=o->image && x<classes[c]->nimages;x++) if(classes[c]->images[x]&0x8000) break;
+  if(x==o->image) c|=0x8000;
+  sqlite3_str_appendchar(s,1,c&0xFF);
+  sqlite3_str_appendchar(s,1,c>>8);
+  if(c<0x8000) sqlite3_str_appendchar(s,1,o->image);
+  if(b&0x08) {
+    b=o->misc1.t|(o->misc2.t<<2)|(o->misc3.t<<4);
+    if(o->misc1.t|o->misc1.u) {
+      if(o->misc3.t|o->misc3.u) b|=0xC0;
+      else if(o->misc2.t|o->misc2.u) b|=0x80;
+      else b|=0x40;
+    }
+    sqlite3_str_appendchar(s,1,b);
+    if(b&0xC0) {
+      sqlite3_str_appendchar(s,1,o->misc1.u&0xFF);
+      sqlite3_str_appendchar(s,1,o->misc1.u>>8);
+    }
+    if((b&0xC0)!=0x40) {
+      sqlite3_str_appendchar(s,1,o->misc2.u&0xFF);
+      sqlite3_str_appendchar(s,1,o->misc2.u>>8);
+    }
+    if(!((b&0xC0)%0xC0)) {
+      sqlite3_str_appendchar(s,1,o->misc3.u&0xFF);
+      sqlite3_str_appendchar(s,1,o->misc3.u>>8);
+    }
+  }
+}
+
+static void save_level(void) {
+  /*
+   Format of objects:
+     * bit flags (or 0xFF for end):
+       bit7 = MRU (omit everything but position)
+       bit6 = Next position
+       bit5 = New X position
+       bit4 = New Y position
+       bit3 = Has MiscVars (RLE in case of MRU)
+       bit2-bit0 = LastDir (RLE in case of MRU)
+     * new X if applicable
+     * new Y if applicable
+     * class (one-based; add 0x8000 for default image) (two bytes)
+     * image (one byte)
+     * data types (if has MiscVars):
+       bit7-bit6 = How many (0=has Misc2 and Misc3, not Misc1)
+       bit5-bit4 = Misc3 type
+       bit3-bit2 = Misc2 type
+       bit1-bit0 = Misc1 type
+     * misc data (variable size)
+   Store/use MRU slot 0 if any bits of 0x70 set in flag byte; slot 1 otherwise
+  */
+  Uint8 x=0;
+  Uint8 y=1;
+  const Object*m[2]={0,0};
+  sqlite3_str*str=sqlite3_str_new(0);
+  Uint32 n;
+  long sz;
+  char*data;
+  int i;
+  // Header
+  if(level_changed) version_change();
+  level_changed=0;
+  sqlite3_str_appendchar(str,1,level_version&255);
+  sqlite3_str_appendchar(str,1,level_version>>8);
+  sqlite3_str_appendchar(str,1,level_code&255);
+  sqlite3_str_appendchar(str,1,level_code>>8);
+  sqlite3_str_appendchar(str,1,pfwidth-1);
+  sqlite3_str_appendchar(str,1,pfheight-1);
+  if(level_title) sqlite3_str_appendall(str,level_title);
+  sqlite3_str_appendchar(str,1,0);
+  // Objects
+  for(i=0;i<64*64;i++) {
+    n=playfield[i];
+    while(n!=VOIDLINK) {
+      save_obj(str,objects[n],m,x,y);
+      x=objects[n]->x;
+      y=objects[n]->y;
+      n=objects[n]->up;
+    }
+  }
+  save_obj(str,0,m,x,y);
+  sqlite3_str_appendchar(str,1,0xFF);
+  // Level strings
+  for(i=0;i<nlevelstrings;i++) sqlite3_str_appendall(str,levelstrings[i]);
+  // Done
+  sz=sqlite3_str_length(str);
+  if(i=sqlite3_str_errcode(str)) fatal("SQL string error (%d)\n",i);
+  data=sqlite3_str_finish(str);
+  if(!data) fatal("Allocation failed\n");
+  write_lump(FIL_LEVEL,level_id,sz,data);
+  sqlite3_free(data);
+  rewrite_class_def();
 }
 
 static void redraw_editor(void) {
@@ -135,7 +280,7 @@ static void redraw_editor(void) {
   }
   snprintf(buf,8,"%2dx%2d",pfwidth,pfheight);
   draw_text(8,32,buf,0xF0,0xFD);
-  draw_text(24,32,"x",0xF0,0xF5);
+  draw_text(24,32,"x",0xF0,level_changed?0xF4:0xF5);
   x=x>=left_margin?(x-left_margin)/picture_size+1:0;
   y=y/picture_size+1;
   if(x>0 && y>0 && x<=pfwidth && y<=pfheight) snprintf(buf,8,"(%2d,%2d)",x,y);
@@ -563,6 +708,9 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
       return -2;
     case '^Q': // Quit
       return -1;
+    case '^S': // Save level
+      save_level();
+      return 1;
     case 'go': // Select level
       load_level(number);
       return 1;

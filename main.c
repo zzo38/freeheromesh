@@ -133,7 +133,7 @@ static sqlite3_int64 reset_usercache(FILE*fp,const char*nam,struct stat*stats,co
 
 unsigned char*read_lump_or_userstate(int sol,int lvl,long*sz,char us) {
   // Returns a pointer to the data; must be freed using free().
-  // If there is no data, returns null and sets *sz and *us to zero.
+  // If there is no data, returns null and sets *sz to zero.
   // Third argument is a pointer to a variable to store the data size (must be not null).
   // Fourth argument is 1 for user state or 0 for lump data.
   unsigned char*buf=0;
