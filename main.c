@@ -25,6 +25,10 @@ exit
 #include "cursorshapes.h"
 #include "heromesh.h"
 
+typedef struct {
+  char a[(N_MESSAGES==sizeof(standard_message_names)/sizeof(*standard_message_names))?1:-9];
+} ASSERTION;
+
 static const char schema[]=
   "BEGIN;"
   "PRAGMA APPLICATION_ID(1296388936);"

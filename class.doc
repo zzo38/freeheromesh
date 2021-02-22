@@ -1467,6 +1467,11 @@ This section describes when the various standard messages are sent to
 objects, and what return values are expected. (Do not confuse CREATE with
 CREATED or DESTROY with DESTROYED; they have different purposes.)
 
+(Some standard messages are in the names.js file but not used; do not use
+them in your own code, since their names and meaning may change later. The
+ones listed here are (probably) considered stable, and their numeric value
+(used in level files) will (probably) remain unchanged.)
+
 ARRIVED
   Sent during the trigger phase if the Arrived value is nonzero. Arg1 is
   the saved Arrived value. The Arrived variable will usually be set
