@@ -15,6 +15,7 @@
 #define TY_SOUND 5
 #define TY_USOUND 6
 #define TY_FOR 7
+#define TY_MARK 8
 #define TY_MAXTYPE 15
 // The level file format requires type codes 0 to 3 to be as is; other codes may change.
 

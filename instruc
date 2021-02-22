@@ -248,6 +248,13 @@ WinLevel
 XYDir
 ,YDir
 
+; Operations with marks
+mark "_"
+tmark
+in
+nin
+-mbegin
+
 ; Specials
 *Function
 *Local

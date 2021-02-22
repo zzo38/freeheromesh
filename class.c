@@ -1059,6 +1059,13 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
         case OP_STRING:
           AddInst2(OP_STRING,pool_string(tokenstr));
           break;
+        case OP_MBEGIN:
+          FlowPush(OP_BEGIN);
+          AddInst(OP_TMARK);
+          AddInst(OP_IF);
+          FlowPush(OP_WHILE);
+          peep=++ptr;
+          break;
         default:
           if(Tokenf(TF_ABNORMAL)) ParseError("Invalid instruction token\n");
           if(compat && Tokenf(TF_COMPAT) && Tokenf(TF_EQUAL)) ++tokenv;

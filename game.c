@@ -293,6 +293,9 @@ static inline void exam_value(const char*t,int y,Value v) {
     case TY_SOUND: case TY_USOUND:
       draw_text(200,y,"<Sound>",0xF0,0xF6);
       break;
+    case TY_MARK:
+      draw_text(200,y,"<Mark>",0xF0,0xF3);
+      break;
     default:
       snprintf(buf,80,"<%lu:%lu>",(long)v.u,(long)v.t);
       draw_text(200,y,buf,0xF0,0xFA);

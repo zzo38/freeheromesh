@@ -362,13 +362,18 @@
 #define OP_XYDIR 32944
 #define OP_YDIR 32945
 #define OP_YDIR_C 34993
-#define OP_FUNCTION 32946
-#define OP_LOCAL 32947
-#define OP_LABEL 32948
-#define OP_STRING 32949
-#define OP_INT16 32950
-#define OP_INT32 32951
-#define OP_DISPATCH 32952
+#define OP_MARK 32946
+#define OP_TMARK 32947
+#define OP_IN 32948
+#define OP_NIN 32949
+#define OP_MBEGIN 32950
+#define OP_FUNCTION 32951
+#define OP_LOCAL 32952
+#define OP_LABEL 32953
+#define OP_STRING 32954
+#define OP_INT16 32955
+#define OP_INT32 32956
+#define OP_DISPATCH 32957
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486936},
@@ -579,6 +584,7 @@ static const Op_Names op_names[]={
 {"YDir",8487089},
 {"YEEHAW",8389401},
 {"Yloc",8486970},
+{"_",8421554},
 {"again",8683533},
 {"band",8421406},
 {"begin",8683532},
@@ -628,6 +634,7 @@ static const Op_Names op_names[]={
 {"ge",8486955},
 {"gt",8486953},
 {"if",8683528},
+{"in",8421556},
 {"is",8421421},
 {"land",8421411},
 {"le",8486956},
@@ -637,11 +644,13 @@ static const Op_Names op_names[]={
 {"lt",8486954},
 {"lxor",8421413},
 {"m?",8421425},
+{"mbegin",8683702},
 {"mod",8486938},
 {"n?",8421422},
 {"ne",8421416},
 {"neg",8421403},
 {"next",8683538},
+{"nin",8421557},
 {"nip",8421379},
 {"o?",8421427},
 {"oz?",8421428},
@@ -653,9 +662,10 @@ static const Op_Names op_names[]={
 {"s?",8421426},
 {"swap",8421378},
 {"then",8683530},
+{"tmark",8421555},
 {"tuck",8421380},
 {"until",8683534},
 {"while",8683535},
 };
-#define N_OP_NAMES 285
+#define N_OP_NAMES 290
 #endif

@@ -1255,6 +1255,16 @@ static int v_dispatch(const Uint16*code) {
   return code[i];
 }
 
+static int v_in(void) {
+  int p=vstackptr;
+  Value v;
+  while(vstackptr-- && vstack[vstackptr].t!=TY_MARK);
+  if(!vstackptr) Throw("No mark");
+  v=Pop();
+  while(--p>vstackptr) if(v_equal(v,vstack[p])) return 1;
+  return 0;
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -1429,6 +1439,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_IMAGE_C: StackReq(1,1); Push(GetVariableOf(image,NVALUE)); break;
     case OP_IMAGE_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->image=t1.u; break;
     case OP_IMAGE_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->image=t1.u; break;
+    case OP_IN: StackReq(2,1); i=v_in(); Push(NVALUE(i?1:0)); break;
     case OP_INERTIA: StackReq(0,1); Push(NVALUE(o->inertia)); break;
     case OP_INERTIA_C: StackReq(1,1); Push(GetVariableOf(inertia,NVALUE)); break;
     case OP_INERTIA_E: StackReq(1,0); t1=Pop(); Numeric(t1); o->inertia=t1.u; break;
@@ -1469,6 +1480,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_LT: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t2,t1)?1:0)); break;
     case OP_LT_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t2,t1)?1:0)); break;
     case OP_LXOR: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1)?!v_bool(t2):v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_MARK: StackReq(0,1); Push(UVALUE(0,TY_MARK)); break;
     case OP_MAXINVENTORY: StackReq(1,0); t1=Pop(); Numeric(t1); if(ninventory>t1.u) Throw("Inventory overflow"); break;
     case OP_MOD: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u%t2.u)); break;
     case OP_MOD_C: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s%t2.s)); break;
@@ -1498,6 +1510,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_NEWXY: StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(new_x(t1.u,t3.u))); Push(NVALUE(new_y(t2.u,t3.u))); break;
     case OP_NEWY: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(new_y(t1.u,t2.u))); break;
     case OP_NEXT: StackReq(0,1); ptr=v_next(code,ptr); break;
+    case OP_NIN: StackReq(2,1); i=v_in(); Push(NVALUE(i?0:1)); break;
     case OP_NIP: StackReq(2,1); t1=Pop(); Pop(); Push(t1); break;
     case OP_OBJABOVE: StackReq(0,1); i=obj_above(obj); Push(OVALUE(i)); break;
     case OP_OBJABOVE_C: StackReq(1,1); i=obj_above(v_object(Pop())); Push(OVALUE(i)); break;
@@ -1573,6 +1586,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_TEMPERATURE_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->temperature=t1.u&0xFFFF; break;
     case OP_TEMPERATURE_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->temperature=t1.u; break;
     case OP_TEMPERATURE_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->temperature=t1.u; break;
+    case OP_TMARK: StackReq(1,2); t1=Pop(); if(t1.t==TY_MARK) { Push(NVALUE(0)); } else { Push(t1); Push(NVALUE(1)); } break;
     case OP_TRACE: StackReq(3,0); trace_stack(obj); break;
     case OP_TUCK: StackReq(2,3); t2=Pop(); t1=Pop(); Push(t2); Push(t1); Push(t2); break;
     case OP_USERSIGNAL: StackReq(0,1); if(o->oflags&OF_USERSIGNAL) Push(NVALUE(1)); else Push(NVALUE(0)); break;

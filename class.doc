@@ -417,6 +417,8 @@ functions; the only thing that can be done with a string is to display it.
 * Sound: A named sound effect. Values of this type cannot be compared with
 anything, even other values of the same type.
 
+* Mark: There is only one value of this type.
+
 Some things are not their own types, and are other uses of numbers:
 
 * Null: A null class or null object is represented as zero.
@@ -914,6 +916,9 @@ used on the same turn as the IgnoreKey instruction.
 ,/  ( in1 in2 -- out )
   Signed divide in1 by in2 producing the quotient.
 
+_  ( -- mark )
+  Add a mark to the stack.
+
 Animate  ( flag start end delay -- ) **
   Start or stop an animation for this object. This also sets the Image
   variable equal to the start value. The flag can be STOP to stop an
@@ -1078,6 +1083,10 @@ IgnoreKey  ( -- )
   dismiss a quiz popup will be treated as a non-quiz input. IgnoreKey
   also causes the rest of the turn after the input phase to be skipped.
 
+in  ( x mark ... - bool )
+  Check if x is equal to any of the values above the mark; equality is
+  tested the same as the "eq" instruction.
+
 IntMove  ( dir -- bool ) **
   Similar to Move but do not initialize Inertia at all; use the current
   value of Inertia instead.
@@ -1222,6 +1231,10 @@ NewXY  ( oldx oldy dir -- newx newy )
 NewY  ( oldy dir -- newy )
   Advance the number in the direction as though it is a Y coordinate.
 
+nin  ( x mark ... - bool )
+  Check if x is unequal to any of the values above the mark; this is the
+  same as "in lnot".
+
 nip  ( x y -- y )
 
 o?  ( any -- bool )
@@ -1362,6 +1375,10 @@ Synchronize  ( slot startimage -- ) **
   and the starting image number. The length and speed are defined in a
   global definition, and the animation is always a non-oscillating loop.
 
+tmark  ( any -- any true | false )
+  If the input is a mark, then it is removed and the result is false.
+  Otherwise, the value remains and true is added above it on the stack.
+
 Trace  ( obj arg1 arg2 -- )
   If tracing is enabled, sends the three values and some other information
   on stdout. If tracing is disabled, does nothing. This is intended to be
@@ -1428,6 +1445,10 @@ if <truepart> [el <cond> if <truepart> ...] [else <falsepart>] then  ( bool -- )
   otherwise it tries the other parts; "el" means to execute <cond> and take
   another boolean, and continue; "else" means always do this if none of the
   previous parts match.
+
+mbegin <body> repeat  ( -- any ) ( -- )
+  The "mbegin" instruction is a shortcut for "begin tmark while", and it has
+  the same behaviour.
 
 
 === Substitution codes ===
