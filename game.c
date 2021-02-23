@@ -79,9 +79,15 @@ static void redraw_game(void) {
     draw_text(0,24,"C",0xF0,0xF7);
     draw_text(16,24,buf,0xF0,0xFF);
   }
-  snprintf(buf,8,"%2dx%2d",pfwidth,pfheight);
-  draw_text(8,32,buf,0xF0,0xFD);
-  draw_text(24,32,"x",0xF0,0xF5);
+  if(!gameover) {
+    snprintf(buf,8,"%2dx%2d",pfwidth,pfheight);
+    draw_text(8,32,buf,0xF0,0xFD);
+    draw_text(24,32,"x",0xF0,0xF5);
+  } else if(gameover<0) {
+    draw_text(4,32,"*LOSE*",0xF4,0xFC);
+  } else {
+    draw_text(4,32,"*WIN*",0xF2,0xFA);
+  }
   x=x>=left_margin?(x-left_margin)/picture_size+1:0;
   y=y/picture_size+1;
   if(x>0 && y>0 && x<=pfwidth && y<=pfheight) snprintf(buf,8,"(%2d,%2d)",x,y);
