@@ -110,7 +110,7 @@ static void save_obj(sqlite3_str*s,const Object*o,const Object**m,Uint8 x,Uint8 
   if(o->x==x+1) b|=0x40; else if(o->x!=x) b|=0x20;
   if(o->y!=y) b|=0x10;
   p=m[b&0x70?0:1];
-  if((b&0x70)!=0x20 || !r || !p) goto nrle;
+  if((b&0x70)!=0x40 || !r || !p) goto nrle;
   if(o->class!=p->class || o->image!=p->image || !ValueEq(o->misc1,p->misc1) || !ValueEq(o->misc2,p->misc2) || !ValueEq(o->misc3,p->misc3)) goto nrle;
   if(0x0F&~r) {
     r++;
