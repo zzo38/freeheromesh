@@ -49,6 +49,7 @@ Uint8 inv_back_color=9;
 char**stringpool;
 AnimationSlot anim_slot[8];
 Uint8 keymask[256/8];
+Uint16 array_size;
 
 #define HASH_SIZE 8888
 #define LOCAL_HASH_SIZE 5555
@@ -876,6 +877,21 @@ static Value parse_constant_value(void) {
   ParseError("Constant value expected\n");
 }
 
+static Uint32 parse_array(void) {
+  Uint32 x,y,z;
+  nxttok();
+  if(tokent!=TF_INT) ParseError("Number expected\n");
+  x=tokenv;
+  nxttok();
+  if(tokent!=TF_INT) ParseError("Number expected\n");
+  y=tokenv;
+  if(x<1 || x>64 || y<1 || y>255) ParseError("Array dimension out of range\n");
+  z=array_size;
+  if(z+x*y>0xFFFE) ParseError("Out of array memory\n");
+  array_size+=x*y;
+  return z|(y<<16)|(x<<24);
+}
+
 static void begin_label_stack(void) {
   labelstack=0;
   labelptr=malloc(0x8000*sizeof(Uint16));
@@ -1642,7 +1658,12 @@ void load_classes(void) {
           i=tokenv-0x2800;
           nxttok();
           if(tokent==TF_CLOSE) break;
-          initglobals[i]=parse_constant_value();
+          if(Tokenf(TF_NAME) && tokenv==OP_ARRAY) {
+            initglobals[i].t=TY_ARRAY;
+            initglobals[i].u=parse_array();
+          } else {
+            initglobals[i]=parse_constant_value();
+          }
           nxttok();
           if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
           break;
@@ -1726,5 +1747,9 @@ void load_classes(void) {
   for(i=1;i<undef_class;i++) if(classes[i] && (classes[i]->cflags&CF_NOCLASS1)) fatal("Class $%s mentioned but not defined\n",classes[i]->name);
   if(macros) for(i=0;i<MAX_MACRO;i++) if(macros[i]) free_macro(macros[i]);
   free(macros);
+  if(array_size) {
+    array_data=malloc(array_size*sizeof(Value));
+    if(!array_data) fatal("Array allocation failed\n");
+  }
   fprintf(stderr,"Done\n");
 }

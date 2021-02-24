@@ -214,6 +214,12 @@ These are the global definitions in the class definition file.
 (@<name> <value>)
   Define a global variable and its initial value.
 
+(@<name> Array <columns> <rows>)
+  Define a global variable whose value is a reference to a new array, with
+  the specified dimensions. The maximum number of columns is 64, and the
+  maximum number of rows is 255, and he maximum number of cells in all
+  arrays in total is 65534.
+
 (<message> <code...>)
   Defines a default message code for all classes which do not specify
   their own code for this message.

@@ -255,6 +255,12 @@ in
 nin
 -mbegin
 
+; Arrays
+-Array
+,GetArray
+InitArray
+,SetArray
+
 ; Specials
 *Function
 *Local

@@ -36,6 +36,7 @@ Inventory*inventory;
 Uint32 ninventory;
 char**levelstrings;
 Uint16 nlevelstrings;
+Value*array_data;
 
 typedef struct {
   Uint16 msg;

@@ -16,6 +16,7 @@
 #define TY_USOUND 6
 #define TY_FOR 7
 #define TY_MARK 8
+#define TY_ARRAY 9
 #define TY_MAXTYPE 15
 // The level file format requires type codes 0 to 3 to be as is; other codes may change.
 
@@ -167,6 +168,7 @@ extern Uint8 back_color,inv_back_color;
 extern char**stringpool;
 extern AnimationSlot anim_slot[8];
 extern Uint8 keymask[256/8];
+extern Uint16 array_size;
 
 Uint16 get_message_ptr(int c,int m);
 void load_classes(void);
@@ -251,6 +253,7 @@ extern Inventory*inventory;
 extern Uint32 ninventory;
 extern char**levelstrings;
 extern Uint16 nlevelstrings;
+extern Value*array_data;
 
 const char*value_string_ptr(Value v);
 void pfunlink(Uint32 n);

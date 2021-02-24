@@ -367,13 +367,19 @@
 #define OP_IN 32948
 #define OP_NIN 32949
 #define OP_MBEGIN 32950
-#define OP_FUNCTION 32951
-#define OP_LOCAL 32952
-#define OP_LABEL 32953
-#define OP_STRING 32954
-#define OP_INT16 32955
-#define OP_INT32 32956
-#define OP_DISPATCH 32957
+#define OP_ARRAY 32951
+#define OP_GETARRAY 32952
+#define OP_GETARRAY_C 35000
+#define OP_INITARRAY 32953
+#define OP_SETARRAY 32954
+#define OP_SETARRAY_C 35002
+#define OP_FUNCTION 32955
+#define OP_LOCAL 32956
+#define OP_LABEL 32957
+#define OP_STRING 32958
+#define OP_INT16 32959
+#define OP_INT32 32960
+#define OP_DISPATCH 32961
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486936},
@@ -388,6 +394,7 @@ static const Op_Names op_names[]={
 {"Arg1",8552563},
 {"Arg2",8552564},
 {"Arg3",8552565},
+{"Array",8683703},
 {"Arrivals",8618081},
 {"Arrived",8618079},
 {"Assassinate",8487042},
@@ -454,6 +461,7 @@ static const Op_Names op_names[]={
 {"From",8421490},
 {"GLASS",8389379},
 {"GLISSANT",8389419},
+{"GetArray",8487096},
 {"GetInventory",8421518},
 {"HAWK",8389425},
 {"HEARTBEAT",8389407},
@@ -468,6 +476,7 @@ static const Op_Names op_names[]={
 {"Image",8618044},
 {"InPlace",8683644},
 {"Inertia",9142333},
+{"InitArray",8421561},
 {"Input",8683642},
 {"IntMove",10584209},
 {"Invisible",8618084},
@@ -549,6 +558,7 @@ static const Op_Names op_names[]={
 {"Self",8421488},
 {"Send",10584231},
 {"SendEx",10584232},
+{"SetArray",8487098},
 {"SetInventory",8421545},
 {"Shape",8618040},
 {"ShapeDir",8618063},
@@ -667,5 +677,5 @@ static const Op_Names op_names[]={
 {"until",8683534},
 {"while",8683535},
 };
-#define N_OP_NAMES 290
+#define N_OP_NAMES 294
 #endif

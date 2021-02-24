@@ -285,6 +285,8 @@ or equal, 5=greater or equal
 
 [40/3*] ObjClassAt
 
+[47*] Array reference; next word is the array address.
+
 [48*] Key
 
 [49*] Animation constant: 0=STOP, 1=ONCE, 2=LOOP, 8=OSC
