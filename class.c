@@ -131,6 +131,7 @@ static const unsigned char chkind[256]={
 #define MAC_DEFINE 0xFFE1
 #define MAC_INCLUDE 0xFFE2
 #define MAC_CALL 0xFFE3
+#define MAC_APPEND 0xFFE4
 #define MAC_UNDEFINED 0xFFFF
 
 static TokenList*add_macro(void) {
@@ -545,27 +546,43 @@ static void nxttok1(void) {
   }
 }
 
-static void define_macro(Uint16 name) {
+static void define_macro(Uint16 name,Uint8 q) {
   int i;
   TokenList**t;
+  if(main_options['M']) printf("M< %04X %04X \"%s\" %d\n",name,glohash[name].id,glohash[name].txt,q);
   if(glohash[name].id<0xC000) fatal("Confusion\n");
   if(glohash[name].id<MAX_MACRO+0xC000) {
-    free_macro(macros[i=glohash[name].id-0xC000]);
-    macros[i]=0;
+    i=glohash[name].id-0xC000;
+    if(q) {
+      free_macro(macros[i]);
+      macros[i]=0;
+    }
   } else {
+    q=1;
     for(i=0;i<MAX_MACRO;i++) if(!macros[i]) break;
     if(i==MAX_MACRO) ParseError("Too many macro definitions\n");
   }
   glohash[name].id=i+0xC000;
   t=macros+i;
+  if(!q) while(*t) t=&(*t)->next;
   i=1;
   for(;;) {
     nxttok1();
+    if(main_options['L'] && main_options['M']) {
+      int j;
+      printf("*: %5d %04X %08X \"",i,tokent,tokenv);
+      for(j=0;tokenstr[j];j++) {
+        if(tokenstr[j]<32 || tokenstr[j]>126) printf("<%02X>",tokenstr[j]&255);
+        else putchar(tokenstr[j]);
+      }
+      printf("\"\n");
+    }
     if(tokent==TF_MACRO+TF_OPEN && ++i>65000) ParseError("Too much macro nesting\n");
     if(tokent==TF_MACRO+TF_CLOSE && !--i) break;
     *t=add_macro();
     t=&(*t)->next;
   }
+  if(main_options['M']) printf("M> %04X %04X %p\n",name,glohash[name].id,macros[glohash[name].id-0xC000]);
 }
 
 static void begin_include_file(const char*name) {
@@ -818,7 +835,7 @@ static void nxttok(void) {
           }
           nxttok();
           if(!(tokent&TF_NAME) || tokenv!=OP_STRING) ParseError("String literal expected\n");
-          define_macro(look_hash_mac());
+          define_macro(look_hash_mac(),1);
           goto again;
         case MAC_INCLUDE:
           if(macstack) ParseError("Cannot use {include} inside of a macro\n");
@@ -835,6 +852,15 @@ static void nxttok(void) {
           if(!(tokent&TF_NAME) || tokenv!=OP_STRING) ParseError("String literal expected\n");
           tokenv=look_hash_mac();
           goto call;
+        case MAC_APPEND:
+          if(!macros) {
+            macros=calloc(MAX_MACRO,sizeof(TokenList*));
+            if(!macros) fatal("Allocation failed\n");
+          }
+          nxttok();
+          if(!(tokent&TF_NAME) || tokenv!=OP_STRING) ParseError("String literal expected\n");
+          define_macro(look_hash_mac(),0);
+          goto again;
         case MAC_UNDEFINED:
           ParseError("Undefined macro: {%s}\n",tokenstr);
           break;
@@ -1613,6 +1639,7 @@ void load_classes(void) {
   strcpy(tokenstr,"define"); glohash[look_hash_mac()].id=MAC_DEFINE;
   strcpy(tokenstr,"include"); glohash[look_hash_mac()].id=MAC_INCLUDE;
   strcpy(tokenstr,"call"); glohash[look_hash_mac()].id=MAC_CALL;
+  strcpy(tokenstr,"append"); glohash[look_hash_mac()].id=MAC_APPEND;
   if(main_options['L']) {
     for(;;) {
       nxttok();

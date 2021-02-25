@@ -132,6 +132,10 @@ Built-in macros include:
 {/ <number> <number>}
   Division.
 
+{append <string> <tokens...>}
+  This works like {define} but adds to an existing definition rather than
+  replacing the definition.
+
 {band <numbers...>}
   Bitwise AND. The result is -1 if no arguments are specified.
 

@@ -414,7 +414,7 @@ static void out_description(FILE*fp,const char*txt) {
 #define SubOpcode(...) do{ static const char*const ss[]={__VA_ARGS__}; if(*op>=sizeof(ss)/sizeof(*ss)) goto unknown; fprintf(fp," %s",ss[*op]); }while(0)
 #define PushFlowControl() do{ flowblock[flowptr]=ofs+2+(op[1]<<1)+(op[2]<<9); if(++flowptr==64) fatal("Too many nested flow controls\n"); len+=2; ind+=2; }while(0)
 
-static void class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned char*lbl,int nlbl,const unsigned char*subs,int nsubs,unsigned char*vars) {
+static void class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned char*lbl,int nlbl,const unsigned char*subs,int nsubs,unsigned char*vars,const char*cname) {
   static const char*const stdvars[256]={
     [0]="Class","Temperature","Shape",
     [4]="Xloc","Yloc","Dir","Image","Inertia","Misc1","Misc2","Misc3","Misc4","Misc5","Misc6","Misc7",
@@ -562,6 +562,15 @@ static void class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned ch
       case 40:
         fprintf(fp," ObjClassAt");
         break;
+      case 47:
+        z=-1;
+        for(x=0;x<nsubs;x++) {
+          if(op[1]==subs[x*10+8] && op[2]==subs[x*10+9]) {
+            z=x; break;
+          }
+        }
+        if(z==-1) fprintf(fp," @???"); else fprintf(fp," @%s.%s",cname,subs+z*10);
+        len+=2; break;
       case 48:
         fprintf(fp," Key");
         break;
@@ -607,6 +616,10 @@ static void class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned ch
       case 60:
         if(*op<50) fprintf(fp," %s",standard_sound_names[*op]);
         else goto unknown;
+        break;
+      case 61:
+        if(*op!=1) goto unknown;
+        fprintf(fp," GetArray");
         break;
       case 64:
         fprintf(fp," Send");
@@ -726,6 +739,22 @@ static void class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned ch
         st=0; break;
       case 112: case 113:
         fprintf(fp," Sound");
+        st=0; break;
+      case 114:
+        if(op[1]) {
+          SubOpcode(";","SetArray","InitArray");
+        } else {
+          x=0;
+          y=nlbl;
+          z=-1;
+          while(y) {
+            if(lbl[x+8]|(lbl[x+9]<<8))==ofs>>1) break;
+            y--;
+            x+=10;
+          }
+          if(z!=-1) fprintf(fp,"{Array @%s.%s %d %d}",cname,lbl+z*10,op[1],op[3]);
+          len+=4*(op[1]*op[3]+1);
+        }
         st=0; break;
       case 126:
         fprintf(fp," Animate");
@@ -885,7 +914,7 @@ static inline void out_classes(void) {
     }
     if(c->subscode[1] || c->subscode[0]>2) {
       fprintf(fp,"  (SUBS");
-      class_codes(fp,c->subscode+2,2,c->subslbl,c->nsubslbl,c->subslbl,c->nsubslbl,c->vars);
+      class_codes(fp,c->subscode+2,2,c->subslbl,c->nsubslbl,c->subslbl,c->nsubslbl,c->vars,c->name);
       fprintf(fp,"\n  )\n");
     }
     o=4;
@@ -895,7 +924,7 @@ static inline void out_classes(void) {
       if(j<20) fprintf(fp,"%s",standard_message_names[j]);
       else if(j-20<nusermsg && usermsg[j-20]) fprintf(fp,"#%s",usermsg[j-20]);
       else fprintf(fp,"#???%d",j);
-      class_codes(fp,c->msgscode[i]+4,o,c->msgslbl,c->nmsgslbl,c->subslbl,c->nsubslbl,c->vars);
+      class_codes(fp,c->msgscode[i]+4,o,c->msgslbl,c->nmsgslbl,c->subslbl,c->nsubslbl,c->vars,c->name);
       o+=(c->msgscode[i][2]<<1)|(c->msgscode[i][3]<<9);
       fprintf(fp,"\n  )\n");
     }
