@@ -911,11 +911,11 @@ static Uint32 parse_array(void) {
   nxttok();
   if(tokent!=TF_INT) ParseError("Number expected\n");
   y=tokenv;
-  if(x<1 || x>64 || y<1 || y>255) ParseError("Array dimension out of range\n");
+  if(x<1 || x>64 || y<1 || y>1024) ParseError("Array dimension out of range\n");
   z=array_size;
   if(z+x*y>0xFFFE) ParseError("Out of array memory\n");
   array_size+=x*y;
-  return z|(y<<16)|(x<<24);
+  return z|((y-1)<<16)|((x-1)<<26);
 }
 
 static void begin_label_stack(void) {

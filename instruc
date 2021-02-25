@@ -257,9 +257,9 @@ nin
 
 ; Arrays
 -Array
-,GetArray
+GetArray
 InitArray
-,SetArray
+SetArray
 
 ; Specials
 *Function

@@ -757,7 +757,7 @@ static void class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned ch
           }
           x=op[1]|(op[2]<<8);
           y=op[3]|(op[4]<<8);
-          if(z!=-1) fprintf(fp,"{Array @%s.%s %d %d}",cname,lbl+z,x,y);
+          if(z!=-1) fprintf(fp," {Array @%s.%s %d %d}",cname,lbl+z,x,y);
           len+=4*(x*y+1);
           has_array=1;
         }
