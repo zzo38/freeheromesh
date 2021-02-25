@@ -46,6 +46,7 @@ typedef struct {
 static int nusermsg;
 static char**usermsg;
 static ClassInfo*class[512];
+static char has_array;
 
 // Levels
 static int nlevels;
@@ -588,8 +589,7 @@ static void class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned ch
         fprintf(fp," 0x%X",op[1]|(op[2]<<8)|(op[3]<<16)|(op[4]<<24));
         len+=4; break;
       case 53:
-        if(*op==5) fprintf(fp," %ld",puzzlesetnumber);
-        else SubOpcode("Level","-1","0","1","0","0","MoveNumber");
+        SubOpcode("Level","-1","0","1","0","{PuzzleSetNumber}","MoveNumber");
         break;
       case 54:
         if(*op==255) fprintf(fp," XDir");
@@ -741,19 +741,25 @@ static void class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned ch
         fprintf(fp," Sound");
         st=0; break;
       case 114:
-        if(op[1]) {
+        if(*op) {
           SubOpcode(";","SetArray","InitArray");
         } else {
           x=0;
           y=nlbl;
           z=-1;
           while(y) {
-            if(lbl[x+8]|(lbl[x+9]<<8))==ofs>>1) break;
+            if((lbl[x+8]|(lbl[x+9]<<8))==(ofs>>1)) {
+              z=x;
+              break;
+            }
             y--;
             x+=10;
           }
-          if(z!=-1) fprintf(fp,"{Array @%s.%s %d %d}",cname,lbl+z*10,op[1],op[3]);
-          len+=4*(op[1]*op[3]+1);
+          x=op[1]|(op[2]<<8);
+          y=op[3]|(op[4]<<8);
+          if(z!=-1) fprintf(fp,"{Array @%s.%s %d %d}",cname,lbl+z,x,y);
+          len+=4*(x*y+1);
+          has_array=1;
         }
         st=0; break;
       case 126:
@@ -763,7 +769,7 @@ static void class_codes(FILE*fp,const unsigned char*op,int ofs,const unsigned ch
         fprintf(fp," LoseLevel");
         st=0; break;
       case 129:
-        SubOpcode("WinLevel","LocateMe","IgnoreKey","Misc1 Misc2 Misc3 (PopUp 2)",";");
+        SubOpcode("WinLevel","LocateMe","IgnoreKey","Misc1 Misc2 Misc3 (PopUp 2)",";UpdateScreen");
         st=0; break;
       case 130:
         fprintf(fp," FlushClass");
@@ -803,7 +809,9 @@ static inline void out_classes(void) {
   sprintf(nam,"%s.class",basename);
   fp=fopen(nam,"w");
   if(!fp) fatal("Cannot open file '%s' for writing\n",nam);
-  fprintf(fp,"; Note: This file was automatically converted.\n; Remove this notice if you have corrected it.\n");
+  fprintf(fp,"; Note: This file was automatically converted.\n; Remove this notice if you have corrected it.\n\n");
+  fprintf(fp,"{define \"Array\" {append \"array_defs\" (\\1 Array \\2 \\3)}}\n");
+  fprintf(fp,"{define \"PuzzleSetNumber\" %lu}\n",puzzlesetnumber);
   for(n=0;n<512;n++) if(c=class[n]) {
     fprintf(fp,"\n($%s Compatible",c->name);
     if(c->attr[1]&1) fprintf(fp," Input");
@@ -930,6 +938,7 @@ static inline void out_classes(void) {
     }
     fprintf(fp,")\n");
   }
+  if(has_array) fprintf(fp,"\n{array_defs}\n");
   fclose(fp);
 }
 
