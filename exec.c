@@ -1475,7 +1475,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_INERTIA_E16: StackReq(1,0); t1=Pop(); Numeric(t1); o->inertia=t1.u&0xFFFF; break;
     case OP_INERTIA_EC: StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->inertia=t1.u; break;
     case OP_INERTIA_EC16: StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->inertia=t1.u&0xFFFF; break;
-    case OP_INITARRAY: StackReq(2,0); t2=Pop(); t1=Pop(); v_init_array(t1,t2); break;
+    case OP_INITARRAY: NoIgnore(); StackReq(2,0); t2=Pop(); t1=Pop(); v_init_array(t1,t2); break;
     case OP_INT16: StackReq(0,1); Push(NVALUE(code[ptr++])); break;
     case OP_INT32: StackReq(0,1); t1=UVALUE(code[ptr++]<<16,TY_NUMBER); t1.u|=code[ptr++]; Push(t1); break;
     case OP_INTMOVE: NoIgnore(); StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(move_dir(obj,obj,t1.u))); break;
@@ -1578,7 +1578,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_SENDEX_C: StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_send_message(obj,t1,t2,t3,t4,t5)); break;
     case OP_SENDEX_D: StackReq(4,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); v_send_self(obj,t2,t3,t4,t5); break;
     case OP_SENDEX_CD: StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_send_message(obj,t1,t2,t3,t4,t5); break;
-    case OP_SETARRAY: StackReq(4,0); t4=Pop(); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); v_set_array(t1,t2.u,t3.u,t4); break;
+    case OP_SETARRAY: NoIgnore(); StackReq(4,0); t4=Pop(); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); v_set_array(t1,t2.u,t3.u,t4); break;
     case OP_SETINVENTORY: StackReq(3,0); t3=Pop(); t2=Pop(); t1=Pop(); v_set_inventory(t1,t2,t3); break;
     case OP_SHAPE: StackReq(0,1); Push(NVALUE(o->shape)); break;
     case OP_SHAPE_C: StackReq(1,1); Push(GetVariableOrAttributeOf(shape,NVALUE)); break;
