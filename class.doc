@@ -422,12 +422,17 @@ standard message names have no prefix.
 * Object: A reference to an object. There are no literals of this type.
 
 * String: A string in quotation marks. There are no string manipulation
-functions; the only thing that can be done with a string is to display it.
+functions; the only thing that can be done with a string is to display it,
+or to compare if one string matches another.
 
 * Sound: A named sound effect. Values of this type cannot be compared with
 anything, even other values of the same type.
 
 * Mark: There is only one value of this type.
+
+* Array: A reference to an array. You cannot allocate arrays at run time;
+the available array memory is fixed at compile time, subject to the global
+array definitions.
 
 Some things are not their own types, and are other uses of numbers:
 
@@ -1071,6 +1076,9 @@ ge  ( in1 in2 -- bool )
 ,ge  ( in1 in2 -- bool )
   Test if first input is greater or equal to second input (signed).
 
+GetArray  ( array row column -- value )
+  Read a value from an array. Coordinates are zero-based.
+
 GetInventory  ( class image -- value true | false )
   Read from the inventory, with true if it exists or false if not.
 
@@ -1096,6 +1104,9 @@ IgnoreKey  ( -- )
 in  ( x mark ... - bool )
   Check if x is equal to any of the values above the mark; equality is
   tested the same as the "eq" instruction.
+
+InitArray  ( array value -- ) **
+  Fill all cells of an array with the specified value.
 
 IntMove  ( dir -- bool ) **
   Similar to Move but do not initialize Inertia at all; use the current
@@ -1365,6 +1376,9 @@ SendEx  ( message arg1 arg2 -- value )
 
 ,SendEx ( obj message arg1 arg2 arg3 -- value )
   Send a message to the specified object.
+
+SetArray  ( array row column value -- ) **
+  Write a value to an array. Coordinates are zero-based.
 
 SetInventory  ( class image value -- ) **
   Sets an inventory item with the specified class and image number to the
