@@ -1795,11 +1795,11 @@ bit27 *
   to actually move when sliding to the right, both bit25 and bit27 must
   be set, and bit7 must be clear.
 
-bit28
-  Available for your own use.
+bit28 *
+  Reserved for future.
 
-bit29
-  Available for your own use.
+bit29 *
+  Reserved for future.
 
 bit30
   Available for your own use.
