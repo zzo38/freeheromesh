@@ -118,7 +118,7 @@ static void save_obj(sqlite3_str*s,const Object*o,const Object**m,Uint8 x,Uint8 
     sqlite3_str_appendchar(s,1,r);
     if(r&0x20) sqlite3_str_appendchar(s,1,rx);
     if(r&0x10) sqlite3_str_appendchar(s,1,ry);
-    r=0x20;
+    r=0xC0;
   }
   return;
   nrle:
