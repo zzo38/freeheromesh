@@ -1084,6 +1084,20 @@ eq  ( in1 in2 -- bool )
   object; objects which no longer exist still compare correctly. Values
   of two different types are never equal to each other.
 
+Finished  ( -- number )
+  Returns the value of an internal flag which tells it that the beginning
+  and ending phases should be skipped. This is a 8-bit number; zero means
+  don't skip them, and any other number means it does. When the game engine
+  sets this automatically, it normally sets it to 1, but "-1 FlushClass"
+  during the input phase sets it to 255. When you set this value by
+  yourself, you can use any 8-bit number.
+
+=Finished  ( number -- )
+  Write to the Finished variable. Only the low 8-bits are used. When set to
+  nonzero then the beginning and ending phases are skipped (see above), but
+  if IgnoreKey is used, then all phases are skipped, regardless of the
+  value of this flag.
+
 FlushClass  ( class -- ) **
   Resets the Arrived, Busy, Departed, Inertia, Moved, and UserSignal flags
   of all objects of the specified class to zero. If the class is -1, then

@@ -47,7 +47,7 @@ typedef struct {
 static jmp_buf my_env;
 static const char*my_error;
 static MessageVars msgvars;
-static char lastimage_processing,changed,all_flushed;
+static Uint8 lastimage_processing,changed,all_flushed;
 static Value vstack[VSTACKSIZE];
 static int vstackptr;
 static const char*traceprefix;
@@ -1011,7 +1011,7 @@ static void flush_class(Uint16 c) {
 }
 
 static inline void flush_all(void) {
-  if(current_key) all_flushed=1;
+  if(current_key) all_flushed=255;
   flush_class(0);
 }
 
@@ -1439,6 +1439,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_DROP_D: StackReq(2,0); Pop(); Pop(); break;
     case OP_DUP: StackReq(1,2); t1=Pop(); Push(t1); Push(t1); break;
     case OP_EQ: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_equal(t1,t2)?1:0)); break;
+    case OP_FINISHED: StackReq(0,1); Push(NVALUE(all_flushed)); break;
+    case OP_FINISHED_E: StackReq(1,0); t1=Pop(); Numeric(t1); all_flushed=t1.u; break;
     case OP_FLUSHCLASS: NoIgnore(); StackReq(1,0); t1=Pop(); if(t1.t==TY_CLASS) flush_class(t1.u); else if(t1.t==TY_NUMBER && t1.s==-1) flush_all(); else if(t1.t) Throw("Type mismatch"); break;
     case OP_FLUSHOBJ: NoIgnore(); flush_object(obj); break;
     case OP_FLUSHOBJ_C: NoIgnore(); StackReq(1,0); i=v_object(Pop()); if(i!=VOIDLINK) flush_object(i); break;

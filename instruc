@@ -186,6 +186,7 @@ From
 MoveNumber
 Level
 Key
+=Finished
 
 ; Class definitions
 -Background ; used at top level only; not in a class
