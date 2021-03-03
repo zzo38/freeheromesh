@@ -1,0 +1,88 @@
+This file describes what files make up a puzzle set.
+
+A Free Hero Mesh puzzle set consists of four files, each with the same
+base name, but with a different suffix to identify its type:
+
+ .xclass     -  Class resource file
+ .class      -  Class definition file
+ .level      -  Level file
+ .solution   -  Solution file
+
+The files can be renamed, as long as all of them have the same base
+suffixes that they originally had, and the new base names are the same
+as each other for each of the four files. Symlinks are also OK, e.g. if
+multiple puzzle sets share the same class definitions, or if you want to
+deal with multiple solution sets.
+
+The class definition file is a plain text file, and you are expected to
+edit it using any text editor. The other three files are Hamster archives,
+and are normally written by Free Hero Mesh, so you do not need to tamper
+with the internal contents of those files by yourself. You may extract and
+insert parts of the Hamster archives if you are careful; the descriptions
+below mention what each lump means.
+
+
+=== Class resource file ===
+
+This file contains pictures and sounds associated with the puzzle set.
+Nothing in this file affects the behaviour of the game, so you can safely
+replace it with a different set of pictures/sounds if wanted.
+
+The IMG lumps are the pictures. Each one may store multiple versions of a
+picture; the loader will select one based on the user's criteria.
+
+The WAV lumps are sound effects. Each is a RIFF WAVE file; it must be of
+a type which can be loaded by SDL. (This is currently not used.)
+
+Although not implemented yet, in future there may also be DIM lumps for
+"dependent images", and possibly other lumps.
+
+
+=== Class definition file ===
+
+This file is a plain text file which defines the classes of objects which
+are used in the game. See class.doc for details of its format.
+
+
+=== Level file ===
+
+This file stores the levels in this puzzle set.
+
+The CLASS.DEF lump associates class names and message names; the LVL lumps
+then refer to the classes/messages by the numbers given here. This means
+that if you want to copy the lumps, you must ensure this matches, or else
+the resulting file will be incorrect.
+
+The LVL lumps store the data of each level; they are named by the ID
+number of the level. Each level consists of the grid of objects (which
+may have parameters), the level code number (an extra value that you can
+use for your own use in class codes), the level version number (used to
+quickly invalidate solutions), the title text, and any level strings which
+are used by objects of this level (there might not be any).
+
+The LEVEL.IDX lump stores the level index. It consists of a series of
+small-endian 16-bit level ID numbers, with no duplicates. The order of
+the levels will be the order listed here.
+
+It is not recommended to tamper with this file without using Free Hero
+Mesh, due to the lumps depending on each other. If you wish to copy a
+level, or convert levels using your own programs, using the level export
+format is recommended (unfortunately, this is not implemented yet).
+However, you can safely create a puzzle set with a subset of levels by
+copying the lumps, and following the instructions above.
+
+
+=== Solution file ===
+
+This file stores the recorded solutions of each level. It may be empty if
+no solutions are recorded, but it must exist for the game to work.
+
+Each SOL lump stores the solution for the level with the ID number given
+in the lump name. It also records the level version, as a check that the
+solution is valid.
+
+The solution file is also used for autotesting. In this case, the solution
+of each level is executed, and it ensures that a win occurs during the
+final turn, and not before. (A puzzle set catalog service may perhaps use
+this in order to verify that the puzzles are solvable.)
+
