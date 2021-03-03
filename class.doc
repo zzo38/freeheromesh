@@ -913,11 +913,23 @@ while the lack of the comma means to operate on itself; for some other
 instructions, a comma prefix means to use signed instead of unsigned
 arithmetic. An equal sign prefix usually means to write instead of read.
 
-Some instructions are block instructions; see the next section.
+Anywhere an instruction is allowed, it may be one of these instructions, or
+it may be a constant value, or reading/writing a variable (see the above
+section about variables specific to objects), or a block instruction (see
+the next section for block instructions).
 
 Many instructions are state-changing instructions; these instructions are
 marked with ** in the summary line. Such instructions are not allowed to be
 used on the same turn as the IgnoreKey instruction.
+
+<function>
+  Call a user-defined function (the name starts with a ampersand).
+
+<global>  ( -- any )
+  Read a global variable.
+
+=<global>  ( any -- ) **
+  Write a global variable.
 
 <label>
   Define a label. Labels are local to the current class. (Label names
@@ -929,9 +941,6 @@ used on the same turn as the IgnoreKey instruction.
 
 ,<label>
   Call a label as a subroutine; when it returns, comes back to here.
-
-<function>
-  Call a user-defined function.
 
 .  ( x -- )
 
@@ -1364,7 +1373,8 @@ ret  ( -- )
   Exit the current subroutine. If this is a message block, it must either
   leave the stack as it is, or leave it but with one extra value pushed
   which will be the return value from the message call. (This is implied
-  at the end of a code block.)
+  at the end of a code block.) For a user defined function call, or a
+  subroutine call, these restrictions are not applicable.
 
 rot  ( x y z -- y z x )
 
