@@ -1444,6 +1444,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_FLUSHOBJ_C: NoIgnore(); StackReq(1,0); i=v_object(Pop()); if(i!=VOIDLINK) flush_object(i); break;
     case OP_FOR: NoIgnore(); StackReq(3,1); t3=Pop(); t2=Pop(); t1=Pop(); ptr=v_for(code,ptr,t1,t2,t3); break;
     case OP_FROM: StackReq(0,1); Push(OVALUE(msgvars.from)); break;
+    case OP_FUNCTION: execute_program(classes[0]->codes,functions[code[ptr++]],obj); break;
     case OP_GE: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t2,t1)?0:1)); break;
     case OP_GE_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t2,t1)?0:1)); break;
     case OP_GETARRAY: StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Push(v_get_array(t1,t2.u,t3.u)); break;

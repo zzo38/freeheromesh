@@ -43,6 +43,7 @@ Name sigils are:
   %  Local variable
   #  User message
   !  User sound
+  &  User function
 
 Comments are also allowed; these start with a semicolon (outside of a
 string literal) and end at the next line break.
@@ -222,11 +223,18 @@ These are the global definitions in the class definition file.
   Define a global variable whose value is a reference to a new array, with
   the specified dimensions. The maximum number of rows is 64, and the
   maximum number of columns is 1024, and the maximum number of cells in
-  all arrays in total is 65534.
+  all arrays in total is 65534. All elements are initialized to zero when
+  the level starts.
 
 (<message> <code...>)
   Defines a default message code for all classes which do not specify
   their own code for this message.
+
+(&<name> <code...>)
+  Define a user-defined function. User-defined functions may take any
+  number of inputs from the stack and leave any number of outputs on the
+  stack, but may not access user-defined local variables. (It may still
+  access standard local variables, and all global variables, though.)
 
 
 === Class definitions ===
@@ -910,6 +918,20 @@ Some instructions are block instructions; see the next section.
 Many instructions are state-changing instructions; these instructions are
 marked with ** in the summary line. Such instructions are not allowed to be
 used on the same turn as the IgnoreKey instruction.
+
+<label>
+  Define a label. Labels are local to the current class. (Label names
+  always start with a colon.)
+
+=<label>
+  Go to a label. (Put the colon after the equal sign; this instruction,
+  and the one below, are using a double sigil.)
+
+,<label>
+  Call a label as a subroutine; when it returns, comes back to here.
+
+<function>
+  Call a user-defined function.
 
 .  ( x -- )
 
