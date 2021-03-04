@@ -68,13 +68,14 @@ OSCLOOP (000A)
 
 ; Stack ops
 .drop "."
-,dup
+dup
 swap
 nip
 tuck
 rot
 rotback "-rot"
 pick
+over
 
 ; Flow controls
 -if

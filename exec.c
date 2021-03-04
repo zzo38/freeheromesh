@@ -1555,6 +1555,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_OBJDIR_C: StackReq(2,1); t2=Pop(); Numeric(t2); i=obj_dir(v_object(Pop()),t2.u); Push(OVALUE(i)); break;
     case OP_OBJLAYERAT: StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); i=obj_layer_at(t1.u,t2.u,t3.u); Push(OVALUE(i)); break;
     case OP_OBJTOPAT: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); i=obj_top_at(t1.u,t2.u); Push(OVALUE(i)); break;
+    case OP_OVER: StackReq(2,3); t2=Pop(); t1=Pop(); Push(t1); Push(t2); Push(t1); break;
     case OP_PICK: StackReq(0,1); t1=Pop(); Numeric(t1); if(t1.u>=vstackptr) Throw("Stack index out of range"); t1=vstack[vstackptr-t1.u-1]; Push(t1); break;
     case OP_PLAYER: StackReq(0,1); if(classes[o->class]->cflags&CF_PLAYER) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_PLAYER_C: StackReq(1,1); GetClassFlagOf(CF_PLAYER); break;

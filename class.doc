@@ -1349,6 +1349,8 @@ ObjTopAt  ( x y -- obj )
   Find the object on the top at the specified location. The result will be
   zero if that location is vacant or out of range.
 
+over  ( x y -- x y x )
+
 oz?  ( any -- bool )
   True if the value is an object or zero, or false if it is neither an
   object nor zero. (Even if the object has been garbage collected, it is
