@@ -1,0 +1,60 @@
+This document describes the level export format of Free Hero Mesh.
+
+You can use this format for the following purposes:
+
+* To copy a level in Free Hero Mesh, within the same puzzle set or from
+one puzzle set to another one.
+
+* To export a level, to be parsed by an external program.
+
+* To produce by an external program and then import into Free Hero Mesh.
+
+* To edit it in a text editor.
+
+Each line is one record, and is terminated by a line feed. Everything in
+this file is case-sensitive.
+
+
+=== Types of records ===
+
+;comment
+  A comment. A blank line is also a comment.
+
+@title
+  Specify the title of the level. This may contain escapes. A line break
+  must be escaped, and a backslash must be escaped, although a quotation
+  mark does not need to be escaped.
+
+C code
+  The level code number, from 0 to 65535.
+
+D width height
+  The play field dimensions. The width and height must be 1 to 64. This
+  line must come before any objects are listed, and is mandatory.
+
+x y $class image misc1 misc2 misc3 dir
+  Specify an object. Objects are listed starting from the top left corner,
+  going right, and within each cell the objects are listed from bottom to
+  top. Coordinates are one-based. The image is a number (0 for the first
+  image), misc1 to misc3 are misc values (see below), and dir is also a
+  number (0 for east, up to 7 for southeast).
+
+%string
+  A level string. The level strings are numbered in order, starting from
+  string 0. The format is like that of the title.
+
+
+=== Misc values ===
+
+A number is written in decimal, and must be 0 to 65535.
+
+A class name has $ at first.
+
+A message name will start with # if it is a user-defined message, or will
+have no prefix if it is a standard message.
+
+A reference to a level string starts with % and is then the number.
+
+Nine of the misc values are written with spaces inside the value, although
+there are spaces around the value.
+

@@ -147,6 +147,7 @@
 ?.editKey.ctrl.S: ^S
 ?.editKey.space: ^c
 ?.editKey.return: ^e
+?.editKey.f2: select 'ex',:Export_Level;
 ?.editClick.left: ^a
 ?.editClick.alt.left: ^u
 ?.editClick.right: delete from objects where x=$X and y=$Y and up is null;

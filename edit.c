@@ -695,6 +695,74 @@ static void add_object_at(int x,int y,MRU*m,int d) {
   pflink(n);
 }
 
+static void fprint_esc(FILE*fp,Uint8 c,const char*t) {
+  char isimg=0;
+  if(!c) return;
+  fputc(c,fp);
+  while(*t) switch(c=*t++) {
+    case 1 ... 8: fprintf(fp,"\\%c",c+'0'-1); break;
+    case 10: fprintf(fp,"\\n"); break;
+    case 11: fprintf(fp,"\\l"); break;
+    case 12: fprintf(fp,"\\c"); break;
+    case 14: fprintf(fp,"\\i"); isimg=1; break;
+    case 15: fprintf(fp,"\\b"); break;
+    case 16: fprintf(fp,"\\q"); break;
+    case 31:
+      if(!*t) break;
+      fprintf(fp,"\\x%02X",*t++);
+      break;
+    case 32 ... 127:
+      if(c=='\\') {
+        if(isimg) isimg=0; else fputc(c,fp);
+      }
+      fputc(c,fp);
+      break;
+    default:
+      fprintf(fp,"\\x%02X",c);
+  }
+  fputc('\n',fp);
+}
+
+static void fprint_misc(FILE*fp,Value v) {
+  switch(v.t) {
+    case TY_NUMBER: fprintf(fp," %u",(int)v.u); break;
+    case TY_CLASS: fprintf(fp," $%s",classes[v.u]->name); break;
+    case TY_MESSAGE: fprintf(fp," %s%s",v.u<256?"":"#",v.u<256?standard_message_names[v.u]:messages[v.u-256]);
+    case TY_LEVELSTRING: fprintf(fp," %%%u",(int)v.u); break;
+    default: fprintf(fp," ???"); break;
+  }
+}
+
+static void export_level(const char*cmd) {
+  int i;
+  Uint32 n;
+  Object*o;
+  FILE*fp;
+  if(!cmd) return;
+  fp=popen(cmd,"w");
+  if(!fp) {
+    screen_message("Cannot open pipe");
+    return;
+  }
+  fprintf(fp,"; Free Hero Mesh exported level ID=%d ORD=%d\n",level_id,level_ord);
+  fprint_esc(fp,'@',level_title);
+  fprintf(fp,"C %d\nD %d %d\n",level_code,pfwidth,pfheight);
+  for(i=0;i<64*64;i++) {
+    n=playfield[i];
+    while(n!=VOIDLINK) {
+      o=objects[n];
+      fprintf(fp,"%d %d $%s %d",o->x,o->y,classes[o->class]->name,o->image);
+      fprint_misc(fp,o->misc1);
+      fprint_misc(fp,o->misc2);
+      fprint_misc(fp,o->misc3);
+      fprintf(fp," %d\n",o->dir);
+      n=o->up;
+    }
+  }
+  for(i=0;i<nlevelstrings;i++) fprint_esc(fp,'%',levelstrings[i]);
+  pclose(fp);
+}
+
 static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
   int x,y;
   switch(cmd) {
@@ -719,6 +787,10 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
     case '^S': // Save level
       save_level();
       return 1;
+    case 'ex': // Export level
+      if(argc<2) return prev;
+      export_level(sqlite3_column_text(args,1));
+      return prev;
     case 'go': // Select level
       load_level(number);
       return 1;
