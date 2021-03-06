@@ -368,6 +368,8 @@ static int vt0_index(sqlite3_vtab*vt,sqlite3_index_info*info) {
       info->aConstraintUsage[i].argvIndex=1;
       info->aConstraintUsage[i].omit=1;
       info->idxFlags=SQLITE_INDEX_SCAN_UNIQUE;
+      info->estimatedCost=1.0;
+      info->estimatedRows=1;
       break;
     }
   }
@@ -638,7 +640,7 @@ static int vt1_objects_next(sqlite3_vtab_cursor*pcur) {
       }
     }
     cur->arg[1]=1;
-  } else if((cur->arg[0]&0x0006) && !cur->arg[1]) {
+  } else if((cur->arg[0]&0x0066) && !cur->arg[1]) {
     // Find top/bottom at location
     cur->arg[1]=1;
     atxy:
@@ -785,7 +787,7 @@ static int vt1_objects_index(sqlite3_vtab*vt,sqlite3_index_info*info) {
           info->estimatedCost/=10000.0;
         } else if(j==SQLITE_INDEX_CONSTRAINT_GT || j==SQLITE_INDEX_CONSTRAINT_GE) {
           info->idxNum|=0x0008;
-          info->aConstraintUsage[i].omit=1;
+          //info->aConstraintUsage[i].omit=1;
           info->aConstraintUsage[i].argvIndex=++arg;
           sqlite3_str_appendchar(str,1,j==SQLITE_INDEX_CONSTRAINT_GT?'b':'c');
           info->estimatedCost/=1200.0;
