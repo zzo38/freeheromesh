@@ -124,6 +124,7 @@
 ?.gameKey.f7: ^>
 ?.gameKey.f8: ^s
 ?.gameKey.tab: ^I
+?.gameKey.alt.G: ^g
 
 ! Editor key bindings
 ?.editKey.1: select 'mr',0;

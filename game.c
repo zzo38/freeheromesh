@@ -302,6 +302,9 @@ static inline void exam_value(const char*t,int y,Value v) {
     case TY_MARK:
       draw_text(200,y,"<Mark>",0xF0,0xF3);
       break;
+    case TY_ARRAY:
+      draw_text(200,y,"<Array>",0xF0,0xF9);
+      break;
     default:
       snprintf(buf,80,"<%lu:%lu>",(long)v.u,(long)v.t);
       draw_text(200,y,buf,0xF0,0xFA);
@@ -408,6 +411,60 @@ static void examine(Uint32 n) {
     exam_value(sqlite3_column_text(st,0),i+28,o->uservars[i]);
   }
   quiz:
+  sqlite3_reset(st);
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) switch(ev.type) {
+    case SDL_KEYDOWN:
+      switch(ev.key.keysym.sym) {
+        case SDLK_ESCAPE: case SDLK_RETURN: case SDLK_KP_ENTER: sqlite3_finalize(st); return;
+        case SDLK_UP: if(exam_scroll) exam_scroll--; break;
+        case SDLK_DOWN: exam_scroll++; break;
+        case SDLK_HOME: exam_scroll=0; break;
+        case SDLK_PAGEUP: exam_scroll-=screen->h/8; if(exam_scroll<0) exam_scroll=0; break;
+        case SDLK_PAGEDOWN: exam_scroll+=screen->h/8; break;
+      }
+      goto redraw;
+    case SDL_MOUSEMOTION:
+      if(ev.motion.y!=y && ev.motion.y<screen->h) {
+        SDL_LockSurface(screen);
+        draw_back_line(y,0xF0);
+        draw_back_line(y=ev.motion.y,0xF1);
+        SDL_UnlockSurface(screen);
+        SDL_Flip(screen);
+      }
+      break;
+    case SDL_VIDEOEXPOSE:
+      goto redraw;
+    case SDL_QUIT:
+      exit(0);
+      break;
+  }
+}
+
+static void global_examine(void) {
+  sqlite3_stmt*st;
+  SDL_Event ev;
+  SDL_Rect r;
+  int i,y;
+  y=0;
+  i=sqlite3_prepare_v2(userdb,"SELECT '@'||`NAME`,`ID` FROM `VARIABLES` WHERE `ID` BETWEEN 0x0000 AND 0xFFFF ORDER BY `ID`",-1,&st,0);
+  if(i) fatal("SQL error (%d): %s",i,sqlite3_errmsg(userdb));
+  exam_scroll=0;
+  redraw:
+  set_cursor(XC_arrow);
+  r.x=r.y=0;
+  r.w=screen->w;
+  r.h=screen->h;
+  SDL_FillRect(screen,&r,0xF0);
+  SDL_LockSurface(screen);
+  exam_value("MoveNumber:",0,NVALUE(move_number));
+  exam_value("LevelStrings:",1,NVALUE(nlevelstrings));
+  exam_value("Generation:",2,NVALUE(generation_number));
+  while(sqlite3_step(st)==SQLITE_ROW) {
+    i=sqlite3_column_int(st,1);
+    exam_value(sqlite3_column_text(st,0),i+4,globals[i]);
+  }
   sqlite3_reset(st);
   SDL_UnlockSurface(screen);
   SDL_Flip(screen);
@@ -623,6 +680,9 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       return prev;
     case '^d': // Describe object
       describe_at(number-65);
+      return prev;
+    case '^g': // Display global variables
+      global_examine();
       return prev;
     case '^o': // List objects
       list_objects_at(number-65);

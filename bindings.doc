@@ -77,6 +77,9 @@ to ask the user for the value to use.
 '^d' <location>
   Display the pop-up help text of the object at the location.
 
+'^g'
+  Display values of global variables.
+
 '^o' <location>
   List objects at the specified coordinates, to examine their values.
 
