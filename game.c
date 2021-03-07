@@ -837,13 +837,14 @@ void run_auto_test(void) {
   optionquery[1]=Q_progress;
   t=xrm_get_resource(resourcedb,optionquery,optionquery,2);
   pro=t?strtol(t,0,10):0;
+  if(main_options['t']) pro=0;
   optionquery[1]=Q_level;
   t=xrm_get_resource(resourcedb,optionquery,optionquery,2);
   if(n=lvl=t?strtol(t,0,10):0) goto start;
   for(n=1;n<=level_nindex;n++) {
     if(lvl) break;
     start:
-    printf("Level %d",n);
+    if(main_options['t']) printf("*** Level %d\n",n); else printf("Level %d",n);
     if(t=load_level(-n)) {
       printf(": Error during loading: %s\n",t);
       rc=1; continue;
