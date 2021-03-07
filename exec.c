@@ -1059,7 +1059,7 @@ static int v_next(Uint16*code,int ptr) {
   if(globals[k].s==-1) return ptr+1;
   n=playfield[globals[k].u&0xFFFF];
   while(n!=VOIDLINK) {
-    if(!(objects[n]->oflags&OF_DONE)) {
+    if(!(objects[n]->oflags&(OF_DONE|OF_DESTROYED|OF_VISUALONLY))) {
       r=n;
       if(globals[k].u&0x10000) break;
     }
