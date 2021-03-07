@@ -315,6 +315,10 @@ Compatible
   A help message for the game player, which would normally explain what
   this object does. Each string is one line of text.
 
+(Help Misc1)
+  Similar to (Help) but tells it to display a level string referenced
+  by the Misc1 of this object.
+
 (Image <strings...>)
   Specify strings with the names of images. The first string is the
   name of the image numbered 0, next for the image numbered 1, etc.

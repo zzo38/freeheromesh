@@ -1322,9 +1322,17 @@ static char*class_def_help(void) {
   char*txt=malloc(0x3000);
   int n=0;
   int i;
+  if(!txt) fatal("Allocation failed\n");
   for(;;) {
     nxttok();
     if(tokent==TF_CLOSE) break;
+    if(Tokenf(TF_NAME) && tokenv==OP_MISC1 && !n) {
+      txt[0]=16;
+      n=1;
+      nxttok();
+      if(tokent==TF_CLOSE) break;
+      ParseError("Close parenthesis expected\n");
+    }
     if(!Tokenf(TF_NAME) || tokenv!=OP_STRING) ParseError("String expected\n");
     i=strlen(tokenstr);
     if(i+n>=0x2FFA) ParseError("Help text is too long\n");

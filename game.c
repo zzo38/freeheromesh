@@ -574,6 +574,11 @@ static void describe_at(int xy) {
   if(n==VOIDLINK) return;
   while(n!=VOIDLINK && objects[n]->up!=VOIDLINK) n=objects[n]->up;
   if(!classes[objects[n]->class]->gamehelp) return;
+  if(classes[objects[n]->class]->gamehelp[0]==16 && !classes[objects[n]->class]->gamehelp[1]) {
+    if(objects[n]->misc1.t!=TY_LEVELSTRING || objects[n]->misc1.u>=nlevelstrings) return;
+    modal_draw_popup(levelstrings[objects[n]->misc1.u]);
+    return;
+  }
   s=sqlite3_mprintf("\x0C\x0E%s:%d\\ %s\x0B\x0F%s",classes[objects[n]->class]->name,objects[n]->image,classes[objects[n]->class]->name,classes[objects[n]->class]->gamehelp);
   if(!s) fatal("Allocation failed\n");
   modal_draw_popup(s);
