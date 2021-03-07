@@ -1874,12 +1874,14 @@ const char*execute_turn(int key) {
           send_message(VOIDLINK,n,MSG_MOVED,NVALUE(0),NVALUE(0),NVALUE(turn));
           busy=1;
         }
-        if(o->departed) {
+        if(o->departed && !o->departed2) {
+          o->departed2=1;
           send_message(VOIDLINK,n,MSG_DEPARTED,NVALUE(0),NVALUE(0),NVALUE(turn));
           o->departed=0;
           busy=1;
         }
-        if(o->arrived) {
+        if(o->arrived && !o->arrived2) {
+          o->arrived2=1;
           send_message(VOIDLINK,n,MSG_ARRIVED,NVALUE(0),NVALUE(0),NVALUE(turn));
           o->arrived=0;
           busy=1;
@@ -1887,10 +1889,9 @@ const char*execute_turn(int key) {
         if(o->anim && (o->anim->status&ANISTAT_LOGICAL)) execute_animation(n);
         if(o->oflags&(OF_BUSY|OF_USERSIGNAL)) busy=1;
       } else {
-        o->departed2=o->departed;
-        o->departed=0;
-        o->arrived2=o->arrived;
-        o->arrived=0;
+        o->departed2|=o->departed;
+        o->arrived2|=o->arrived;
+        o->departed=o->arrived=0;
         if(o->oflags&OF_MOVED) o->oflags=(o->oflags|OF_MOVED2)&~OF_MOVED;
       }
       n=m;
@@ -1903,10 +1904,10 @@ const char*execute_turn(int key) {
       if(o->oflags&OF_MOVED2) send_message(VOIDLINK,n,MSG_MOVED,NVALUE(0),NVALUE(0),NVALUE(turn)),busy=1;
       if(o->departed2) send_message(VOIDLINK,n,MSG_DEPARTED,NVALUE(o->departed2),NVALUE(0),NVALUE(turn)),busy=1;
       if(o->arrived2) send_message(VOIDLINK,n,MSG_ARRIVED,NVALUE(o->arrived2),NVALUE(0),NVALUE(turn)),busy=1;
-      o->arrived2=o->departed2=0;
       if(o->anim && (o->anim->status&ANISTAT_LOGICAL)) execute_animation(n);
       if(o->oflags&(OF_BUSY|OF_USERSIGNAL)) busy=1;
     }
+    o->arrived2=o->departed2=0;
     o->oflags&=~OF_MOVED2;
     n=o->prev;
   }
