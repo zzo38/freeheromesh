@@ -1391,7 +1391,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_CLIMB_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->climb=t1.u; break;
     case OP_CLIMB_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->climb=t1.u&0xFFFF; break;
     case OP_CLIMB_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->climb=t1.u; break;
-    case OP_CLIMB_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->climb=t1.u; break;
+    case OP_CLIMB_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->climb=t1.u&0xFFFF; break;
     case OP_COLLISIONLAYERS: StackReq(0,1); Push(NVALUE(classes[o->class]->collisionLayers)); break;
     case OP_COLLISIONLAYERS_C: StackReq(1,1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else Push(NVALUE(classes[objects[i]->class]->collisionLayers)); break;
     case OP_COMPATIBLE: StackReq(0,1); if(classes[o->class]->cflags&CF_COMPATIBLE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
@@ -1463,7 +1463,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_HEIGHT_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->height=t1.u; break;
     case OP_HEIGHT_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->height=t1.u&0xFFFF; break;
     case OP_HEIGHT_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->height=t1.u; break;
-    case OP_HEIGHT_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->height=t1.u; break;
+    case OP_HEIGHT_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->height=t1.u&0xFFFF; break;
     case OP_HEIGHTAT: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(height_at(t1.u,t2.u))); break;
     case OP_IF: StackReq(1,0); if(v_bool(Pop())) ptr++; else ptr=code[ptr]; break;
     case OP_IGNOREKEY: if(current_key) key_ignored=all_flushed=1; break;
@@ -1609,7 +1609,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_STRENGTH_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->strength=t1.u; break;
     case OP_STRENGTH_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->strength=t1.u&0xFFFF; break;
     case OP_STRENGTH_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->strength=t1.u; break;
-    case OP_STRENGTH_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->strength=t1.u; break;
+    case OP_STRENGTH_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->strength=t1.u&0xFFFF; break;
     case OP_STRING: StackReq(0,1); Push(UVALUE(code[ptr++],TY_STRING)); break;
     case OP_SOUND: StackReq(2,0); t2=Pop(); t1=Pop(); break; // Sound not implemented at this time
     case OP_SUB: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u-t2.u)); break;
@@ -1620,7 +1620,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_TEMPERATURE_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->temperature=t1.u; break;
     case OP_TEMPERATURE_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->temperature=t1.u&0xFFFF; break;
     case OP_TEMPERATURE_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->temperature=t1.u; break;
-    case OP_TEMPERATURE_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->temperature=t1.u; break;
+    case OP_TEMPERATURE_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->temperature=t1.u&0xFFFF; break;
     case OP_TMARK: StackReq(1,2); t1=Pop(); if(t1.t==TY_MARK) { Push(NVALUE(0)); } else { Push(t1); Push(NVALUE(1)); } break;
     case OP_TRACE: StackReq(3,0); trace_stack(obj); break;
     case OP_TUCK: StackReq(2,3); t2=Pop(); t1=Pop(); Push(t2); Push(t1); Push(t2); break;
@@ -1641,14 +1641,14 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_VOLUME_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->volume=t1.u; break;
     case OP_VOLUME_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->volume=t1.u&0xFFFF; break;
     case OP_VOLUME_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->volume=t1.u; break;
-    case OP_VOLUME_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->volume=t1.u; break;
+    case OP_VOLUME_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->volume=t1.u&0xFFFF; break;
     case OP_VOLUMEAT: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(volume_at(t1.u,t2.u))); break;
     case OP_WEIGHT: StackReq(0,1); Push(NVALUE(o->weight)); break;
     case OP_WEIGHT_C: StackReq(1,1); Push(GetVariableOrAttributeOf(weight,NVALUE)); break;
     case OP_WEIGHT_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->weight=t1.u; break;
     case OP_WEIGHT_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->weight=t1.u&0xFFFF; break;
     case OP_WEIGHT_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->weight=t1.u; break;
-    case OP_WEIGHT_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->weight=t1.u; break;
+    case OP_WEIGHT_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->weight=t1.u&0xFFFF; break;
     case OP_WINLEVEL: key_ignored=0; gameover=1; Throw(0); break;
     case OP_XDIR: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(o->x+x_delta[resolve_dir(obj,t1.u)])); break;
     case OP_XDIR_C: StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else Push(NVALUE(objects[i]->x+x_delta[resolve_dir(i,t1.u)])); break;

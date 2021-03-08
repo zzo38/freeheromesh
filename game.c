@@ -304,6 +304,8 @@ static inline void exam_value(const char*t,int y,Value v) {
       break;
     case TY_ARRAY:
       draw_text(200,y,"<Array>",0xF0,0xF9);
+      snprintf(buf,255,"0x%08lX",(long)v.u);
+      draw_text(264,y,buf,0xF0,0xFE);
       break;
     default:
       snprintf(buf,80,"<%lu:%lu>",(long)v.u,(long)v.t);
