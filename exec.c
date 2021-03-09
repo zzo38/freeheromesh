@@ -1188,6 +1188,11 @@ static void v_set_popup(Uint32 from,int argc) {
               sqlite3_str_appendchar(s,1,v.u&255?:255);
             }
             break;
+          case 'C':
+            if(argi==argc) break;
+            v=vstack[vstackptr+argi++];
+            if(v.t==TY_NUMBER) sqlite3_str_appendchar(s,1,(v.u&7)+1);
+            break;
           case 'd':
             if(argi==argc) break;
             v=vstack[vstackptr+argi++];
@@ -1214,6 +1219,9 @@ static void v_set_popup(Uint32 from,int argc) {
                 break;
               case TY_CLASS:
                 sqlite3_str_appendf(s,"%s",classes[v.u]->name);
+                break;
+              case TY_MESSAGE:
+                sqlite3_str_appendf(s,"%s",v.u<256?standard_message_names[v.u]:messages[v.u-256]);
                 break;
               default:
                 Throw("Type mismatch");
@@ -1255,6 +1263,9 @@ static void v_set_popup(Uint32 from,int argc) {
         break;
       case TY_CLASS:
         quiz_text=sqlite3_mprintf("%s",classes[v.u]->name);
+        break;
+      case TY_MESSAGE:
+        quiz_text=sqlite3_mprintf("%s",v.u<256?standard_message_names[v.u]:messages[v.u-256]);
         break;
       default:
         Throw("Type mismatch");

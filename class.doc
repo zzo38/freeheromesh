@@ -1532,6 +1532,10 @@ mbegin <body> repeat  ( -- any ) ( -- )
 %c
   Display a single character whose code is the low 8-bits of the value.
 
+%C
+  The low 3-bits of the argument specifies the colour of the text. If it
+  is not a number, then the colour is unchanged.
+
 %d
   Display a signed decimal number.
 
