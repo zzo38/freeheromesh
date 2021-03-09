@@ -58,6 +58,16 @@ typedef struct {
   char*txt;
 } Hash;
 
+/*
+  Global hash:
+    2800-2FFF = Variables
+    8000-BFFF = Functions
+    C000-FFFF = Macros
+  Local hash:
+    2000-27FF = Variables
+    8000-FFFF = Labels
+*/
+
 typedef struct InputStack {
   FILE*classfp;
   int linenum;
