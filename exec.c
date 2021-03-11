@@ -1304,6 +1304,14 @@ static int v_in(void) {
   return 0;
 }
 
+static Uint32 v_chain(Value v,Uint16 c) {
+  if(v.t==TY_SOUND || v.t==TY_USOUND) Throw("Cannot convert sound to object");
+  if(v.t<=TY_MAXTYPE) return VOIDLINK;
+  if(v.u>=nobjects || !objects[v.u] || objects[v.u]->generation!=v.t) return VOIDLINK;
+  if(objects[v.u]->class!=c) return VOIDLINK;
+  return v.u;
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -1395,6 +1403,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_BUSY_EC: NoIgnore(); StackReq(2,0); SetFlagOf(OF_BUSY); break;
     case OP_BXOR: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u^t2.u)); break;
     case OP_CALLSUB: execute_program(code,code[ptr++],obj); break;
+    case OP_CHAIN: StackReq(1,1); t1=Pop(); i=v_chain(t1,o->class); if(i==VOIDLINK) { Push(NVALUE(1)); } else { o=objects[obj=i]; Push(NVALUE(0)); } break;
     case OP_CLASS: StackReq(0,1); Push(CVALUE(o->class)); break;
     case OP_CLASS_C: StackReq(1,1); Push(GetVariableOf(class,CVALUE)); break;
     case OP_CLIMB: StackReq(0,1); Push(NVALUE(o->climb)); break;

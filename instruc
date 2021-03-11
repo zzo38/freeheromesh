@@ -207,6 +207,7 @@ Animate
 .BroadcastEx ; broadcast with three arguments
 BroadcastSum ; Broadcast, but result is sum of return values
 BroadcastSumEx
+chain
 .Create
 DelInventory
 Delta

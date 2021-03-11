@@ -1054,6 +1054,15 @@ c?  ( any -- bool )
   True if the value is a class, or false if it is any other type. Error if
   it is a sound.
 
+chain  ( any -- bool )
+  If given an object of the same class as the current object, selects that
+  object as the current object and continues executing the code with that
+  object instead. This new current object is not saved if you return from
+  a function or a subroutine call. If it successfully chained, then the
+  result is false. If given an object of a different class, an object that
+  doesn't exist, or anything other than an object, then it does nothing
+  and the result is true.
+
 Create  ( class x y image dir -- obj ) **
   Creates a new object at the specified location, and returns it. The
   result is zero if the class is zero, the coordinates are out of range,
