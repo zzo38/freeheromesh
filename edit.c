@@ -738,7 +738,7 @@ static void export_level(const char*cmd) {
   Uint32 n;
   Object*o;
   FILE*fp;
-  if(!cmd) return;
+  if(!cmd || !*cmd) return;
   fp=popen(cmd,"w");
   if(!fp) {
     screen_message("Cannot open pipe");
@@ -761,6 +761,218 @@ static void export_level(const char*cmd) {
   }
   for(i=0;i<nlevelstrings;i++) fprint_esc(fp,'%',levelstrings[i]);
   pclose(fp);
+}
+
+static char*import_numbers(char*p,int*x,int*y) {
+  if(!p) return 0;
+  while(*p==' ' || *p=='\t') p++;
+  if(*p<'0' || *p>'9') return 0;
+  *x=strtol(p,&p,10);
+  if(*p && *p!=' ' && *p!='\t') return 0;
+  while(*p==' ' || *p=='\t') p++;
+  if(!y) return p;
+  if(*p<'0' || *p>'9') return 0;
+  *y=strtol(p,&p,10);
+  if(*p && *p!=' ' && *p!='\t') return 0;
+  while(*p==' ' || *p=='\t') p++;
+  return p;
+}
+
+static char*import_value(char*p,Value*v) {
+  int i;
+  int n=strcspn(p," \t");
+  if(!p) return 0;
+  while(*p==' ' || *p=='\t') p++;
+  if(*p>='0' && *p<='9') {
+    v->t=TY_NUMBER;
+    v->u=strtol(p,&p,10)&0xFFFF;
+  } else if(*p=='$') {
+    v->t=TY_CLASS;
+    p++; n--;
+    for(i=1;i<0x4000;i++) {
+      if(classes[i] && !(classes[i]->cflags&CF_NOCLASS2) && strlen(classes[i]->name)==n && !memcmp(p,classes[i]->name,n)) {
+        v->u=i;
+        p+=n;
+        goto ok;
+      }
+    }
+    return 0;
+  } else if(*p=='%') {
+    v->t=TY_LEVELSTRING;
+    v->u=strtol(p+1,&p,10)&0xFFFF;
+  } else if(*p=='#') {
+    v->t=TY_MESSAGE;
+    p++; n--;
+    for(i=0;i<0x4000;i++) {
+      if(messages[i] && strlen(messages[i])==n && !memcmp(p,messages[i],n)) {
+        v->u=i+256;
+        p+=n;
+        goto ok;
+      }
+    }
+    return 0;
+  } else if(*p>='A' && *p<='Z') {
+    v->t=TY_MESSAGE;
+    for(i=0;i<N_MESSAGES;i++) {
+      if(strlen(standard_message_names[i])==n && !memcmp(p,standard_message_names[i],n)) {
+        v->u=i;
+        p+=n;
+        goto ok;
+      }
+    }
+    return 0;
+  } else {
+    return 0;
+  }
+  ok: if(*p==' ' || *p=='\t') return p+1; else return 0;
+}
+
+static char*import_string(char*p) {
+  char isimg=0;
+  char*s=malloc(strlen(p)+3);
+  char*q=s;
+  if(!s) fatal("Allocation failed\n");
+  while(*p) {
+    if(*p=='\\') {
+      p++;
+      if(isimg) {
+        isimg=0;
+        *q++='\\';
+      } else {
+        switch(*p++) {
+          case '0' ... '7': *q++=*p+1-'0'; break;
+          case 'b': *q++=15; break;
+          case 'c': *q++=12; break;
+          case 'i': *q++=14; isimg=1; break;
+          case 'l': *q++=11; break;
+          case 'n': *q++=10; break;
+          case 'q': *q++=16; break;
+          case 'x':
+            *q++=31;
+            *q=0;
+            if(p[1]>='0' && p[1]<='9') *q=(p[1]-'0')<<4;
+            else if(p[1]>='A' && p[1]<='F') *q=(p[1]+10-'A')<<4;
+            else if(p[1]>='a' && p[1]<='f') *q=(p[1]+10-'a')<<4;
+            else goto bad;
+            if(p[2]>='0' && p[2]<='9') *q|=(p[2]-'0');
+            else if(p[2]>='A' && p[2]<='F') *q|=(p[2]+10-'A');
+            else if(p[2]>='a' && p[2]<='f') *q|=(p[2]+10-'a');
+            else goto bad;
+            p+=2; q++; break;
+          default: *q++=*p;
+        }
+        p++;
+      }
+    } else {
+      *q++=*p++;
+    }
+  }
+  if(0) {
+    bad:
+    screen_message("Bad \\x escape");
+  }
+  if(isimg) *q++='\\';
+  *q=0;
+  return s;
+}
+
+static void import_level(const char*cmd) {
+  char d=0;
+  int x,y;
+  Object*o;
+  FILE*fp;
+  size_t size=0;
+  char*buf=0;
+  char*p;
+  Value v;
+  if(!cmd || !*cmd) return;
+  fp=popen(cmd,"r");
+  if(!fp) {
+    screen_message("Cannot open pipe");
+    return;
+  }
+  level_changed=1;
+  while(getline(&buf,&size,fp)>0) {
+    p=buf;
+    p[strcspn(p,"\r\n\f")]=0;
+    p+=strspn(p,"\t ");
+    switch(*p) {
+      case '0' ... '9':
+        if(!d) {
+          missd:
+          screen_message("Missing D line");
+          goto done;
+        }
+        p=import_numbers(p,&x,&y);
+        if(!p) goto bad;
+        if(x<1 || x>pfwidth || y<1 || y>pfheight) {
+          range:
+          fprintf(stderr,"Imported level coordinates out of range: %d %d\n",x,y);
+          screen_message("Coordinates out of range");
+          goto done;
+        }
+        p=import_value(p,&v);
+        if(!p || v.t!=TY_CLASS) goto bad;
+        v.u=objalloc(v.u);
+        if(v.u==VOIDLINK) goto bad;
+        o=objects[v.u];
+        o->x=x;
+        o->y=y;
+        p=import_value(p,&o->misc1);
+        p=import_value(p,&o->misc2);
+        p=import_value(p,&o->misc3);
+        p=import_numbers(p,&x,0);
+        o->dir=x;
+        if((x&~7) || !p) {
+          objtrash(v.u);
+          goto bad;
+        }
+        pflink(v.u);
+        break;
+      case 'C':
+        p=import_numbers(p+1,&x,0);
+        if(!p || *p) goto bad;
+        level_code=x;
+        break;
+      case 'D':
+        p=import_numbers(p+1,&x,&y);
+        if(!p || *p) goto bad;
+        if(x<1 || x>64 || y<1 || y>64) goto range;
+        if(d) {
+          screen_message("Duplicate D line");
+          goto done;
+        }
+        d=1;
+        annihilate();
+        pfwidth=x;
+        pfheight=y;
+        break;
+      case '@':
+        free(level_title);
+        level_title=import_string(p+1);
+        break;
+      case '%':
+        if(nlevelstrings>0x2000) {
+          screen_message("Too many level strings");
+        } else {
+          levelstrings=realloc(levelstrings,(nlevelstrings+1)*sizeof(char*));
+          if(!levelstrings) fatal("Allocation failed\n");
+          levelstrings[nlevelstrings++]=import_string(p+1);
+        }
+        break;
+      default:
+        if(*p && *p!=';') {
+          bad:
+          fprintf(stderr,"Invalid record in imported data:  %s\n",buf);
+          screen_message("Invalid record");
+          goto done;
+        }
+    }
+  }
+  done:
+  free(buf);
+  pclose(fp);
+  generation_number_inc=0;
 }
 
 static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
@@ -794,6 +1006,10 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
     case 'go': // Select level
       load_level(number);
       return 1;
+    case 'im': // Import level
+      if(argc<2) return prev;
+      import_level(sqlite3_column_text(args,1));
+      return 0;
     case 'lc': // Set level code
       level_code=number;
       level_changed=1;

@@ -37,7 +37,9 @@ x y $class image misc1 misc2 misc3 dir
   going right, and within each cell the objects are listed from bottom to
   top. Coordinates are one-based. The image is a number (0 for the first
   image), misc1 to misc3 are misc values (see below), and dir is also a
-  number (0 for east, up to 7 for southeast).
+  number (0 for east, up to 7 for southeast). When the data is being
+  imported, it will accept objects listed in any order, but when being
+  exported from Free Hero Mesh, they are ordered as described above.
 
 %string
   A level string. The level strings are numbered in order, starting from

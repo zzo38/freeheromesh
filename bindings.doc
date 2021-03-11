@@ -124,6 +124,10 @@ to ask the user for the value to use.
   Export a level (given the operating system command to receive the
   exported data). See export.doc for details.
 
+'im' <command>
+  Import a level (given the operating system command to produce the data
+  to be imported). See export.doc for details.
+
 'lc' <number>
   Set the level code number. This is a 16-bit number which can be used in
   the class codes of your puzzle set for whatever purpose you wish; the
