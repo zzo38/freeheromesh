@@ -1285,6 +1285,10 @@ static void v_set_popup(Uint32 from,int argc) {
 static int v_dispatch(const Uint16*code) {
   int i=msgvars.arg1.u;
   if(msgvars.arg1.t!=TY_NUMBER) Throw("Type mismatch");
+  if(!i || (msgvars.arg1.u&~0xFF) || !code[i]) {
+    StackReq(0,1);
+    Push(msgvars.arg2);
+  }
   if(msgvars.arg1.u&~0xFF) {
     if(current_key && !v_bool(msgvars.arg3)) key_ignored=all_flushed=1;
     return 0;
