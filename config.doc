@@ -57,8 +57,9 @@ See bindings.doc for key/mouse bindings.
   separated by any kind of whitespaces.
 
 .progress
-  If nonzero, how many steps between dots in the progress report for the
-  auto testing most.
+  If positive, how many steps between dots in the progress report for the
+  auto testing most. If negative, number of milliseconds to sleep before
+  each level is executed.
 
 .screenFlags
   SDL flags: d = double buffer, f = full screen, h = use hardware surface,

@@ -851,6 +851,7 @@ void run_auto_test(void) {
   for(n=1;n<=level_nindex;n++) {
     if(lvl) break;
     start:
+    if(pro<0) sqlite3_sleep(-pro);
     if(main_options['t']) printf("*** Level %d\n",n); else printf("Level %d",n);
     if(t=load_level(-n)) {
       printf(": Error during loading: %s\n",t);
@@ -874,7 +875,7 @@ void run_auto_test(void) {
         printf(": Premature termination on move %d\n",i);
         rc=1; goto cont;
       }
-      if(pro && !(i%pro)) putchar('.');
+      if(pro>0 && !(i%pro)) putchar('.');
       if(t=execute_turn(replay_list[i])) {
         printf(": Error on move %d: %s\n",i+1,t);
         rc=1; goto cont;
