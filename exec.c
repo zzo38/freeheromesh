@@ -39,6 +39,7 @@ Uint16 nlevelstrings;
 Value*array_data;
 Uint16 ndeadanim;
 DeadAnimation*deadanim;
+Uint8 no_dead_anim;
 
 typedef struct {
   Uint16 msg;
@@ -165,6 +166,7 @@ Uint32 objalloc(Uint16 c) {
 
 static void set_dead_animation(const Object*o) {
   DeadAnimation*d;
+  if(no_dead_anim) return;
   deadanim=realloc(deadanim,(ndeadanim+1)*sizeof(DeadAnimation));
   if(!deadanim) fatal("Allocation failed\n");
   d=deadanim+ndeadanim++;

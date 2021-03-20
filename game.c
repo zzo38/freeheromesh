@@ -185,6 +185,7 @@ static void continue_animation(void) {
       if(++d->vtime>=d->s.speed) {
         if(d->vimage==d->s.end) d->s.flag=0;
         if(d->s.end>=d->s.start) ++d->vimage; else --d->vimage;
+        d->vtime=0;
       }
     }
     for(i=0;i<ndeadanim;i++) while(i<ndeadanim && !deadanim[i].s.flag) {
@@ -683,6 +684,7 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
         if(!inputs) fatal("Allocation failed\n");
       }
       memcpy(inputs,replay_list,inputs_count=number);
+      no_dead_anim=1;
       return 1;
     case '^<': // Rewind to mark
       number=replay_mark;
@@ -840,9 +842,9 @@ void run_game(void) {
         }
       replay:
         if(inputs_count) {
-          //TODO: Check for solution replay
           for(i=0;i<inputs_count && !gameover;i++) if(inputs[i]) input_move(inputs[i]);
           inputs_count=0;
+          no_dead_anim=0;
         }
         redraw_game();
         timerflag=0; // ensure we have not missed a timer event
@@ -858,6 +860,7 @@ void run_auto_test(void) {
   Uint8 rc=0;
   int lvl,pro,i,n;
   const char*t;
+  no_dead_anim=1;
   setbuf(stdout,0);
   solution_replay=1;
   optionquery[1]=Q_progress;

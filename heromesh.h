@@ -262,6 +262,7 @@ extern Uint16 nlevelstrings;
 extern Value*array_data;
 extern Uint16 ndeadanim;
 extern DeadAnimation*deadanim;
+extern Uint8 no_dead_anim;
 
 const char*value_string_ptr(Value v);
 void pfunlink(Uint32 n);

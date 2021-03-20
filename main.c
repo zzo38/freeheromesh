@@ -911,6 +911,7 @@ int main(int argc,char**argv) {
   if(main_options['a']) run_auto_test();
   if(main_options['x']) {
     fprintf(stderr,"Ready for executing SQL statements.\n");
+    no_dead_anim=1;
     do_sql_mode();
     return 0;
   }
