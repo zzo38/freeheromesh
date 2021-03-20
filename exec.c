@@ -37,6 +37,8 @@ Uint32 ninventory;
 char**levelstrings;
 Uint16 nlevelstrings;
 Value*array_data;
+Uint16 ndeadanim;
+DeadAnimation*deadanim;
 
 typedef struct {
   Uint16 msg;
@@ -161,12 +163,29 @@ Uint32 objalloc(Uint16 c) {
 
 #define animfree free
 
+static void set_dead_animation(const Object*o) {
+  DeadAnimation*d;
+  deadanim=realloc(deadanim,(ndeadanim+1)*sizeof(DeadAnimation));
+  if(!deadanim) fatal("Allocation failed\n");
+  d=deadanim+ndeadanim++;
+  d->class=o->class;
+  d->x=o->x;
+  d->y=o->y;
+  d->s=o->anim->step[o->anim->vstep];
+  d->vtime=o->anim->vtime;
+  d->vimage=o->anim->vimage;
+}
+
 void objtrash(Uint32 n) {
   Object*o=objects[n];
   if(!o) return;
-  if(n==traced_obj.u && o->generation==traced_obj.t && main_options['t'] && !main_options['e']) {
-    printf("# Object traced at (%d,%d)\n",o->x,o->y);
-    Throw("Object traced");
+  if(!main_options['e']) {
+    if(n==traced_obj.u && o->generation==traced_obj.t && main_options['t']) {
+      printf("# Object traced at (%d,%d)\n",o->x,o->y);
+      Throw("Object traced");
+    } else if(ndeadanim<0x1000 && o->anim && o->anim->status==ANISTAT_VISUAL && !(o->oflags&OF_INVISIBLE)) {
+      if(o->up==VOIDLINK || (objects[o->up]->oflags&OF_DESTROYED)) set_dead_animation(o);
+    }
   }
   animfree(o->anim);
   if(o->down==VOIDLINK) playfield[o->x+o->y*64-65]=o->up;
@@ -1796,6 +1815,9 @@ void annihilate(void) {
   clear_inventory();
   for(i=0;i<nlevelstrings;i++) free(levelstrings[i]);
   nlevelstrings=0;
+  free(deadanim);
+  deadanim=0;
+  ndeadanim=0;
 }
 
 static void execute_animation(Uint32 obj) {

@@ -210,6 +210,12 @@ typedef struct {
   };
 } AnimationStep;
 
+typedef struct {
+  Uint8 x,y,vtime,vimage;
+  Uint16 class;
+  AnimationStep s;
+} DeadAnimation;
+
 #define ANISTAT_LOGICAL 0x01
 #define ANISTAT_VISUAL 0x02
 #define ANISTAT_SYNCHRONIZED 0x80
@@ -254,6 +260,8 @@ extern Uint32 ninventory;
 extern char**levelstrings;
 extern Uint16 nlevelstrings;
 extern Value*array_data;
+extern Uint16 ndeadanim;
+extern DeadAnimation*deadanim;
 
 const char*value_string_ptr(Value v);
 void pfunlink(Uint32 n);

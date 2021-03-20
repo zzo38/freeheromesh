@@ -136,6 +136,7 @@ static void continue_animation(void) {
   Uint32 n=firstobj;
   Object*o;
   Animation*a;
+  DeadAnimation*d;
   int i;
   for(i=0;i<8;i++) if(anim_slot[i].length && ++anim_slot[i].vtime==anim_slot[i].speed && (anim_slot[i].vtime=0,++anim_slot[i].frame==anim_slot[i].length)) anim_slot[i].frame=0;
   while(n!=VOIDLINK) {
@@ -173,6 +174,24 @@ static void continue_animation(void) {
       }
     }
     n=o->next;
+  }
+  if(ndeadanim) {
+    for(i=0;i<ndeadanim;i++) {
+      d=deadanim+i;
+      draw_cell(d->x,d->y);
+      if(!d->s.flag) continue;
+      if(d->vimage<classes[d->class]->nimages)
+       draw_picture((d->x-1)*picture_size+left_margin,(d->y-1)*picture_size,classes[d->class]->images[d->vimage]&0x7FFF);
+      if(++d->vtime>=d->s.speed) {
+        if(d->vimage==d->s.end) d->s.flag=0;
+        if(d->s.end>=d->s.start) ++d->vimage; else --d->vimage;
+      }
+    }
+    for(i=0;i<ndeadanim;i++) while(i<ndeadanim && !deadanim[i].s.flag) {
+      draw_cell(deadanim[i].x,deadanim[i].y);
+      if(i<ndeadanim-1) deadanim[i]=deadanim[ndeadanim-1];
+      --ndeadanim;
+    }
   }
   SDL_Flip(screen);
 }
