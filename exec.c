@@ -1178,6 +1178,15 @@ static void v_set_array(Value ar,Uint32 x,Uint32 y,Value v) {
   array_data[s]=v;
 }
 
+static Value v_array_cell(Value ar,Uint32 x,Uint32 y) {
+  Uint32 s;
+  if(ar.t!=TY_ARRAY) Throw("Type mismatch");
+  s=ar.u&0xFFFF;
+  if(y>((ar.u>>16)&0x3FF) || x>((ar.u>>26)&0x3F)) Throw("Array index out of bounds");
+  s+=x+y+((ar.u>>26)&0x3F)*y;
+  return UVALUE(s,TY_ARRAY);
+}
+
 static void v_set_popup(Uint32 from,int argc) {
   const unsigned char*t;
   const unsigned char*u;
@@ -1402,6 +1411,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_ARG2_E: StackReq(1,0); msgvars.arg2=Pop(); break;
     case OP_ARG3: StackReq(0,1); Push(msgvars.arg3); break;
     case OP_ARG3_E: StackReq(1,0); msgvars.arg3=Pop(); break;
+    case OP_ARRAYCELL: StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Push(v_array_cell(t1,t2.u,t3.u)); break;
     case OP_ARRIVALS: StackReq(0,1); Push(NVALUE(o->arrivals&0x1FFFFFF)); break;
     case OP_ARRIVALS_C: StackReq(1,1); Push(GetVariableOrAttributeOf(arrivals&0x1FFFFFF,NVALUE)); break;
     case OP_ARRIVALS_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->arrivals=t1.u; break;
@@ -1606,6 +1616,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_PLAYER_C: StackReq(1,1); GetClassFlagOf(CF_PLAYER); break;
     case OP_POPUP: StackReq(1,0); v_set_popup(obj,0); break;
     case OP_POPUPARGS: i=code[ptr++]; StackReq(i+1,0); v_set_popup(obj,i); break;
+    case OP_QA: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t==TY_ARRAY) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_QC: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t==TY_CLASS) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_QCZ: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t==TY_CLASS || (t1.t==TY_NUMBER && !t1.u)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_QM: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t==TY_MESSAGE) Push(NVALUE(1)); else Push(NVALUE(0)); break;

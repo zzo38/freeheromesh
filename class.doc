@@ -969,6 +969,10 @@ used on the same turn as the IgnoreKey instruction.
 _  ( -- mark )
   Add a mark to the stack.
 
+a?  ( any -- bool )
+  True if the value is an array reference, or false if it is any other
+  type. Error if it is a sound.
+
 Animate  ( flag start end delay -- ) **
   Start or stop an animation for this object. This also sets the Image
   variable equal to the start value. The flag can be STOP to stop an
@@ -1003,6 +1007,11 @@ Arg3  ( -- value )
   Allows setting the third message argument. This will last until the
   current message returns, and does not affect further messages sent; it
   allows Arg3 to be used as a mutable local variable.
+
+ArrayCell  ( array row column -- array )
+  Make a reference to a single cell of an array. The new reference is
+  treated as a reference to a 1x1 array, which aliases the original array.
+  Coordinates are zero-based.
 
 Assassinate  ( -- ) **
   Destroy this object without sending any messages. The object is marked

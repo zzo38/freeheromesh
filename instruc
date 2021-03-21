@@ -133,6 +133,7 @@ qm "m?"
 qs "s?"
 qo "o?"
 qoz "oz?"
+qa "a?"
 
 ; Standard variables
 ,Class
@@ -263,6 +264,7 @@ nin
 GetArray
 InitArray
 SetArray
+ArrayCell
 
 ; Specials
 *Function
