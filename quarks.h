@@ -182,6 +182,7 @@
 #define Q_traceObject 183
 #define Q_showInventory 184
 #define Q_progress 185
+#define Q_autoSave 186
 static const char*const global_quarks[]={
   "screenWidth",
   "screenHeight",
@@ -367,6 +368,7 @@ static const char*const global_quarks[]={
   "traceObject",
   "showInventory",
   "progress",
+  "autoSave",
 0};
 #ifdef HEROMESH_BINDINGS
 static const SDLKey quark_to_key[Q_undo+1-Q_backspace]={

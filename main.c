@@ -848,6 +848,13 @@ static void set_tracing(void) {
   }
 }
 
+static inline void set_autosave(void) {
+  const char*v;
+  optionquery[1]=Q_autoSave;
+  v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
+  if(boolxrm(v,0)) atexit(flush_usercache);
+}
+
 int main(int argc,char**argv) {
   int optind=1;
   while(argc>optind && argv[optind][0]=='-') {
@@ -915,5 +922,6 @@ int main(int argc,char**argv) {
     do_sql_mode();
     return 0;
   }
+  set_autosave();
   for(;;) { if(main_options['e']) run_editor(); else run_game(); }
 }

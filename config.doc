@@ -21,6 +21,12 @@ See bindings.doc for key/mouse bindings.
   then this resource controls which of those pictures is selected. The
   default setting is zero.
 
+.autoSave
+  If true, saves changes to the level and solution files when the program
+  terminates. If false (default), they are only saved to the user cache
+  database; to copy the changes to the level and solution files, you must
+  use the .u command in SQL mode (-x).
+
 .editTitle
   The window title to use in edit mode. A tilde is replaced by the name of
   the puzzle set.
