@@ -1847,7 +1847,9 @@ bit22 *
   Prevents movement regardless of Height, but may still allow sliding.
 
 bit23 *
-  Reserved for future.
+  If this bit is set, then do not consider any further objects at the
+  new location of the shoved object after successfully shoving, and
+  instead restart the movement immediately.
 
 bit24 *
   Allows sliding to the left regardless of Height; the other attributes

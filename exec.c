@@ -888,6 +888,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
         if(move_dir(obj,objE,dir)) {
           if(!(oE->oflags&OF_DESTROYED)) o->inertia=oE->inertia;
           hit|=0x8000;
+          if(hit&0x800000) goto restart;
         }
       }
       if(hit&0x400) goto fail;
