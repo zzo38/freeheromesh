@@ -1,0 +1,88 @@
+Free Hero Mesh is a puzzle game engine for grid-based puzzle games with
+levels, strictly based on changing game state due to the sequence of
+inputs, e.g. Sokoban and Hero Hearts.
+
+It is also designed to be compatible with EKS Hero Mesh puzzle sets, which
+must be converted to Free Hero Mesh using the provided "mbtofhm" program.
+However, Free Hero Mesh adds a lot of new features and bug fixes compared
+with EKS Hero Mesh, many of which have already been implemented, and many
+of which have not been implemented yet.
+
+It is available in a Fossil repository; there are two sources:
+
+* Main: http://zzo38computer.org/fossil/heromesh.ui
+
+* Mirror: http://chiselapp.com/user/zzo38/repository/freeheromesh
+
+(The main source is more often updated. The changes to the main copy will
+occasionally be pushed to the mirror. Contributions are not accepted at
+the mirror directly; they must be made in the main repository first.)
+
+
+=== Installation ===
+
+Currently, there isn't much of this; contributions will be accepted.
+There is a shell script for compiling it available, though.
+
+Requirements:
+
+* Linux (it should hopefully work on other POSIX systems, although this is
+untested; it might use some Linux-specific functions, and I may be willing
+to accept contributions if this can be fixed)
+
+* SQLite version 3 (a recent version)
+
+* SDL1.x (the compatibility layers have not been tested with this
+software; if you have tested it please report it, and you may contribute
+patches to fix it)
+
+* A C compiler, with GNU extensions (tested with GCC; it has not been
+tested with Clang, but I expect it to work; report it if it doesn't work)
+
+* If you wish to alter some of the files, Node.js or a compatible
+JavaScript runtime is required for compiling these files (you do not need
+this if you do not wish to modify Free Hero Mesh)
+
+
+=== Community/discussion ===
+
+For discussion of Free Hero Mesh, use the NNTP server. This is a newsgroup
+in the zzo38computer.org NNTP server, named:
+
+  un2.org.zzo38computer.soft.freeheromesh
+
+You may use it for:
+
+* Announcements about Free Hero Mesh
+
+* Questions about the use of Free Hero Mesh
+
+* Questions about the implementation of Free Hero Mesh
+
+* If you made up your own puzzle sets, to link to them
+
+* To comment on other puzzle sets
+
+* Bug reports
+
+* Feature requests
+
+* Patches
+
+* Contributions to documentation, including this file
+
+* Anything else related to Free Hero Mesh, that I may have missed
+
+You may also post bug reports and feature requests using the ticketing
+system on the Fossil repository.
+
+
+=== License ===
+
+Free Hero Mesh is public domain. See the LICENSE file for details.
+
+
+=== Frequently asked questions ===
+
+(Nothing yet. If you have any questions, please ask.)
+

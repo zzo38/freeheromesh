@@ -1,0 +1,95 @@
+
+=== Overall working ===
+
+The main function handles command-line arguments and initializes most
+stuff. This then calls the game or editor as appropriate, which will
+handle the respective functions.
+
+The UI of the game play (including solution replay) and the behaviour of
+the game are separated from each other. The game UI calls the execution
+module to update the game state for the given sequence of inputs, which
+then returns the new state, and whether or not the game has ended.
+
+The loading and display of pictures and text is handled in its own file.
+
+
+=== Files ===
+
+bindings.c: Loads key/mouse bindings and handles SDL key/mouse events to
+execute the bindings; most functions that can be bound are executed by
+the module that calls this though, rather than being handled by bindings.c
+directly. This module finds and decodes the correct binding, and whatever
+command it specifies to execute is delegated to the calling module. This
+file also includes a few global functions which keys can be bound to, such
+as executing external programs, and displaying messages.
+
+class.c: Contains code for loading class definition files. It also has the
+"get_message_ptr" function, which is called by exec.c.
+
+cursorshapes.h: Contains the X cursor shapes.
+
+edit.c: The level editor. Also contains code for saving levels, and for
+writing the contents of lumps of the level files.
+
+exec.c: The main part of the game engine; the behaviour of the game is
+implemented in this file. Also includes execution of P-codes. Execution
+may Throw (using a macro) in case of an error, which results in the loss
+of game.
+
+function.c: Defines SQL functions and virtual tables.
+
+heromesh.h: Contains structures, macros, and function and variables for
+Free Hero Mesh, which can be used by multiple files.
+
+game.c: The game play. The game behaviour is implemented in exec.c; this
+one just handles the input and display, and solution replay, and any move
+which is made calls exec.c to execute the mode. It contains one function
+(locate_me) which is called by exec.c.
+
+instruc/instruc.h/instruc.js: The "instruc" file contains a list of the
+keywords and internal operator names used in the class definitions. Some
+of these are only used internally, although most are available directly
+as keywords. Many are also opcodes in the compiled P-code, although some
+are only used as keywords, which are handled during class loading. The
+instruc.js program generates instruc.h from instruc.
+
+keyicons.xbm: Graphics for key icons. These are used to display the replay
+list on the left side of the screen.
+
+main.c: Contains code for start-up, and for initializing and dealing with
+the user cache database.
+
+mbtofhm.c: The converter from Hero Mesh to Free Hero Mesh. This is not
+compiled into Free Hero Mesh; it is a separate program.
+
+pcfont.h: Contains the graphics for the PC character set.
+
+picedit.c: The picture editor.
+
+picture.c: Contains initialization of graphics, and everything to draw
+graphics on the screen, including icons and text. It also contains the
+code for loading icons, for displaying popup messages, and scrollbars.
+
+quarks/quarks.h/quarks.js: The "quarks" file contains names of predefined
+quarks for use with the resource manager. The quarks.js program converts
+quarks into quarks.h.
+
+smallxrm.c/smallxrm.h: An implementation of the X resource manager. This
+can be used independently from Free Hero Mesh.
+
+
+=== Invariants ===
+
+All game state changes which persist across turns and can affect the
+behaviour of the game MUST be deterministic, depending only on the level
+data, the player's inputs, the previous state, and the class definitions.
+The game state MUST remain unchanged if entering the input into the replay
+list is suppressed (which it will be if IgnoreKey is used), unless it
+results in an immediate loss of game.
+
+
+=== Miscellaneous ===
+
+Free Hero Mesh uses the PC character set. All contributions shall use this
+character set (of which ASCII is a subset).
+
