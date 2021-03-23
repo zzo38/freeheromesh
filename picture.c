@@ -779,6 +779,7 @@ void draw_popup(const unsigned char*txt) {
       pop_char(x,y,li+ln,c,*p);
       if(*p) p++;
       x+=8;
+      break;
     default:
       pop_char(x,y,li+ln,c,p[-1]);
       x+=8;
