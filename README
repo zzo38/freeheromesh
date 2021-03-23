@@ -43,6 +43,10 @@ tested with Clang, but I expect it to work; report it if it doesn't work)
 JavaScript runtime is required for compiling these files (you do not need
 this if you do not wish to modify Free Hero Mesh)
 
+Before using it, you must create a file called .heromeshrc in your home
+directory; you may use default.heromeshrc to start with, and then customize
+it as you wish.
+
 
 === Community/discussion ===
 
