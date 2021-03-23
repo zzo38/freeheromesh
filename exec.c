@@ -1238,6 +1238,18 @@ static void v_set_popup(Uint32 from,int argc) {
             }
             argi+=2;
             break;
+          case 'R':
+            if(argi==argc) break;
+            v=vstack[vstackptr+argi++];
+            if(v.t==TY_NUMBER) {
+              static const char*const r1000[10]={"","M","MM","MMM","MMMM","MMMMM","MMMMMM","MMMMMMM","MMMMMMMM","MMMMMMMMM"};
+              static const char*const r100[10]={"","C","CC","CCC","CD","D","DC","DCC","DCCC","CM"};
+              static const char*const r10[10]={"","X","XX","XXX","XL","L","LX","LXX","LXXX","XC"};
+              static const char*const r1[10]={"","I","II","III","IV","V","VI","VII","VIII","IX"};
+              if(v.u) sqlite3_str_appendf(s,"%s%s%s%s",r1000[(v.u/1000)%10],r100[(v.u/100)%10],r10[(v.u/10)%10],r1[v.u%10]);
+              else sqlite3_str_appendchar(s,1,'N');
+            }
+            break;
           case 's':
             if(argi==argc) break;
             v=vstack[vstackptr+argi++];
@@ -1254,8 +1266,6 @@ static void v_set_popup(Uint32 from,int argc) {
               case TY_MESSAGE:
                 sqlite3_str_appendf(s,"%s",v.u<256?standard_message_names[v.u]:messages[v.u-256]);
                 break;
-              default:
-                Throw("Type mismatch");
             }
             break;
           case 'u':

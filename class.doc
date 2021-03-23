@@ -1563,6 +1563,9 @@ mbegin <body> repeat  ( -- any ) ( -- )
   picture may take up multiple lines of space; the lines will be moved
   farther apart to make room if necessary.
 
+%R
+  Display a roman number.
+
 %s
   Display a string. If the value is not a string, it will display it as
   whatever type it is.
