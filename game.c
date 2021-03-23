@@ -794,6 +794,7 @@ void run_game(void) {
   int i;
   SDL_Event ev;
   set_caption();
+  replay_count=0;
   if(side_mode==255) setup_game();
   begin_level(level_id);
   redraw_game();
@@ -838,6 +839,7 @@ void run_game(void) {
         if(i==-2) {
           main_options['e']=1;
           SDL_SetTimer(0,0);
+          save_replay();
           return;
         }
       replay:
@@ -852,6 +854,7 @@ void run_game(void) {
     }
   }
   quit:
+  SDL_SetTimer(0,0);
   save_replay();
   exit(0);
 }
