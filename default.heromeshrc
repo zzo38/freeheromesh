@@ -141,10 +141,11 @@
 ?.editKey.C: select 'lc',:level_code where :level_code=cast(:level_code as int);
 ?.editKey.F: with n(n) as (select 65 union all select n+1 h from n where h<=64*pfheight()+65) select '^a',n from n;
 ?.editKey.R: select 're',substr(:resize,1,instr(:resize,'x')-1),substr(:resize,instr(:resize,'x')+1) where length(:resize);
-?.editKey.ctrl.X: select 're',pfwidth(),pfheight();
+?.editKey.ctrl.N: ^N
 ?.editKey.ctrl.P: ^P
 ?.editKey.ctrl.Q: ^Q
 ?.editKey.ctrl.S: ^S
+?.editKey.ctrl.X: select 're',pfwidth(),pfheight();
 ?.editKey.space: ^c
 ?.editKey.return: ^e
 ?.editKey.f1: select 'im',:Import_Level;

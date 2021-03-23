@@ -170,6 +170,21 @@ static void save_obj(sqlite3_str*s,const Object*o,const Object**m,Uint8 x,Uint8 
   }
 }
 
+static void update_level_index(void) {
+  Uint8*data;
+  int i;
+  if(level_ord>level_nindex) {
+    level_index=realloc(level_index,++level_nindex*sizeof(Uint16));
+    if(!level_index) fatal("Allocation failed\n");
+    level_index[level_ord-1]=level_id;
+  }
+  data=malloc(level_nindex<<1);
+  if(!data) fatal("Allocation failed\n");
+  for(i=0;i<level_nindex;i++) data[i+i]=level_index[i]&255,data[i+i+1]=level_index[i]>>8;
+  write_lump(FIL_LEVEL,LUMP_LEVEL_IDX,2*level_nindex,data);
+  free(data);
+}
+
 static void save_level(void) {
   /*
    Format of objects:
@@ -230,9 +245,12 @@ static void save_level(void) {
   if(i=sqlite3_str_errcode(str)) fatal("SQL string error (%d)\n",i);
   data=sqlite3_str_finish(str);
   if(!data) fatal("Allocation failed\n");
+  sqlite3_exec(userdb,"BEGIN;",0,0,0);
   write_lump(FIL_LEVEL,level_id,sz,data);
   sqlite3_free(data);
+  if(level_ord==level_nindex+1) update_level_index();
   rewrite_class_def();
+  sqlite3_exec(userdb,"COMMIT;",0,0,0);
 }
 
 static void redraw_editor(void) {
@@ -975,6 +993,31 @@ static void import_level(const char*cmd) {
   generation_number_inc=0;
 }
 
+static void new_level(void) {
+  sqlite3_stmt*st;
+  int i;
+  if(i=sqlite3_prepare_v2(userdb,"SELECT COALESCE(MAX(`LEVEL`),-1)+1 FROM `USERCACHEDATA` WHERE `FILE` = LEVEL_CACHEID();",-1,&st,0)) {
+    screen_message(sqlite3_errmsg(userdb));
+    return;
+  }
+  i=sqlite3_step(st);
+  if(i!=SQLITE_ROW) {
+    sqlite3_finalize(st);
+    screen_message(sqlite3_errmsg(userdb));
+    return;
+  }
+  i=sqlite3_column_int(st,0);
+  sqlite3_finalize(st);
+  if(i>0xFFFE) return;
+  annihilate();
+  level_id=i;
+  free(level_title);
+  level_title=strdup("New Level");
+  if(!level_title) fatal("Allocation failed\n");
+  level_changed=level_version=level_code=0;
+  level_ord=level_nindex+1;
+}
+
 static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
   int x,y;
   switch(cmd) {
@@ -992,6 +1035,10 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
       if(prev) return prev;
       add_object_at(number&63?:64,number/64?:64,mru+curmru,0);
       return 0;
+    case '^N': // New level
+      if(level_nindex>0xFFFE) return 0;
+      new_level();
+      return 1;
     case '^P': // Play
       return -2;
     case '^Q': // Quit

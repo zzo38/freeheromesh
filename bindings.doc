@@ -101,6 +101,11 @@ to ask the user for the value to use.
 
 === Editor commands ===
 
+'^N'
+  Add a new level (after the last one). The new level has the same
+  dimensions as the current level, but contains no objects or strings,
+  and the title is set to "New Level".
+
 '^S'
   Save level.
 
