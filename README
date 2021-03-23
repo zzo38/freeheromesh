@@ -43,6 +43,9 @@ tested with Clang, but I expect it to work; report it if it doesn't work)
 JavaScript runtime is required for compiling these files (you do not need
 this if you do not wish to modify Free Hero Mesh)
 
+The distributor should edit man6/heromesh.str in order to correctly
+specify the directory containing the documentation files.
+
 Before using it, you must create a file called .heromeshrc in your home
 directory; you may use default.heromeshrc to start with, and then customize
 it as you wish.
