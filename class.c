@@ -527,6 +527,7 @@ static void nxttok1(void) {
       if(fl&TF_COMMA) ParseError("Invalid use of , in token\n");
       tokent=TF_NAME|fl;
       tokenv=look_hash(glohash,HASH_SIZE,0x2800,0x2FFF,num_globals+0x2800,"user global variables")?:(num_globals++)+0x2800;
+      if(fl&TF_EQUAL) tokenv+=0x1000;
       break;
     case '#':
       if(fl) ParseError("Invalid use of , and = in token\n");
