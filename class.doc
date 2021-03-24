@@ -1621,7 +1621,9 @@ COLLIDE
   destroyed in order to make room), bit1 means to not send any COLLIDEBY
   messages, and bit2 means to pretend the move attempt was successful even
   if it isn't successful. Even if bit0 is set, that won't prevent sending
-  COLLIDEBY messages unless bit1 is also set.
+  COLLIDEBY messages unless bit1 is also set. Arg1 and Arg2 are the X and
+  Y coordinates that it is trying to move to, and Arg3 is the collision
+  bits which are conflicting.
 
 COLLIDEBY
   Received when another object is trying to move into the location of this
@@ -1631,13 +1633,17 @@ COLLIDEBY
   not send any more COLLIDEBY messages, bit2 means to pretend the movement
   attempt is successful even if it isn't (there is no effect for creating
   objects; this bit is meaningful only for moves), and bit4 means that if
-  necessary, it will try to destroy this object to make room.
+  necessary, it will try to destroy this object to make room. From is the
+  object attempting to move here, and Arg1 and Arg2 are its location (if
+  attempting to create an object, then From, Arg1, and Arg2 are all zero).
+  Arg3 is the class of the object being moved or created.
 
 CREATE
   Sent when the object is created by the Create instruction. This is done
   after the object is created, but before sending any other messages. The
   From is the object that created it. The return value will be used as the
-  Arg3 of the SUNK and CREATED messages it might send if appropriate.
+  Arg3 of the SUNK and CREATED messages it might send if appropriate. From
+  is the object which executed the Create instruction to create it.
 
 CREATED
   Sent to all objects whose Arrivals care about objects in the location
