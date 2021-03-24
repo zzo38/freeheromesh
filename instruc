@@ -202,6 +202,7 @@ Key
 
 ; Main operations
 Animate
+AnimateDead
 ,Assassinate ; destroy without sending any messages
 .Broadcast
 *BroadcastClass ; for (Broadcast [class])

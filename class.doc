@@ -983,6 +983,14 @@ Animate  ( flag start end delay -- ) **
   delay between frames is in centiseconds; the start and end are the
   image numbers in this class, and may be ascending or descending.
 
+AnimateDead  ( x y class start end delay -- )
+  Create a dead animation, at the specified coordinates. Give the class
+  to use the pictures of, and the start and end image number, and the
+  delay between frames in centiseconds. This will draw the animation on
+  the screen without being associated with any object; this animation is
+  purely visual and does not affect the game state. The animation will
+  play once and then it will disappear.
+
 Arg1  ( -- value )
   The first message argument.
 

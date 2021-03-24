@@ -178,6 +178,26 @@ static void set_dead_animation(const Object*o) {
   d->vimage=o->anim->vimage;
 }
 
+static void v_animate_dead(Value x,Value y,Value c,Value s,Value e,Value z) {
+  DeadAnimation*d;
+  if(no_dead_anim || ndeadanim>=0x1000) return;
+  if(x.t || y.t || s.t || e.t || z.t || c.t!=TY_CLASS) return;
+  if(!z.u || (z.u&~255) || x.u<1 || x.u>pfwidth || y.u<1 || y.u>pfheight) return;
+  if(!classes[c.u] || !classes[c.u]->nimages || (classes[c.u]->cflags&(CF_GROUP|CF_NOCLASS2))) return;
+  deadanim=realloc(deadanim,(ndeadanim+1)*sizeof(DeadAnimation));
+  if(!deadanim) fatal("Allocation failed\n");
+  d=deadanim+ndeadanim++;
+  d->class=c.u;
+  d->x=x.u;
+  d->y=y.u;
+  d->s.flag=ANI_ONCE;
+  d->s.start=s.u;
+  d->s.end=e.u;
+  d->s.speed=z.u;
+  d->vtime=0;
+  d->vimage=s.u;
+}
+
 void objtrash(Uint32 n) {
   Object*o=objects[n];
   if(!o) return;
@@ -1371,7 +1391,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
   Uint32 i,j;
   Object*o=objects[obj];
   Value t1,t2;
-  static Value t3,t4,t5;
+  static Value t3,t4,t5,t6;
   if(StackProtection()) Throw("Call stack overflow");
   // Note about bit shifting: At least when running Hero Mesh in DOSBOX, out of range bit shifts produce zero.
   // I don't know if this is true on all computers that Hero Mesh runs on, though. (Some documents suggest that x86 doesn't work this way)
@@ -1416,6 +1436,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case 0xC000 ... 0xFFFF: StackReq(0,1); Push(MVALUE((code[ptr-1]&0x3FFF)+256)); break;
     case OP_ADD: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u+t2.u)); break;
     case OP_ANIMATE: StackReq(4,0); t4=Pop(); Numeric(t4); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); animate(obj,t1.u,t2.u,t3.u,t4.u); break;
+    case OP_ANIMATEDEAD: StackReq(6,0); t6=Pop(); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_animate_dead(t1,t2,t3,t4,t5,t6); break;
     case OP_ARG1: StackReq(0,1); Push(msgvars.arg1); break;
     case OP_ARG1_E: StackReq(1,0); msgvars.arg1=Pop(); break;
     case OP_ARG2: StackReq(0,1); Push(msgvars.arg2); break;
