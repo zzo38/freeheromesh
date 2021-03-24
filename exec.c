@@ -786,21 +786,22 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
   Object*o;
   Object*oE;
   Object*oF;
-  Uint32 objE,objF,objLF,objRF;
+  Object*oW;
+  Uint32 objE,objF,objLF,objRF,objW;
   Uint32 hit=0;
   Uint32 vol;
   Value v;
   if(StackProtection()) Throw("Call stack overflow during movement");
   if(obj==VOIDLINK) return 0;
-  o=objects[obj];
+  oW=o=objects[objW=obj];
   o->dir=dir=resolve_dir(obj,dir);
   if(o->weight>o->inertia) goto fail;
   o->inertia-=o->weight;
   restart:
   if(hit&0x100000) dir=o->dir;
-  objF=obj_dir(obj,dir);
+  objF=obj_dir(objW,dir);
   if(objF==VOIDLINK) goto fail;
-  if(hit) hit=0x800;
+  if(hit) hit=0x800|(hit&0x10000000);
   oF=objects[objF];
   objLF=obj_dir(obj,(dir+1)&7);
   objRF=obj_dir(obj,(dir-1)&7);
@@ -820,12 +821,13 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
           hit&=0xFC287000;
           v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit));
           if(v.t) Throw("Type mismatch in HIT/HITBY");
-          hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1);
+          hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1L);
           if(hit&8) goto fail;
           if(!(hit&0x11)) {
-            v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(hit));
+            v=send_message(obj,objE,MSG_HITBY,NVALUE(oW->x),NVALUE(oW->y),NVALUE(hit));
+            if(v.t>TY_MAXTYPE) goto warp;
             if(v.t) Throw("Type mismatch in HIT/HITBY");
-            hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1);
+            hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1L);
             if(hit&8) goto fail;
           }
         }
@@ -887,12 +889,19 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
         // HIT/HITBY messages
         v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit));
         if(v.t) Throw("Type mismatch in HIT/HITBY");
-        hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1);
+        hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1L);
         if(hit&8) goto fail;
         if(!(hit&0x11)) {
-          v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(hit));
+          v=send_message(obj,objE,MSG_HITBY,NVALUE(oW->x),NVALUE(oW->y),NVALUE(hit));
+          if(v.t>TY_MAXTYPE) {
+            warp:
+            oW=objects[objW=v_object(v)];
+            dir=oW->dir;
+            hit=0x10000000;
+            goto restart;
+          }
           if(v.t) Throw("Type mismatch in HIT/HITBY");
-          hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1);
+          hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1L);
         }
         if(hit&0x108) goto fail;
         // Hardness/sharpness
@@ -934,12 +943,12 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
           // HIT/HITBY messages
           v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit));
           if(v.t) Throw("Type mismatch in HIT/HITBY");
-          hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1);
+          hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1L);
           if(hit&8) goto otherside;
           if(!(hit&0x11)) {
-            v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(hit));
+            v=send_message(obj,objE,MSG_HITBY,NVALUE(oW->x),NVALUE(oW->y),NVALUE(hit));
             if(v.t) Throw("Type mismatch in HIT/HITBY");
-            hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1);
+            hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1L);
           }
           if(hit&0x108) goto otherside;
           // Hardness/sharpness
@@ -972,7 +981,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
           hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1);
           if(hit&8) goto fail;
           if(!(hit&0x11)) {
-            v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(hit));
+            v=send_message(obj,objE,MSG_HITBY,NVALUE(oW->x),NVALUE(oW->y),NVALUE(hit));
             if(v.t) Throw("Type mismatch in HIT/HITBY");
             hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1);
           }
@@ -994,7 +1003,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
     }
   }
   fail: if(hit&0x1000) goto success; o->inertia=0; return 0;
-  success: if(!(hit&0x4000)) o->oflags|=OF_MOVED; return 1;
+  success: if(!(hit&0x4000)) o->oflags|=OF_MOVED; if(hit&0x10000000) o->dir=dir; return 1;
 }
 
 static int jump_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {

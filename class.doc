@@ -1889,7 +1889,10 @@ bit27 *
   be set, and bit7 must be clear.
 
 bit28 *
-  Reserved for future.
+  This bit is set by the game engine if a warp has occurred. See the below
+  description of warping. You can also set this bit by yourself, and it
+  persists across restarts. If this bit is set, the moving object's
+  direction is updated after the movement if it is successful.
 
 bit29 *
   Reserved for future.
@@ -1899,6 +1902,11 @@ bit30
 
 bit31
   Available for your own use.
+
+The return value of HITBY can also be an object instead of a number. In
+this case, a warp occurs. The movement is restarted, using the specified
+object as the origin of the movement, and that object's direction as the
+direction of movement.
 
 
 === Compatibility ===
