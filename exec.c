@@ -1436,6 +1436,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case 0x1B00 ... 0x1B7F: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s<=(code[ptr-1]&0x7F)?1:0)); break; // ,le
     case 0x1B80 ... 0x1BFF: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s>=(code[ptr-1]&0x7F)?1:0)); break; // ,ge
     case 0x1E00 ... 0x1EFF: StackReq(0,1); Push(NVALUE(code[ptr-1]&0xFF)); return; // ret
+    case 0x1F00 ... 0x1F1F: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u&(1L<<(code[ptr-1]&31))?1:0)); break; // tbit
+    case 0x1F20 ... 0x1F3F: StackReq(2,1); t2=Pop(); t1=Pop(); Numeric(t2); i=code[ptr-1]&31; if(v_bool(t1)) t2.u|=1L<<i; else t2.u&=~(1L<<i); Push(t2); break; // sbit
     case 0x2000 ... 0x27FF: StackReq(0,1); Push(o->uservars[code[ptr-1]&0x7FF]); break;
     case 0x2800 ... 0x28FF: StackReq(0,1); Push(globals[code[ptr-1]&0x7FF]); break;
     case 0x3000 ... 0x37FF: NoIgnore(); StackReq(1,0); o->uservars[code[ptr-1]&0x7FF]=Pop(); break;

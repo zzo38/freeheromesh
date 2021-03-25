@@ -44,6 +44,7 @@ Name sigils are:
   #  User message
   !  User sound
   &  User function
+  ^  User flag
 
 Comments are also allowed; these start with a semicolon (outside of a
 string literal) and end at the next line break.
@@ -204,6 +205,26 @@ These are the global definitions in the class definition file.
   can optionally specify a second number, which is the background colour
   for the inventory; if not specified, uses the same colour for both.
 
+(CollisionLayers <userflags...>)
+  Define user flags as CollisionLayers bits; the first defined flag is
+  bit0. Up to 8 flags can be defined in this way.
+
+(Misc4 <userflags...>)
+  Define user flags as Misc4 bits; the first defined flag is bit0. Up to
+  32 flags can be defined in this way.
+
+(Misc5 <userflags...>)
+  Define user flags as Misc5 bits; the first defined flag is bit0. Up to
+  32 flags can be defined in this way.
+
+(Misc6 <userflags...>)
+  Define user flags as Misc6 bits; the first defined flag is bit0. Up to
+  32 flags can be defined in this way.
+
+(Misc7 <userflags...>)
+  Define user flags as Misc7 bits; the first defined flag is bit0. Up to
+  32 flags can be defined in this way.
+
 (Synchronize <slot> <length> <speed>)
   Define an animation slot for synchronized animation. The slot number can
   be 0 to 7, the length is the number of images in the sequence, and the
@@ -245,6 +266,11 @@ the initial value for variables of objects of this class.
 
 Outside of code blocks, named constants are not normally interchangeable
 with the numbers having the same value.
+
+<userflag>
+  Set a user flag bit in the definition of Misc4, Misc5, Misc6, Misc7, or
+  CollisionLayers of this class. You must previously define this user flag
+  as a global definition.
 
 Abstract
   (Not implemented yet.)
@@ -697,6 +723,12 @@ on the same turn as IgnoreKey. Exceptions are Distance and KeyCleared.
   objects other than this one. You can give it any name with a percentage
   sign at first. User variables are initialized to zero, and need not be
   declared anywhere.
+
+^xyz : bool [c]
+  A user-defined flag, which is one bit in Misc4, Misc5, Misc6, Misc7, or
+  CollisionLayers. If it is CollisionLayers, then it is read-only; other
+  flags are read/write. User defined flags must be defined first (globally)
+  before they can be used.
 
 Arrivals : int32
   Only the low 25-bits are used. Each bit which is set indicates that it

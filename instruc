@@ -275,4 +275,5 @@ ArrayCell
 *Int16
 *Int32
 *Dispatch
+*UserFlag
 

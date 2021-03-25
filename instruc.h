@@ -384,6 +384,7 @@
 #define OP_INT16 32965
 #define OP_INT32 32966
 #define OP_DISPATCH 32967
+#define OP_USERFLAG 32968
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486937},

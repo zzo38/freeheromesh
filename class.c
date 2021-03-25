@@ -60,6 +60,7 @@ typedef struct {
 
 /*
   Global hash:
+    1000-10FF = User flags
     2800-2FFF = Variables
     8000-BFFF = Functions
     C000-FFFF = Macros
@@ -116,7 +117,7 @@ static Uint16*labelptr;
 #define ParseError(a,...) fatal("On line %d: " a,linenum,##__VA_ARGS__)
 
 static const unsigned char chkind[256]={
-  ['$']=1, ['!']=1, ['\'']=1, ['#']=1, ['@']=1, ['%']=1, ['&']=1, [':']=1,
+  ['$']=1, ['!']=1, ['\'']=1, ['#']=1, ['@']=1, ['%']=1, ['&']=1, [':']=1, ['^']=1,
   ['0'...'9']=2, ['-']=2, ['+']=2,
   ['A'...'Z']=3, ['a'...'z']=3, ['_']=3, ['?']=3, ['.']=3, ['*']=3, ['/']=3,
 };
@@ -554,6 +555,10 @@ static void nxttok1(void) {
       }
       ParseError("Invalid Hero Mesh key name: %s\n",tokenstr);
       break;
+    case '^':
+      tokent=TF_NAME|TF_ABNORMAL|fl;
+      tokenv=OP_USERFLAG;
+      break;
   }
 }
 
@@ -929,6 +934,16 @@ static Uint32 parse_array(void) {
   return z|((y-1)<<16)|((x-1)<<26);
 }
 
+static void define_user_flags(Uint16 ca,Uint16 cb) {
+  for(;;) {
+    nxttok();
+    if(tokent==TF_CLOSE) break;
+    if(!Tokenf(TF_NAME) || tokenv!=OP_USERFLAG) ParseError("User flag or close parenthesis expected\n");
+    if(ca>cb) ParseError("Too many user flags of this kind\n");
+    if(look_hash(glohash,HASH_SIZE,0x1000,0x10FF,ca++,"user flags")) ParseError("Duplicate definition of ^%s\n",tokenstr);
+  }
+}
+
 static void begin_label_stack(void) {
   labelstack=0;
   labelptr=malloc(0x8000*sizeof(Uint16));
@@ -1118,6 +1133,35 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
           AddInst(OP_IF);
           FlowPush(OP_WHILE);
           peep=++ptr;
+          break;
+        case OP_USERFLAG:
+          // Opcodes 0x1F00-0x1F1F read a bit; opcodes 0x1F20-0x1F3F set/clear a bit
+          x=look_hash(glohash,HASH_SIZE,0x1000,0x10FF,0,"user flags");
+          if(!x) ParseError("User flag ^%s not defined\n",tokenstr);
+          if(x<0x1020) y=OP_MISC4;
+          else if(x<0x1040) y=OP_MISC5;
+          else if(x<0x1060) y=OP_MISC6;
+          else if(x<0x1080) y=OP_MISC7;
+          else y=OP_COLLISIONLAYERS;
+          if(Tokenf(TF_EQUAL)) {
+            if(x>=0x1080) ParseError("Flag ^%s is read-only\n",tokenstr);
+            if(Tokenf(TF_COMMA)) {
+              AddInst(OP_OVER);
+              AddInst(y+0x0800);
+              AddInst(0x1F20|(x&0x1F));
+              AddInst(y+0x1800);
+            } else {
+              AddInst(y);
+              AddInst(0x1F20|(x&0x1F));
+              AddInst(y+0x1000);
+            }
+          } else if(Tokenf(TF_COMMA)) {
+            AddInst(y+0x0800);
+            AddInst(0x1F00|(x&0x1F));
+          } else {
+            AddInst(y);
+            AddInst(0x1F00|(x&0x1F));
+          }
           break;
         default:
           if(Tokenf(TF_ABNORMAL)) ParseError("Invalid instruction token\n");
@@ -1423,6 +1467,16 @@ static void class_def_defaultimage(int cla) {
   }
 }
 
+static void class_user_flag(Class*cl) {
+  int x=look_hash(glohash,HASH_SIZE,0x1000,0x10FF,0,"user flags");
+  if(!x) ParseError("User flag ^%s not defined\n",tokenstr);
+  if(x<0x1020) cl->misc4|=1L<<(x&0x1F);
+  else if(x<0x1040) cl->misc5|=1L<<(x&0x1F);
+  else if(x<0x1060) cl->misc6|=1L<<(x&0x1F);
+  else if(x<0x1080) cl->misc7|=1L<<(x&0x1F);
+  else cl->collisionLayers|=1<<(x&0x1F);
+}
+
 static void class_definition(int cla,sqlite3_stmt*vst) {
   Hash*hash=calloc(LOCAL_HASH_SIZE,sizeof(Hash));
   Class*cl=classes[cla];
@@ -1569,6 +1623,7 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
         case OP_STEALTHY: cl->oflags|=OF_STEALTHY; break;
         case OP_USERSTATE: cl->oflags|=OF_USERSTATE; break;
         case OP_SHOVABLE: cl->shovable=0x55; break;
+        case OP_USERFLAG: class_user_flag(cl); break;
         default: ParseError("Invalid directly inside of a class definition\n");
       }
     } else if(Tokenf(TF_CLOSE)) {
@@ -1757,6 +1812,11 @@ void load_classes(void) {
           nxttok();
           if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
           break;
+        case OP_MISC4: define_user_flags(0x1000,0x101F); break;
+        case OP_MISC5: define_user_flags(0x1020,0x103F); break;
+        case OP_MISC6: define_user_flags(0x1040,0x105F); break;
+        case OP_MISC7: define_user_flags(0x1060,0x107F); break;
+        case OP_COLLISIONLAYERS: define_user_flags(0x1C80,0x1C87); break;
         default:
           ParseError("Invalid top level definition: %s\n",tokenstr);
       }
