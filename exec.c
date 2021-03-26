@@ -365,6 +365,23 @@ static Sint32 volume_at(Uint32 x,Uint32 y) {
   return r;
 }
 
+static Uint32 obj_seek(Uint32 aa,Uint32 bb) {
+  Object*a;
+  Object*b;
+  if(aa==VOIDLINK || bb==VOIDLINK) Throw("Cannot seek to zero object");
+  a=objects[aa]; b=objects[bb];
+  if(a->x==b->x) {
+    if(a->y==b->y) return 8;
+    return a->y<b->y?6:2;
+  } else if(a->x<b->x) {
+    if(a->y==b->y) return 0;
+    return a->y<b->y?7:1;
+  } else {
+    if(a->y==b->y) return 4;
+    return a->y<b->y?5:3;
+  }
+}
+
 static Uint32 obj_above(Uint32 i) {
   Object*o;
   if(i==VOIDLINK) return VOIDLINK;
@@ -1386,6 +1403,19 @@ static Uint32 v_chain(Value v,Uint16 c) {
   return v.u;
 }
 
+static inline Uint32 manhattan(Uint32 a,Uint32 b) {
+  if(a==VOIDLINK || b==VOIDLINK) return 0;
+  return abs(objects[a]->x-objects[b]->x)+abs(objects[a]->y-objects[b]->y);
+}
+
+static inline Uint32 chebyshev(Uint32 a,Uint32 b) {
+  Uint32 i,j;
+  if(a==VOIDLINK || b==VOIDLINK) return 0;
+  i=abs(objects[a]->x-objects[b]->x);
+  j=abs(objects[a]->y-objects[b]->y);
+  return i>j?i:j;
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -1482,6 +1512,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_BXOR: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u^t2.u)); break;
     case OP_CALLSUB: execute_program(code,code[ptr++],obj); break;
     case OP_CHAIN: StackReq(1,1); t1=Pop(); i=v_chain(t1,o->class); if(i==VOIDLINK) { Push(NVALUE(1)); } else { o=objects[obj=i]; Push(NVALUE(0)); } break;
+    case OP_CHEBYSHEV: StackReq(1,1); t1=Pop(); i=chebyshev(obj,v_object(t1)); Push(NVALUE(i)); break;
+    case OP_CHEBYSHEV_C: StackReq(2,1); t2=Pop(); t1=Pop(); i=chebyshev(v_object(t1),v_object(t2)); Push(NVALUE(i)); break;
     case OP_CLASS: StackReq(0,1); Push(CVALUE(o->class)); break;
     case OP_CLASS_C: StackReq(1,1); Push(GetVariableOf(class,CVALUE)); break;
     case OP_CLIMB: StackReq(0,1); Push(NVALUE(o->climb)); break;
@@ -1611,6 +1643,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_LT: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t2,t1)?1:0)); break;
     case OP_LT_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t2,t1)?1:0)); break;
     case OP_LXOR: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1)?!v_bool(t2):v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_MANHATTAN: StackReq(1,1); t1=Pop(); i=manhattan(obj,v_object(t1)); Push(NVALUE(i)); break;
+    case OP_MANHATTAN_C: StackReq(2,1); t2=Pop(); t1=Pop(); i=manhattan(v_object(t1),v_object(t2)); Push(NVALUE(i)); break;
     case OP_MARK: StackReq(0,1); Push(UVALUE(0,TY_MARK)); break;
     case OP_MAXINVENTORY: StackReq(1,0); t1=Pop(); Numeric(t1); if(ninventory>t1.u) Throw("Inventory overflow"); break;
     case OP_MOD: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u%t2.u)); break;
@@ -1667,11 +1701,15 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_QO: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t>TY_MAXTYPE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_QOZ: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t>TY_MAXTYPE || (t1.t==TY_NUMBER && !t1.u)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_QS: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t==TY_STRING || t1.t==TY_LEVELSTRING) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_REL: StackReq(1,1); t1=Pop(); Numeric(t1); i=resolve_dir(obj,t1.u); Push(NVALUE(i)); break;
+    case OP_REL_C: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); i=v_object(t1); i=(i==VOIDLINK?t2.u:resolve_dir(i,t2.u)); Push(NVALUE(i)); break;
     case OP_RET: return;
     case OP_ROT: StackReq(3,3); t3=Pop(); t2=Pop(); t1=Pop(); Push(t2); Push(t3); Push(t1); break;
     case OP_ROTBACK: StackReq(3,3); t3=Pop(); t2=Pop(); t1=Pop(); Push(t3); Push(t1); Push(t2); break;
     case OP_RSH: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t2.u&~31?0:t1.u>>t2.u)); break;
     case OP_RSH_C: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t2.u&~31?(t1.s<0?-1:0):t1.s>>t2.u)); break;
+    case OP_SEEK: StackReq(1,1); t1=Pop(); i=obj_seek(obj,v_object(t1)); Push(NVALUE(i)); break;
+    case OP_SEEK_C: StackReq(2,1); t2=Pop(); t1=Pop(); i=obj_seek(v_object(t1),v_object(t2)); Push(NVALUE(i)); break;
     case OP_SELF: StackReq(0,1); Push(OVALUE(obj)); break;
     case OP_SEND: StackReq(3,1); t4=Pop(); t3=Pop(); t2=Pop(); Push(v_send_self(obj,t2,t3,t4,NVALUE(0))); break;
     case OP_SEND_C: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_send_message(obj,t1,t2,t3,t4,NVALUE(0))); break;

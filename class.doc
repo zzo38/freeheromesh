@@ -1112,6 +1112,14 @@ chain  ( any -- bool )
   doesn't exist, or anything other than an object, then it does nothing
   and the result is true.
 
+Chebyshev  ( obj -- number )
+  Calculate the Chebyshev distance between this object and the specified
+  object. If the specified object is zero, then the result is also zero.
+
+,Chebyshev  ( obj1 obj2 -- number )
+  Calculate the Chebyshev distance between thie two specified objects. If
+  either specified object is zero, then the result is also zero.
+
 Create  ( class x y image dir -- obj ) **
   Creates a new object at the specified location, and returns it. The
   result is zero if the class is zero, the coordinates are out of range,
@@ -1294,6 +1302,14 @@ m?  ( any -- bool )
   True if the value is a message, or false if it is any other type. Error
   if it is a sound.
 
+Manhattan  ( obj -- number )
+  Calculate the Manhattan distance between this object and the specified
+  object. If the specified object is zero, then the result is also zero.
+
+,Manhattan  ( obj1 obj2 -- number )
+  Calculate the Manhattan distance between thie two specified objects. If
+  either specified object is zero, then the result is also zero.
+
 MaxInventory  ( number -- )
   Results in an error and loss of game if the number of different
   inventory items exceeds the given number, otherwise no effect.
@@ -1447,6 +1463,14 @@ QueueTurn  ( key -- ) **
   is no popup quiz. (Not implemented yet. Details described here might be
   changed when it is implemented.)
 
+Rel  ( dir -- dir )
+  Resolves a relative direction to an absolute direction.
+
+,Rel  ( obj dir -- dir )
+  Resolves a relative direction to an absolute direction, using the
+  direction of the specified object as the base. If zero is specified
+  instead of a valid object, thent the result is the same as the input.
+
 ret  ( -- )
   Exit the current subroutine. If this is a message block, it must either
   leave the stack as it is, or leave it but with one extra value pushed
@@ -1471,6 +1495,15 @@ s?  ( any -- bool )
   True if the value is a string (which may be either a string in the class
   codes or a string in the level), or false if it is any other type. Error
   if it is a sound.
+
+Seek  ( obj -- dir )
+  Returns the direction from this object to the specified object. If that
+  object is in the same place as this one, returns F. If zero is specified
+  then it is an error.
+
+,Seek  ( obj1 obj2 -- dir )
+  Returns the direction from obj1 to obj2. If the two objects are in the
+  same place, returns F. If either object is zero, then it is an error.
 
 Self  ( -- obj )
   The reference to the current object.
