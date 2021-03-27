@@ -1033,7 +1033,7 @@ static inline Uint8 pick_character(void) {
   SDL_Event ev;
   Uint8 buf[17];
   int i,j;
-  Uint8 p=0;
+  static Uint8 p=0;
   redraw:
   r.x=r.y=4;
   r.w=r.h=0x9C;
@@ -1309,6 +1309,12 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
     case 'lc': // Set level code
       level_code=number;
       level_changed=1;
+      return 0;
+    case 'lt': // Set level title
+      if(argc<2 || !sqlite3_column_text(args,1)) break;
+      free(level_title);
+      level_title=strdup(sqlite3_column_text(args,1));
+      if(!level_title) fatal("Allocation failed\n");
       return 0;
     case 'lv': // Set level version
       level_version=number;

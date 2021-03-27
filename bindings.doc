@@ -141,6 +141,10 @@ to ask the user for the value to use.
   the class codes of your puzzle set for whatever purpose you wish; the
   game engine does not use this value itself.
 
+'lt' <blob>
+  Set the level title. The value must be unescaped; you can use the
+  HEROMESH_UNESCAPE function to do this.
+
 'lv' <number>
   Set the level version number. This number is used to detect the validity
   of stored solutions. Normally, you do not need to set this; it will do
