@@ -505,6 +505,7 @@ static int vt1_classes_column(sqlite3_vtab_cursor*pcur,sqlite3_context*cxt,int n
       sqlite3_result_int(cxt,classes[cur->rowid]->cflags&CF_TRACEOUT?1:0);
       break;
     case 8: // GROUP
+#if 0
       if(sqlite3_vtab_nochange(cxt)) return SQLITE_OK;
       if(classes[cur->rowid]->cflags&CF_GROUP) {
         char*s=sqlite3_mprintf(" ");
@@ -517,6 +518,7 @@ static int vt1_classes_column(sqlite3_vtab_cursor*pcur,sqlite3_context*cxt,int n
       } else {
         sqlite3_result_null(cxt);
       }
+#endif
       break;
     case 9: // PLAYER
       sqlite3_result_int(cxt,classes[cur->rowid]->cflags&CF_PLAYER?1:0);
