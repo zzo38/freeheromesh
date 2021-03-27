@@ -136,6 +136,54 @@ void draw_text(int x,int y,const unsigned char*t,int bg,int fg) {
   }
 }
 
+int draw_text_line(int x,int y,unsigned char*t,int cur,Uint8**cp) {
+  // To be called only when screen is locked!
+  int len=strlen(t);
+  const unsigned char*s=t;
+  Uint8*pix=screen->pixels;
+  Uint8*p;
+  Uint16 pitch=screen->pitch;
+  int bg,fg,xx,yy;
+  char isimg=0;
+  char e=0;
+  const unsigned char*f;
+  if(!*t) return 0;
+  len=(screen->w-x)>>3;
+  if(len<=0 || y+8>screen->h) return len<1?1:len;
+  pix+=y*pitch+x;
+  for(;;) {
+    if(!cur) *cp=t;
+    if(*t==10) {
+      f=fontdata+(17<<3);
+      bg=0xF0,fg=0xF1;
+      e=1;
+    } else if(!*t) {
+      f=fontdata+(254<<3);
+      bg=0xF0,fg=0xF1;
+      e=1;
+    } else if(*t<31) {
+      f=fontdata+(" 01234567?NLC#IBQ???????????????"[*t]<<3);
+      if(*t==14) isimg=1;
+      bg=0xF3,fg=0xF0;
+    } else {
+      if(*t==31 && t[1]) t++;
+      f=fontdata+(*t<<3);
+      bg=0xF0,fg=isimg?0xF2:0xF7;
+    }
+    if(!cur--) bg^=15,fg^=15;
+    p=pix;
+    for(yy=0;yy<8;yy++) {
+      for(xx=0;xx<8;xx++) p[xx]=(*f<<xx)&128?fg:bg;
+      p+=pitch;
+      ++f;
+    }
+    if(*t=='\\') isimg=0;
+    if(!--len || e) return t-s;
+    t++;
+    pix+=8;
+  }
+}
+
 void draw_key(int x,int y,int k,int bg,int fg) {
   // To be called only when screen is locked!
   Uint8*p=screen->pixels;

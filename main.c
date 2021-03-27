@@ -339,7 +339,7 @@ const char*load_level(int lvl) {
     if(i>=max_objects) goto bad3;
     q=memchr(p,0,end-p);
     if(!q) goto bad1;
-    levelstrings=realloc(levelstrings,(i+1)*sizeof(char*));
+    levelstrings=realloc(levelstrings,(i+1)*sizeof(unsigned char*));
     if(!levelstrings) fatal("Allocation failed\n");
     levelstrings[i]=strdup(p);
     if(!levelstrings[i]) fatal("Allocation failed\n");

@@ -109,6 +109,9 @@ to ask the user for the value to use.
 '^S'
   Save level.
 
+'^T'
+  Edit the level title.
+
 '^a' <location>
   Add an object with the current MRU values to that location, if there
   is not already another object of the same class there.

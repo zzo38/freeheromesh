@@ -34,7 +34,7 @@ Uint32 move_number;
 unsigned char*quiz_text;
 Inventory*inventory;
 Uint32 ninventory;
-char**levelstrings;
+unsigned char**levelstrings;
 Uint16 nlevelstrings;
 Value*array_data;
 Uint16 ndeadanim;
@@ -74,10 +74,10 @@ static Value destroy(Uint32 from,Uint32 to,Uint32 why);
 static const Sint8 x_delta[8]={1,1,0,-1,-1,-1,0,1};
 static const Sint8 y_delta[8]={0,-1,-1,-1,0,1,1,1};
 
-const char*value_string_ptr(Value v) {
+const unsigned char*value_string_ptr(Value v) {
   switch(v.t) {
     case TY_STRING: return stringpool[v.u];
-    case TY_LEVELSTRING: return v.u<nlevelstrings?levelstrings[v.u]:"<Invalid level string>";
+    case TY_LEVELSTRING: return v.u<nlevelstrings?levelstrings[v.u]:(unsigned char*)"<Invalid level string>";
     default: fatal("Internal confusion: Trying to get string pointer for a non-string\n");
   }
 }

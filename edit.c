@@ -973,7 +973,7 @@ static void import_level(const char*cmd) {
         if(nlevelstrings>0x2000) {
           screen_message("Too many level strings");
         } else {
-          levelstrings=realloc(levelstrings,(nlevelstrings+1)*sizeof(char*));
+          levelstrings=realloc(levelstrings,(nlevelstrings+1)*sizeof(unsigned char*));
           if(!levelstrings) fatal("Allocation failed\n");
           levelstrings[nlevelstrings++]=import_string(p+1);
         }
@@ -1018,6 +1018,252 @@ static void new_level(void) {
   level_ord=level_nindex+1;
 }
 
+static int cursor_end(const Uint8*s) {
+  int i=0;
+  for(;;) {
+    if(*s==10 || !*s) return i;
+    if(*s==31 && s[1]) s++;
+    i++;
+    s++;
+  }
+}
+
+static inline Uint8 pick_character(void) {
+  SDL_Rect r;
+  SDL_Event ev;
+  Uint8 buf[17];
+  int i,j;
+  Uint8 p=0;
+  redraw:
+  r.x=r.y=4;
+  r.w=r.h=0x9C;
+  SDL_FillRect(screen,&r,0xF8);
+  SDL_LockSurface(screen);
+  draw_text(24,8,"0123456789ABCDEF",0xF8,0xF3);
+  buf[16]=0;
+  for(i=0;i<16;i++) {
+    snprintf(buf,2,"%X",i);
+    draw_text(8,(i+3)<<3,buf,0xF8,0xF3);
+    for(j=0;j<16;j++) buf[j]=(i<<4)|j?:255;
+    draw_text(24,(i+3)<<3,buf,0xF8,0xFF);
+  }
+  buf[0]=p?:255;
+  buf[1]=0;
+  i=p>>4;
+  j=p&15;
+  draw_text((j+3)<<3,(i+3)<<3,buf,0xF2,0xFE);
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) {
+    switch(ev.type) {
+      case SDL_QUIT:
+        SDL_PushEvent(&ev);
+        return;
+      case SDL_KEYDOWN:
+        switch(ev.key.keysym.sym) {
+          case SDLK_RETURN: case SDLK_SPACE: case SDLK_KP_ENTER: return p?:255;
+          case SDLK_KP2: if(ev.key.keysym.mod&KMOD_NUM) goto norm; //fallthrough
+          case SDLK_DOWN: p+=16; break;
+          case SDLK_KP4: if(ev.key.keysym.mod&KMOD_NUM) goto norm; //fallthrough
+          case SDLK_LEFT: p--; break;
+          case SDLK_KP6: if(ev.key.keysym.mod&KMOD_NUM) goto norm; //fallthrough
+          case SDLK_RIGHT: p++; break;
+          case SDLK_KP8: if(ev.key.keysym.mod&KMOD_NUM) goto norm; //fallthrough
+          case SDLK_UP: p-=16; break;
+          default: norm:
+            i=ev.key.keysym.unicode;
+            if(i>='0' && i<='9') p=(p<<4)|(i-'0');
+            if(i>='A' && i<='F') p=(p<<4)|(i+10-'A');
+            if(i>='a' && i<='f') p=(p<<4)|(i+10-'a');
+            if(i==13 || i==10) return p?:255;
+        }
+        goto redraw;
+      case SDL_VIDEOEXPOSE:
+        goto redraw;
+    }
+  }
+}
+
+static void edit_string(unsigned char**ps) {
+  SDL_Rect rect;
+  SDL_Event ev;
+  char buf[19];
+  Uint8*s=malloc(0x3000);
+  Uint8*cp;
+  Uint16 li[64];
+  int c,e,i,j,n,r,sz;
+  char o=0;
+  char d=0;
+  if(!s) fatal("Allocation failed\n");
+  if(*ps) strncpy(s,*ps,0x2FFD); else *s=0;
+  s[0x2FFD]=0;
+  *li=0;
+  c=r=0;
+  redraw:
+  e=0;
+  redraw2:
+  set_cursor(XC_xterm);
+  rect.x=rect.y=0;
+  rect.w=screen->w;
+  rect.h=screen->h;
+  SDL_FillRect(screen,&rect,0xF0);
+  rect.h=24;
+  SDL_FillRect(screen,&rect,0xF1);
+  SDL_LockSurface(screen);
+  if(ps==&level_title) {
+    draw_text(0,16," Title: ",0xF9,0xFF);
+  } else {
+    snprintf(buf,19," String %d: ",(int)(ps-levelstrings));
+    draw_text(0,16,buf,0xF9,0xFF);
+  }
+  draw_text(160,16,o?"OVR":"INS",0xF1,0xFE);
+  draw_text(0,0,"<Esc> Cancel  <F1> Preview  <F2> Save  <\x18\x19\x1A\x1B> MoveCursor  <^P> InsertChar  <^Y> DelLine",0xF1,0xFB);
+  draw_text(0,8,"ALT+  <0-7> Color  <B> Bar  <C> Center  <I> Image  <L> Left  <Q> Quiz",0xF1,0xFB);
+  draw_text(0,24,"\x10",0xF0,0xF1);
+  cp=0;
+  for(i=j=n=0;s[i] && n<63;) {
+    draw_text(0,(n+3)<<3,"\x10",0xF0,0xF1);
+    i+=draw_text_line(8,(n+3)<<3,s+i,r==n?c:-1,&cp);
+    if(j=(s[i]==10)) i++;
+    sz=li[++n]=i;
+  }
+  if(!i) {
+    sz=li[n=1]=r=c=0;
+    cp=s;
+    draw_text(8,24,"\xFE",0xFF,0xFE);
+  } else if(j && n<63) {
+    draw_text(0,(n+3)<<3,"\x10",0xF0,0xF1);
+    draw_text(8,(n+3)<<3,"\xFE",r==n?0xFF:0xF0,r==n?0xFE:0xF1);
+    if(r==n) cp=s+i,c=0;
+    li[++n]=i;
+  }
+  if(r && r>=n) r--,e=0;
+  if(n<63) li[n+1]=0xFFFF;
+  SDL_UnlockSurface(screen);
+  if(!cp) {
+    if(e) fatal("Confusion in edit_string\n");
+    c=cursor_end(s+li[r]);
+    e=1;
+    goto redraw2;
+  }
+  if(d) {
+    d=0;
+    goto del;
+  }
+  snprintf(buf,19,"%d,%d / %d [%d]",r+1,c,n,sz);
+  draw_text(200,16,buf,0xF1,0xFA);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) {
+    switch(ev.type) {
+      case SDL_QUIT:
+        SDL_PushEvent(&ev);
+        return;
+      case SDL_KEYDOWN:
+        switch(ev.key.keysym.sym) {
+          case SDLK_ESCAPE: return;
+          case SDLK_F1: modal_draw_popup(s); break;
+          case SDLK_F2:
+            free(*ps);
+            *ps=s;
+            return;
+          case SDLK_KP0: if(ev.key.keysym.mod&KMOD_NUM) goto norm; //fallthrough
+          case SDLK_INSERT: ins: o^=1; break;
+          case SDLK_KP1: if(ev.key.keysym.mod&KMOD_NUM) goto norm; //fallthrough
+          case SDLK_END: end: c=cursor_end(s+li[r]); break;
+          case SDLK_KP2: if(ev.key.keysym.mod&KMOD_NUM) goto norm; //fallthrough
+          case SDLK_DOWN: down: if(r<63 && li[r+1]!=0xFFFF) ++r; break;
+          case SDLK_KP4: if(ev.key.keysym.mod&KMOD_NUM) goto norm; //fallthrough
+          case SDLK_LEFT: left: if(c) --c; break;
+          case SDLK_KP6: if(ev.key.keysym.mod&KMOD_NUM) goto norm; //fallthrough
+          case SDLK_RIGHT: right: ++c; break;
+          case SDLK_KP7: if(ev.key.keysym.mod&KMOD_NUM) goto norm; //fallthrough
+          case SDLK_HOME: home: c=0; break;
+          case SDLK_KP8: if(ev.key.keysym.mod&KMOD_NUM) goto norm; //fallthrough
+          case SDLK_UP: up: if(r) --r; break;
+          case SDLK_KP_PERIOD: if(ev.key.keysym.mod&KMOD_NUM) goto norm; //fallthrough
+          case SDLK_DELETE: del:
+            if(!*cp) break;
+            i=(*cp==31?2:1);
+            memmove(cp,cp+i,(s+sz)-(cp+i-1));
+            break;
+          case SDLK_BACKSPACE: back:
+            if(cp==s || !c) break;
+            c--;
+            d=1;
+            break;
+          default: norm:
+            i=ev.key.keysym.unicode;
+            if(ev.key.keysym.mod&(KMOD_ALT|KMOD_META)) {
+              switch(ev.key.keysym.sym) {
+                case SDLK_0: i=1; goto addch;
+                case SDLK_1: i=2; goto addch;
+                case SDLK_2: i=3; goto addch;
+                case SDLK_3: i=4; goto addch;
+                case SDLK_4: i=5; goto addch;
+                case SDLK_5: i=6; goto addch;
+                case SDLK_6: i=7; goto addch;
+                case SDLK_7: i=8; goto addch;
+                case SDLK_b: i=15; goto addch;
+                case SDLK_c: i=12; goto addch;
+                case SDLK_i: i=14; goto addch;
+                case SDLK_l: i=11; goto addch;
+                case SDLK_n: i=10; goto addch;
+                case SDLK_q: i=16; goto addch;
+              }
+            }
+            if(i<32) {
+              switch(i+64) {
+                case 'A': goto home;
+                case 'D': goto right;
+                case 'E': goto up;
+                case 'F': goto end;
+                case 'G': goto del;
+                case 'H': goto back;
+                case 'M': i=10; goto addch;
+                case 'P': goto specialchar;
+                case 'S': goto left;
+                case 'W': r=c=0; break;
+                case 'X': goto down;
+                case 'V': goto ins;
+                case 'Y': goto erase;
+                case 'Z': r=n?n-1:0; c=0; break;
+              }
+            } else if(i<127) {
+              addch:
+              if(i==10 && n>62) break;
+              if(sz>=0x2FFC) break;
+              if(o && *cp==31) memmove(cp,cp+1,(s+sz)-cp);
+              if(!*cp) cp[1]=0;
+              if(!o) memmove(cp+1,cp,(s+sz+1)-cp);
+              *cp=i;
+              if(i==10) r++,c=0; else c++;
+            }
+            break;
+        }
+        goto redraw;
+      case SDL_VIDEOEXPOSE:
+        goto redraw;
+    }
+  }
+  erase:
+  c=0;
+  if(li[r+1]==0xFFFF) s[li[r]]=0; else memmove(s+li[r],s+li[r+1],sz+1-li[r+1]);
+  if(r && r==n-1) --r;
+  goto redraw;
+  specialchar:
+  if(sz>=0x2FFA) goto redraw;
+  i=pick_character();
+  if(i>=32) goto addch;
+  if(o && *cp==31) memmove(cp,cp+1,(s+sz)-cp);
+  if(!*cp) cp[1]=0;
+  memmove(cp+1,cp,(s+sz+1)-cp);
+  if(!o) memmove(cp+1,cp,(s+sz+1)-cp);
+  *cp=31;
+  cp[1]=i;
+  c++;
+  goto redraw;
+}
+
 static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
   int x,y;
   switch(cmd) {
@@ -1046,6 +1292,9 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
     case '^S': // Save level
       save_level();
       return 1;
+    case '^T': // Level title
+      edit_string(&level_title);
+      return 0;
     case 'ex': // Export level
       if(argc<2) return prev;
       export_level(sqlite3_column_text(args,1));

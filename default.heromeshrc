@@ -145,6 +145,7 @@
 ?.editKey.ctrl.P: ^P
 ?.editKey.ctrl.Q: ^Q
 ?.editKey.ctrl.S: ^S
+?.editKey.ctrl.T: ^T
 ?.editKey.ctrl.X: select 're',pfwidth(),pfheight();
 ?.editKey.space: ^c
 ?.editKey.return: ^e

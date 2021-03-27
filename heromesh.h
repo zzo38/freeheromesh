@@ -104,6 +104,7 @@ void draw_cell(int x,int y);
 
 // Use only when screen is locked
 void draw_text(int x,int y,const unsigned char*t,int bg,int fg);
+int draw_text_line(int x,int y,unsigned char*t,int cur,Uint8**cp);
 void draw_key(int x,int y,int k,int bg,int fg);
 
 const char*screen_prompt(const char*txt);
@@ -257,14 +258,14 @@ extern Uint32 move_number;
 extern unsigned char*quiz_text;
 extern Inventory*inventory;
 extern Uint32 ninventory;
-extern char**levelstrings;
+extern unsigned char**levelstrings;
 extern Uint16 nlevelstrings;
 extern Value*array_data;
 extern Uint16 ndeadanim;
 extern DeadAnimation*deadanim;
 extern Uint8 no_dead_anim;
 
-const char*value_string_ptr(Value v);
+const unsigned char*value_string_ptr(Value v);
 void pfunlink(Uint32 n);
 void pflink(Uint32 n);
 Uint32 objalloc(Uint16 c);
