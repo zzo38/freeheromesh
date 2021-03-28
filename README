@@ -1,6 +1,7 @@
 Free Hero Mesh is a puzzle game engine for grid-based puzzle games with
 levels, strictly based on changing game state due to the sequence of
-inputs, e.g. Sokoban and Hero Hearts.
+inputs, e.g. Sokoban and Hero Hearts. You can define your own classes of
+objects using the Free Hero Mesh programming language.
 
 It is also designed to be compatible with EKS Hero Mesh puzzle sets, which
 must be converted to Free Hero Mesh using the provided "mbtofhm" program.
@@ -27,8 +28,8 @@ There is a shell script for compiling it available, though.
 Requirements:
 
 * Linux (it should hopefully work on other POSIX systems, although this is
-untested; it might use some Linux-specific functions, and I may be willing
-to accept contributions if this can be fixed)
+untested; it might use some Linux-specific functions and/or GNU-specific
+functions; I may be willing to accept contributions if this can be fixed)
 
 * SQLite version 3 (a recent version)
 
@@ -49,6 +50,40 @@ specify the directory containing the documentation files.
 Before using it, you must create a file called .heromeshrc in your home
 directory; you may use default.heromeshrc to start with, and then customize
 it as you wish.
+
+
+=== Documentation ===
+
+Free Hero Mesh includes the following documentation files (plain text):
+
+* ARCHITECTURE: Describes the source code of Free Hero Mesh. This is only
+relevant if you wish to modify Free Hero Mesh, or if you want to look up
+something in the code and want to know what file to look at.
+
+* README: This file. Describes how to find the Fossil repository, the
+installation, documentation, discussion/community.
+
+* bindings.doc: Describes the configuration of key/mouse bindings.
+
+* class.doc: This document describes the Free Hero Mesh programming
+language. Read this if you want to define your own classes of objects.
+
+* commandline.doc: Describes the command-line arguments. The man page
+also describes the command-line arguments, although the commandline.doc
+file has a more elaborate description.
+
+* config.doc: Describes the configuration options for Free Hero Mesh.
+
+* export.doc: The level export format is described in this file; it can
+be used for importing as well as exporting.
+
+* picedit.doc: Describes the picture editor.
+
+* puzzleset.doc: Describes wat makes up a puzzle set.
+
+* sql.doc: This file lists and documents each of the SQL functions and SQL
+tables that are available. This is not relevant to programming the rules
+of the game; it is used for user customization.
 
 
 === Community/discussion ===
