@@ -566,6 +566,8 @@ static void class_image_select(void) {
   }
 }
 
+static int string_list(void);
+
 static Value ask_value(const char*s) {
   int i;
   s=screen_prompt(s);
@@ -651,6 +653,8 @@ static void mru_edit(MRU*m) {
   draw_text(0,64,"Str:",0xF0,0xF7);
   snprintf(buf,255,"%d",nlevelstrings);
   draw_text(64,64,buf,0xF0,0xF7);
+  draw_text(0,80,"<1-3> Misc   <4-6> Misc=String   <NumPad> Dir",0xF0,0xF3);
+  draw_text(0,88,"<F1> Help   <F2> EditorHelp   <RET> Exit",0xF0,0xF3);
   SDL_UnlockSurface(screen);
   SDL_Flip(screen);
   while(SDL_WaitEvent(&ev)) switch(ev.type) {
@@ -660,6 +664,9 @@ static void mru_edit(MRU*m) {
         case SDLK_1: v=ask_value("Misc1:"); if(v.t<4) m->misc1=v; break;
         case SDLK_2: v=ask_value("Misc2:"); if(v.t<4) m->misc2=v; break;
         case SDLK_3: v=ask_value("Misc3:"); if(v.t<4) m->misc3=v; break;
+        case SDLK_4: case SDLK_q: j=string_list(); if(j!=-1) m->misc1=UVALUE(j,TY_LEVELSTRING); break;
+        case SDLK_5: case SDLK_w: j=string_list(); if(j!=-1) m->misc2=UVALUE(j,TY_LEVELSTRING); break;
+        case SDLK_6: case SDLK_e: j=string_list(); if(j!=-1) m->misc3=UVALUE(j,TY_LEVELSTRING); break;
         case SDLK_KP1: m->dir=5; break;
         case SDLK_KP2: m->dir=6; break;
         case SDLK_KP3: m->dir=7; break;
@@ -1264,6 +1271,28 @@ static void edit_string(unsigned char**ps) {
   goto redraw;
 }
 
+static inline void replace_level_string_uses(int x) {
+  Uint32 n;
+  Object*o;
+  for(n=0;n<nobjects;n++) if(o=objects[n]) {
+    if(o->misc1.t==TY_LEVELSTRING && o->misc1.u>=x) --o->misc1.u;
+    if(o->misc2.t==TY_LEVELSTRING && o->misc2.u>=x) --o->misc2.u;
+    if(o->misc3.t==TY_LEVELSTRING && o->misc3.u>=x) --o->misc3.u;
+  }
+}
+
+static inline int count_level_string_uses(int x) {
+  int c=0;
+  Uint32 n;
+  Object*o;
+  for(n=0;n<nobjects;n++) if(o=objects[n]) {
+    if(o->misc1.t==TY_LEVELSTRING && o->misc1.u==x) c++;
+    if(o->misc2.t==TY_LEVELSTRING && o->misc2.u==x) c++;
+    if(o->misc3.t==TY_LEVELSTRING && o->misc3.u==x) c++;
+  }
+  return c;
+}
+
 static int string_list(void) {
   char buf[18];
   SDL_Event ev;
@@ -1282,7 +1311,7 @@ static int string_list(void) {
   r.h=screen->h-8;
   scrollbar(&scroll,screen->h/8-1,nlevelstrings,0,&r);
   SDL_LockSurface(screen);
-  draw_text(0,0,"Level Strings:   <INS> Add  <DEL> Delete  <SP> Edit  <RET> Pick  <F1> Preview  <ESC> Cancel",0xF1,0xFF);
+  draw_text(0,0,"Level Strings:   <INS> Add  <DEL> Delete  <SP> Edit  <RET> Pick  <F1> Preview  <F2> Uses  <ESC> Cancel",0xF1,0xFF);
   for(i=0;i<screen->h/8-1;i++) {
     j=i+scroll;
     if(j>=nlevelstrings) break;
@@ -1328,10 +1357,19 @@ static int string_list(void) {
             if(n==nlevelstrings-1) {
               free(levelstrings[--nlevelstrings]);
             } else {
-              //TODO
+              replace_level_string_uses(n+1);
+              free(levelstrings[n]);
+              --nlevelstrings;
+              for(i=n;i<nlevelstrings;i++) levelstrings[i]=levelstrings[i+1];
             }
             break;
           case SDLK_F1: if(nlevelstrings) modal_draw_popup(levelstrings[n]); set_cursor(XC_draft_small); break;
+          case SDLK_F2:
+            if(nlevelstrings) {
+              snprintf(buf,17,"%d uses",count_level_string_uses(n));
+              modal_draw_popup(buf);
+            }
+            break;
           case SDLK_UP: case SDLK_KP_MINUS: n--; break;
           case SDLK_DOWN: case SDLK_KP_PLUS: n++; break;
         }
