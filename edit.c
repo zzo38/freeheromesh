@@ -1264,6 +1264,88 @@ static void edit_string(unsigned char**ps) {
   goto redraw;
 }
 
+static int string_list(void) {
+  char buf[18];
+  SDL_Event ev;
+  SDL_Rect r;
+  int n=0;
+  int scroll=0;
+  int i,j;
+  redraw:
+  r.x=r.y=0;
+  r.w=screen->w;
+  r.h=screen->h;
+  SDL_FillRect(screen,&r,0xF0);
+  r.h=8;
+  SDL_FillRect(screen,&r,0xF1);
+  r.y=8;
+  r.h=screen->h-8;
+  scrollbar(&scroll,screen->h/8-1,nlevelstrings,0,&r);
+  SDL_LockSurface(screen);
+  draw_text(0,0,"Level Strings:   <INS> Add  <DEL> Delete  <SP> Edit  <RET> Pick  <F1> Preview  <ESC> Cancel",0xF1,0xFF);
+  for(i=0;i<screen->h/8-1;i++) {
+    j=i+scroll;
+    if(j>=nlevelstrings) break;
+    snprintf(buf,8,"%c%5d%c",n==j?'<':' ',j,n==j?'>':' ');
+    draw_text(16,(i+1)<<3,buf,0xF0,0xFB);
+    draw_text(80,(i+1)<<3,levelstrings[j],0xF0,0xF7);
+  }
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) {
+    if(ev.type!=SDL_VIDEOEXPOSE && scrollbar(&scroll,screen->h/8-1,nlevelstrings,&ev,&r)) goto redraw;
+    switch(ev.type) {
+      case SDL_MOUSEMOTION:
+        set_cursor(XC_draft_small);
+        break;
+      case SDL_KEYDOWN:
+        switch(ev.key.keysym.sym) {
+          case SDLK_0: case SDLK_KP0: n*=10; break;
+          case SDLK_1: case SDLK_KP1: n=10*n+1; break;
+          case SDLK_2: case SDLK_KP2: n=10*n+2; break;
+          case SDLK_3: case SDLK_KP3: n=10*n+3; break;
+          case SDLK_4: case SDLK_KP4: n=10*n+4; break;
+          case SDLK_5: case SDLK_KP5: n=10*n+5; break;
+          case SDLK_6: case SDLK_KP6: n=10*n+6; break;
+          case SDLK_7: case SDLK_KP7: n=10*n+7; break;
+          case SDLK_8: case SDLK_KP8: n=10*n+8; break;
+          case SDLK_9: case SDLK_KP9: n=10*n+9; break;
+          case SDLK_BACKSPACE: n/=10; break;
+          case SDLK_ESCAPE: return -1;
+          case SDLK_RETURN: case SDLK_KP_ENTER: if(n<nlevelstrings) return n;
+          case SDLK_SPACE: edit_string(levelstrings+n); break;
+          case SDLK_INSERT:
+            if(nlevelstrings<0x2000) {
+              levelstrings=realloc(levelstrings,(nlevelstrings+1)*sizeof(unsigned char*));
+              if(!levelstrings) fatal("Allocation failed\n");
+              levelstrings[n=nlevelstrings++]=strdup("");
+              if(!levelstrings[n]) fatal("Allocation failed\n");
+              edit_string(levelstrings+n);
+            }
+            break;
+          case SDLK_DELETE:
+            if(n>=nlevelstrings) break;
+            if(n==nlevelstrings-1) {
+              free(levelstrings[--nlevelstrings]);
+            } else {
+              //TODO
+            }
+            break;
+          case SDLK_F1: if(nlevelstrings) modal_draw_popup(levelstrings[n]); set_cursor(XC_draft_small); break;
+          case SDLK_UP: case SDLK_KP_MINUS: n--; break;
+          case SDLK_DOWN: case SDLK_KP_PLUS: n++; break;
+        }
+        if(n<=0) n=0; else if(n>=nlevelstrings) n=nlevelstrings-1;
+        goto redraw;
+      case SDL_VIDEOEXPOSE:
+        goto redraw;
+      case SDL_QUIT:
+        exit(0);
+        return -1;
+    }
+  }
+}
+
 static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
   int x,y;
   switch(cmd) {
@@ -1276,6 +1358,9 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
       return 0;
     case '^e': // Edit Misc/Dir of MRU slot
       mru_edit(mru+curmru);
+      return 0;
+    case '^s': // String list/edit
+      string_list();
       return 0;
     case '^u': // Add object (allow duplicates)
       if(prev) return prev;
