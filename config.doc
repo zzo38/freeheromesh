@@ -67,6 +67,11 @@ See bindings.doc for key/mouse bindings.
   auto testing most. If negative, number of milliseconds to sleep before
   each level is executed.
 
+.saveSolutions
+  If true, then solutions are saved if you solve a level in less moves
+  than the currently recorded solution (or if no solution is already
+  recorded). This has no effect in read-only mode.
+
 .screenFlags
   SDL flags: d = double buffer, f = full screen, h = use hardware surface,
   n = no window frame, p = hardware palette, r = allow the window to be
@@ -85,6 +90,13 @@ See bindings.doc for key/mouse bindings.
   True means to show the inventory in the margin by default; false means
   to show the move list in the margin by default. Either way, it is
   possible to change the display at run time.
+
+.solutionComment
+  If defined, record the specified text as the solution comment, whenever
+  a solution is recorded.
+
+.solutionTimestamp
+  If true, record a timestamp with the solution.
 
 .sqlCoveringIndexScan
   Boolean controlling if SQLite will use covering index scans.

@@ -11,6 +11,7 @@ exit
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "sqlite3.h"
 #include "smallxrm.h"
 #include "heromesh.h"
@@ -27,12 +28,20 @@ static int exam_scroll;
 static Uint8*inputs;
 static int inputs_size,inputs_count;
 static Uint8 side_mode=255;
+static Uint8 should_record_solution;
 
 static void setup_game(void) {
   const char*v;
   optionquery[1]=Q_showInventory;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
   side_mode=boolxrm(v,1);
+  if(main_options['r']) {
+    should_record_solution=0;
+  } else {
+    optionquery[1]=Q_saveSolutions;
+    v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
+    should_record_solution=boolxrm(v,0);
+  }
   solution_replay=0;
 }
 
@@ -790,6 +799,50 @@ static inline void input_move(Uint8 k) {
   }
 }
 
+static void record_solution(void) {
+  const char*v;
+  const char*com;
+  Uint8*data;
+  Uint8*p;
+  long sz;
+  if(solution_replay) return;
+  if(data=read_lump(FIL_SOLUTION,level_id,&sz)) {
+    if(sz<3 || (data[0]|(data[1]<<8))!=level_version || (data[2]&~3)) goto dontkeep;
+    sz-=3;
+    if(data[2]&1) sz-=strnlen(data+3,sz);
+    if(data[2]&2) sz-=8;
+    if(sz<=0 || sz>replay_pos) goto dontkeep;
+    free(data);
+    return;
+    dontkeep:
+    free(data);
+  }
+  optionquery[1]=Q_solutionComment;
+  com=xrm_get_resource(resourcedb,optionquery,optionquery,2);
+  if(com && !*com) com=0;
+  optionquery[1]=Q_solutionTimestamp;
+  v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
+  data=malloc(sz=replay_pos+(boolxrm(v,0)?8:0)+(com?strlen(com)+1:0)+3);
+  if(!data) fatal("Allocation failed\n");
+  data[0]=level_version&255;
+  data[1]=level_version>>8;
+  data[2]=(boolxrm(v,0)?2:0)|(com?1:0);
+  p=data+3;
+  if(com) {
+    strcpy(p,com);
+    p+=strlen(com)+1;
+  }
+  if(data[2]&2) {
+    time_t t=time(0);
+    p[0]=t>>000; p[1]=t>>010; p[2]=t>>020; p[3]=t>>030;
+    p[4]=t>>040; p[5]=t>>050; p[6]=t>>060; p[7]=t>>070;
+    p+=8;
+  }
+  memcpy(p,replay_list,replay_pos);
+  write_lump(FIL_SOLUTION,level_id,sz,data);
+  free(data);
+}
+
 void run_game(void) {
   int i;
   SDL_Event ev;
@@ -847,6 +900,7 @@ void run_game(void) {
           for(i=0;i<inputs_count && !gameover;i++) if(inputs[i]) input_move(inputs[i]);
           inputs_count=0;
           no_dead_anim=0;
+          if(gameover==1 && should_record_solution) record_solution();
         }
         redraw_game();
         timerflag=0; // ensure we have not missed a timer event
