@@ -57,6 +57,12 @@ See bindings.doc for key/mouse bindings.
   to the right of the margin is the playfield. This should be at least 64,
   or the picture size, whichever is greater.
 
+.maxTrigger
+  If nonzero, the maximum number of times that the trigger phase may loop
+  during each turn (it starts counting from zero each turn). If it loops
+  more, it displays an error message and results in loss of game. (This
+  does not prevent other kinds of infinite loops, though.)
+
 .palette
   If defined, the file name of the palette to use (if not set, then the
   internal palette is used instead). The file format is hex rrggbb format

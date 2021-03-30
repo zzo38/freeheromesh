@@ -4,6 +4,7 @@
 ?.imageSize: 24
 ?.traceAll: true
 ?.showInventory: 0
+?.maxTrigger: 32767
 
 ! Game inputs
 ?.gameKey.A: 'A

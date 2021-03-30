@@ -218,4 +218,5 @@ traceObject
 showInventory
 progress
 autoSave
+maxTrigger
 

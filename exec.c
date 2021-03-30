@@ -40,6 +40,7 @@ Value*array_data;
 Uint16 ndeadanim;
 DeadAnimation*deadanim;
 Uint8 no_dead_anim;
+Uint32 max_trigger;
 
 typedef struct {
   Uint16 msg;
@@ -1933,7 +1934,7 @@ static void execute_animation(Uint32 obj) {
 
 const char*execute_turn(int key) {
   Uint8 busy,clock,x,y;
-  Uint32 m,n,turn;
+  Uint32 m,n,turn,tc;
   Object*o;
   Value v;
   int i;
@@ -1959,6 +1960,7 @@ const char*execute_turn(int key) {
   lastimage_processing=0;
   vstackptr=0;
   current_key=key;
+  tc=0;
   for(n=0;n<nobjects;n++) if(o=objects[n]) {
     o->distance=0;
     o->oflags&=~(OF_KEYCLEARED|OF_DONE);
@@ -1999,6 +2001,9 @@ const char*execute_turn(int key) {
   turn=0;
   // Trigger phase
   trig:
+  if(max_trigger) {
+    if(tc++>=max_trigger) return "Turn looped too many times";
+  }
   busy=0;
   clock=255;
   for(i=0;i<64*pfheight;i++) {
