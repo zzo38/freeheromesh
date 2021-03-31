@@ -242,7 +242,6 @@ ObjLayerAt
 ObjTopAt
 PopUp
 *PopUpArgs ; for (PopUp [number])
-QueueTurn ; queue another turn that automatically occurs after this one
 ,Rel
 ,Seek
 .,Send

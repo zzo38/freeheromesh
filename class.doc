@@ -1454,15 +1454,6 @@ PopUp  ( value -- )
   consumes some number of arguments, from bottom to top. The number of
   arguments must be 0 to 32.
 
-QueueTurn  ( key -- ) **
-  Queue another turn after this one, using the specified key code, which
-  must be a number from 0 to 255. The extra turn is not entered into the
-  replay list and does not increase MoveNumber, but otherwise will act
-  like any other turn. Popup messages are not removed; they will be
-  retained, and these extra turns execute the input phase as though there
-  is no popup quiz. (Not implemented yet. Details described here might be
-  changed when it is implemented.)
-
 Rel  ( dir -- dir )
   Resolves a relative direction to an absolute direction.
 
