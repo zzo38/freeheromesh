@@ -1417,6 +1417,20 @@ static inline Uint32 chebyshev(Uint32 a,Uint32 b) {
   return i>j?i:j;
 }
 
+static inline void v_flip(void) {
+  int p=vstackptr;
+  int n;
+  Value v;
+  while(p-- && vstack[p].t!=TY_MARK);
+  if(!p) Throw("No mark");
+  p++;
+  for(n=0;n<(vstackptr-p)/2;n++) {
+    v=vstack[p+n];
+    vstack[p+n]=vstack[vstackptr-n-1];
+    vstack[vstackptr-n-1]=v;
+  }
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -1572,6 +1586,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_EQ: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_equal(t1,t2)?1:0)); break;
     case OP_FINISHED: StackReq(0,1); Push(NVALUE(all_flushed)); break;
     case OP_FINISHED_E: StackReq(1,0); t1=Pop(); Numeric(t1); all_flushed=t1.u; break;
+    case OP_FLIP: v_flip(); break;
     case OP_FLUSHCLASS: NoIgnore(); StackReq(1,0); t1=Pop(); if(t1.t==TY_CLASS) flush_class(t1.u); else if(t1.t==TY_NUMBER && t1.s==-1) flush_all(); else if(t1.t) Throw("Type mismatch"); break;
     case OP_FLUSHOBJ: NoIgnore(); flush_object(obj); break;
     case OP_FLUSHOBJ_C: NoIgnore(); StackReq(1,0); i=v_object(Pop()); if(i!=VOIDLINK) flush_object(i); break;

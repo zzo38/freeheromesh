@@ -379,19 +379,20 @@
 #define OP_IN 32956
 #define OP_NIN 32957
 #define OP_MBEGIN 32958
-#define OP_ARRAY 32959
-#define OP_GETARRAY 32960
-#define OP_INITARRAY 32961
-#define OP_SETARRAY 32962
-#define OP_ARRAYCELL 32963
-#define OP_FUNCTION 32964
-#define OP_LOCAL 32965
-#define OP_LABEL 32966
-#define OP_STRING 32967
-#define OP_INT16 32968
-#define OP_INT32 32969
-#define OP_DISPATCH 32970
-#define OP_USERFLAG 32971
+#define OP_FLIP 32959
+#define OP_ARRAY 32960
+#define OP_GETARRAY 32961
+#define OP_INITARRAY 32962
+#define OP_SETARRAY 32963
+#define OP_ARRAYCELL 32964
+#define OP_FUNCTION 32965
+#define OP_LOCAL 32966
+#define OP_LABEL 32967
+#define OP_STRING 32968
+#define OP_INT16 32969
+#define OP_INT32 32970
+#define OP_DISPATCH 32971
+#define OP_USERFLAG 32972
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486937},
@@ -407,8 +408,8 @@ static const Op_Names op_names[]={
 {"Arg1",8552565},
 {"Arg2",8552566},
 {"Arg3",8552567},
-{"Array",8683711},
-{"ArrayCell",8421571},
+{"Array",8683712},
+{"ArrayCell",8421572},
 {"Arrivals",8618083},
 {"Arrived",8618081},
 {"Assassinate",8487046},
@@ -477,7 +478,7 @@ static const Op_Names op_names[]={
 {"From",8421492},
 {"GLASS",8389379},
 {"GLISSANT",8389419},
-{"GetArray",8421568},
+{"GetArray",8421569},
 {"GetInventory",8421524},
 {"HAWK",8389425},
 {"HEARTBEAT",8389407},
@@ -492,7 +493,7 @@ static const Op_Names op_names[]={
 {"Image",8618046},
 {"InPlace",8683647},
 {"Inertia",9142335},
-{"InitArray",8421569},
+{"InitArray",8421570},
 {"Input",8683645},
 {"IntMove",10584215},
 {"Invisible",8618086},
@@ -576,7 +577,7 @@ static const Op_Names op_names[]={
 {"Self",8421490},
 {"Send",10584239},
 {"SendEx",10584240},
-{"SetArray",8421570},
+{"SetArray",8421571},
 {"SetInventory",8421553},
 {"Shape",8618042},
 {"ShapeDir",8618065},
@@ -660,6 +661,7 @@ static const Op_Names op_names[]={
 {"el",8683532},
 {"else",8683530},
 {"eq",8421416},
+{"flip",8421567},
 {"for",8683538},
 {"ge",8486956},
 {"gt",8486954},
@@ -698,5 +700,5 @@ static const Op_Names op_names[]={
 {"until",8683535},
 {"while",8683536},
 };
-#define N_OP_NAMES 303
+#define N_OP_NAMES 304
 #endif

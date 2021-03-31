@@ -1168,6 +1168,9 @@ Finished  ( -- number )
   if IgnoreKey is used, then all phases are skipped, regardless of the
   value of this flag.
 
+flip  ( mark ... -- mark ... )
+  Reverses everything above the mark on the stack.
+
 FlushClass  ( class -- ) **
   Resets the Arrived, Busy, Departed, Inertia, Moved, and UserSignal flags
   of all objects of the specified class to zero. If the class is -1, then
