@@ -91,5 +91,8 @@ results in an immediate loss of game.
 === Miscellaneous ===
 
 Free Hero Mesh uses the PC character set. All contributions shall use this
-character set (of which ASCII is a subset).
+character set (of which ASCII is a subset). (Exception: Documentation
+written in languages other than English may use whatever character set is
+appropriate for that document.)
+
 
