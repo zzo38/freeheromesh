@@ -293,7 +293,9 @@ Abstract
   same as for Misc4 (see below), but only the low 8-bits are usable.
 
 Compatible
-  Sets the Compatible flag for this class.
+  Sets the Compatible flag for this class. This changes some features for
+  compatibility with Hero Mesh, and would not normally be used for new
+  puzzle sets made with Free Hero Mesh.
 
 ,Compatible
   Sets the Compatible flag for this class, but removes the restriction of
@@ -359,6 +361,8 @@ Invisible
 (Misc4 <numbers...>)
   Specify any combination of numbers and/or bit constants. Defines the
   Misc4 variable of this class to be the bitwise OR of the listed numbers.
+  Although this variable may have any value at run time, the definition in
+  a class is limited to numbers.
 
 (Misc5 <numbers...>)
   Define the Misc5 variable for this class; see Misc4 above for details.
@@ -466,7 +470,8 @@ or to compare if one string matches another.
 * Sound: A named sound effect. Values of this type cannot be compared with
 anything, even other values of the same type.
 
-* Mark: There is only one value of this type.
+* Mark: There is only one value of this type; it is used to delimit lists
+of values on the stack.
 
 * Array: A reference to an array. You cannot allocate arrays at run time;
 the available array memory is fixed at compile time, subject to the global
@@ -728,7 +733,8 @@ on the same turn as IgnoreKey. Exceptions are Distance and KeyCleared.
   A user-defined flag, which is one bit in Misc4, Misc5, Misc6, Misc7, or
   CollisionLayers. If it is CollisionLayers, then it is read-only; other
   flags are read/write. User defined flags must be defined first (globally)
-  before they can be used.
+  before they can be used. Unlike user-defined variables, you can access
+  user-defined flags on any object.
 
 Arrivals : int32
   Only the low 25-bits are used. Each bit which is set indicates that it
@@ -845,7 +851,11 @@ KeyCleared : bool
   between turns, so that you need not do by yourself.
 
 Misc1 : int16/any
-  The game engine does not use this variable; use it for your own use.
+  The game engine does not use this variable; use it for your own use. The
+  Misc1-Misc3 variables can be defined for each individual object in the
+  level editor; normally they are zero. In the level editor, they can only
+  be defined as a 16-bit number, a class, a message, or a string; at run
+  time they can be set to any value.
 
 Misc2 : int16/any
   The game engine does not use this variable; use it for your own use.
@@ -876,7 +886,7 @@ Player : bool [c] [ro]
   If this object is the player. This is used implicitly as the From of
   some messages sent by the game engine, and has a few other purposes.
   (Normally, a level should have exactly one object of such a class,
-  although this is not mandatory.)
+  although this is not mandatory; any number (including zero) is allowed.)
 
 Shape : int16 [c]
   Defines the shape of the object, which is used when one object tries to
@@ -898,7 +908,9 @@ Sharp : int16 [c] [d]
 
 Shovable : int16 [c]
   Defines what directions the object may be shoved, where bit0 means east,
-  bit2 means north, bit4 means west, and bit6 means south.
+  bit2 means north, bit4 means west, and bit6 means south. Bit1, bit3,
+  bit5, and bit7 can be used for diagonal shoving; the high 8-bits are
+  currently unused but may be used in future.
 
 Stealthy : bool [c]
   If this flag is set, then the Arrived and Departed variables of other
@@ -936,7 +948,9 @@ Weight : int16/int32 [c]
   up once it has moved, or if it failed to move it). See Strength.
 
 Xloc : int8 [ro]
-  The 1-based X coordinate of this object.
+  The 1-based X coordinate of this object. To move the object, use any of
+  the instructions for movement; it cannot be moved by directly assigning
+  the new coordinates to these variables.
 
 Yloc : int8 [ro]
   The 1-based Y coordinate of this object (1 is at the top of the screen).
@@ -1764,6 +1778,8 @@ HITBY
   move, where From is the object trying to move, Arg1 and Arg2 are the X
   and Y coordinates of that object, and Arg3 is the current hit value, and
   the return value is ORed with the hit value to make the new hit value.
+  The return value may also be an object in order to warp; see the section
+  about hit values below, which also explains warping.
 
 INIT
   Sent to all objects when the level is initialized. Objects which are
