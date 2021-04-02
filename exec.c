@@ -839,18 +839,30 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
           hit&=0xFC287000;
           v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit));
           if(v.t) Throw("Type mismatch in HIT/HITBY");
-          hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1L);
+          hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xC0090F7F:-1L);
           if(hit&8) goto fail;
           if(!(hit&0x11)) {
             v=send_message(obj,objE,MSG_HITBY,NVALUE(oW->x),NVALUE(oW->y),NVALUE(hit));
             if(v.t>TY_MAXTYPE) goto warp;
             if(v.t) Throw("Type mismatch in HIT/HITBY");
-            hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xC0098F7F:-1L);
+            hit|=v.u&(classes[oE->class]->cflags&CF_COMPATIBLE?0xC0090F7F:-1L);
             if(hit&8) goto fail;
+          }
+        }
+        // Shoving
+        if(!(classes[o->class]->cflags&CF_COMPATIBLE)) {
+          if(!(hit&0x44) && (oE->shovable&(1<<dir)) && o->inertia>=oE->weight && !(oE->oflags&OF_VISUALONLY)) {
+            oE->inertia=o->inertia;
+            if(move_dir(obj,objE,dir)) {
+              if(!(oE->oflags&OF_DESTROYED)) o->inertia=oE->inertia;
+              hit|=0x8000;
+              if(hit&0x800000) goto restart;
+            }
           }
         }
         objE=obj_below(objE);
       }
+      if((hit&0x48000)==0x8000) goto restart;
       if((hit&0x200000) && !(hit&0x402008)) {
         if(hit&0x20000) goto success;
         if(!oF) goto fail;

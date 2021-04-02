@@ -1341,7 +1341,7 @@ static inline Uint8 class_def_shovable(void) {
   }
   for(;;) {
     if(tokent==TF_CLOSE) return n;
-    if(!Tokenf(TF_DIR) || tokenv>7 || (tokenv&1)) ParseError("Expected even absolute direction\n");
+    if(!Tokenf(TF_DIR) || tokenv>7) ParseError("Expected absolute direction\n");
     n|=1<<tokenv;
     nxttok();
   }

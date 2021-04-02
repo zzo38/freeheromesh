@@ -398,7 +398,7 @@ Shovable
 
 (Shovable <dir...>)
   Set this object to be shovable in the specified directions, which can be
-  E, N, W, or S (diagonals are not allowed).
+  any absolute direction.
 
 (Shovable <number>)
   Set the Shovable variable to the specified 8-bit number. (You cannot set
@@ -1837,7 +1837,8 @@ messages; these values are also used as the Arg3 of those messages.
 
 Some descriptions below are marked with an asterisk. If the Compatible
 flag is set for the object that returned this value, then all bits with
-the asterisk in the below descriptions are masked out.
+the asterisk in the below descriptions are masked out (bit15 is only
+masked out for Compatible objects for diagonal movement).
 
 bit0
   Do not send the HITBY message to the target object.
@@ -1892,7 +1893,7 @@ bit13 *
 bit14 *
   Do not set the Moved flag even if successful.
 
-bit15
+bit15 (*)
   Try again after trying shoving (whether or not the shoving is
   successful). If it tries to shove an object and it is successful, then
   it will automatically set this bit and automatically try again.
@@ -1987,4 +1988,6 @@ that Inertia is not reset.
 * The way that the trigger phase works is different.
 
 * In the ARRIVED and DEPARTED messages, Arg1 is always zero.
+
+* Diagonal shoving is not possible.
 
