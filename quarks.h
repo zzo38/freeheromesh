@@ -9,12 +9,12 @@
 #define Q_gameTitle 10
 #define Q_gamma 11
 #define Q_screenFlags 12
-#define Q_sfxVolume 13
-#define Q_audioBuffer 14
-#define Q_audioRate 15
-#define Q_audioFormat 16
-#define Q_musicVolume 17
-#define Q_musicFile 18
+#define Q_audio 13
+#define Q_rate 14
+#define Q_buffer 15
+#define Q_mmlVolume 16
+#define Q_waveVolume 17
+#define Q_standardSounds 18
 #define Q_keyRepeat 19
 #define Q_editKey 20
 #define Q_gameKey 21
@@ -196,12 +196,12 @@ static const char*const global_quarks[]={
   "gameTitle",
   "gamma",
   "screenFlags",
-  "sfxVolume",
-  "audioBuffer",
-  "audioRate",
-  "audioFormat",
-  "musicVolume",
-  "musicFile",
+  "audio",
+  "rate",
+  "buffer",
+  "mmlVolume",
+  "waveVolume",
+  "standardSounds",
   "keyRepeat",
   "editKey",
   "gameKey",

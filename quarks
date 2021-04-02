@@ -26,12 +26,12 @@ screenFlags
 !  'z' = NOPARACHUTE
 
 ! Audio
-sfxVolume
-audioBuffer
-audioRate
-audioFormat
-musicVolume
-musicFile
+audio
+rate
+buffer
+mmlVolume
+waveVolume
+standardSounds
 
 ! Keyboard
 keyRepeat
