@@ -77,6 +77,9 @@ quarks into quarks.h.
 smallxrm.c/smallxrm.h: An implementation of the X resource manager. This
 can be used independently from Free Hero Mesh.
 
+sound.c: Implements sound effects. Also deals with loading sound effects,
+amplification, MML, etc.
+
 
 === Invariants ===
 
