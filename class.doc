@@ -882,6 +882,10 @@ Moved : bool
   yourself if you want to cause it to trigger even though it didn't
   move or to not trigger even though it did move.
 
+Moving : bool
+  This flag indicates that a deferred movement is scheduled for this
+  object. The direction of movement is specified by the Dir variable.
+
 Player : bool [c] [ro]
   If this object is the player. This is used implicitly as the From of
   some messages sent by the game engine, and has a few other purposes.
@@ -909,8 +913,8 @@ Sharp : int16 [c] [d]
 Shovable : int16 [c]
   Defines what directions the object may be shoved, where bit0 means east,
   bit2 means north, bit4 means west, and bit6 means south. Bit1, bit3,
-  bit5, and bit7 can be used for diagonal shoving; the high 8-bits are
-  currently unused but may be used in future.
+  bit5, and bit7 can be used for diagonal shoving. Higher bits are
+  reserved for future and should not be used.
 
 Stealthy : bool [c]
   If this flag is set, then the Arrived and Departed variables of other
@@ -1354,6 +1358,25 @@ Move+  ( dir -- bool ) **
 ,Move+  ( obj dir -- bool ) **
   As Move+ but for a specified object.
 
++Move  ( dir -- bool ) **
+  Schedules a deferred move for this object in the specified direction
+  (which may be absolute or relative). Some things are checked at this
+  time, while other things are checked at the time that the movement will
+  be made; its working is different from non-deferred movements. The
+  result is true if the move was scheduled or false if it isn't. (Note:
+  Do not confuse +Move with Move+; they are unrelated.)
+
+,+Move  ( obj dir -- bool ) **
+  As +Move but for a specified object rather than necessarily this one.
+
+-Move  ( dir -- bool ) **
+  Cancel a deferred move in the specified direction, and possibly also
+  other things that are shoved by it. The result will be true if it was
+  scheduled and successfully removed, or false otherwise.
+
+,-Move  ( obj dir -- bool ) **
+  As -Move but for a specified object rather than necessarily this one.
+
 MoveNumber  ( -- number )
   The current move number. This is initially zero, and is advanced after
   each input phase (before the beginning phase).
@@ -1439,6 +1462,12 @@ ObjLayerAt  ( layers x y -- obj )
   Find an object with the given CollisionLayers bits set at that location.
   If you specify multiple bits, it finds one with any of those bits. (It
   is not possible for there to be more than one such object.)
+
+ObjMovingTo  ( x y -- ... )
+  Push on the stack all objects scheduled to move to the specified X and Y
+  coordinates. There may be zero or more such objects; you can add a mark
+  to the stack in order to delimit this list (it won't do so automatically,
+  since you may be putting multiple lists together).
 
 ObjTopAt  ( x y -- obj )
   Find the object on the top at the specified location. The result will be
@@ -1668,7 +1697,8 @@ mbegin <body> repeat  ( -- any ) ( -- )
 
 This section describes when the various standard messages are sent to
 objects, and what return values are expected. (Do not confuse CREATE with
-CREATED or DESTROY with DESTROYED; they have different purposes.)
+CREATED, or DESTROY with DESTROYED, or COLLIDE with COLLIDING; they have
+different purposes.)
 
 (Some standard messages are in the names.js file but not used; do not use
 them in your own code, since their names and meaning may change later. The
@@ -1686,6 +1716,14 @@ BEGIN_TURN
   Arg1 and Arg2 are the X and Y coordinates of that object, and Arg3 is
   the most recent return value from a KEY message. The beginning phase may
   be suppressed; if it is, then the ending phase is also suppressed.
+
+BLOCKED
+  When scheduling deferred movement, if the moving object is blocked by
+  another object, then the moving object sends this message to the object
+  which is blocking it. From is the object attempting to move, Arg1 and
+  Arg2 are that object's coordinates, and Arg3 is 1 for +Move or 0 for
+  -Move. Of the return value, bit0 clears the Moving flag (causing the
+  move to fail), and bit1 causes it to not send any more BLOCKED messages.
 
 COLLIDE
   Received when this object is trying to move into a location where there
@@ -1710,6 +1748,24 @@ COLLIDEBY
   object attempting to move here, and Arg1 and Arg2 are its location (if
   attempting to create an object, then From, Arg1, and Arg2 are all zero).
   Arg3 is the class of the object being moved or created.
+
+COLLIDING
+  Called when deferred movement is being performed if the move cannot
+  occur due to a collision with some other object. From is the object
+  that it is colliding with, Arg1 and Arg2 are its location, and Arg3
+  is the type of collision (0 if this object is trying to move into a
+  stationary object, 1 if another object is trying to move into this
+  stationary object, 2 if two objects are trying to move into the same
+  space, or 3 if two or more objects forming a loop are trying to move
+  into each other). There is no guarantee that this will only be called
+  once; sometimes it will be called multiple times for a single collision
+  or for multiple collisions with the same objects. (TODO)
+
+CONFLICT
+  Called during scheduling of a deferred move if it is already currently
+  scheduled to move but in a different direction. Arg1 is the direction
+  that it is trying to schedule the move in. If the return value is false
+  then the schedule fails; if true, then it succeeds.
 
 CREATE
   Sent when the object is created by the Create instruction. This is done

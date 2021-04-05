@@ -24,10 +24,11 @@ const standard_message_names=`
  18 = POSTINIT
  19 = END_TURN
  // New
- 20 = CLEANUP
+ 20 = CONFLICT
  21 = COLLIDEBY
  22 = COLLIDE
- 23 = BIZARRO_SWAP
+ 23 = COLLIDING
+ 24 = BLOCKED
 `.split("\n").map(x=>/^ *([0-9]+) = ([^ ]*) *$/.exec(x)).filter(x=>x);
 const standard_sound_names=[];
 `

@@ -19,10 +19,11 @@
 #define MSG_CREATED 17
 #define MSG_POSTINIT 18
 #define MSG_END_TURN 19
-#define MSG_CLEANUP 20
+#define MSG_CONFLICT 20
 #define MSG_COLLIDEBY 21
 #define MSG_COLLIDE 22
-#define MSG_BIZARRO_SWAP 23
+#define MSG_COLLIDING 23
+#define MSG_BLOCKED 24
 #ifdef HEROMESH_MAIN
 const char*const standard_message_names[]={
  "INIT",
@@ -45,10 +46,11 @@ const char*const standard_message_names[]={
  "CREATED",
  "POSTINIT",
  "END_TURN",
- "CLEANUP",
+ "CONFLICT",
  "COLLIDEBY",
  "COLLIDE",
- "BIZARRO_SWAP",
+ "COLLIDING",
+ "BLOCKED",
 };
 #endif
 #define SND_SPLASH 0

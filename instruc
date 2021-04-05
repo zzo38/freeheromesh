@@ -174,6 +174,7 @@ qa "a?"
 ,=VisualOnly
 ,=Stealthy
 ,=Moved
+,=Moving
 ,=Done
 ,Destroyed
 ,Player
@@ -230,6 +231,8 @@ MaxInventory ; error if more than that many slots in inventory
 .,Move
 .,MovePlus "Move+" ; obj.Inertia+=Strength instead of obj.Inertia=Strength
 .,MoveTo ; the internal MoveTo() function
+.,PlusMove "+Move"
+.,MinusMove "-Move"
 NewX
 NewXY
 NewY
@@ -239,6 +242,7 @@ ObjBottomAt
 ObjClassAt
 ,ObjDir
 ObjLayerAt
+ObjMovingTo
 ObjTopAt
 PopUp
 *PopUpArgs ; for (PopUp [number])

@@ -37,7 +37,7 @@ typedef struct {
 #define ValueTo64(v) (((sqlite3_int64)((v).u))|(((sqlite3_int64)((v).t))<<32))
 #define ValueEq(x,y) ((x).t==(y).t && (x).u==(y).u)
 
-#define N_MESSAGES 24
+#define N_MESSAGES 25
 extern const char*const standard_message_names[];
 extern const char*const standard_sound_names[];
 extern const char*const heromesh_key_names[256];
@@ -139,6 +139,7 @@ int modal_draw_popup(const unsigned char*txt);
 #define OF_DESTROYED 0x0200
 #define OF_BIZARRO 0x0400
 #define OF_MOVED2 0x0800
+#define OF_MOVING 0x1000
 
 typedef struct {
   const char*name;

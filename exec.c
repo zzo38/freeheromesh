@@ -1046,6 +1046,43 @@ static int jump_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
   return 1;
 }
 
+static int defer_move(Uint32 obj,Uint32 dir,Uint8 plus) {
+  Object*o;
+  Object*q;
+  Uint32 n;
+  Value v;
+  if(StackProtection()) Throw("Call stack overflow during movement");
+  if(obj==VOIDLINK) return 0;
+  o=objects[obj];
+  if(o->oflags&(OF_DESTROYED|OF_BIZARRO)) return 0;
+  dir=resolve_dir(obj,dir);
+  if(plus) {
+    if(o->oflags&OF_MOVING) {
+      if(o->dir==dir) return 1;
+      v=send_message(VOIDLINK,obj,MSG_CONFLICT,NVALUE(dir),NVALUE(0),NVALUE(0));
+      if(!v_bool(v)) return 0;
+    }
+    o->oflags|=OF_MOVING;
+    o->dir=dir;
+  } else {
+    if(!(o->oflags&OF_MOVING)) return 0;
+    if(o->dir!=dir) return 0;
+    o->oflags&=~OF_MOVING;
+  }
+  n=playfield[o->x+o->y*64-65];
+  while(n!=VOIDLINK) {
+    q=objects[n];
+    if(!(q->oflags&(OF_DESTROYED|OF_VISUALONLY)) && ((q->height>0 && q->height>=o->climb) || (classes[q->class]->collisionLayers&classes[o->class]->collisionLayers))) {
+      v=send_message(obj,n,MSG_BLOCKED,NVALUE(o->x),NVALUE(o->y),NVALUE(plus));
+      if(v.t) Throw("Type mismatch");
+      if(v.u&1) o->oflags&=~OF_MOVING;
+      if(v.u&2) break;
+    }
+    n=q->up;
+  }
+  return plus?(o->oflags&OF_MOVING?1:0):1;
+}
+
 static void trace_stack(Uint32 obj) {
   Value t2=Pop();
   Value t1=Pop();
@@ -1070,7 +1107,7 @@ static void trace_stack(Uint32 obj) {
 static void flush_object(Uint32 n) {
   Object*o=objects[n];
   o->arrived=o->departed=0;
-  o->oflags&=~(OF_MOVED|OF_BUSY|OF_USERSIGNAL);
+  o->oflags&=~(OF_MOVED|OF_BUSY|OF_USERSIGNAL|OF_MOVING);
   o->inertia=0;
 }
 
@@ -1083,7 +1120,7 @@ static void flush_class(Uint16 c) {
     p=o->prev;
     if(!c || o->class==c) {
       o->arrived=o->departed=0;
-      o->oflags&=~(OF_MOVED|OF_BUSY|OF_USERSIGNAL);
+      o->oflags&=~(OF_MOVED|OF_BUSY|OF_USERSIGNAL|OF_MOVING);
       o->inertia=0;
     }
     if(p==VOIDLINK) break;
@@ -1443,6 +1480,26 @@ static inline void v_flip(void) {
   }
 }
 
+static inline void v_obj_moving_to(Uint32 x,Uint32 y) {
+  int d;
+  Uint32 n,xx,yy;
+  Object*o;
+  for(d=0;d<8;d++) {
+    xx=x-x_delta[d];
+    yy=y-y_delta[d];
+    if(xx<1 || xx>pfwidth || yy<1 || yy>pfheight) continue;
+    n=playfield[xx+yy*64-65];
+    while(n!=VOIDLINK) {
+      o=objects[n];
+      if((o->oflags&OF_MOVING) && !(o->oflags&(OF_DESTROYED|OF_VISUALONLY)) && o->dir==d) {
+        if(vstackptr>=VSTACKSIZE-2) Throw("Stack overflow");
+        Push(OVALUE(n));
+      }
+      n=o->up;
+    }
+  }
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -1675,6 +1732,10 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_MANHATTAN_C: StackReq(2,1); t2=Pop(); t1=Pop(); i=manhattan(v_object(t1),v_object(t2)); Push(NVALUE(i)); break;
     case OP_MARK: StackReq(0,1); Push(UVALUE(0,TY_MARK)); break;
     case OP_MAXINVENTORY: StackReq(1,0); t1=Pop(); Numeric(t1); if(ninventory>t1.u) Throw("Inventory overflow"); break;
+    case OP_MINUSMOVE: StackReq(1,1); t1=Pop(); Numeric(t1); i=defer_move(obj,t1.u,0); Push(NVALUE(i)); break;
+    case OP_MINUSMOVE_C: StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); i=defer_move(i,t1.u,0); Push(NVALUE(i)); break;
+    case OP_MINUSMOVE_D: StackReq(1,0); t1=Pop(); Numeric(t1); defer_move(obj,t1.u,0); break;
+    case OP_MINUSMOVE_CD: StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); defer_move(i,t1.u,0); break;
     case OP_MOD: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u%t2.u)); break;
     case OP_MOD_C: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s%t2.s)); break;
     case OP_MOVE: NoIgnore(); StackReq(1,1); t1=Pop(); Numeric(t1); o->inertia=o->strength; Push(NVALUE(move_dir(obj,obj,t1.u))); break;
@@ -1694,6 +1755,10 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_MOVETO_C: NoIgnore(); StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); i=v_object(Pop()); Push(NVALUE(move_to(obj,i,t2.u,t3.u))); break;
     case OP_MOVETO_D: NoIgnore(); StackReq(2,0); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); move_to(obj,obj,t2.u,t3.u); break;
     case OP_MOVETO_CD: NoIgnore(); StackReq(3,0); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); i=v_object(Pop()); move_to(obj,i,t2.u,t3.u); break;
+    case OP_MOVING: StackReq(0,1); if(o->oflags&OF_MOVING) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_MOVING_C: StackReq(1,1); GetFlagOf(OF_MOVING); break;
+    case OP_MOVING_E: NoIgnore(); StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_MOVING; else o->oflags&=~OF_MOVING; break;
+    case OP_MOVING_EC: NoIgnore(); StackReq(2,0); SetFlagOf(OF_MOVING); break;
     case OP_MSG: StackReq(0,1); Push(MVALUE(msgvars.msg)); break;
     case OP_MUL: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u*t2.u)); break;
     case OP_MUL_C: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s*t2.s)); break;
@@ -1714,11 +1779,16 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_OBJDIR: StackReq(1,1); t2=Pop(); Numeric(t2); i=obj_dir(obj,t2.u); Push(OVALUE(i)); break;
     case OP_OBJDIR_C: StackReq(2,1); t2=Pop(); Numeric(t2); i=obj_dir(v_object(Pop()),t2.u); Push(OVALUE(i)); break;
     case OP_OBJLAYERAT: StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); i=obj_layer_at(t1.u,t2.u,t3.u); Push(OVALUE(i)); break;
+    case OP_OBJMOVINGTO: StackReq(2,0); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); v_obj_moving_to(t1.u,t2.u); break;
     case OP_OBJTOPAT: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); i=obj_top_at(t1.u,t2.u); Push(OVALUE(i)); break;
     case OP_OVER: StackReq(2,3); t2=Pop(); t1=Pop(); Push(t1); Push(t2); Push(t1); break;
     case OP_PICK: StackReq(0,1); t1=Pop(); Numeric(t1); if(t1.u>=vstackptr) Throw("Stack index out of range"); t1=vstack[vstackptr-t1.u-1]; Push(t1); break;
     case OP_PLAYER: StackReq(0,1); if(classes[o->class]->cflags&CF_PLAYER) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_PLAYER_C: StackReq(1,1); GetClassFlagOf(CF_PLAYER); break;
+    case OP_PLUSMOVE: StackReq(1,1); t1=Pop(); Numeric(t1); i=defer_move(obj,t1.u,1); Push(NVALUE(i)); break;
+    case OP_PLUSMOVE_C: StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); i=defer_move(i,t1.u,1); Push(NVALUE(i)); break;
+    case OP_PLUSMOVE_D: StackReq(1,0); t1=Pop(); Numeric(t1); defer_move(obj,t1.u,1); break;
+    case OP_PLUSMOVE_CD: StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); defer_move(i,t1.u,1); break;
     case OP_POPUP: StackReq(1,0); v_set_popup(obj,0); break;
     case OP_POPUPARGS: i=code[ptr++]; StackReq(i+1,0); v_set_popup(obj,i); break;
     case OP_QA: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t==TY_ARRAY) Push(NVALUE(1)); else Push(NVALUE(0)); break;
@@ -1942,6 +2012,116 @@ void annihilate(void) {
   ndeadanim=0;
 }
 
+static inline int try_sharp(Uint32 n1,Uint32 n2) {
+  Object*o=objects[n1];
+  Object*p=objects[n2];
+  if((o->oflags|p->oflags)&OF_DESTROYED) return 0;
+  if(o->dir&1) return 0;
+  if(p->x!=o->x+x_delta[o->dir] || p->y!=o->y+y_delta[o->dir]) return 0;
+  if(p->hard[(o->dir^4)>>1]<=o->sharp[o->dir>>1]) return 0;
+  return !v_bool(destroy(n1,n2,o->oflags&OF_MOVING?2:1));
+}
+
+static Uint32 handle_colliding(Uint32 n1,Uint32 n2,Uint8 r1,Uint8 r2) {
+  // n1 = the object trying to move
+  // n2 = the object it is colliding with (which might also be trying to move, or might not)
+  Value v;
+  Uint32 h;
+  v=send_message(n1,n2,MSG_COLLIDING,NVALUE(objects[n1]->x),NVALUE(objects[n1]->y),NVALUE(r1));
+  if(v.t) Throw("Type mismatch");
+  h=(v.u>>16)|(v.u<<16);
+  v=send_message(n2,n1,MSG_COLLIDING,NVALUE(objects[n2]->x),NVALUE(objects[n2]->y),NVALUE(r2));
+  if(v.t) Throw("Type mismatch");
+  h|=v.u;
+  if((h&0x0002) && try_sharp(n1,n2)) h|=0x0004;
+  if((h&0x00020000) && try_sharp(n2,n1)) h|=0x00040000;
+  return h;
+}
+
+static Uint32 deferred_colliding(Uint32 obj,int x,int y) {
+  Object*o=objects[obj];
+  Object*oE;
+  Uint32 h=0xFFFFFFFF;
+  Uint32 objE=playfield[x+y*64-65];
+  Uint8 d;
+  int xx,yy;
+  while(objE!=VOIDLINK) {
+    oE=objects[objE];
+    if(!(oE->oflags&(OF_DESTROYED|OF_VISUALONLY))) {
+      if(oE->oflags&OF_MOVING) {
+        // At this point, it is necessary to check for a loop, which may be like the diagram below:
+        //     >>>>>>>v
+        //        ^<<<<
+        // The loop may also have a different shape.
+        // If a loop is found, call the handle_colliding function to determine what to do next.
+        // If there is no loop, allow the move to be retried later, trying objE's location next.
+        
+      }
+      if(oE->height>o->climb || (classes[o->class]->collisionLayers&classes[oE->class]->collisionLayers)) {
+        h&=handle_colliding(obj,objE,1,0);
+        
+      }
+    }
+    objE=oE->up;
+  }
+  
+  // Find other objects trying to move to the same place
+  if(h&8) for(d=0;d<8;d++) {
+    xx=x-x_delta[d];
+    yy=y-y_delta[d];
+    if(xx<1 || xx>pfwidth || yy<1 || yy>pfheight) continue;
+    objE=playfield[xx+yy*64-65];
+    while(objE!=VOIDLINK) {
+      oE=objects[objE];
+      if(obj!=objE && (oE->oflags&OF_MOVING) && oE->dir==d && !(oE->oflags&OF_DESTROYED)) {
+        if(o->height>oE->climb || oE->height>o->climb || (classes[o->class]->collisionLayers&classes[oE->class]->collisionLayers)) {
+          h&=handle_colliding(obj,objE,2,2);
+          
+        }
+      }
+      objE=oE->up;
+    }
+    
+  }
+  
+  return ~h;
+}
+
+static void do_deferred_moves(void) {
+  Object*o;
+  Object*p;
+  Uint32 h,n;
+  int i,x,y;
+  Uint8 re;
+  restart:
+  re=0;
+  for(i=0;i<64*pfheight;i++) {
+    retry:
+    n=playfield[i];
+    while(n!=VOIDLINK) {
+      o=objects[n];
+      if((o->oflags&(OF_MOVING|OF_DESTROYED))==OF_MOVING) {
+        x=o->x+x_delta[o->dir];
+        y=o->y+y_delta[o->dir];
+        if(x<1 || x>pfwidth || y<1 || y>pfheight || playfield[x+y*64-65]==VOIDLINK) goto stop;
+        h=deferred_colliding(n,x,y);
+        if((h&1) && (o->oflags&OF_MOVING) && move_to(VOIDLINK,n,x,y)) {
+          re=1;
+          o->oflags=(o->oflags|OF_MOVED)&~OF_MOVING;
+          i-=65;
+          if(i<0) i=0;
+          goto retry;
+        }
+        stop:
+        if(!(h&4)) o->oflags&=~OF_MOVING;
+      }
+      skip:
+      n=o->up;
+    }
+  }
+  if(re) goto restart;
+}
+
 static void execute_animation(Uint32 obj) {
   Object*o=objects[obj];
   Animation*a=o->anim;
@@ -1990,7 +2170,7 @@ const char*execute_turn(int key) {
   tc=0;
   for(n=0;n<nobjects;n++) if(o=objects[n]) {
     o->distance=0;
-    o->oflags&=~(OF_KEYCLEARED|OF_DONE);
+    o->oflags&=~(OF_KEYCLEARED|OF_DONE|OF_MOVING);
     if(o->anim) {
       o->anim->count=0;
       if(o->anim->status==ANISTAT_VISUAL) o->anim->status=0;
@@ -2061,6 +2241,10 @@ const char*execute_turn(int key) {
         if(o->anim && (o->anim->status&ANISTAT_LOGICAL)) execute_animation(n);
         if(o->oflags&(OF_BUSY|OF_USERSIGNAL)) busy=1;
       } else {
+        if(o->oflags&OF_MOVING) {
+          do_deferred_moves();
+          goto trig;
+        }
         o->departed2|=o->departed;
         o->arrived2|=o->arrived;
         o->departed=o->arrived=0;
@@ -2089,7 +2273,7 @@ const char*execute_turn(int key) {
     while(n!=VOIDLINK) {
       v=send_message(VOIDLINK,n,MSG_END_TURN,NVALUE(turn),NVALUE(0),NVALUE(0));
       if(v_bool(v) || objects[n]->arrived || objects[n]->departed) busy=1;
-      if(objects[n]->oflags&(OF_BUSY|OF_USERSIGNAL|OF_MOVED)) busy=1;
+      if(objects[n]->oflags&(OF_BUSY|OF_USERSIGNAL|OF_MOVED|OF_MOVING)) busy=1;
       n=objects[n]->prev;
     }
     turn++;
@@ -2110,7 +2294,7 @@ const char*execute_turn(int key) {
   n=lastobj;
   while(n!=VOIDLINK) {
     o=objects[n];
-    if(o->oflags&(OF_BUSY|OF_USERSIGNAL|OF_MOVED)) busy=1;
+    if(o->oflags&(OF_BUSY|OF_USERSIGNAL|OF_MOVED|OF_MOVING)) busy=1;
     if(o->arrived || o->departed) busy=1;
     if(o->anim && (o->anim->status&ANISTAT_LOGICAL) && (o->anim->step[o->anim->lstep].flag&ANI_ONCE)) {
       i=o->anim->ltime+clock;
