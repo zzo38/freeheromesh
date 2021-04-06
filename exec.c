@@ -2038,6 +2038,63 @@ static Uint32 handle_colliding(Uint32 n1,Uint32 n2,Uint8 r1,Uint8 r2) {
   return h;
 }
 
+static inline Uint8 find_deferred_movement_loop(Uint32 obj,Uint8 xx,Uint8 yy) {
+  // At this point, it is necessary to check for a loop, which may be like the diagram below:
+  //     >>>>>>>v
+  //        ^<<<<
+  // The loop may also have a different shape.
+  // If a loop is found, call the handle_colliding function to determine what to do next.
+  // If there is no loop, allow the move to be retried later, trying objE's location next.
+  // Since there may be multiple objects in a location, which move in different directions,
+  // a variable "ch" mentions the next object to try, if it is VOIDLINK. If not, then once
+  // it reaches the end without finding a loop, it can try the next one, resetting ch to
+  // VOIDLINK. This will find not only loops, but also if there is a branch that is later
+  // merged; due to what this program needs to do, and how they will be dealt with after
+  // the potential loop is found, that isn't a problem.
+  static sqlite3_uint64 board[64]; // bit board for locations with possible collisions
+  Object*o=objects[obj];
+  Uint32 ch=VOIDLINK; // first object found in same place as other where it must be checked
+  Uint8 x=o->x;
+  Uint8 y=o->y;
+  Uint32 n,nn;
+  memset(board,0,sizeof(board));
+  begin:
+  if(x==xx && y==yy) return 1;
+  if(x<1 || x>pfwidth || y<1 || y>pfheight) goto notfound;
+  if(board[y-1]&(1ULL<<(x-1))) return 0;
+  board[y-1]|=1ULL<<(x-1);
+  n=playfield[x+y*64-65];
+  nn=VOIDLINK;
+  while(n!=VOIDLINK) {
+    o=objects[n];
+    if((o->oflags&(OF_MOVING|OF_VISUALONLY|OF_DESTROYED))==OF_MOVING && o->height>0) {
+      if(nn==VOIDLINK) {
+        nn=n;
+        if(ch!=VOIDLINK) goto found;
+      } else if(ch==VOIDLINK) {
+        ch=n;
+        goto found;
+      }
+    }
+    up:
+    n=o->up;
+  }
+  if(nn==VOIDLINK) {
+    notfound:
+    if(ch==VOIDLINK) return 0;
+    o=objects[n=ch];
+    x=o->x;
+    y=o->y;
+    ch=VOIDLINK;
+    goto up;
+  }
+  found:
+  o=objects[nn];
+  x+=x_delta[o->dir];
+  y+=y_delta[o->dir];
+  goto begin;
+}
+
 static Uint32 deferred_colliding(Uint32 obj,int x,int y) {
   Object*o=objects[obj];
   Object*oE;
@@ -2048,23 +2105,18 @@ static Uint32 deferred_colliding(Uint32 obj,int x,int y) {
   while(objE!=VOIDLINK) {
     oE=objects[objE];
     if(!(oE->oflags&(OF_DESTROYED|OF_VISUALONLY))) {
-      if(oE->oflags&OF_MOVING) {
-        // At this point, it is necessary to check for a loop, which may be like the diagram below:
-        //     >>>>>>>v
-        //        ^<<<<
-        // The loop may also have a different shape.
-        // If a loop is found, call the handle_colliding function to determine what to do next.
-        // If there is no loop, allow the move to be retried later, trying objE's location next.
-        
-      }
-      if(oE->height>o->climb || (classes[o->class]->collisionLayers&classes[oE->class]->collisionLayers)) {
+      if((oE->oflags&OF_MOVING) && oE->height>0) {
+        if(find_deferred_movement_loop(objE,objects[obj]->x,objects[obj]->y)) {
+          h&=handle_colliding(obj,objE,3,3);
+        } else {
+          return h&4;
+        }
+      } else if(oE->height>o->climb || (classes[o->class]->collisionLayers&classes[oE->class]->collisionLayers)) {
         h&=handle_colliding(obj,objE,1,0);
-        
       }
     }
     objE=oE->up;
   }
-  
   // Find other objects trying to move to the same place
   if(h&8) for(d=0;d<8;d++) {
     xx=x-x_delta[d];
@@ -2076,14 +2128,11 @@ static Uint32 deferred_colliding(Uint32 obj,int x,int y) {
       if(obj!=objE && (oE->oflags&OF_MOVING) && oE->dir==d && !(oE->oflags&OF_DESTROYED)) {
         if(o->height>oE->climb || oE->height>o->climb || (classes[o->class]->collisionLayers&classes[oE->class]->collisionLayers)) {
           h&=handle_colliding(obj,objE,2,2);
-          
         }
       }
       objE=oE->up;
     }
-    
   }
-  
   return ~h;
 }
 
@@ -2113,7 +2162,7 @@ static void do_deferred_moves(void) {
           goto retry;
         }
         stop:
-        if(!(h&4)) o->oflags&=~OF_MOVING;
+        if((h&5)!=4) o->oflags&=~OF_MOVING;
       }
       skip:
       n=o->up;
