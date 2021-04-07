@@ -36,6 +36,7 @@ static volatile Uint32 wavelen;
 static void audio_callback(void*userdata,Uint8*stream,int len) {
   if(wavesound) {
     if(wavelen<len) {
+      memcpy(stream,wavesound,wavelen);
       memset(stream+wavelen,0,len-wavelen);
       wavesound=0;
       wavelen=0;
@@ -141,6 +142,8 @@ void init_sound(void) {
     needs_amplify=1;
     wavevolume=strtod(v,0);
   }
+  optionquery[2]=Q_mmlVolume;
+  if(v=xrm_get_resource(resourcedb,optionquery,optionquery,3)) mmlvolume=fmin(strtod(v,0)*32767.0,32767.0);
   
   fprintf(stderr,"Done.\n");
   wavesound=0;
