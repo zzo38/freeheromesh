@@ -454,6 +454,11 @@ static void examine(Uint32 n) {
         case SDLK_HOME: exam_scroll=0; break;
         case SDLK_PAGEUP: exam_scroll-=screen->h/8; if(exam_scroll<0) exam_scroll=0; break;
         case SDLK_PAGEDOWN: exam_scroll+=screen->h/8; break;
+        case SDLK_F1: case SDLK_g: if(classes[o->class]->gamehelp) modal_draw_popup(classes[o->class]->gamehelp); break;
+        case SDLK_F2: case SDLK_h: if(classes[o->class]->edithelp) modal_draw_popup(classes[o->class]->edithelp); break;
+        case SDLK_1: case SDLK_4: if(o->misc1.t==TY_LEVELSTRING) modal_draw_popup(value_string_ptr(o->misc1)); break;
+        case SDLK_2: case SDLK_5: if(o->misc2.t==TY_LEVELSTRING) modal_draw_popup(value_string_ptr(o->misc2)); break;
+        case SDLK_3: case SDLK_6: if(o->misc3.t==TY_LEVELSTRING) modal_draw_popup(value_string_ptr(o->misc3)); break;
       }
       goto redraw;
     case SDL_MOUSEMOTION:
