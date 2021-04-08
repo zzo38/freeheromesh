@@ -1,5 +1,5 @@
 #if 0
-gcc ${CFLAGS:--s -O2} -o ${EXE:-~/bin/heromesh} main.c class.o picture.o bindings.o function.o exec.o game.o edit.o picedit.o smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread
+gcc ${CFLAGS:--s -O2} -o ${EXE:-~/bin/heromesh} -Wno-multichar main.c class.o picture.o bindings.o function.o exec.o game.o edit.o picedit.o smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread
 exit
 #endif
 
@@ -27,6 +27,7 @@ exit
 
 typedef struct {
   char a[(N_MESSAGES==sizeof(standard_message_names)/sizeof(*standard_message_names))?1:-9];
+  char b[('\1\0'*'x'+'\0\1'*'y'=='xy')?1:-9];
 } ASSERTION;
 
 static const char schema[]=
