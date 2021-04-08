@@ -2050,7 +2050,10 @@ static inline Uint8 find_deferred_movement_loop(Uint32 obj,Uint8 xx,Uint8 yy) {
   // it reaches the end without finding a loop, it can try the next one, resetting ch to
   // VOIDLINK. This will find not only loops, but also if there is a branch that is later
   // merged; due to what this program needs to do, and how they will be dealt with after
-  // the potential loop is found, that isn't a problem.
+  // the potential loop is found, that isn't a problem. This algorithm also will not find
+  // some loops with multiple branches, but that is also OK, since the main handling of
+  // deferred movements will eventually try every object as an origin, and this will cause
+  // the loop to eventually be found.
   static sqlite3_uint64 board[64]; // bit board for locations with possible collisions
   Object*o=objects[obj];
   Uint32 ch=VOIDLINK; // first object found in same place as other where it must be checked
