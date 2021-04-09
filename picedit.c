@@ -959,6 +959,27 @@ static int delete_picture(void) {
   return 1;
 }
 
+static void rename_picture(void) {
+  sqlite3_stmt*st;
+  const char*s=screen_prompt("Old name:");
+  int i;
+  if(!s || !*s) return;
+  if(sqlite3_prepare_v2(userdb,"UPDATE `PICEDIT` SET `NAME`=REPLACE(?2||'.IMG','.IMG.IMG','.IMG') WHERE `NAME`=?1||'.IMG';",-1,&st,0)) {
+    screen_message(sqlite3_errmsg(userdb));
+    return;
+  }
+  sqlite3_bind_text(st,1,s,-1,SQLITE_TRANSIENT);
+  s=screen_prompt("New name:");
+  if(!s || !*s) {
+    sqlite3_finalize(st);
+    return;
+  }
+  sqlite3_bind_text(st,2,s,-1,SQLITE_TRANSIENT);
+  i=sqlite3_step(st);
+  sqlite3_finalize(st);
+  if(i!=SQLITE_DONE) screen_message(sqlite3_errmsg(userdb));
+}
+
 static void set_caption(void) {
   char buf[256];
   snprintf(buf,255,"Free Hero Mesh - %s - Picture",basefilename);
@@ -991,7 +1012,7 @@ void run_picture_editor(void) {
   SDL_LockSurface(screen);
   r.x=r.y=0; r.w=screen->w; r.h=screen->h;
   SDL_FillRect(screen,&r,0xF0);
-  draw_text(0,0,"<ESC> Save/Quit  <F1> Add  <F2> Delete  <F3> Edit",0xF0,0xFB);
+  draw_text(0,0,"<ESC> Save/Quit  <F1> Add  <F2> Delete  <F3> Edit  <F4> Rename",0xF0,0xFB);
   n=0;
   while((i=sqlite3_step(st))==SQLITE_ROW) {
     ids[n++]=sqlite3_column_int64(st,0);
@@ -1033,6 +1054,9 @@ void run_picture_editor(void) {
           case SDLK_F3:
             *ids=ask_picture_id("Edit:");
             if(*ids) edit_picture(*ids);
+            goto redraw;
+          case SDLK_F4:
+            rename_picture();
             goto redraw;
         }
         break;
