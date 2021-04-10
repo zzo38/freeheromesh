@@ -7,12 +7,31 @@
 * Game engine features
   * Multiple connected objects moving as a unit
   * Bizarro world
-  * Figure out why the $SeekerCloser class doesn't seem to work properly
+  * Pattern matching (pattern of objects (or lack) in the playfield)
+  * Testing the deferred movement
+  * String data (?)
+  * Array operations (CopyArray, ArraySlice, DotProduct)
+  * A ,PopUp command to use a popup with arguments starting from a mark
+  * Operations with marks (duplicate a list, length of a list, etc)
+  * "Goto message" instruction
+  * Class inheritance (abstract)
 * Editor
   * Mouse dragging
   * Level index editor
   * Bizarro world
+  * Edit attributes of existing objects
 * Table of contents for levels
   * Can define your own columns
-  * Can do SQL queries on them
+  * User can write SQL queries on them
 * Deal better with allowing to skip past invalid levels
+* Picture editor/loading
+  * Dependent images (based on others, but rotated/flipped/recoloured)
+  * Allowing more altimages
+* Puzzle set catalog format (using with internet; a separate program)
+* Inventory/replay hybrid view
+* Bookmarks
+* Message trace menu to enable/disable
+* Bugs
+  * Figure out why the $SeekerCloser class doesn't seem to work properly
+  * Level 232 of SUPERHRO puzzle set (the Lava shouldn't expand? why?)
+* Display solution comments/timestamp
