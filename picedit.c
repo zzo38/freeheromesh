@@ -23,6 +23,15 @@ typedef struct {
   Uint8 data[0]; // the first row is all 0, since the compression algorithm requires this
 } Picture;
 
+static void fn_valid_name(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  const char*s=sqlite3_value_text(*argv);
+  if(!s || !*s || s[strspn(s,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-0123456789")]) {
+    sqlite3_result_error(cxt,"Invalid name",-1);
+    return;
+  }
+  sqlite3_result_value(cxt,*argv);
+}
+
 static int load_picture_file(void) {
   sqlite3_stmt*st=0;
   FILE*fp;
@@ -925,7 +934,7 @@ static int add_picture(int t) {
   const char*s=screen_prompt("Enter name of new picture:");
   int i;
   if(!s || !*s) return 0;
-  if(sqlite3_prepare_v2(userdb,"INSERT INTO `PICEDIT`(`NAME`,`TYPE`,`DATA`) SELECT REPLACE(?1||'.IMG','.IMG.IMG','.IMG'),1,X'';",-1,&st,0)) {
+  if(sqlite3_prepare_v2(userdb,"INSERT INTO `PICEDIT`(`NAME`,`TYPE`,`DATA`) SELECT VALID_NAME(?1)||'.IMG',1,X'';",-1,&st,0)) {
     screen_message(sqlite3_errmsg(userdb));
     return 0;
   }
@@ -945,7 +954,7 @@ static int delete_picture(void) {
   const char*s=screen_prompt("Enter name of picture to delete:");
   int i;
   if(!s || !*s) return 0;
-  if(sqlite3_prepare_v2(userdb,"DELETE FROM `PICEDIT` WHERE `NAME`=REPLACE(?1||'.IMG','.IMG.IMG','.IMG');",-1,&st,0)) {
+  if(sqlite3_prepare_v2(userdb,"DELETE FROM `PICEDIT` WHERE `NAME`=?1||'.IMG';",-1,&st,0)) {
     screen_message(sqlite3_errmsg(userdb));
     return 0;
   }
@@ -964,7 +973,7 @@ static void rename_picture(void) {
   const char*s=screen_prompt("Old name:");
   int i;
   if(!s || !*s) return;
-  if(sqlite3_prepare_v2(userdb,"UPDATE `PICEDIT` SET `NAME`=REPLACE(?2||'.IMG','.IMG.IMG','.IMG') WHERE `NAME`=?1||'.IMG';",-1,&st,0)) {
+  if(sqlite3_prepare_v2(userdb,"UPDATE `PICEDIT` SET `NAME`=VALID_NAME(?2)||'.IMG' WHERE `NAME`=?1||'.IMG';",-1,&st,0)) {
     screen_message(sqlite3_errmsg(userdb));
     return;
   }
@@ -994,6 +1003,7 @@ void run_picture_editor(void) {
   int sc=0;
   int max=load_picture_file();
   int i,n;
+  sqlite3_create_function(userdb,"VALID_NAME",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_valid_name,0,0);
   init_palette();
   optionquery[1]=Q_imageSize;
   picture_size=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"16",0,10);
