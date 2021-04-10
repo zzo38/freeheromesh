@@ -1,0 +1,18 @@
+* Sound effects
+  * Wave sounds
+    * Standard sounds
+    * User sounds
+  * MML sounds
+  * Numeric sounds (?)
+* Game engine features
+  * Multiple connected objects moving as a unit
+  * Bizarro world
+  * Figure out why the $SeekerCloser class doesn't seem to work properly
+* Editor
+  * Mouse dragging
+  * Level index editor
+  * Bizarro world
+* Table of contents for levels
+  * Can define your own columns
+  * Can do SQL queries on them
+
