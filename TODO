@@ -15,4 +15,4 @@
 * Table of contents for levels
   * Can define your own columns
   * Can do SQL queries on them
-
+* Deal better with allowing to skip past invalid levels
