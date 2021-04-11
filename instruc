@@ -100,6 +100,8 @@ sub "-"
 ,div "/"
 ,mod
 neg
+,min
+,max
 
 ; Bitwise
 lsh
@@ -118,6 +120,7 @@ lnot
 
 ; Comparison
 eq
+eq2
 ne
 ,gt
 ,lt
@@ -212,6 +215,7 @@ BroadcastSum ; Broadcast, but result is sum of return values
 BroadcastSumEx
 chain
 ,Chebyshev
+,Coloc
 .Create
 DelInventory
 Delta
@@ -253,6 +257,7 @@ PopUp
 SetInventory
 Sound
 Synchronize
+,Target
 Trace
 VolumeAt
 WinLevel

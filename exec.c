@@ -1500,6 +1500,19 @@ static inline void v_obj_moving_to(Uint32 x,Uint32 y) {
   }
 }
 
+static inline int v_target(Uint32 n) {
+  if(n==VOIDLINK) return 0;
+  if(msgvars.arg1.t || msgvars.arg2.t) Throw("Type mismatch");
+  return (objects[n]->x==msgvars.arg1.u && objects[n]->y==msgvars.arg2.u);
+}
+
+static int colocation(Uint32 a,Uint32 b) {
+  if(a==VOIDLINK || b==VOIDLINK) return 0;
+  if((objects[a]->oflags|objects[b]->oflags)&OF_DESTROYED) return 0;
+  if((objects[a]->oflags^objects[b]->oflags)&OF_BIZARRO) return 0;
+  return (objects[a]->x==objects[b]->x && objects[a]->y==objects[b]->y);
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -1608,6 +1621,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_CLIMB_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->climb=t1.u&0xFFFF; break;
     case OP_COLLISIONLAYERS: StackReq(0,1); Push(NVALUE(classes[o->class]->collisionLayers)); break;
     case OP_COLLISIONLAYERS_C: StackReq(1,1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else Push(NVALUE(classes[objects[i]->class]->collisionLayers)); break;
+    case OP_COLOC: StackReq(1,1); t1=Pop(); i=colocation(obj,v_object(t2)); Push(NVALUE(i)); break;
+    case OP_COLOC_C: StackReq(2,1); t1=Pop(); t2=Pop(); i=colocation(v_object(t1),v_object(t2)); Push(NVALUE(i)); break;
     case OP_COMPATIBLE: StackReq(0,1); if(classes[o->class]->cflags&CF_COMPATIBLE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_COMPATIBLE_C: StackReq(1,1); GetClassFlagOf(CF_COMPATIBLE); break;
     case OP_CREATE: NoIgnore(); StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_create(obj,t1,t2,t3,t4,t5)); break;
@@ -1653,6 +1668,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_DROP_D: StackReq(2,0); Pop(); Pop(); break;
     case OP_DUP: StackReq(1,2); t1=Pop(); Push(t1); Push(t1); break;
     case OP_EQ: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_equal(t1,t2)?1:0)); break;
+    case OP_EQ2: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(NVALUE(v_equal(t1,t3)?(v_equal(t2,t4)?1:0):0)); break;
     case OP_FINISHED: StackReq(0,1); Push(NVALUE(all_flushed)); break;
     case OP_FINISHED_E: StackReq(1,0); t1=Pop(); Numeric(t1); all_flushed=t1.u; break;
     case OP_FLIP: v_flip(); break;
@@ -1731,7 +1747,11 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_MANHATTAN: StackReq(1,1); t1=Pop(); i=manhattan(obj,v_object(t1)); Push(NVALUE(i)); break;
     case OP_MANHATTAN_C: StackReq(2,1); t2=Pop(); t1=Pop(); i=manhattan(v_object(t1),v_object(t2)); Push(NVALUE(i)); break;
     case OP_MARK: StackReq(0,1); Push(UVALUE(0,TY_MARK)); break;
+    case OP_MAX: StackReq(2,1); t1=Pop(); Numeric(t1); t2=Pop(); Numeric(t2); if(t1.u>t2.u) Push(t1); else Push(t2); break;
+    case OP_MAX_C: StackReq(2,1); t1=Pop(); Numeric(t1); t2=Pop(); Numeric(t2); if(t1.s>t2.s) Push(t1); else Push(t2); break;
     case OP_MAXINVENTORY: StackReq(1,0); t1=Pop(); Numeric(t1); if(ninventory>t1.u) Throw("Inventory overflow"); break;
+    case OP_MIN: StackReq(2,1); t1=Pop(); Numeric(t1); t2=Pop(); Numeric(t2); if(t1.u<t2.u) Push(t1); else Push(t2); break;
+    case OP_MIN_C: StackReq(2,1); t1=Pop(); Numeric(t1); t2=Pop(); Numeric(t2); if(t1.s<t2.s) Push(t1); else Push(t2); break;
     case OP_MINUSMOVE: StackReq(1,1); t1=Pop(); Numeric(t1); i=defer_move(obj,t1.u,0); Push(NVALUE(i)); break;
     case OP_MINUSMOVE_C: StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); i=defer_move(i,t1.u,0); Push(NVALUE(i)); break;
     case OP_MINUSMOVE_D: StackReq(1,0); t1=Pop(); Numeric(t1); defer_move(obj,t1.u,0); break;
@@ -1850,6 +1870,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_SUB: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u-t2.u)); break;
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
     case OP_SYNCHRONIZE: StackReq(2,0); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); animate_sync(obj,t1.u,t2.u); break;
+    case OP_TARGET: StackReq(0,1); Push(NVALUE(v_target(obj)?1:0)); break;
+    case OP_TARGET_C: StackReq(1,1); i=v_object(Pop()); Push(NVALUE(v_target(i)?1:0)); break;
     case OP_TEMPERATURE: StackReq(0,1); Push(NVALUE(o->temperature)); break;
     case OP_TEMPERATURE_C: StackReq(1,1); Push(GetVariableOrAttributeOf(temperature,NVALUE)); break;
     case OP_TEMPERATURE_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->temperature=t1.u; break;
