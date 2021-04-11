@@ -394,6 +394,10 @@ static void load_one_picture(FILE*fp,Uint16 img,int alt) {
   SDL_UnlockSurface(picts);
 }
 
+static void load_dependent_picture(FILE*fp,Uint16 img,int alt) {
+  //TODO
+}
+
 void load_pictures(void) {
   sqlite3_stmt*st=0;
   FILE*fp;
@@ -423,7 +427,7 @@ void load_pictures(void) {
     v+=j;
   }
   if(n=sqlite3_exec(userdb,"BEGIN;",0,0,0)) fatal("SQL error (%d): %s\n",n,sqlite3_errmsg(userdb));
-  if(sqlite3_prepare_v2(userdb,"INSERT INTO `PICTURES`(`ID`,`NAME`,`OFFSET`) VALUES(?1,?2,?3);",-1,&st,0))
+  if(sqlite3_prepare_v2(userdb,"INSERT INTO `PICTURES`(`ID`,`NAME`,`OFFSET`,`DEPENDENT`) VALUES(?1,?2,?3,?4);",-1,&st,0))
    fatal("Unable to prepare SQL statement while loading pictures: %s\n",sqlite3_errmsg(userdb));
   nam=malloc(256);
   if(!nam) fatal("Allocation failed\n");
@@ -436,13 +440,14 @@ void load_pictures(void) {
       if(i<255) nam[i++]=j;
     }
     nam[i]=0;
-    if(i>4 && !memcmp(".IMG",nam+i-4,4)) {
-      j=1;
+    if(i>4 && (!memcmp(".IMG",nam+i-4,4) || !memcmp(".DEP",nam+i-4,4))) {
+      if(nam[i-3]=='D') j=0; else j=1;
       if(n++==32768) fatal("Too many pictures\n");
       sqlite3_reset(st);
       sqlite3_bind_int(st,1,n);
       sqlite3_bind_text(st,2,nam,i-4,SQLITE_TRANSIENT);
       sqlite3_bind_int64(st,3,ftell(fp)+4);
+      sqlite3_bind_int(st,4,j^1);
       while((i=sqlite3_step(st))==SQLITE_ROW);
       if(i!=SQLITE_DONE) fatal("SQL error (%d): %s\n",i,sqlite3_errmsg(userdb));
     } else {
@@ -475,7 +480,7 @@ nomore1:
   if(!curpic) fatal("Allocation failed\n");
   picture_size=decide_picture_size(nwantsize,wantsize,havesize,n);
   if(main_options['x']) goto done;
-  if(sqlite3_prepare_v2(userdb,"SELECT `ID`, `OFFSET` FROM `PICTURES`;",-1,&st,0))
+  if(sqlite3_prepare_v2(userdb,"SELECT `ID`, `OFFSET` FROM `PICTURES` WHERE NOT `DEPENDENT`;",-1,&st,0))
    fatal("Unable to prepare SQL statement while loading pictures: %s\n",sqlite3_errmsg(userdb));
   optionquery[1]=Q_screenFlags;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
@@ -484,9 +489,23 @@ nomore1:
   if(!picts) fatal("Error allocating surface for pictures: %s\n",SDL_GetError());
   init_palette();
   for(i=0;i<n;i++) {
-    if((j=sqlite3_step(st))!=SQLITE_ROW) fatal("SQL error (%d): %s\n",j,j==SQLITE_DONE?"Incorrect number of rows in a temporary table":sqlite3_errmsg(userdb));
+    if((j=sqlite3_step(st))!=SQLITE_ROW) {
+      if(j==SQLITE_DONE) break;
+      fatal("SQL error (%d): %s\n",j,sqlite3_errmsg(userdb));
+    }
     fseek(fp,sqlite3_column_int64(st,1),SEEK_SET);
     load_one_picture(fp,sqlite3_column_int(st,0),altImage);
+  }
+  sqlite3_finalize(st);
+  if(sqlite3_prepare_v2(userdb,"SELECT `ID`, `OFFSET` FROM `PICTURES` WHERE `DEPENDENT`;",-1,&st,0))
+   fatal("Unable to prepare SQL statement while loading pictures: %s\n",sqlite3_errmsg(userdb));
+  for(i=0;i<n;i++) {
+    if((j=sqlite3_step(st))!=SQLITE_ROW) {
+      if(j==SQLITE_DONE) break;
+      fatal("SQL error (%d): %s\n",j,sqlite3_errmsg(userdb));
+    }
+    fseek(fp,sqlite3_column_int64(st,1)-4,SEEK_SET);
+    load_dependent_picture(fp,sqlite3_column_int(st,0),altImage);
   }
   sqlite3_finalize(st);
   fclose(fp);
