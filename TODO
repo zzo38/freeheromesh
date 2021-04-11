@@ -15,6 +15,7 @@
   * Operations with marks (duplicate a list, length of a list, etc)
   * "Goto message" instruction
   * Class inheritance (abstract)
+  * Case blocks
 * Editor
   * Mouse dragging
   * Level index editor
@@ -27,6 +28,7 @@
 * Picture editor/loading
   * Dependent images (based on others, but rotated/flipped/recoloured)
   * Allowing more altimages
+  * Configuration lump for default picture sizes for new pictures
 * Puzzle set catalog format (using with internet; a separate program)
 * Inventory/replay hybrid view
 * Bookmarks
@@ -35,3 +37,4 @@
   * Figure out why the $SeekerCloser class doesn't seem to work properly
   * Level 232 of SUPERHRO puzzle set (the Lava shouldn't expand? why?)
 * Display solution comments/timestamp
+* VCR mode
