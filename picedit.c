@@ -23,6 +23,40 @@ typedef struct {
   Uint8 data[0]; // the first row is all 0, since the compression algorithm requires this
 } Picture;
 
+typedef struct {
+  Uint8 colors[64];
+  Uint8 ncolors;
+} ColorFilter;
+
+typedef struct {
+  char name[64];
+} OverlayFilter;
+
+typedef struct {
+  Uint8 shift[32];
+  Uint8 size[32];
+  Uint8 nshift;
+} ShiftFilter;
+
+typedef struct {
+  Uint8 code;
+  // 0-7 = flip/rotations
+  // 8-10 = change colours (8 is *->* *->* *->*; 9 is \->*->*->*->/; 10 is *<->* *<->* *<->*)
+  // 11 = overlay
+  // 12-15 = shift (up, down, right, left)
+  union {
+    ColorFilter color;
+    OverlayFilter overlay;
+    ShiftFilter shift;
+  };
+} Filter;
+
+typedef struct {
+  char basename[64];
+  Filter filters[64];
+  Uint8 nfilters;
+} DependentPicture;
+
 static Uint8 cur_type;
 
 static void fn_valid_name(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
@@ -258,7 +292,7 @@ static void compress_picture(FILE*out,Picture*pic) {
   int bs=pic->size*pic->size;
   FILE*fp=fmemopen(0,bs,"w");
   int i,j;
-  if(!fp) fatal("Error with fmemopen");
+  if(!fp) fatal("Error with fmemopen\n");
   for(i=0;i<8;i++) {
     compress_picture_1(fp,pic);
     if(!ferror(fp)) {
@@ -872,16 +906,97 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
   }
 }
 
+static void load_dependent_picture(const Uint8*data,int size,DependentPicture*dp) {
+  FILE*fp;
+  int i,j,k;
+  memset(dp,0,sizeof(DependentPicture));
+  if(!size) {
+    const char*s=screen_prompt("Name of base picture:");
+    if(s) strncpy(dp->basename,s,63);
+    return;
+  }
+  fp=fmemopen((Uint8*)data,size,"r");
+  if(!fp) fatal("Error with fmemopen\n");
+  i=0;
+  for(;;) {
+    j=fgetc(fp);
+    if(j<32) {
+      if(j>0) ungetc(j,fp);
+      break;
+    }
+    if(i<63) dp->basename[i++]=j;
+  }
+  while(dp->nfilters<64) {
+    if((j=fgetc(fp))<0) break;
+    switch(dp->filters[i=dp->nfilters++].code=j) {
+      case 8 ... 10:
+        j=dp->filters[i].color.ncolors=fgetc(fp);
+        if(j<0 || j>64) j=64;
+        fread(dp->filters[i].color.colors,1,j,fp);
+        break;
+      case 11:
+        k=0;
+        for(;;) {
+          j=fgetc(fp);
+          if(j<32) {
+            if(j>0) ungetc(j,fp);
+            break;
+          }
+          if(k<63) dp->filters[i].overlay.name[k++]=j;
+        }
+        break;
+      case 12 ... 15:
+        for(k=0;k<64;k++) {
+          dp->filters[i].shift.shift[k]=(j=fgetc(fp))&127;
+          dp->filters[i].shift.size[k]=fgetc(fp);
+          if(j&128) break;
+        }
+        dp->filters[i].shift.nshift=k;
+        break;
+    }
+  }
+  fclose(fp);
+}
+
+static void save_dependent_picture(FILE*fp,DependentPicture*dp) {
+  int i,j;
+  fwrite(dp->basename,1,strlen(dp->basename)+(dp->filters[0].code<32?0:1),fp);
+  for(i=0;i<dp->nfilters;i++) {
+    fputc(dp->filters[i].code,fp);
+    switch(dp->filters[i].code) {
+      case 8 ... 10:
+        fputc(dp->filters[i].color.ncolors,fp);
+        fwrite(dp->filters[i].color.colors,1,dp->filters[i].color.ncolors,fp);
+        break;
+      case 11:
+        fwrite(dp->filters[i].overlay.name,1,strlen(dp->filters[i].overlay.name)+(i<dp->nfilters-1&&dp->filters[i+1].code<32?0:1),fp);
+        break;
+      case 12 ... 15:
+        if(!dp->filters[i].shift.nshift) fwrite("\x80",1,2,fp);
+        for(j=0;j<dp->filters[i].shift.nshift;j++) {
+          fputc(dp->filters[i].shift.shift[j]|(j==dp->filters[i].shift.nshift-1?128:0),fp);
+          fputc(dp->filters[i].shift.size[j],fp);
+        }
+        break;
+    }
+  }
+}
+
+static void edit_dependent_picture(DependentPicture*dp,const char*name) {
+  
+}
+
 static void edit_picture(sqlite3_int64 id) {
   sqlite3_stmt*st;
   Picture*pict[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  DependentPicture*dpict;
   char*name;
   const unsigned char*data;
   Uint8*buf=0;
   size_t size=0;
   FILE*fp;
   int i,n;
-  if(i=sqlite3_prepare_v2(userdb,"SELECT SUBSTR(`NAME`,1,LENGTH(`NAME`)-4),`DATA` FROM `PICEDIT` WHERE `ID`=?1;",-1,&st,0)) {
+  if(i=sqlite3_prepare_v2(userdb,"SELECT SUBSTR(`NAME`,1,LENGTH(`NAME`)-4),`DATA`,`TYPE` FROM `PICEDIT` WHERE `ID`=?1;",-1,&st,0)) {
     screen_message(sqlite3_errmsg(userdb));
     return;
   }
@@ -893,32 +1008,46 @@ static void edit_picture(sqlite3_int64 id) {
     return;
   }
   data=sqlite3_column_blob(st,1);
-  i=sqlite3_column_bytes(st,1);
-  load_picture_lump(data,i,pict);
+  n=sqlite3_column_bytes(st,1);
+  i=sqlite3_column_int(st,2);
   name=strdup(sqlite3_column_text(st,0)?:(const unsigned char*)"???");
   if(!name) fatal("Allocation failed\n");
-  sqlite3_finalize(st);
-  if(!*pict) {
-    i=picture_size;
-    *pict=malloc(sizeof(Picture)+(i+1)*i);
-    if(!*pict) fatal("Allocation failed");
-    pict[0]->size=i;
-    memset(pict[0]->data,0,(i+1)*i);
+  if(i==1) {
+    load_picture_lump(data,n,pict);
+    sqlite3_finalize(st);
+    if(!*pict) {
+      i=picture_size;
+      *pict=malloc(sizeof(Picture)+(i+1)*i);
+      if(!*pict) fatal("Allocation failed\n");
+      pict[0]->size=i;
+      memset(pict[0]->data,0,(i+1)*i);
+    }
+    edit_picture_1(pict,name);
+    fp=open_memstream((char**)&buf,&size);
+    if(!fp) fatal("Cannot open memory stream\n");
+    for(i=n=0;i<16;i++) if(pict[i]) n++;
+    fputc(n,fp);
+    for(i=0;i<n;i++) fputc(pict[i]->size,fp);
+    for(i=0;i<n>>1;i++) fputc(0,fp);
+    for(i=0;i<n;i++) compress_picture(fp,pict[i]);
+    fclose(fp);
+    if(!buf || !size) fatal("Allocation failed\n");
+    *buf|=pict[0]->meth<<4;
+    for(i=1;i<n;i++) buf[n+1+((i-1)>>1)]|=pict[i]->meth<<(i&1?0:4);
+    for(i=0;i<16;i++) free(pict[i]);
+  } else if(i==2) {
+    dpict=malloc(sizeof(DependentPicture));
+    if(!dpict) fatal("Allocation failed\n");
+    load_dependent_picture(data,n,dpict);
+    fp=open_memstream((char**)&buf,&size);
+    if(!fp) fatal("Cannot open memory stream\n");
+    edit_dependent_picture(dpict,name);
+    save_dependent_picture(fp,dpict);
+    free(dpict);
+    fclose(fp);
+    if(!buf || !size) fatal("Allocation failed\n");
   }
-  edit_picture_1(pict,name);
   free(name);
-  fp=open_memstream((char**)&buf,&size);
-  if(!fp) fatal("Cannot open memory stream\n");
-  for(i=n=0;i<16;i++) if(pict[i]) n++;
-  fputc(n,fp);
-  for(i=0;i<n;i++) fputc(pict[i]->size,fp);
-  for(i=0;i<n>>1;i++) fputc(0,fp);
-  for(i=0;i<n;i++) compress_picture(fp,pict[i]);
-  fclose(fp);
-  if(!buf || !size) fatal("Allocation failed\n");
-  *buf|=pict[0]->meth<<4;
-  for(i=1;i<n;i++) buf[n+1+((i-1)>>1)]|=pict[i]->meth<<(i&1?0:4);
-  for(i=0;i<16;i++) free(pict[i]);
   if(i=sqlite3_prepare_v2(userdb,"UPDATE `PICEDIT` SET `DATA`=?2 WHERE ID=?1;",-1,&st,0)) {
     screen_message(sqlite3_errmsg(userdb));
     free(buf);
@@ -929,10 +1058,6 @@ static void edit_picture(sqlite3_int64 id) {
   i=sqlite3_step(st);
   if(i!=SQLITE_DONE) screen_message(sqlite3_errmsg(userdb));
   sqlite3_finalize(st);
-}
-
-static void edit_dependent_picture(sqlite3_int64 rowid) {
-  
 }
 
 static int add_picture(int t) {
@@ -952,8 +1077,7 @@ static int add_picture(int t) {
     screen_message(sqlite3_errmsg(userdb));
     return 0;
   }
-  if(t==1) edit_picture(sqlite3_last_insert_rowid(userdb));
-  if(t==2) edit_dependent_picture(sqlite3_last_insert_rowid(userdb));
+  edit_picture(sqlite3_last_insert_rowid(userdb));
   return 1;
 }
 
@@ -1071,10 +1195,7 @@ void run_picture_editor(void) {
             goto redraw;
           case SDLK_F3:
             *ids=ask_picture_id("Edit:");
-            if(*ids) {
-              if(cur_type==1) edit_picture(*ids);
-              else if(cur_type==2) edit_dependent_picture(*ids);
-            }
+            if(*ids) edit_picture(*ids);
             goto redraw;
           case SDLK_F4:
             rename_picture();

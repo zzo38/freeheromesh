@@ -31,11 +31,12 @@ replace it with a different set of pictures/sounds if wanted.
 The IMG lumps are the pictures. Each one may store multiple versions of a
 picture; the loader will select one based on the user's criteria.
 
+The DEP lumps are dependent pictures; each one references one or more IMG
+lumps, and specifies how to modify them to produce the new picture (e.g.
+by rotating, mirroring, changing colours, etc).
+
 The WAV lumps are sound effects. Each is a RIFF WAVE file; it must be of
 a type which can be loaded by SDL. (This is currently not used.)
-
-Although not implemented yet, in future there may also be DIM lumps for
-"dependent images", and possibly other lumps.
 
 
 === Class definition file ===
