@@ -23,6 +23,8 @@ typedef struct {
   Uint8 data[0]; // the first row is all 0, since the compression algorithm requires this
 } Picture;
 
+static Uint8 cur_type;
+
 static void fn_valid_name(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   const char*s=sqlite3_value_text(*argv);
   if(!s || !*s || s[strspn(s,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-0123456789")]) {
@@ -68,7 +70,7 @@ static int load_picture_file(void) {
     nam[i]=0;
     sqlite3_reset(st);
     sqlite3_bind_text(st,1,nam,i,SQLITE_TRANSIENT);
-    sqlite3_bind_int(st,2,j=(i>4 && !memcmp(".IMG",nam+i-4,4)?1:0));
+    sqlite3_bind_int(st,2,j=(i>4 && !memcmp(".IMG",nam+i-4,4)?1:!memcmp(".DEP",nam+i-4,4)?2:0));
     r+=j;
     i=fgetc(fp)<<16;
     i|=fgetc(fp)<<24;
@@ -90,10 +92,10 @@ done:
   fprintf(stderr,"Done\n");
   sqlite3_exec(userdb,
     "CREATE TRIGGER `PICEDIT_T1` BEFORE INSERT ON `PICEDIT` BEGIN"
-    "  SELECT RAISE(FAIL,'Duplicate name') FROM `PICEDIT` WHERE `NAME`=NEW.`NAME`;"
+    "  SELECT RAISE(FAIL,'Duplicate name') FROM `PICEDIT` WHERE REPLACE(`NAME`||'*','.IMG*','.DEP*')=REPLACE(NEW.`NAME`||'*','.IMG*','.DEP*');"
     "END;"
     "CREATE TRIGGER `PICEDIT_T2` BEFORE UPDATE OF `NAME` ON `PICEDIT` BEGIN"
-    "  SELECT RAISE(FAIL,'Duplicate name') FROM `PICEDIT` WHERE `NAME`=NEW.`NAME`;"
+    "  SELECT RAISE(FAIL,'Duplicate name') FROM `PICEDIT` WHERE REPLACE(`NAME`||'*','.IMG*','.DEP*')=REPLACE(NEW.`NAME`||'*','.IMG*','.DEP*');"
     "END;"
   ,0,0,0);
   return r;
@@ -138,15 +140,15 @@ static sqlite3_int64 ask_picture_id(const char*t) {
   int i;
   sqlite3_int64 id=0;
   if(!r || !*r) return 0;
-  i=sqlite3_prepare_v2(userdb,"SELECT `ID` FROM `PICEDIT` WHERE `NAME` = (?1 || '.IMG');",-1,&st,0);
+  i=sqlite3_prepare_v2(userdb,"SELECT `ID`, `TYPE` FROM `PICEDIT` WHERE `NAME` = (?1 || '.IMG') OR `NAME` = (?1 || '.DEP');",-1,&st,0);
   if(i) {
     screen_message(sqlite3_errmsg(userdb));
     return 0;
   }
   sqlite3_bind_text(st,1,r,-1,0);
   i=sqlite3_step(st);
-  if(i==SQLITE_ROW) id=sqlite3_column_int64(st,0);
-  if(i==SQLITE_DONE) screen_message("Picture not found");
+  if(i==SQLITE_ROW) id=sqlite3_column_int64(st,0),cur_type=sqlite3_column_int(st,1);
+  if(i==SQLITE_DONE) screen_message("Picture not found"),cur_type=0;
   sqlite3_finalize(st);
   return id;
 }
@@ -929,23 +931,29 @@ static void edit_picture(sqlite3_int64 id) {
   sqlite3_finalize(st);
 }
 
+static void edit_dependent_picture(sqlite3_int64 rowid) {
+  
+}
+
 static int add_picture(int t) {
   sqlite3_stmt*st;
   const char*s=screen_prompt("Enter name of new picture:");
   int i;
   if(!s || !*s) return 0;
-  if(sqlite3_prepare_v2(userdb,"INSERT INTO `PICEDIT`(`NAME`,`TYPE`,`DATA`) SELECT VALID_NAME(?1)||'.IMG',1,X'';",-1,&st,0)) {
+  if(sqlite3_prepare_v2(userdb,"INSERT INTO `PICEDIT`(`NAME`,`TYPE`,`DATA`) SELECT VALID_NAME(?1)||CASE ?2 WHEN 1 THEN '.IMG' ELSE '.DEP' END,?2,X'';",-1,&st,0)) {
     screen_message(sqlite3_errmsg(userdb));
     return 0;
   }
   sqlite3_bind_text(st,1,s,-1,0);
+  sqlite3_bind_int(st,2,t);
   i=sqlite3_step(st);
   sqlite3_finalize(st);
   if(i!=SQLITE_DONE) {
     screen_message(sqlite3_errmsg(userdb));
     return 0;
   }
-  edit_picture(sqlite3_last_insert_rowid(userdb));
+  if(t==1) edit_picture(sqlite3_last_insert_rowid(userdb));
+  if(t==2) edit_dependent_picture(sqlite3_last_insert_rowid(userdb));
   return 1;
 }
 
@@ -954,7 +962,7 @@ static int delete_picture(void) {
   const char*s=screen_prompt("Enter name of picture to delete:");
   int i;
   if(!s || !*s) return 0;
-  if(sqlite3_prepare_v2(userdb,"DELETE FROM `PICEDIT` WHERE `NAME`=?1||'.IMG';",-1,&st,0)) {
+  if(sqlite3_prepare_v2(userdb,"DELETE FROM `PICEDIT` WHERE `NAME`=?1||'.IMG' OR `NAME`=?1||'.DEP';",-1,&st,0)) {
     screen_message(sqlite3_errmsg(userdb));
     return 0;
   }
@@ -973,7 +981,7 @@ static void rename_picture(void) {
   const char*s=screen_prompt("Old name:");
   int i;
   if(!s || !*s) return;
-  if(sqlite3_prepare_v2(userdb,"UPDATE `PICEDIT` SET `NAME`=VALID_NAME(?2)||'.IMG' WHERE `NAME`=?1||'.IMG';",-1,&st,0)) {
+  if(sqlite3_prepare_v2(userdb,"UPDATE `PICEDIT` SET `NAME`=VALID_NAME(?2)||SUBSTR(`NAME`,-4) WHERE `NAME`=?1||'.IMG' OR `NAME`=?1||'.DEP';",-1,&st,0)) {
     screen_message(sqlite3_errmsg(userdb));
     return;
   }
@@ -1022,11 +1030,11 @@ void run_picture_editor(void) {
   SDL_LockSurface(screen);
   r.x=r.y=0; r.w=screen->w; r.h=screen->h;
   SDL_FillRect(screen,&r,0xF0);
-  draw_text(0,0,"<ESC> Save/Quit  <F1> Add  <F2> Delete  <F3> Edit  <F4> Rename",0xF0,0xFB);
+  draw_text(0,0,"<ESC> Save/Quit  <F1> Add  <F2> Delete  <F3> Edit  <F4> Rename  <F5> AddDependent",0xF0,0xFB);
   n=0;
   while((i=sqlite3_step(st))==SQLITE_ROW) {
     ids[n++]=sqlite3_column_int64(st,0);
-    draw_text(16,8*n,sqlite3_column_text(st,1),0xF0,0xF7);
+    draw_text(16,8*n,sqlite3_column_text(st,1),0xF0,sqlite3_column_int(st,2)==1?0xF7:0xF2);
     if(8*n+8>screen->h-8) break;
   }
   SDL_UnlockSurface(screen);
@@ -1063,10 +1071,17 @@ void run_picture_editor(void) {
             goto redraw;
           case SDLK_F3:
             *ids=ask_picture_id("Edit:");
-            if(*ids) edit_picture(*ids);
+            if(*ids) {
+              if(cur_type==1) edit_picture(*ids);
+              else if(cur_type==2) edit_dependent_picture(*ids);
+            }
             goto redraw;
           case SDLK_F4:
             rename_picture();
+            goto redraw;
+          case SDLK_F5:
+            if(max<65535) max+=add_picture(2);
+            else screen_message("Too many pictures");
             goto redraw;
         }
         break;

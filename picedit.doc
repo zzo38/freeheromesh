@@ -28,6 +28,8 @@ The F3 key allows entering a name of a picture to edit.
 
 The F4 key renames a picture.
 
+The F5 key adds a dependent picture (see the below section).
+
 
 === Drawing ===
 
@@ -167,4 +169,9 @@ Hollow ellipse (E)
 Filled ellipse (S)
   Click the left button on one corner of the bounding rectangle of the
   ellipse, and then click the middle or right button on the other side.
+
+
+=== Dependent pictures ===
+
+(Not implemented yet.)
 
