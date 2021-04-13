@@ -982,8 +982,207 @@ static void save_dependent_picture(FILE*fp,DependentPicture*dp) {
   }
 }
 
+static int add_filter(DependentPicture*dp,const char*const*const txt,Sint8 c) {
+  SDL_Rect r;
+  SDL_Event ev;
+  Uint8 f;
+  char buf[4]="<?>";
+  if(c<0 || dp->nfilters>63) return;
+  r.x=r.y=12; r.w=200; r.h=136;
+  set_cursor(XC_iron_cross);
+  redraw:
+  SDL_LockSurface(screen);
+  SDL_FillRect(screen,&r,0xF8);
+  for(f=0;f<16;f++) {
+    buf[1]=f+'a';
+    draw_text(16,(f+2)<<3,buf,0xF8,0xFB);
+    draw_text(48,(f+2)<<3,txt[f],0xF8,0xFF);
+  }
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) switch(ev.type) {
+    case SDL_QUIT: exit(0); return 0;
+    case SDL_KEYDOWN:
+      if(ev.key.keysym.sym==SDLK_ESCAPE || ev.key.keysym.sym==SDLK_z) return 0;
+      if(ev.key.keysym.sym<SDLK_a || ev.key.keysym.sym>SDLK_p) break;
+      f=ev.key.keysym.sym-SDLK_a;
+      goto found;
+    case SDL_VIDEOEXPOSE: goto redraw;
+  }
+  found:
+  ++dp->nfilters;
+  if(c!=63) memmove(dp->filters+c+1,dp->filters+c,(63-c)*sizeof(Filter));
+  memset(dp->filters+c,0,sizeof(Filter));
+  dp->filters[c].code=f;
+  return 1;
+}
+
+static void edit_color_filter(ColorFilter*f) {
+  SDL_Rect r;
+  SDL_Event ev;
+  redraw:
+  r.x=r.y=0; r.w=screen->w; r.h=screen->h;
+  SDL_LockSurface(screen);
+  SDL_FillRect(screen,&r,0xF0);
+  //TODO
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) switch(ev.type) {
+    case SDL_QUIT: exit(0); return;
+    case SDL_KEYDOWN:
+      switch(ev.key.keysym.sym) {
+        case SDLK_ESCAPE: return;
+        //TODO
+      }
+      goto redraw;
+    case SDL_VIDEOEXPOSE: goto redraw;
+  }
+}
+
+static void edit_shift_filter(ShiftFilter*f) {
+  SDL_Rect r;
+  SDL_Event ev;
+  redraw:
+  r.x=r.y=0; r.w=screen->w; r.h=screen->h;
+  SDL_LockSurface(screen);
+  SDL_FillRect(screen,&r,0xF0);
+  //TODO
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) switch(ev.type) {
+    case SDL_QUIT: exit(0); return;
+    case SDL_KEYDOWN:
+      switch(ev.key.keysym.sym) {
+        case SDLK_ESCAPE: return;
+        //TODO
+      }
+      goto redraw;
+    case SDL_VIDEOEXPOSE: goto redraw;
+  }
+}
+
 static void edit_dependent_picture(DependentPicture*dp,const char*name) {
-  
+  static const char*const txt[16]={
+    "Identity",
+    "Flip \x1D",
+    "Flip \x12",
+    "Rotate 180\xF8",
+    "Transpose",
+    "Transposed flip \x1D",
+    "Transposed flip \x12",
+    "Reverse Transpose",
+    "Replace colors",
+    "Advance colors",
+    "Exchange colors",
+    "Overlay",
+    "Shift \x18",
+    "Shift \x19",
+    "Shift \x1A",
+    "Shift \x1B",
+  };
+  const char*s;
+  char buf[64];
+  Sint8 c=-1;
+  int i,j,y;
+  SDL_Rect r;
+  SDL_Event ev;
+  set_cursor(XC_arrow);
+  redraw:
+  r.x=r.y=0; r.w=screen->w; r.h=screen->h;
+  SDL_LockSurface(screen);
+  SDL_FillRect(screen,&r,0xF0);
+  draw_text(0,0,"Dependent Image:",0xF0,0xF7);
+  draw_text(136,0,name,0xF0,0xF5);
+  draw_text(0,8,"<ESC> Exit  <\x18/\x19> Cursor  <SP> Edit  <INS> Append  <DEL> Delete",0xF0,0xFB);
+  draw_text(0,16,c<0?"\x1A":"\xFA",0xF0,c<0?0xFA:0xF2);
+  draw_text(16,16,"Base:",0xF0,0xF7);
+  draw_text(64,16,dp->basename,0xF0,0xFE);
+  for(i=0,y=24;i<dp->nfilters;i++) {
+    draw_text(0,y,c==i?"\x1A":"\xFA",0xF0,c==i?0xFA:0xF2);
+    switch(j=dp->filters[i].code) {
+      case 0 ... 7:
+        draw_text(16,y,txt[j],0xF0,0xF7);
+        y+=8;
+        break;
+      case 8 ... 10:
+        draw_text(16,y,txt[j],0xF0,0xF7);
+        y+=8;
+        for(j=0;j<dp->filters[i].color.ncolors;j+=2) {
+          if(j==dp->filters[i].color.ncolors-1)  snprintf(buf,64,"%3d",dp->filters[i].color.colors[j]);
+          else snprintf(buf,64,"%3d  %3d",dp->filters[i].color.colors[j],dp->filters[i].color.colors[j+1]);
+          draw_text(32,y,buf,0xF0,0xFE);
+          y+=8;
+        }
+        break;
+      case 11:
+        draw_text(16,y,"Overlay: ",0xF0,0xF7);
+        draw_text(88,y,dp->filters[i].overlay.name,0xF0,0xFE);
+        y+=8;
+        break;
+      case 12 ... 15:
+        draw_text(16,y,txt[j],0xF0,0xF7);
+        y+=8;
+        for(j=0;j<dp->filters[i].shift.nshift;j++) {
+          snprintf(buf,64,"%d: %d",dp->filters[i].shift.size[j],dp->filters[i].shift.shift[j]);
+          draw_text(32,y,buf,0xF0,0xFE);
+          y+=8;
+        }
+        break;
+      default:
+        draw_text(16,y,"???",0xF0,0xFC);
+        y+=8;
+        break;
+    }
+  }
+  if(c>dp->nfilters) c=dp->nfilters;
+  draw_text(0,y,c==dp->nfilters?"\x1A":"\xFA",0xF0,c==dp->nfilters?0xFA:0xF2);
+  draw_text(16,y,"<End>",0xF0,0xF8);
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) {
+    switch(ev.type) {
+      case SDL_QUIT:
+        exit(0);
+        break;
+      case SDL_KEYDOWN:
+        switch(ev.key.keysym.sym) {
+          case SDLK_ESCAPE: return;
+          case SDLK_UP: case SDLK_KP8: case SDLK_a: case SDLK_k: if(c>=0) --c; break;
+          case SDLK_DOWN: case SDLK_KP2: case SDLK_z: case SDLK_j: ++c; break;
+          case SDLK_INSERT: case SDLK_KP0:
+            if(add_filter(dp,txt,c)) // maybe fallthrough
+          case SDLK_SPACE:
+            if(c==-1) {
+              s=screen_prompt("Name of base picture:");
+              if(s && *s) strncpy(dp->basename,s,63);
+            } else if(c<dp->nfilters) {
+              switch(dp->filters[c].code) {
+                case 8 ... 10:
+                  edit_color_filter(&dp->filters[c].color);
+                  break;
+                case 11:
+                  s=screen_prompt("Name of overlay picture:");
+                  if(s && *s) strncpy(dp->filters[c].overlay.name,s,63);
+                  break;
+                case 12 ... 15:
+                  edit_shift_filter(&dp->filters[c].shift);
+                  break;
+              }
+            }
+            break;
+          case SDLK_DELETE: case SDLK_KP_PERIOD:
+            if(c<0 || c>=dp->nfilters) break;
+            --dp->nfilters;
+            if(c<dp->nfilters) memmove(dp->filters+c,dp->filters+c+1,(dp->nfilters-c)*sizeof(Filter));
+            break;
+          case SDLK_HOME: case SDLK_KP7: c=-1; break;
+          case SDLK_END: case SDLK_KP1: c=dp->nfilters; break;
+        }
+        goto redraw;
+      case SDL_VIDEOEXPOSE:
+        goto redraw;
+    }
+  }
 }
 
 static void edit_picture(sqlite3_int64 id) {
