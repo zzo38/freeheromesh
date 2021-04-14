@@ -31,7 +31,8 @@ Requirements:
 untested; it might use some Linux-specific functions and/or GNU-specific
 functions; I may be willing to accept contributions if this can be fixed)
 
-* SQLite version 3 (a recent version)
+* SQLite version 3 (a recent version). Add a symlink to the sqlite3.o file
+into the same directory with the source files.
 
 * SDL1.x (the compatibility layers have not been tested with this
 software; if you have tested it please report it, and you may contribute
@@ -43,6 +44,9 @@ tested with Clang, but I expect it to work; report it if it doesn't work)
 * If you wish to alter some of the files, Node.js or a compatible
 JavaScript runtime is required for compiling these files (you do not need
 this if you do not wish to modify Free Hero Mesh)
+
+* The smallxrm is required. It is included with this package; you must
+compile smallxrm.c as smallxrm.o (one way is "bash smallxrm.c").
 
 The distributor should edit man6/heromesh.str in order to correctly
 specify the directory containing the documentation files.
