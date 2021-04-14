@@ -173,5 +173,28 @@ Filled ellipse (S)
 
 === Dependent pictures ===
 
-(Not implemented yet.)
+A depedent picture depends on one or more independent pictures. It
+consists of any combination of the following items, in any order:
+
+* Base: This one must come first, and is the independent picture which
+will be used as the base; all other filters are applied to alter it.
+
+* Flip/rotation: Flip/rotate the picture. "Identity" also belongs to this
+category, but ahs no effect.
+
+* Replace colors: A list of pairs of colours. The first of each pair is
+the old colour, and next the colour to replace it with.
+
+* Advance colours: A list of colours; change each colour mentioned in the
+list into the next colour in the list after that one.
+
+* Exchange colours: A list of pairs of colours; each colour is changed to
+the other colour in the pair.
+
+* Overlay: Paste the specified independent picture over the current
+picture, showing through wherever it is transparent.
+
+* Shift: Shift the picture. Specify the sizes and shift amounts in the
+format "size: shift"; each size also affects all multiples of that size,
+in which case the shift amoutn is also multiplied by the same amount.
 

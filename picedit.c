@@ -41,7 +41,7 @@ typedef struct {
 typedef struct {
   Uint8 code;
   // 0-7 = flip/rotations
-  // 8-10 = change colours (8 is *->* *->* *->*; 9 is \->*->*->*->/; 10 is *<->* *<->* *<->*)
+  // 8-10 = change colours (8 is *->* *->* *->*; 9 is *->*->*->*->*; 10 is *<->* *<->* *<->*)
   // 11 = overlay
   // 12-15 = shift (up, down, right, left)
   union {
@@ -357,10 +357,10 @@ static void load_picture_lump(const unsigned char*data,int len,Picture**pict) {
   fclose(fp);
 }
 
-static inline void show_cursor_xy(int x,int y,int xx,int yy) {
+static inline void show_cursor_xy(int x,int y,int xx,int yy,const Picture*p) {
   char buf[64];
-  if(x>=0 && xx>=0) snprintf(buf,64,"[%d,%d]:(%d,%d) %+d%+d%63s",xx,yy,x,y,x-xx,y-yy,"");
-  else if(x>=0) snprintf(buf,64,"(%d,%d)%63s",x,y,"");
+  if(x>=0 && xx>=0) snprintf(buf,64,"[%d,%d]:(%d,%d)=%d %+d%+d%63s",xx,yy,x,y,p->data[(y+1)*p->size+x],x-xx,y-yy,"");
+  else if(x>=0) snprintf(buf,64,"(%d,%d)=%d%63s",x,y,p->data[(y+1)*p->size+x],"");
   else if(xx>=0) snprintf(buf,64,"[%d,%d]%63s",xx,yy,"");
   else snprintf(buf,64,"%63s","");
   SDL_LockSurface(screen);
@@ -658,7 +658,7 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
             goto redraw;
           }
         }
-        show_cursor_xy(x,y,xx,yy);
+        show_cursor_xy(x,y,xx,yy,pict[sel]);
         break;
       case SDL_MOUSEBUTTONDOWN:
         if(ev.button.x>=screen->w-161 && ev.button.x<screen->w-1 && ev.button.y>=40 && ev.button.y<200) {
@@ -1020,19 +1020,57 @@ static int add_filter(DependentPicture*dp,const char*const*const txt,Sint8 c) {
 static void edit_color_filter(ColorFilter*f) {
   SDL_Rect r;
   SDL_Event ev;
+  char buf[8];
+  int i;
+  Uint8 c=0;
   redraw:
-  r.x=r.y=0; r.w=screen->w; r.h=screen->h;
+  if(c>=f->ncolors) c=0;
   SDL_LockSurface(screen);
+  r.x=r.y=0; r.w=screen->w; r.h=screen->h;
   SDL_FillRect(screen,&r,0xF0);
-  //TODO
+  if(c<f->ncolors) {
+    r.w=12;
+    SDL_FillRect(screen,&r,f->colors[c]);
+  }
+  draw_text(16,0,"<ESC> Exit  <\x18\x19\x1A\x1B> Cursor  <-/+> Adjust  <INS> Append  <DEL> Delete",0xF0,0xFB);
+  for(i=0;i<f->ncolors;i++) {
+    snprintf(buf,8,"%c%3d%c",c==i?'<':' ',f->colors[i],c==i?'>':' ');
+    draw_text((i&1)*50+20,((i&~1)<<2)+12,buf,0xF0,c==i?0xFF:0xF7);
+  }
   SDL_UnlockSurface(screen);
   SDL_Flip(screen);
   while(SDL_WaitEvent(&ev)) switch(ev.type) {
     case SDL_QUIT: exit(0); return;
     case SDL_KEYDOWN:
       switch(ev.key.keysym.sym) {
-        case SDLK_ESCAPE: return;
-        //TODO
+        case SDLK_ESCAPE: case SDLK_RETURN: case SDLK_KP_ENTER: return;
+        case SDLK_LEFT: case SDLK_KP4: case SDLK_h: c--; break;
+        case SDLK_RIGHT: case SDLK_KP6: case SDLK_l: case SDLK_TAB: c++; break;
+        case SDLK_UP: case SDLK_KP8: case SDLK_k: c-=2; break;
+        case SDLK_DOWN: case SDLK_KP2: case SDLK_j: c+=2; break;
+        case SDLK_HOME: case SDLK_KP7: c=0; break;
+        case SDLK_END: case SDLK_KP1: c=f->ncolors-1; break;
+        case SDLK_INSERT: case SDLK_KP0:
+          if(f->ncolors==64) break;
+          f->colors[c=f->ncolors++]=0;
+          break;
+        case SDLK_DELETE: case SDLK_KP_PERIOD:
+          if(!f->ncolors) break;
+          f->ncolors--;
+          c=f->ncolors-1;
+          break;
+        case SDLK_KP_PLUS: case SDLK_PLUS: case SDLK_EQUALS:
+          f->colors[c]+=ev.key.keysym.mod&KMOD_SHIFT?16:1;
+          break;
+        case SDLK_KP_MINUS: case SDLK_MINUS: case SDLK_UNDERSCORE:
+          f->colors[c]-=ev.key.keysym.mod&KMOD_SHIFT?16:1;
+          break;
+        case SDLK_SPACE:
+          f->colors[c]=0;
+          break;
+        case SDLK_0 ... SDLK_9:
+          f->colors[c]=10*f->colors[c]+ev.key.keysym.sym-SDLK_0;
+          break;
       }
       goto redraw;
     case SDL_VIDEOEXPOSE: goto redraw;
@@ -1042,11 +1080,22 @@ static void edit_color_filter(ColorFilter*f) {
 static void edit_shift_filter(ShiftFilter*f) {
   SDL_Rect r;
   SDL_Event ev;
+  const char*s;
+  char buf[32];
+  int i;
+  Uint8 c=0;
   redraw:
   r.x=r.y=0; r.w=screen->w; r.h=screen->h;
   SDL_LockSurface(screen);
   SDL_FillRect(screen,&r,0xF0);
-  //TODO
+  draw_text(0,0,"<ESC> Exit  <\x18/\x19> Cursor  <SP> Edit  <INS> Insert  <DEL> Delete",0xF0,0xFB);
+  if(c>f->nshift+1) c=f->nshift+1;
+  for(i=0;i<f->nshift;i++) {
+    snprintf(buf,32,"%c %d: %d",c==i?0x1A:0xFA,f->size[i],f->shift[i]);
+    draw_text(4,(i+2)<<3,buf,0xF0,c==i?0xFF:0xF7);
+  }
+  snprintf(buf,32,"%c <End>",c==i?0x1A:0xFA);
+  draw_text(4,(i+2)<<3,buf,0xF0,c==i?0xFF:0xF7);
   SDL_UnlockSurface(screen);
   SDL_Flip(screen);
   while(SDL_WaitEvent(&ev)) switch(ev.type) {
@@ -1054,7 +1103,33 @@ static void edit_shift_filter(ShiftFilter*f) {
     case SDL_KEYDOWN:
       switch(ev.key.keysym.sym) {
         case SDLK_ESCAPE: return;
-        //TODO
+        case SDLK_HOME: case SDLK_KP7: c=0; break;
+        case SDLK_END: case SDLK_KP1: c=f->nshift; break;
+        case SDLK_UP: case SDLK_KP8: case SDLK_k: c--; break;
+        case SDLK_DOWN: case SDLK_KP2: case SDLK_j: c++; break;
+        case SDLK_INSERT: case SDLK_KP0:
+          if(f->nshift==64) break;
+          if(c<f->nshift) {
+            memmove(f->shift+c+1,f->shift+c,63-c);
+            memmove(f->size+c+1,f->size+c,63-c);
+          }
+          f->nshift++;
+          //fallthru
+        case SDLK_SPACE:
+          if(c>=f->nshift) break;
+          if((s=screen_prompt("Size?")) && (i=strtol(s,0,10)) && (s=screen_prompt("Shift?")) && *s) {
+            f->size[c]=i;
+            f->shift[c]=strtol(s,0,10)&127;
+          }
+          break;
+        case SDLK_DELETE: case SDLK_KP_PERIOD:
+          if(c>=f->nshift) break;
+          if(c<f->nshift-1) {
+            memmove(f->shift+c,f->shift+c+1,63-c);
+            memmove(f->size+c,f->size+c+1,63-c);
+          }
+          f->nshift--;
+          break;
       }
       goto redraw;
     case SDL_VIDEOEXPOSE: goto redraw;
@@ -1093,7 +1168,7 @@ static void edit_dependent_picture(DependentPicture*dp,const char*name) {
   SDL_FillRect(screen,&r,0xF0);
   draw_text(0,0,"Dependent Image:",0xF0,0xF7);
   draw_text(136,0,name,0xF0,0xF5);
-  draw_text(0,8,"<ESC> Exit  <\x18/\x19> Cursor  <SP> Edit  <INS> Append  <DEL> Delete",0xF0,0xFB);
+  draw_text(0,8,"<ESC> Exit  <\x18/\x19> Cursor  <SP> Edit  <INS> Insert  <DEL> Delete",0xF0,0xFB);
   draw_text(0,16,c<0?"\x1A":"\xFA",0xF0,c<0?0xFA:0xF2);
   draw_text(16,16,"Base:",0xF0,0xF7);
   draw_text(64,16,dp->basename,0xF0,0xFE);
