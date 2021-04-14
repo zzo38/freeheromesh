@@ -1,5 +1,5 @@
 #if 0
-gcc ${CFLAGS:--s -O2} -o ${EXE:-~/bin/heromesh} -Wno-multichar main.c class.o picture.o bindings.o function.o exec.o game.o edit.o picedit.o smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread
+gcc ${CFLAGS:--s -O2} -o ${EXE:-~/bin/heromesh} -Wno-multichar main.c class.o picture.o bindings.o function.o exec.o game.o edit.o picedit.o smallxrm.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread -lm
 exit
 #endif
 
