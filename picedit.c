@@ -951,7 +951,7 @@ static void load_dependent_picture(const Uint8*data,int size,DependentPicture*dp
           dp->filters[i].shift.size[k]=fgetc(fp);
           if(j&128) break;
         }
-        dp->filters[i].shift.nshift=k;
+        dp->filters[i].shift.nshift=k+1;
         break;
     }
   }

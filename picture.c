@@ -394,8 +394,224 @@ static void load_one_picture(FILE*fp,Uint16 img,int alt) {
   SDL_UnlockSurface(picts);
 }
 
+static void pic_shift_right(SDL_Rect*r,int sh) {
+  Uint8*p;
+  int y;
+  char buf[256];
+  sh%=r->w;
+  if(!sh) return;
+  SDL_LockSurface(picts);
+  p=picts->pixels+r->y*picts->pitch+r->x;
+  for(y=0;y<r->h;y++) {
+    memcpy(buf,p,r->w);
+    memcpy(p,buf+r->w-sh,sh);
+    memcpy(p+sh,buf,r->w-sh);
+    p+=picts->pitch;
+  }
+  SDL_UnlockSurface(picts);
+}
+
+static void pic_shift_down(SDL_Rect*r,int sh) {
+  Uint8*p;
+  int y;
+  char b1[256];
+  char b2[256];
+  sh%=r->h;
+  SDL_LockSurface(picts);
+  // This implementation is probably inefficient.
+  while(sh--) {
+    p=picts->pixels+r->y*picts->pitch+r->x;
+    memcpy(b1,p+picts->pitch*(r->h-1),r->w);
+    for(y=0;y<r->h;y++) {
+      memcpy(b2,p,r->w);
+      memcpy(p,b1,r->w);
+      p+=picts->pitch;
+      memcpy(b1,b2,r->w);
+    }
+  }
+  SDL_UnlockSurface(picts);
+}
+
+static void pic_orientation(SDL_Rect*r,Uint8 m) {
+  Uint8*d=malloc(r->w*r->h);
+  Uint8*p;
+  Uint8*q;
+  int i,j;
+  if(!d) fatal("Allocation failed\n");
+  SDL_LockSurface(picts);
+  p=picts->pixels+r->y*picts->pitch+r->x;
+  q=d;
+  for(i=0;i<r->h;i++) {
+    for(j=0;j<r->w;j++) {
+      if(m&1) j=r->w-j-1;
+      if(m&2) i=r->h-i-1;
+      *q++=p[m&4?j*picts->pitch+i:i*picts->pitch+j];
+      if(m&1) j=r->w-j-1;
+      if(m&2) i=r->h-i-1;
+    }
+  }
+  q=d;
+  for(i=0;i<r->h;i++) {
+    memcpy(p,q,r->w);
+    p+=picts->pitch;
+    q+=r->w;
+  }
+  SDL_UnlockSurface(picts);
+  free(d);
+}
+
 static void load_dependent_picture(FILE*fp,Uint16 img,int alt) {
-  //TODO
+  SDL_Rect src={0,0,picture_size,picture_size};
+  SDL_Rect dst={(img&15)*picture_size,(img>>4)*picture_size,picture_size,picture_size};
+  sqlite3_stmt*st;
+  Sint32 sz;
+  int c,i,x,y;
+  char nam[128];
+  Uint8 buf[512];
+  Uint8*p;
+  sz=fgetc(fp)<<16;
+  sz|=fgetc(fp)<<24;
+  sz|=fgetc(fp);
+  sz|=fgetc(fp)<<8;
+  if(sqlite3_prepare_v2(userdb,"SELECT `ID` FROM `PICTURES` WHERE `NAME` = ?1 AND NOT `DEPENDENT`;",-1,&st,0))
+   fatal("Unable to prepare SQL statement while loading pictures: %s\n",sqlite3_errmsg(userdb));
+  i=0;
+  while(sz) {
+    c=fgetc(fp);
+    if(c<32) break;
+    if(i<127) nam[i++]=c;
+    sz--;
+  }
+  if(sz) ungetc(c,fp);
+  sqlite3_bind_text(st,1,nam,i,0);
+  i=sqlite3_step(st);
+  if(i==SQLITE_DONE) {
+    fprintf(stderr,"Cannot find base picture for a dependent picture; ignoring\n");
+    sqlite3_finalize(st);
+    return;
+  } else if(i!=SQLITE_ROW) {
+    fatal("SQL error (%d): %s\n",i,sqlite3_errmsg(userdb));
+  }
+  i=sqlite3_column_int(st,0);
+  sqlite3_reset(st);
+  src.x=(i&15)*picture_size;
+  src.y=(i>>4)*picture_size;
+  SDL_SetColorKey(picts,0,0);
+  SDL_BlitSurface(picts,&src,picts,&dst);
+  while(sz-->0) switch(c=fgetc(fp)) {
+    case 0 ... 7: // Flip/rotate
+      pic_orientation(&dst,c);
+      break;
+    case 8: // *->* *->* *->*
+      c=fgetc(fp);
+      sz-=c+1;
+      fread(buf,1,c&255,fp);
+      SDL_LockSurface(picts);
+      p=picts->pixels+((img&15)+picts->pitch*(img>>4))*picture_size;
+      for(y=0;y<picture_size;y++) {
+        for(x=0;x<picture_size;x++) {
+          for(i=0;i<c;i+=2) {
+            if(p[x]==buf[i]) {
+              p[x]=buf[i+1];
+              break;
+            }
+          }
+        }
+        p+=picts->pitch;
+      }
+      SDL_UnlockSurface(picts);
+      break;
+    case 9: // *->*->*->*->*
+      c=fgetc(fp);
+      sz-=c+1;
+      fread(buf,1,c&255,fp);
+      SDL_LockSurface(picts);
+      p=picts->pixels+((img&15)+picts->pitch*(img>>4))*picture_size;
+      for(y=0;y<picture_size;y++) {
+        for(x=0;x<picture_size;x++) {
+          for(i=0;i<c-1;i++) {
+            if(p[x]==buf[i]) {
+              p[x]=buf[i+1];
+              break;
+            }
+          }
+        }
+        p+=picts->pitch;
+      }
+      SDL_UnlockSurface(picts);
+      break;
+    case 10: // *<->* *<->* *<->*
+      c=fgetc(fp);
+      sz-=c+1;
+      fread(buf,1,c&255,fp);
+      SDL_LockSurface(picts);
+      p=picts->pixels+((img&15)+picts->pitch*(img>>4))*picture_size;
+      for(y=0;y<picture_size;y++) {
+        for(x=0;x<picture_size;x++) {
+          for(i=0;i<c;i+=2) {
+            if(p[x]==buf[i]) {
+              p[x]=buf[i+1];
+              break;
+            } else if(p[x]==buf[i+1]) {
+              p[x]=buf[i];
+              break;
+            }
+          }
+        }
+        p+=picts->pitch;
+      }
+      SDL_UnlockSurface(picts);
+      break;
+    case 11: // Overlay
+      SDL_SetColorKey(picts,SDL_SRCCOLORKEY,0);
+      i=0;
+      while(sz>0) {
+        c=fgetc(fp);
+        if(c<32) break;
+        if(i<127) nam[i++]=c;
+        sz--;
+      }
+      if(sz) ungetc(c,fp);
+      sqlite3_bind_text(st,1,nam,i,0);
+      i=sqlite3_step(st);
+      if(i==SQLITE_DONE) {
+        fprintf(stderr,"Cannot find overlay for a dependent picture; ignoring\n");
+        break;
+      } else if(i!=SQLITE_ROW) {
+        fatal("SQL error (%d): %s\n",i,sqlite3_errmsg(userdb));
+      }
+      i=sqlite3_column_int(st,0);
+      sqlite3_reset(st);
+      src.x=(i&15)*picture_size;
+      src.y=(i>>4)*picture_size;
+      SDL_BlitSurface(picts,&src,picts,&dst);
+      break;
+    case 12 ... 15: // Shift (up/down/right/left)
+      while(sz>0) {
+        x=fgetc(fp);
+        y=fgetc(fp);
+        sz-=2;
+        if(y && !(picture_size%y)) {
+          if(c==12) pic_shift_down(&dst,picture_size-((x&127)*picture_size)/y);
+          if(c==13) pic_shift_down(&dst,((x&127)*picture_size)/y);
+          if(c==14) pic_shift_right(&dst,((x&127)*picture_size)/y);
+          if(c==15) pic_shift_right(&dst,picture_size-((x&127)*picture_size)/y);
+          break;
+        }
+        if(x&128) break;
+      }
+      while(sz>0 && x<128) {
+        x=fgetc(fp);
+        fgetc(fp);
+        sz-=2;
+      }
+      break;
+    default:
+      fprintf(stderr,"Unrecognized command in dependent picture (%d)\n",c);
+      goto done;
+  }
+  if(sz<0) fprintf(stderr,"Lump size of dependent picture is too short\n");
+  done: sqlite3_finalize(st);
 }
 
 void load_pictures(void) {
