@@ -25,9 +25,8 @@
 * Table of contents for levels
   * Can define your own columns
   * User can write SQL queries on them
-* Deal better with allowing to skip past invalid levels
+* Deal better with allowing to skip past corrupted levels
 * Picture editor/loading
-  * Dependent images (based on others, but rotated/flipped/recoloured)
   * Allowing more altimages
   * Configuration lump for default picture sizes for new pictures
 * Puzzle set catalog format (using with internet; a separate program)
@@ -39,3 +38,5 @@
   * Level 232 of SUPERHRO puzzle set (the Lava shouldn't expand? why?)
 * Display solution comments/timestamp
 * VCR mode
+* Portable mode, not needing installing files in home directory
+* Command-line switch for batch import/export levels
