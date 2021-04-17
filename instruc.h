@@ -407,14 +407,24 @@
 #define OP_INITARRAY 32971
 #define OP_SETARRAY 32972
 #define OP_ARRAYCELL 32973
-#define OP_FUNCTION 32974
-#define OP_LOCAL 32975
-#define OP_LABEL 32976
-#define OP_STRING 32977
-#define OP_INT16 32978
-#define OP_INT32 32979
-#define OP_DISPATCH 32980
-#define OP_USERFLAG 32981
+#define OP_PATTERN 32974
+#define OP_PATTERN_C 35022
+#define OP_PATTERN_E 37070
+#define OP_PATTERN_EC 39118
+#define OP_PATTERNS 32975
+#define OP_PATTERNS_C 35023
+#define OP_PATTERNS_E 37071
+#define OP_PATTERNS_EC 39119
+#define OP_FOUR 32976
+#define OP_EIGHT 32977
+#define OP_FUNCTION 32978
+#define OP_LOCAL 32979
+#define OP_LABEL 32980
+#define OP_STRING 32981
+#define OP_INT16 32982
+#define OP_INT32 32983
+#define OP_DISPATCH 32984
+#define OP_USERFLAG 32985
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486937},
@@ -493,6 +503,7 @@ static const Op_Names op_names[]={
 {"E",9437184},
 {"END_TURN",8389139},
 {"EditorHelp",8683654},
+{"Eight",8683729},
 {"F",9437192},
 {"FAROUT",8389421},
 {"FFFFTT",8389399},
@@ -501,6 +512,7 @@ static const Op_Names op_names[]={
 {"Finished",8552575},
 {"FlushClass",8421527},
 {"FlushObj",8487064},
+{"Four",8683728},
 {"From",8421496},
 {"GLASS",8389379},
 {"GLISSANT",8389419},
@@ -578,6 +590,8 @@ static const Op_Names op_names[]={
 {"ObjLayerAt",8421552},
 {"ObjMovingTo",8421553},
 {"ObjTopAt",8421554},
+{"P",8880334},
+{"P*",8880335},
 {"PLAYERMOVING",8389133},
 {"POSTINIT",8389138},
 {"POUR",8389377},
@@ -732,5 +746,5 @@ static const Op_Names op_names[]={
 {"until",8683535},
 {"while",8683536},
 };
-#define N_OP_NAMES 314
+#define N_OP_NAMES 318
 #endif

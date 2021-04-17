@@ -280,6 +280,12 @@ InitArray
 SetArray
 ArrayCell
 
+; Pattern matching
+-,=Pattern "P"
+-,=PatternS "P*"
+-Four
+-Eight
+
 ; Specials
 *Function
 *Local

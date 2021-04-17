@@ -972,6 +972,86 @@ static void end_label_stack(Uint16*codes,Hash*hash) {
   labelptr=0;
 }
 
+static int parse_pattern(int cla,int ptr,Hash*hash) {
+  Class*cl=classes[cla];
+  Uint8 depth=0;
+  Uint16 nest[32];
+  int x,y;
+  for(;;) {
+    nxttok();
+    if(Tokenf(TF_MACRO)) ParseError("Unexpected macro\n");
+    if(Tokenf(TF_DIR)) {
+      cl->codes[ptr++]=tokenv&15;
+    } else if(Tokenf(TF_NAME)) {
+      switch(tokenv) {
+        case OP_ADD: case OP_CLIMB: case OP_EIGHT: case OP_FOUR:
+        case OP_HEIGHT: case OP_LOC: case OP_MARK: case OP_SUB:
+        case OP_DIR: case OP_DIR_C: case OP_DIR_E: case OP_DIR_EC:
+        case 0x0200 ... 0x02FF: // message
+        case 0x4000 ... 0x7FFF: // class
+        case 0xC000 ... 0xFFFF: // message
+          cl->codes[ptr++]=tokenv;
+          break;
+        case OP_BEGIN: case OP_IF:
+          if(depth==31) ParseError("Too much pattern nesting\n");
+          nest[depth++]=ptr;
+          cl->codes[ptr++]=tokenv;
+          cl->codes[ptr++]=0;
+          break;
+        case OP_ELSE:
+          if(!depth) ParseError("Premature end of subpattern\n");
+          cl->codes[nest[depth-1]+1]=ptr;
+          cl->codes[ptr++]=cl->codes[nest[depth-1]];
+          cl->codes[nest[depth-1]]=OP_ELSE;
+          cl->codes[ptr++]=0;
+          break;
+        case OP_THEN:
+          if(!depth) ParseError("Premature end of subpattern\n");
+          cl->codes[nest[--depth]+1]=ptr;
+          break;
+        case OP_AGAIN:
+          if(!depth) ParseError("Premature end of subpattern\n");
+          cl->codes[ptr++]=OP_GOTO;
+          cl->codes[ptr++]=nest[depth-1];
+          cl->codes[nest[--depth]+1]=ptr;
+          break;
+        case OP_USERFLAG:
+          x=look_hash(glohash,HASH_SIZE,0x1000,0x10FF,0,"user flags");
+          if(!x) ParseError("User flag ^%s not defined\n",tokenstr);
+          if(Tokenf(TF_COMMA)) x+=0x100;
+          if(Tokenf(TF_EQUAL)) ParseError("Improper token in pattern\n");
+          cl->codes[ptr++]=x;
+          break;
+        default: ParseError("Improper token in pattern\n");
+      }
+    } else if(tokent==TF_OPEN) {
+      nxttok();
+      if(Tokenf(TF_MACRO) || !Tokenf(TF_NAME)) ParseError("Improper token in pattern\n");
+      switch(tokenv) {
+        case OP_HEIGHT: case OP_CLIMB:
+          cl->codes[ptr++]=tokenv+0x0800; // OP_HEIGHT_C or OP_CLIMB_C
+          nxttok();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          if(tokenv&~0xFFFF) ParseError("Number out of range\n");
+          cl->codes[ptr++]=tokenv;
+          nxttok();
+          if(tokent!=TF_CLOSE) ParseError("Close parentheses expected\n");
+          break;
+        default: ParseError("Improper token in pattern\n");
+      }
+    } else if(tokent==TF_CLOSE) {
+      if(depth) ParseError("Premature end of pattern\n");
+      cl->codes[ptr++]=OP_RET;
+      return ptr;
+    } else if(Tokenf(TF_EOF)) {
+      ParseError("Unexpected end of file\n");
+    } else {
+      ParseError("Improper token in pattern\n");
+    }
+    if(ptr>=0xFFEF) ParseError("Out of code space\n");
+  }
+}
+
 #define AddInst(x) (cl->codes[ptr++]=(x),prflag=0)
 #define AddInst2(x,y) (cl->codes[ptr++]=(x),cl->codes[ptr++]=(y),prflag=0,peep=ptr)
 #define AddInstF(x,y) (cl->codes[ptr++]=(x),prflag=(y))
@@ -1180,6 +1260,13 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
           if(tokenv) AddInst2(OP_POPUPARGS,tokenv); else AddInst(OP_POPUP);
           nxttok();
           if(tokent!=TF_CLOSE) ParseError("Unterminated (PopUp)\n");
+          break;
+        case OP_PATTERN: case OP_PATTERNS:
+        case OP_PATTERN_C: case OP_PATTERNS_C:
+        case OP_PATTERN_E: case OP_PATTERNS_E:
+          AddInst(tokenv);
+          cl->codes[ptr]=peep=parse_pattern(cla,ptr+1,hash);
+          ptr=peep;
           break;
         case OP_BROADCAST:
           nxttok();

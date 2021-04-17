@@ -2075,6 +2075,11 @@ object as the origin of the movement, and that object's direction as the
 direction of movement.
 
 
+=== Pattern matching ===
+
+(TODO)
+
+
 === Compatibility ===
 
 Compatible objects have the following differences from the default:
