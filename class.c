@@ -1289,6 +1289,7 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
           ParseError("Invalid parenthesized instruction\n");
       }
     } else if(tokent==TF_CLOSE) {
+      if(flowdepth) ParseError("Unterminated flow control structure\n");
       if(peep<ptr && cl->codes[ptr-1]==OP_RET) break;
       if(peep<ptr && (cl->codes[ptr-1]&0xFF00)==0x1E00) break;
       if(Inst8bit()) ChangeInst(+=0x1E00);
