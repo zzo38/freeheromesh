@@ -7,7 +7,6 @@
 * Game engine features
   * Multiple connected objects moving as a unit
   * Bizarro world
-  * Pattern matching (pattern of objects (or lack) in the playfield)
   * Testing the deferred movement
   * String data (?)
   * Array operations (CopyArray, ArraySlice, DotProduct)

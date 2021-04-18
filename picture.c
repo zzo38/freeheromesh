@@ -610,7 +610,7 @@ static void load_dependent_picture(FILE*fp,Uint16 img,int alt) {
       fprintf(stderr,"Unrecognized command in dependent picture (%d)\n",c);
       goto done;
   }
-  if(sz<0) fprintf(stderr,"Lump size of dependent picture is too short\n");
+  if(sz<-1) fprintf(stderr,"Lump size of dependent picture is too short\n");
   done: sqlite3_finalize(st);
 }
 
