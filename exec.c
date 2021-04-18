@@ -1560,8 +1560,8 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
       break;
     case 8 ... 15:
       n=VOIDLINK;
-      x+=x_delta[(code[ptr-1]+objects[obj]->dir)&7];
-      y+=y_delta[(code[ptr-1]+objects[obj]->dir)&7];
+      x+=x_delta[(code[ptr-1]+d)&7];
+      y+=y_delta[(code[ptr-1]+d)&7];
       if(x<1 || x>pfwidth || y<1 || y>pfheight) goto fail;
       break;
     case 0x0200 ... 0x02FF:
@@ -1715,6 +1715,8 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
       cp[cpi].y=y;
       cp[cpi].dir=d;
       break;
+    case OP_NEXT:
+      goto fail;
     case OP_OBJABOVE:
       if(n==VOIDLINK) Throw("No object specified in pattern");
       n=obj_above(n);

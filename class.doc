@@ -2154,6 +2154,9 @@ Height
 if
   Begin a block that can optionally match.
 
+next
+  Unconditionally fail the current attempt and try the next choice.
+
 ObjAbove
   Match the object above the currently matched object.
 
