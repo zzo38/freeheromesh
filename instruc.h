@@ -417,14 +417,15 @@
 #define OP_PATTERNS_EC 39119
 #define OP_FOUR 32976
 #define OP_EIGHT 32977
-#define OP_FUNCTION 32978
-#define OP_LOCAL 32979
-#define OP_LABEL 32980
-#define OP_STRING 32981
-#define OP_INT16 32982
-#define OP_INT32 32983
-#define OP_DISPATCH 32984
-#define OP_USERFLAG 32985
+#define OP_CUT 32978
+#define OP_FUNCTION 32979
+#define OP_LOCAL 32980
+#define OP_LABEL 32981
+#define OP_STRING 32982
+#define OP_INT16 32983
+#define OP_INT32 32984
+#define OP_DISPATCH 32985
+#define OP_USERFLAG 32986
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486937},
@@ -699,6 +700,7 @@ static const Op_Names op_names[]={
 {"bxor",8421411},
 {"c?",8421427},
 {"chain",8421520},
+{"cut",8683730},
 {"cz?",8421428},
 {"dup",8421377},
 {"el",8683532},
@@ -746,5 +748,5 @@ static const Op_Names op_names[]={
 {"until",8683535},
 {"while",8683536},
 };
-#define N_OP_NAMES 318
+#define N_OP_NAMES 319
 #endif

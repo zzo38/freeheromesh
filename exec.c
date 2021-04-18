@@ -1513,6 +1513,248 @@ static int colocation(Uint32 a,Uint32 b) {
   return (objects[a]->x==objects[b]->x && objects[a]->y==objects[b]->y);
 }
 
+static Uint32 pat_find_at(int xy,Uint32 m4,Uint32 m5,Uint32 m6,Uint32 m7,Uint8 cl) {
+  Uint8 n=playfield[xy];
+  Object*o;
+  while(n!=VOIDLINK) {
+    o=objects[n];
+    if(!(o->oflags&(OF_DESTROYED|OF_VISUALONLY))) {
+      if(o->misc4.t==TY_SOUND || o->misc4.t==TY_USOUND) Throw("Cannot convert sound to type");
+      if(o->misc5.t==TY_SOUND || o->misc5.t==TY_USOUND) Throw("Cannot convert sound to type");
+      if(o->misc6.t==TY_SOUND || o->misc6.t==TY_USOUND) Throw("Cannot convert sound to type");
+      if(o->misc7.t==TY_SOUND || o->misc7.t==TY_USOUND) Throw("Cannot convert sound to type");
+      if(o->misc4.t==TY_NUMBER && (o->misc4.u&m4)) return n;
+      if(o->misc5.t==TY_NUMBER && (o->misc5.u&m5)) return n;
+      if(o->misc6.t==TY_NUMBER && (o->misc6.u&m6)) return n;
+      if(o->misc7.t==TY_NUMBER && (o->misc7.u&m7)) return n;
+      if(classes[o->class]->collisionLayers&cl) return n;
+    }
+    n=o->up;
+  }
+  return VOIDLINK;
+}
+
+typedef struct {
+  Uint16 ptr,depth;
+  Uint8 x,y,dir,t;
+} ChoicePoint;
+
+#define MAXCHOICE 80
+static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
+  Uint8 x=objects[obj]->x;
+  Uint8 y=objects[obj]->y;
+  Uint8 d=objects[obj]->dir;
+  Uint32 n=VOIDLINK;
+  Uint32 m;
+  Uint16 g;
+  Value v;
+  static ChoicePoint cp[MAXCHOICE];
+  Uint8 cpi=0;
+  cp->depth=vstackptr;
+  again: switch(code[ptr++]) {
+    case 0 ... 7:
+      n=VOIDLINK;
+      x+=x_delta[code[ptr-1]];
+      y+=y_delta[code[ptr-1]];
+      if(x<1 || x>pfwidth || y<1 || y>pfheight) goto fail;
+      break;
+    case 8 ... 15:
+      n=VOIDLINK;
+      x+=x_delta[(code[ptr-1]+objects[obj]->dir)&7];
+      y+=y_delta[(code[ptr-1]+objects[obj]->dir)&7];
+      if(x<1 || x>pfwidth || y<1 || y>pfheight) goto fail;
+      break;
+    case 0x0200 ... 0x02FF:
+      g=code[ptr-1]&255;
+      goto message;
+    case 0x1000 ... 0x10FF:
+      g=code[ptr-1]&255;
+      if(g<0x20) n=pat_find_at(x+y*64-65,1UL<<(g&31),0,0,0,0);
+      else if(g<0x40) n=pat_find_at(x+y*64-65,0,1UL<<(g&31),0,0,0);
+      else if(g<0x60) n=pat_find_at(x+y*64-65,0,0,1UL<<(g&31),0,0);
+      else if(g<0x80) n=pat_find_at(x+y*64-65,0,0,0,1UL<<(g&31),0);
+      else n=pat_find_at(x+y*64-65,0,0,0,0,1U<<(g&7));
+      if(n==VOIDLINK) goto fail;
+      break;
+    case 0x4000 ... 0x7FFF:
+      n=obj_class_at(code[ptr-1]&0x3FFF,x,y);
+      if(n==VOIDLINK) goto fail;
+      break;
+    case 0xC000 ... 0xFFFF:
+      g=(code[ptr-1]&0x3FFF)+256;
+    message:
+      m=playfield[x+y*64-65];
+      while(m!=VOIDLINK) {
+        v=send_message(obj,m,g,NVALUE(d),OVALUE(n),NVALUE(0));
+        if(v.t==TY_NUMBER) {
+          if(v.u==1) goto fail;
+          else if(v.u==2) break;
+          else if(v.u) Throw("Invalid return value from message in pattern matching");
+        } else if(v.t>TY_MAXTYPE) {
+          n=v_object(v);
+          x=objects[n]->x;
+          y=objects[n]->y;
+        } else {
+          Throw("Type mismatch");
+        }
+        m=objects[m]->up;
+      }
+      break;
+    case OP_ADD:
+      if(vstackptr>=VSTACKSIZE-1) Throw("Stack overflow");
+      m=(n==VOIDLINK?obj_bottom_at(x,y):n);
+      Push(OVALUE(m));
+      break;
+    case OP_AGAIN:
+      if(cp[cpi].ptr!=ptr+1) {
+        if(cpi>=MAXCHOICE-1) Throw("Choice overflow");
+        cpi++;
+        cp[cpi].ptr=ptr+1;
+      }
+      cp[cpi].x=x;
+      cp[cpi].y=y;
+      cp[cpi].dir=d;
+      cp[cpi].depth=vstackptr;
+      ptr=code[ptr]+2;
+      break;
+    case OP_BEGIN:
+      ptr++;
+      break;
+    case OP_CLIMB:
+      if(playfield[x+y*64-65]==VOIDLINK || height_at(x,y)>objects[obj]->climb) goto fail;
+      break;
+    case OP_CLIMB_C:
+      g=code[ptr++];
+      if(playfield[x+y*64-65]==VOIDLINK || height_at(x,y)>g) goto fail;
+      break;
+    case OP_CUT:
+      if(cpi) cpi--;
+      break;
+    case OP_DIR:
+      d=objects[obj]->dir;
+      break;
+    case OP_DIR_C:
+      if(n==VOIDLINK) Throw("No object specified in pattern");
+      d=objects[n]->dir;
+      break;
+    case OP_DIR_E:
+      changed=1;
+      objects[obj]->dir=d;
+      break;
+    case OP_DIR_EC:
+      if(n==VOIDLINK) Throw("No object specified in pattern");
+      changed=1;
+      objects[n]->dir=d;
+      break;
+    case OP_EIGHT:
+      if(cpi>=MAXCHOICE-8) Throw("Choice overflow");
+      d=0;
+      cpi+=7;
+      cp[cpi].x=x;
+      cp[cpi].y=y;
+      cp[cpi].depth=vstackptr;
+      cp[cpi].ptr=ptr;
+      cp[cpi-1]=cp[cpi-2]=cp[cpi-3]=cp[cpi-4]=cp[cpi-5]=cp[cpi-6]=cp[cpi];
+      cp[cpi].dir=1;
+      cp[cpi-1].dir=2;
+      cp[cpi-2].dir=3;
+      cp[cpi-3].dir=4;
+      cp[cpi-4].dir=5;
+      cp[cpi-5].dir=6;
+      cp[cpi-6].dir=7;
+      break;
+    case OP_ELSE:
+      ptr--;
+      while(code[ptr]==OP_ELSE) ptr=code[ptr+2];
+      break;
+    case OP_FOUR:
+      if(cpi>=MAXCHOICE-4) Throw("Choice overflow");
+      d=0;
+      cpi+=3;
+      cp[cpi].x=x;
+      cp[cpi].y=y;
+      cp[cpi].depth=vstackptr;
+      cp[cpi].ptr=ptr;
+      cp[cpi-1]=cp[cpi-2]=cp[cpi];
+      cp[cpi].dir=2;
+      cp[cpi-1].dir=4;
+      cp[cpi-2].dir=6;
+      break;
+    case OP_HEIGHT:
+      if(playfield[x+y*64-65]==VOIDLINK || height_at(x,y)<=objects[obj]->climb) goto fail;
+      break;
+    case OP_HEIGHT_C:
+      g=code[ptr++];
+      if(playfield[x+y*64-65]==VOIDLINK || height_at(x,y)<=g) goto fail;
+      break;
+    case OP_IF:
+      if(cpi>=MAXCHOICE-1) Throw("Pattern stack overflow");
+      cpi++;
+      cp[cpi].x=x;
+      cp[cpi].y=y;
+      cp[cpi].dir=d;
+      cp[cpi].depth=vstackptr;
+      cp[cpi].ptr=code[ptr++];
+      break;
+    case OP_LOC:
+      if(vstackptr>=VSTACKSIZE-2) Throw("Stack overflow");
+      Push(NVALUE(x));
+      Push(NVALUE(y));
+      break;
+    case OP_MARK:
+      if(vstackptr>=VSTACKSIZE-1) Throw("Stack overflow");
+      Push(UVALUE(0,TY_MARK));
+      break;
+    case OP_MUL:
+      cp[cpi].x=x;
+      cp[cpi].y=y;
+      cp[cpi].dir=d;
+      break;
+    case OP_OBJABOVE:
+      if(n==VOIDLINK) Throw("No object specified in pattern");
+      n=obj_above(n);
+      break;
+    case OP_OBJBELOW:
+      if(n==VOIDLINK) Throw("No object specified in pattern");
+      n=obj_below(n);
+      break;
+    case OP_OBJBOTTOMAT:
+      n=obj_bottom_at(x,y);
+      break;
+    case OP_OBJTOPAT:
+      n=obj_top_at(x,y);
+      break;
+    case OP_RET:
+      return n==VOIDLINK?obj_bottom_at(x,y):n;
+    case OP_SUB:
+      if(vstackptr>=VSTACKSIZE-1) Throw("Stack overflow");
+      Push(NVALUE(0));
+      break;
+    case OP_THEN:
+      // This opcode does nothing
+      break;
+    case OP_TRACE:
+      if(main_options['t']) {
+        printf("ptr=%d cpi=%d x=%d y=%d dir=%d obj=%lu ",ptr,cpi,x,y,d,(long)n);
+        printf("[ptr=%d x=%d y=%d dir=%d]\n",cp[cpi].ptr,cp[cpi].x,cp[cpi].y,cp[cpi].dir);
+      }
+      break;
+    default: Throw("Unimplemented opcode in pattern");
+  }
+  goto again;
+  fail:
+  if(vstackptr<cp->depth) Throw("Stack underflow in pattern matching");
+  vstackptr=cp[cpi].depth;
+  if(!cpi) return VOIDLINK;
+  x=cp[cpi].x;
+  y=cp[cpi].y;
+  d=cp[cpi].dir;
+  ptr=cp[cpi].ptr;
+  n=VOIDLINK;
+  cpi--;
+  goto again;
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -1802,6 +2044,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_OBJMOVINGTO: StackReq(2,0); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); v_obj_moving_to(t1.u,t2.u); break;
     case OP_OBJTOPAT: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); i=obj_top_at(t1.u,t2.u); Push(OVALUE(i)); break;
     case OP_OVER: StackReq(2,3); t2=Pop(); t1=Pop(); Push(t1); Push(t2); Push(t1); break;
+    case OP_PATTERN: StackReq(0,1); i=code[ptr++]; j=v_pattern(code,ptr,obj,0); ptr=i; Push(OVALUE(j)); break;
+    case OP_PATTERN_C: StackReq(1,1); i=code[ptr++]; j=v_object(Pop()); if(j!=VOIDLINK) j=v_pattern(code,ptr,j,0); ptr=i; Push(OVALUE(j)); break;
     case OP_PICK: StackReq(0,1); t1=Pop(); Numeric(t1); if(t1.u>=vstackptr) Throw("Stack index out of range"); t1=vstack[vstackptr-t1.u-1]; Push(t1); break;
     case OP_PLAYER: StackReq(0,1); if(classes[o->class]->cflags&CF_PLAYER) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_PLAYER_C: StackReq(1,1); GetClassFlagOf(CF_PLAYER); break;

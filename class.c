@@ -976,6 +976,7 @@ static int parse_pattern(int cla,int ptr,Hash*hash) {
   Class*cl=classes[cla];
   Uint8 depth=0;
   Uint16 nest[32];
+  Uint16 nest0[32];
   int x,y;
   for(;;) {
     nxttok();
@@ -987,6 +988,8 @@ static int parse_pattern(int cla,int ptr,Hash*hash) {
         case OP_ADD: case OP_CLIMB: case OP_EIGHT: case OP_FOUR:
         case OP_HEIGHT: case OP_LOC: case OP_MARK: case OP_SUB:
         case OP_DIR: case OP_DIR_C: case OP_DIR_E: case OP_DIR_EC:
+        case OP_OBJTOPAT: case OP_OBJBOTTOMAT: case OP_CUT: case OP_MUL:
+        case OP_OBJABOVE: case OP_OBJBELOW: case OP_TRACE:
         case 0x0200 ... 0x02FF: // message
         case 0x4000 ... 0x7FFF: // class
         case 0xC000 ... 0xFFFF: // message
@@ -994,26 +997,30 @@ static int parse_pattern(int cla,int ptr,Hash*hash) {
           break;
         case OP_BEGIN: case OP_IF:
           if(depth==31) ParseError("Too much pattern nesting\n");
-          nest[depth++]=ptr;
+          nest0[depth]=nest[depth]=ptr;
           cl->codes[ptr++]=tokenv;
           cl->codes[ptr++]=0;
+          depth++;
           break;
         case OP_ELSE:
           if(!depth) ParseError("Premature end of subpattern\n");
           cl->codes[nest[depth-1]+1]=ptr;
+          cl->codes[ptr++]=OP_ELSE;
           cl->codes[ptr++]=cl->codes[nest[depth-1]];
-          cl->codes[nest[depth-1]]=OP_ELSE;
+          cl->codes[nest[depth-1]]=OP_IF;
           cl->codes[ptr++]=0;
           break;
         case OP_THEN:
           if(!depth) ParseError("Premature end of subpattern\n");
           cl->codes[nest[--depth]+1]=ptr;
+          cl->codes[ptr++]=OP_THEN;
           break;
         case OP_AGAIN:
           if(!depth) ParseError("Premature end of subpattern\n");
-          cl->codes[ptr++]=OP_GOTO;
-          cl->codes[ptr++]=nest[depth-1];
+          cl->codes[ptr++]=OP_AGAIN;
+          cl->codes[ptr++]=nest0[depth-1];
           cl->codes[nest[--depth]+1]=ptr;
+          cl->codes[ptr++]=OP_THEN;
           break;
         case OP_USERFLAG:
           x=look_hash(glohash,HASH_SIZE,0x1000,0x10FF,0,"user flags");

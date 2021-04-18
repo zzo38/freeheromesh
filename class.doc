@@ -2077,7 +2077,100 @@ direction of movement.
 
 === Pattern matching ===
 
-(TODO)
+Where an instruction is expected, you can have pattern matching. This can
+be (P <pattern...>) or (,P <pattern...>) where the first one uses the
+current location, and the second kind uses the position and direction of
+the specified object as the matching. It pushes the found object to the
+stack, or pushes zero if the pattern does not match.
+
+<class>
+  Match an object of the specified class.
+
+<dir>
+  Move in the specified direction. (This does not move any objects; it
+  only moves the cursor for pattern matching.) The direction can be
+  relative to the current direction (initially the Dir variable of the
+  origin object) or absolute.
+
+<message>
+  Send the message to all objects at the current location. From is the
+  position from which pattern matching started. Arg1 is the direction.
+  Arg2 is the currently matched object (which may be zero). If the
+  return value is zero, it continues normally; if one, the match fails;
+  if two, it continues without sending more messages at this location;
+  if an object, sets the matched object and current location.
+
+<userflag>
+  Match an object with the specified flag.
+
+,<userflag>
+  Fail if there are any objects having the specified flag here.
+
++
+  Push the matched object to the stack.
+
+-
+  Push zero to the stack.
+
+*
+  Update the current choice point with the location and direction.
+
+_
+  Push a mark to the stack.
+
+again
+  End a block with begin or if, allowing it to occur more than once; it
+  is repeated until it no longer matches. If the first word is begin,
+  then it must match at least once; if it is if, then it can match zero
+  or more times. The match is greedy; it will match as much as possible.
+
+begin
+  Begin a block.
+
+Climb
+  Fail the match if the origin object cannot climb here.
+
+(Climb <number>)
+  Fail the match if the height here is greater than this number.
+
+cut
+  Discards the most recent choice point.
+
+else
+  Delimits alternatives within a block.
+
+Four
+  Try four directions (E, N, W, and S).
+
+Eight
+  Try all eight directions.
+
+Height
+  Fail the match if the origin object can climb here.
+
+(Height <number>)
+  Fail the match if the height here isn't greater than this number.
+
+if
+  Begin a block that can optionally match.
+
+ObjAbove
+  Match the object above the currently matched object.
+
+ObjBelow
+  Match the object below the currently matched object.
+
+ObjBottomAt
+  Match the object at the bottom of this location.
+
+ObjTopAt
+  Match the object at the top of this location.
+
+then
+  Ends a block started with begin or if.
+
+Trace
+  Used for debugging.
 
 
 === Compatibility ===
