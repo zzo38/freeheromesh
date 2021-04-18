@@ -1863,7 +1863,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_CLIMB_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) o->climb=t1.u&0xFFFF; break;
     case OP_COLLISIONLAYERS: StackReq(0,1); Push(NVALUE(classes[o->class]->collisionLayers)); break;
     case OP_COLLISIONLAYERS_C: StackReq(1,1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else Push(NVALUE(classes[objects[i]->class]->collisionLayers)); break;
-    case OP_COLOC: StackReq(1,1); t1=Pop(); i=colocation(obj,v_object(t2)); Push(NVALUE(i)); break;
+    case OP_COLOC: StackReq(1,1); t1=Pop(); i=colocation(obj,v_object(t1)); Push(NVALUE(i)); break;
     case OP_COLOC_C: StackReq(2,1); t1=Pop(); t2=Pop(); i=colocation(v_object(t1),v_object(t2)); Push(NVALUE(i)); break;
     case OP_COMPATIBLE: StackReq(0,1); if(classes[o->class]->cflags&CF_COMPATIBLE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_COMPATIBLE_C: StackReq(1,1); GetClassFlagOf(CF_COMPATIBLE); break;
