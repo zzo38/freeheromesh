@@ -943,6 +943,8 @@ static void import_level(const char*cmd) {
         o=objects[v.u];
         o->x=x;
         o->y=y;
+        p=import_numbers(p,&x,0);
+        o->image=x;
         p=import_value(p,&o->misc1);
         p=import_value(p,&o->misc2);
         p=import_value(p,&o->misc3);

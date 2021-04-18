@@ -68,6 +68,10 @@ See bindings.doc for key/mouse bindings.
   internal palette is used instead). The file format is hex rrggbb format
   separated by any kind of whitespaces.
 
+.pasteCommand
+  The command to use for pasting text from the clipboard. When it asks for
+  a single line of text, you can push SHIFT+INSERT to paste.
+
 .progress
   If positive, how many steps between dots in the progress report for the
   auto testing most. If negative, number of milliseconds to sleep before

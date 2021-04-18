@@ -219,4 +219,5 @@ showInventory
 progress
 autoSave
 maxTrigger
+pasteCommand
 

@@ -5,6 +5,7 @@
 ?.traceAll: true
 ?.showInventory: 0
 ?.maxTrigger: 32767
+?.pasteCommand: xclip -o
 
 ! Game inputs
 ?.gameKey.A: 'A

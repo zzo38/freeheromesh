@@ -184,6 +184,7 @@
 #define Q_progress 185
 #define Q_autoSave 186
 #define Q_maxTrigger 187
+#define Q_pasteCommand 188
 static const char*const global_quarks[]={
   "screenWidth",
   "screenHeight",
@@ -371,6 +372,7 @@ static const char*const global_quarks[]={
   "progress",
   "autoSave",
   "maxTrigger",
+  "pasteCommand",
 0};
 #ifdef HEROMESH_BINDINGS
 static const SDLKey quark_to_key[Q_undo+1-Q_backspace]={

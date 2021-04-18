@@ -245,6 +245,24 @@ const char*screen_prompt(const char*txt) {
           case SDLK_CLEAR:
             t[n=0]=0;
             break;
+          case SDLK_INSERT:
+            if(ev.key.keysym.mod&KMOD_SHIFT) {
+              const char*s;
+              FILE*fp;
+              int c;
+              optionquery[1]=Q_pasteCommand;
+              if((s=xrm_get_resource(resourcedb,optionquery,optionquery,2)) && (fp=popen(s,"r"))) {
+                for(;;) {
+                  c=fgetc(fp);
+                  if(c=='\t') c=' ';
+                  if(c>=32 && n<m) t[n++]=c;
+                  if(c=='\n' || c<0 || n>=m) break;
+                }
+                t[n]=0;
+                pclose(fp);
+              }
+            }
+            break;
           default:
             if(ev.key.keysym.sym==SDLK_u && (ev.key.keysym.mod&KMOD_CTRL)) {
               t[n=0]=0;
