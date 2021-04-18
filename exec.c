@@ -1514,7 +1514,7 @@ static int colocation(Uint32 a,Uint32 b) {
 }
 
 static Uint32 pat_find_at(int xy,Uint32 m4,Uint32 m5,Uint32 m6,Uint32 m7,Uint8 cl) {
-  Uint8 n=playfield[xy];
+  Uint32 n=playfield[xy];
   Object*o;
   while(n!=VOIDLINK) {
     o=objects[n];
@@ -1567,14 +1567,19 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
     case 0x0200 ... 0x02FF:
       g=code[ptr-1]&255;
       goto message;
-    case 0x1000 ... 0x10FF:
+    case 0x1000 ... 0x11FF:
       g=code[ptr-1]&255;
-      if(g<0x20) n=pat_find_at(x+y*64-65,1UL<<(g&31),0,0,0,0);
-      else if(g<0x40) n=pat_find_at(x+y*64-65,0,1UL<<(g&31),0,0,0);
-      else if(g<0x60) n=pat_find_at(x+y*64-65,0,0,1UL<<(g&31),0,0);
-      else if(g<0x80) n=pat_find_at(x+y*64-65,0,0,0,1UL<<(g&31),0);
-      else n=pat_find_at(x+y*64-65,0,0,0,0,1U<<(g&7));
-      if(n==VOIDLINK) goto fail;
+      if(g<0x20) m=pat_find_at(x+y*64-65,1UL<<(g&31),0,0,0,0);
+      else if(g<0x40) m=pat_find_at(x+y*64-65,0,1UL<<(g&31),0,0,0);
+      else if(g<0x60) m=pat_find_at(x+y*64-65,0,0,1UL<<(g&31),0,0);
+      else if(g<0x80) m=pat_find_at(x+y*64-65,0,0,0,1UL<<(g&31),0);
+      else m=pat_find_at(x+y*64-65,0,0,0,0,1U<<(g&7));
+      if(code[ptr-1]&0x0100) {
+        if(m!=VOIDLINK) goto fail;
+      } else {
+        n=m;
+        if(n==VOIDLINK) goto fail;
+      }
       break;
     case 0x4000 ... 0x7FFF:
       n=obj_class_at(code[ptr-1]&0x3FFF,x,y);
