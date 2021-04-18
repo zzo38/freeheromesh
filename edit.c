@@ -864,7 +864,7 @@ static char*import_string(char*p) {
         isimg=0;
         *q++='\\';
       } else {
-        switch(*p++) {
+        switch(*p) {
           case '0' ... '7': *q++=*p+1-'0'; break;
           case 'b': *q++=15; break;
           case 'c': *q++=12; break;
