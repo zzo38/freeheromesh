@@ -407,25 +407,28 @@
 #define OP_INITARRAY 32971
 #define OP_SETARRAY 32972
 #define OP_ARRAYCELL 32973
-#define OP_PATTERN 32974
-#define OP_PATTERN_C 35022
-#define OP_PATTERN_E 37070
-#define OP_PATTERN_EC 39118
-#define OP_PATTERNS 32975
-#define OP_PATTERNS_C 35023
-#define OP_PATTERNS_E 37071
-#define OP_PATTERNS_EC 39119
-#define OP_FOUR 32976
-#define OP_EIGHT 32977
-#define OP_CUT 32978
-#define OP_FUNCTION 32979
-#define OP_LOCAL 32980
-#define OP_LABEL 32981
-#define OP_STRING 32982
-#define OP_INT16 32983
-#define OP_INT32 32984
-#define OP_DISPATCH 32985
-#define OP_USERFLAG 32986
+#define OP_ARRAYSLICE 32974
+#define OP_COPYARRAY 32975
+#define OP_DOTPRODUCT 32976
+#define OP_PATTERN 32977
+#define OP_PATTERN_C 35025
+#define OP_PATTERN_E 37073
+#define OP_PATTERN_EC 39121
+#define OP_PATTERNS 32978
+#define OP_PATTERNS_C 35026
+#define OP_PATTERNS_E 37074
+#define OP_PATTERNS_EC 39122
+#define OP_FOUR 32979
+#define OP_EIGHT 32980
+#define OP_CUT 32981
+#define OP_FUNCTION 32982
+#define OP_LOCAL 32983
+#define OP_LABEL 32984
+#define OP_STRING 32985
+#define OP_INT16 32986
+#define OP_INT32 32987
+#define OP_DISPATCH 32988
+#define OP_USERFLAG 32989
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486937},
@@ -445,6 +448,7 @@ static const Op_Names op_names[]={
 {"Arg3",8552571},
 {"Array",8683721},
 {"ArrayCell",8421581},
+{"ArraySlice",8421582},
 {"Arrivals",8618086},
 {"Arrived",8618084},
 {"Assassinate",8487050},
@@ -481,6 +485,7 @@ static const Op_Names op_names[]={
 {"CollisionLayers",8487029},
 {"Coloc",8487058},
 {"Compatible",8487028},
+{"CopyArray",8421583},
 {"Create",10518675},
 {"DEEP_POP",8389417},
 {"DEPARTED",8389125},
@@ -501,10 +506,11 @@ static const Op_Names op_names[]={
 {"Dir",8618048},
 {"Distance",9142340},
 {"Done",8618097},
+{"DotProduct",8421584},
 {"E",9437184},
 {"END_TURN",8389139},
 {"EditorHelp",8683654},
-{"Eight",8683729},
+{"Eight",8683732},
 {"F",9437192},
 {"FAROUT",8389421},
 {"FFFFTT",8389399},
@@ -513,7 +519,7 @@ static const Op_Names op_names[]={
 {"Finished",8552575},
 {"FlushClass",8421527},
 {"FlushObj",8487064},
-{"Four",8683728},
+{"Four",8683731},
 {"From",8421496},
 {"GLASS",8389379},
 {"GLISSANT",8389419},
@@ -591,8 +597,8 @@ static const Op_Names op_names[]={
 {"ObjLayerAt",8421552},
 {"ObjMovingTo",8421553},
 {"ObjTopAt",8421554},
-{"P",8880334},
-{"P*",8880335},
+{"P",8880337},
+{"P*",8880338},
 {"PLAYERMOVING",8389133},
 {"POSTINIT",8389138},
 {"POUR",8389377},
@@ -700,7 +706,7 @@ static const Op_Names op_names[]={
 {"bxor",8421411},
 {"c?",8421427},
 {"chain",8421520},
-{"cut",8683730},
+{"cut",8683733},
 {"cz?",8421428},
 {"dup",8421377},
 {"el",8683532},
@@ -748,5 +754,5 @@ static const Op_Names op_names[]={
 {"until",8683535},
 {"while",8683536},
 };
-#define N_OP_NAMES 319
+#define N_OP_NAMES 322
 #endif

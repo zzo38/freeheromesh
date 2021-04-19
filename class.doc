@@ -1071,6 +1071,10 @@ ArrayCell  ( array row column -- array )
   treated as a reference to a 1x1 array, which aliases the original array.
   Coordinates are zero-based.
 
+ArraySlice  ( array start count -- array )
+  Make a slice of an array. The new reference aliases the original array.
+  Coordinates are zero-based.
+
 Assassinate  ( -- ) **
   Destroy this object without sending any messages. The object is marked
   as destroyed, but its variables are still accessible until the garbage
@@ -1148,6 +1152,9 @@ Coloc  ( obj -- bool )
   otherwise. Always false if the object is destroyed, or if one object
   is in the bizarro world and the other one isn't.
 
+CopyArray  ( src dest -- ) **
+  Copy one array to another. It is OK if the two references overlap.
+
 Create  ( class x y image dir -- obj ) **
   Creates a new object at the specified location, and returns it. The
   result is zero if the class is zero, the coordinates are out of range,
@@ -1172,6 +1179,15 @@ Destroy  ( -- value ) **
 
 ,Destroy  ( object -- value ) **
   Destroy the specified object (as Destroy but for any object).
+
+DotProduct  ( array array -- any )
+  Compute the dot product of two arrays. Any nonzero number times a class,
+  message, or object will shortcut and return that class, message, or
+  object; zero can multiply by any value of any type to make zero; a class
+  by an object will return that object if the class is correct; an object
+  by a message will send that message to that object, and add the return
+  value to the running total, or stop and return that value if the return
+  value isn't a number.
 
 dup  ( x -- x x )
 

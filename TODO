@@ -9,7 +9,6 @@
   * Bizarro world
   * Testing the deferred movement
   * String data (?)
-  * Array operations (CopyArray, ArraySlice, DotProduct)
   * A ,PopUp command to use a popup with arguments starting from a mark
   * Operations with marks (duplicate a list, length of a list, etc)
   * "Goto message" instruction

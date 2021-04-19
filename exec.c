@@ -1284,6 +1284,62 @@ static Value v_array_cell(Value ar,Uint32 x,Uint32 y) {
   return UVALUE(s,TY_ARRAY);
 }
 
+static Value v_array_slice(Value ar,Uint32 x,Uint32 y) {
+  // Is this correct? I am not sure.
+  if(ar.t!=TY_ARRAY) Throw("Type mismatch");
+  if((x|y)&~0xFFFF) Throw("Slice out of range");
+  if(x+y>((ar.u>>16)&0x3FF)-1) Throw("Slice out of range");
+  ar.u+=((ar.u>>26)&0x3F)*x-((x+y)<<16);
+  return ar;
+}
+
+static void v_copy_array(Value a1,Value a2) {
+  Uint32 n;
+  if(!a2.t && !a2.u) return;
+  if(a1.t!=TY_ARRAY || a2.t!=TY_ARRAY) Throw("Type mismatch");
+  if(a1.u==a2.u) return;
+  if((a1.u^a2.u)>>16) Throw("Dimension mismatch");
+  n=((a1.u>>16)&0x3FF)+1;
+  n*=((a1.u>>26)&0x3F)+1;
+  memmove(array_data+(a2.u&0xFFFF),array_data+(a1.u&0xFFFF),n*sizeof(Value));
+}
+
+static Value v_dot_product(Value a1,Value a2) {
+  Uint32 r=0;
+  Uint32 s1,s2,n;
+  Value v1,v2;
+  if(a1.t!=TY_ARRAY || a2.t!=TY_ARRAY) Throw("Type mismatch");
+  if((a1.u^a2.u)>>16) Throw("Dimension mismatch");
+  s1=a1.u&0xFFFF;
+  s2=a2.u&0xFFFF;
+  n=((a1.u>>16)&0x3FF)+1;
+  n*=((a1.u>>26)&0x3F)+1;
+  while(n--) {
+    v1=array_data[s1++];
+    v2=array_data[s2++];
+    if((v1.t==TY_NUMBER && !v1.u) || (v2.t==TY_NUMBER && !v2.u)) continue;
+    if(v1.t==TY_NUMBER && v2.t==TY_NUMBER) {
+      r+=v1.u*v2.u;
+    } else if(v1.t==TY_NUMBER && (v2.t==TY_CLASS || v2.t==TY_MESSAGE || v2.t>TY_MAXTYPE)) {
+      return v2;
+    } else if(v2.t==TY_NUMBER && (v1.t==TY_CLASS || v1.t==TY_MESSAGE || v1.t>TY_MAXTYPE)) {
+      return v1;
+    } else if(v1.t==TY_MESSAGE && v2.t>TY_MAXTYPE) {
+      v1=send_message(VOIDLINK,v_object(v2),v1.u,NVALUE(0),NVALUE(0),NVALUE(0));
+      mess:
+      if(v1.t==TY_SOUND || v1.t==TY_USOUND) Throw("Type mismatch");
+      if(v1.t!=TY_NUMBER) return v1;
+      r+=v1.u;
+    } else if(v2.t==TY_MESSAGE && v1.t>TY_MAXTYPE) {
+      v1=send_message(VOIDLINK,v_object(v1),v2.u,NVALUE(0),NVALUE(0),NVALUE(0));
+      goto mess;
+    } else {
+      Throw("Type mismatch");
+    }
+  }
+  return NVALUE(r);
+}
+
 static void v_set_popup(Uint32 from,int argc) {
   const unsigned char*t;
   const unsigned char*u;
@@ -1831,6 +1887,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_ARG3: StackReq(0,1); Push(msgvars.arg3); break;
     case OP_ARG3_E: StackReq(1,0); msgvars.arg3=Pop(); break;
     case OP_ARRAYCELL: StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Push(v_array_cell(t1,t2.u,t3.u)); break;
+    case OP_ARRAYSLICE: StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Push(v_array_slice(t1,t2.u,t3.u)); break;
     case OP_ARRIVALS: StackReq(0,1); Push(NVALUE(o->arrivals&0x1FFFFFF)); break;
     case OP_ARRIVALS_C: StackReq(1,1); Push(GetVariableOrAttributeOf(arrivals&0x1FFFFFF,NVALUE)); break;
     case OP_ARRIVALS_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->arrivals=t1.u; break;
@@ -1874,6 +1931,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_COLOC_C: StackReq(2,1); t1=Pop(); t2=Pop(); i=colocation(v_object(t1),v_object(t2)); Push(NVALUE(i)); break;
     case OP_COMPATIBLE: StackReq(0,1); if(classes[o->class]->cflags&CF_COMPATIBLE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_COMPATIBLE_C: StackReq(1,1); GetClassFlagOf(CF_COMPATIBLE); break;
+    case OP_COPYARRAY: NoIgnore(); StackReq(2,0); t2=Pop(); t1=Pop(); v_copy_array(t1,t2); break;
     case OP_CREATE: NoIgnore(); StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_create(obj,t1,t2,t3,t4,t5)); break;
     case OP_CREATE_D: NoIgnore(); StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_create(obj,t1,t2,t3,t4,t5); break;
     case OP_DELINVENTORY: StackReq(2,0); t2=Pop(); t1=Pop(); v_delete_inventory(t1,t2); break;
@@ -1913,6 +1971,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_DONE_C: StackReq(1,1); GetFlagOf(OF_DONE); break;
     case OP_DONE_E: StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_DONE; else o->oflags&=~OF_DONE; break;
     case OP_DONE_EC: StackReq(2,0); SetFlagOf(OF_DONE); break;
+    case OP_DOTPRODUCT: StackReq(2,1); t2=Pop(); t1=Pop(); Push(v_dot_product(t1,t2)); break;
     case OP_DROP: StackReq(1,0); Pop(); break;
     case OP_DROP_D: StackReq(2,0); Pop(); Pop(); break;
     case OP_DUP: StackReq(1,2); t1=Pop(); Push(t1); Push(t1); break;

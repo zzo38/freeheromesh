@@ -279,6 +279,9 @@ GetArray
 InitArray
 SetArray
 ArrayCell
+ArraySlice
+CopyArray
+DotProduct
 
 ; Pattern matching
 -,=Pattern "P"
