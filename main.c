@@ -641,6 +641,12 @@ static void test_mode(void) {
   set_cursor(XC_tcross);
   SDL_LockSurface(screen);
   draw_text(0,0,"Hello, World!",0xF0,0xFF);
+  buf[16]=0;
+  for(i=0;i<16;i++) {
+    for(n=0;n<16;n++) buf[n]=(i<<4)+n?:255;
+    draw_text(4,(i<<3)+12,buf,0xF0,0xF7);
+  }
+  n=0;
   SDL_UnlockSurface(screen);
   SDL_Flip(screen);
   while(SDL_WaitEvent(&ev)) switch(ev.type) {
