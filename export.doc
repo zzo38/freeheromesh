@@ -32,6 +32,11 @@ D width height
   The play field dimensions. The width and height must be 1 to 64. This
   line must come before any objects are listed, and is mandatory.
 
+V version
+  This command never occurs in levels exported from Free Hero Mesh,
+  although it can optionally occur in imported levels. If it is specified,
+  then it sets the level version number.
+
 x y $class image misc1 misc2 misc3 dir
   Specify an object. Objects are listed starting from the top left corner,
   going right, and within each cell the objects are listed from bottom to

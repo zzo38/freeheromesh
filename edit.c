@@ -974,6 +974,12 @@ static void import_level(const char*cmd) {
         pfwidth=x;
         pfheight=y;
         break;
+      case 'V':
+        p=import_numbers(p+1,&x,0);
+        if(!p || *p) goto bad;
+        level_version=x;
+        level_changed=0;
+        break;
       case '@':
         free(level_title);
         level_title=import_string(p+1);
