@@ -1912,6 +1912,13 @@ void load_classes(void) {
         case OP_MISC6: define_user_flags(0x1040,0x105F); break;
         case OP_MISC7: define_user_flags(0x1060,0x107F); break;
         case OP_COLLISIONLAYERS: define_user_flags(0x1C80,0x1C87); break;
+        case OP_CODEPAGE:
+          nxttok();
+          if(tokent!=TF_INT || tokenv<1 || tokenv>65535) ParseError("Number from 1 to 65535 expected\n");
+          set_code_page(tokenv);
+          nxttok();
+          if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
+          break;
         default:
           ParseError("Invalid top level definition: %s\n",tokenstr);
       }

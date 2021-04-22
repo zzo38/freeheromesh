@@ -27,6 +27,10 @@ See bindings.doc for key/mouse bindings.
   database; to copy the changes to the level and solution files, you must
   use the .u command in SQL mode (-x).
 
+.codepage
+  The path to the code page file. If not specified, then code pages other
+  than 437 are not available (code page 437 is built-in).
+
 .editTitle
   The window title to use in edit mode. A tilde is replaced by the name of
   the puzzle set.

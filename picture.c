@@ -27,6 +27,7 @@ int left_margin;
 
 static SDL_Surface*picts;
 static Uint8*curpic;
+static const unsigned char*fontdata;
 
 static const char default_palette[]=
   "C020FF "
@@ -753,6 +754,7 @@ void init_screen(void) {
   const char*v;
   int w,h,i;
   if(main_options['x']) return;
+  if(!fontdata) fontdata=pcfont;
   optionquery[1]=Q_screenWidth;
   w=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"800",0,10);
   optionquery[1]=Q_screenHeight;
@@ -785,6 +787,80 @@ void init_screen(void) {
   SDL_EnableUNICODE(1);
   optionquery[1]=Q_margin;
   left_margin=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"65",0,10);
+}
+
+void set_code_page(Uint16 n) {
+  int c,i,j,s;
+  const char*v;
+  unsigned char*d;
+  Uint8 b[32];
+  FILE*fp;
+  if(!n) return;
+  if(fontdata && fontdata!=pcfont) fatal("Multiple code page specifications\n");
+  optionquery[1]=Q_codepage;
+  v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
+  if(!v || !*v) {
+    if(n==437) return;
+    fatal("Cannot load code page %d; code page file is not configured\n",n);
+  }
+  fp=fopen(v,"r");
+  if(!fp) {
+    perror(0);
+    fatal("Cannot open code page file\n");
+  }
+  fontdata=d=malloc(0x800);
+  if(!d) fatal("Allocation failed\n");
+  memcpy(d,pcfont,0x800);
+  name:
+  s=i=0;
+  for(;;) {
+    c=fgetc(fp);
+    if(c<0) {
+      if(n!=437) fatal("Cannot find code page %d\n",n);
+      goto done;
+    }
+    if(!c) break;
+    if(!s) {
+      if(c<'0' || c>'9') s=1;
+      else if(c=='0' && !i) s=1;
+      else i=10*i+c-'0';
+      if(i>65535) s=1;
+    }
+  }
+  if(s || i!=n) goto skip;
+  i=fgetc(fp)<<16;
+  i|=fgetc(fp)<<24;
+  i|=fgetc(fp)<<0;
+  i|=fgetc(fp)<<8;
+  if(i==0x800) {
+    fread(d,8,256,fp);
+    goto done;
+  } else if(i==0x400) {
+    fread(d+0x400,8,128,fp);
+  } else if(i<32 || i>0x800) {
+    fatal("Unrecognized format of code page %d\n",n);
+  } else {
+    fread(b,32,1,fp);
+    for(s=0;s<256;s++) if(!(b[s>>3]&(1<<(s&7)))) {
+      if(c=fgetc(fp)) {
+        i=fgetc(fp);
+        if(i&~255) fatal("Error reading data for character %d in code page %d\n",s,n);
+        if(i!=s) memcpy(d+s*8,d+i*8,8);
+      }
+      for(j=0;j<8;j++) if(!(c&(1<<j))) d[j+s*8]=fgetc(fp);
+    }
+  }
+  memset(d,0,8);
+  goto done;
+  skip:
+  i=fgetc(fp)<<16;
+  i|=fgetc(fp)<<24;
+  i|=fgetc(fp)<<0;
+  i|=fgetc(fp)<<8;
+  fseek(fp,i,SEEK_CUR);
+  goto name;
+  done:
+  fclose(fp);
 }
 
 // Widgets

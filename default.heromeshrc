@@ -6,6 +6,7 @@
 ?.showInventory: 0
 ?.maxTrigger: 32767
 ?.pasteCommand: xclip -o
+?.codepage: /home/user/freeheromesh/codepage.har
 
 ! Game inputs
 ?.gameKey.A: 'A

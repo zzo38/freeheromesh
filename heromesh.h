@@ -97,6 +97,7 @@ extern int left_margin;
 void init_palette(void);
 void init_screen(void);
 void load_pictures(void);
+void set_code_page(Uint16 n);
 
 // Use only when screen is unlocked
 void draw_picture(int x,int y,Uint16 img);
