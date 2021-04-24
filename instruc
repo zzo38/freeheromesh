@@ -210,8 +210,12 @@ Animate
 AnimateDead
 ,Assassinate ; destroy without sending any messages
 .Broadcast
+BroadcastAnd ; Broadcast, but result is AND of return values
+BroadcastAndEx
 *BroadcastClass ; for (Broadcast [class])
 .BroadcastEx ; broadcast with three arguments
+BroadcastList ; Broadcast, pushing results to stack
+BroadcastListEx
 BroadcastSum ; Broadcast, but result is sum of return values
 BroadcastSumEx
 chain

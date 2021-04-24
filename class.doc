@@ -1111,8 +1111,23 @@ Broadcast  ( class message arg1 arg2 -- count )
   An alternative syntax for Broadcast (needed only for compatibility with
   EKS Hero Mesh).
 
+BroadcastAnd  ( class message arg1 arg2 -- bool )
+  As Broadcast but the result is 1 if all results are true, or 0 if at
+  least one result is zero. If any result is zero, it doesn't send the
+  message to the rest.
+
+BroadcastAndEx  ( class message arg1 arg2 arg3 -- bool )
+  As BroadcastSum but with three message arguments.
+
 BroadcastEx  ( class message arg1 arg2 arg3 -- count )
   As Broadcast but with three message arguments.
+
+BroadcastList  ( class message arg1 arg2 -- ... )
+  As Broadcast but push all results to the stack. If any result is a mark,
+  it is not pushed to the stack.
+
+BroadcastListEx  ( class message arg1 arg2 arg3 -- ... )
+  As BroadcastList but with three message arguments.
 
 BroadcastSum  ( class message arg1 arg2 -- total )
   As Broadcast but the result is the sum of the return values rather than

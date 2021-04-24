@@ -69,7 +69,7 @@ static Value traced_obj;
 #define Ybit(a) (2-(a)/5)
 
 static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2,Value arg3);
-static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value arg3,int s);
+static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value arg3,Uint8 s);
 static Value destroy(Uint32 from,Uint32 to,Uint32 why);
 
 static const Sint8 x_delta[8]={1,1,0,-1,-1,-1,0,1};
@@ -1903,9 +1903,13 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_BOR: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u|t2.u)); break;
     case OP_BROADCAST: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_broadcast(obj,t1,t2,t3,t4,NVALUE(0),0)); break;
     case OP_BROADCAST_D: StackReq(4,0); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_broadcast(obj,t1,t2,t3,t4,NVALUE(0),0); break;
+    case OP_BROADCASTAND: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_broadcast(obj,t1,t2,t3,t4,NVALUE(0),2)); break;
+    case OP_BROADCASTANDEX: StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_broadcast(obj,t1,t2,t3,t4,t5,2)); break;
     case OP_BROADCASTCLASS: StackReq(3,1); t4=Pop(); t3=Pop(); t2=Pop(); Push(v_broadcast(obj,CVALUE(code[ptr++]),t2,t3,t4,NVALUE(0),0)); break;
     case OP_BROADCASTEX: StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_broadcast(obj,t1,t2,t3,t4,t5,0)); break;
     case OP_BROADCASTEX_D: StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_broadcast(obj,t1,t2,t3,t4,t5,0); break;
+    case OP_BROADCASTLIST: StackReq(4,0); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_broadcast(obj,t1,t2,t3,t4,NVALUE(0),3); break;
+    case OP_BROADCASTLISTEX: StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_broadcast(obj,t1,t2,t3,t4,t5,3); break;
     case OP_BROADCASTSUM: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_broadcast(obj,t1,t2,t3,t4,NVALUE(0),1)); break;
     case OP_BROADCASTSUMEX: StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_broadcast(obj,t1,t2,t3,t4,t5,1)); break;
     case OP_BUSY: StackReq(0,1); if(o->oflags&OF_BUSY) Push(NVALUE(1)); else Push(NVALUE(0)); break;
@@ -2291,26 +2295,40 @@ static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2
   }
 }
 
-static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value arg3,int s) {
+static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value arg3,Uint8 s) {
   Uint32 t=0;
   Uint32 n;
   Object*o;
   Value v;
-  if(lastobj==VOIDLINK) return;
+  if(s==2) t=0xFFFFFFFFULL;
+  if(lastobj==VOIDLINK) return t;
   n=lastobj;
   while(o=objects[n]) {
     if(!c || o->class==c) {
       v=send_message(from,n,msg,arg1,arg2,arg3);
-      if(s) {
-        switch(v.t) {
-          case TY_NUMBER: t+=v.u; break;
-          case TY_CLASS: t++; break;
-          default:
-            if(v.t<=TY_MAXTYPE) Throw("Invalid return type for BroadcastSum");
-            t++;
-        }
-      } else {
-        t++;
+      switch(s) {
+        case 0:
+          t++;
+          break;
+        case 1:
+          switch(v.t) {
+            case TY_NUMBER: t+=v.u; break;
+            case TY_CLASS: t++; break;
+            default:
+              if(v.t<=TY_MAXTYPE) Throw("Invalid return type for BroadcastSum");
+              t++;
+          }
+          break;
+        case 2:
+          switch(v.t) {
+            case TY_NUMBER: if(!v.u) return 0;
+            case TY_SOUND: case TY_USOUND: Throw("Invalid return type for BroadcastAnd");
+          }
+          break;
+        case 3:
+          StackReq(0,1);
+          if(v.t!=TY_MARK) Push(v);
+          break;
       }
     }
     n=o->prev;
