@@ -1788,7 +1788,15 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
       n=obj_top_at(x,y);
       break;
     case OP_RET:
-      return n==VOIDLINK?obj_bottom_at(x,y):n;
+      if(all) {
+        if(vstackptr>=VSTACKSIZE-1) Throw("Stack overflow");
+        if(n==VOIDLINK) n=obj_bottom_at(x,y);
+        Push(OVALUE(n));
+        goto fail;
+      } else {
+        return n==VOIDLINK?obj_bottom_at(x,y):n;
+      }
+      break;
     case OP_SUB:
       if(vstackptr>=VSTACKSIZE-1) Throw("Stack overflow");
       Push(NVALUE(0));
@@ -1806,8 +1814,10 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
   }
   goto again;
   fail:
-  if(vstackptr<cp->depth) Throw("Stack underflow in pattern matching");
-  vstackptr=cp[cpi].depth;
+  if(!all) {
+    if(vstackptr<cp->depth) Throw("Stack underflow in pattern matching");
+    vstackptr=cp[cpi].depth;
+  }
   if(!cpi) return VOIDLINK;
   x=cp[cpi].x;
   y=cp[cpi].y;
@@ -1816,6 +1826,19 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
   n=VOIDLINK;
   cpi--;
   goto again;
+}
+
+static Uint32 v_pattern_anywhere(Uint16*code,int ptr,char all) {
+  int i;
+  Uint32 n;
+  for(i=0;i<pfheight*64;i++) {
+    n=playfield[i];
+    if(n!=VOIDLINK) {
+      n=v_pattern(code,ptr,n,all);
+      if(n!=VOIDLINK && !all) return n;
+    }
+  }
+  return VOIDLINK;
 }
 
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
@@ -2116,6 +2139,10 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_OVER: StackReq(2,3); t2=Pop(); t1=Pop(); Push(t1); Push(t2); Push(t1); break;
     case OP_PATTERN: StackReq(0,1); i=code[ptr++]; j=v_pattern(code,ptr,obj,0); ptr=i; Push(OVALUE(j)); break;
     case OP_PATTERN_C: StackReq(1,1); i=code[ptr++]; j=v_object(Pop()); if(j!=VOIDLINK) j=v_pattern(code,ptr,j,0); ptr=i; Push(OVALUE(j)); break;
+    case OP_PATTERN_E: StackReq(0,1); i=code[ptr++]; j=v_pattern_anywhere(code,ptr,0); ptr=i; Push(OVALUE(j)); break;
+    case OP_PATTERNS: StackReq(0,1); i=code[ptr++]; v_pattern(code,ptr,obj,1); ptr=i; break;
+    case OP_PATTERNS_C: StackReq(1,1); i=code[ptr++]; j=v_object(Pop()); if(j!=VOIDLINK) v_pattern(code,ptr,j,1); ptr=i; break;
+    case OP_PATTERNS_E: StackReq(0,1); i=code[ptr++]; v_pattern_anywhere(code,ptr,1); ptr=i; break;
     case OP_PICK: StackReq(0,1); t1=Pop(); Numeric(t1); if(t1.u>=vstackptr) Throw("Stack index out of range"); t1=vstack[vstackptr-t1.u-1]; Push(t1); break;
     case OP_PLAYER: StackReq(0,1); if(classes[o->class]->cflags&CF_PLAYER) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_PLAYER_C: StackReq(1,1); GetClassFlagOf(CF_PLAYER); break;

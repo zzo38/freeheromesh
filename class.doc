@@ -2113,10 +2113,31 @@ direction of movement.
 === Pattern matching ===
 
 Where an instruction is expected, you can have pattern matching. This can
-be (P <pattern...>) or (,P <pattern...>) where the first one uses the
-current location, and the second kind uses the position and direction of
-the specified object as the matching. It pushes the found object to the
-stack, or pushes zero if the pattern does not match.
+be (<operator> <pattern...>) where the operator can be one of:
+
+P
+  Find starting at the current location, with the current object's
+  direction. Pushes the found object, or zero if not found.
+
+,P
+  Find starting at the specified object's location and direction. Pushes
+  the found object, or zero if not found.
+
+=P
+  Searches everywhere. Pushes the found object, or zero if not found.
+
+P*
+  Like P but push all found objects, or pushes nothing if not found.
+
+,P*
+  Like ,P but push all found objects, or pushes nothing if not found.
+
+=P*
+  Like =P but push all found objects, or pushes nothing if not found.
+
+Inside the pattern, the following commands are allowed (although the
+commands that push stuff to the stack should not be used in the patterns
+with P* or ,P* or =P*):
 
 <class>
   Match an object of the specified class.
