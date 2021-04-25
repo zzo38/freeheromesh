@@ -1165,16 +1165,6 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
           FlowPush(OP_IF);
           cl->codes[x]=peep=++ptr;
           break;
-        case OP_EL:
-          AddInst(OP_GOTO);
-          y=++ptr;
-          FlowPop(OP_IF);
-          x=flowptr[flowdepth];
-          AddInst(OP_GOTO);
-          FlowPush(OP_IF);
-          cl->codes[x]=peep=++ptr;
-          flowptr[flowdepth-1]=y;
-          break;
         case OP_BEGIN:
           FlowPush(OP_BEGIN);
           peep=ptr;

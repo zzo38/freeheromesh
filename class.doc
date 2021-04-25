@@ -1713,11 +1713,10 @@ for <body> next  ( upflag x y -- ) **
   the <body>, the found object is on the stack; you can then use or store it.
   Once "next" is reached, it finds the next object and goes back.
 
-if <truepart> [el <cond> if <truepart> ...] [else <falsepart>] then  ( bool -- )
+if <truepart> [else <falsepart>] then  ( bool -- )
   Takes a boolean value from the stack. If true, then <truepart> is executed;
-  otherwise it tries the other parts; "el" means to execute <cond> and take
-  another boolean, and continue; "else" means always do this if none of the
-  previous parts match.
+  otherwise it tries the other parts; "else" means always do this if none of
+  the previous parts match.
 
 mbegin <body> repeat  ( -- any ) ( -- )
   The "mbegin" instruction is a shortcut for "begin tmark while", and it has
