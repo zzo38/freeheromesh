@@ -127,6 +127,7 @@
 ?.gameKey.f7: ^>
 ?.gameKey.f8: ^s
 ?.gameKey.tab: ^I
+?.gameKey.alt.D: select '^d',$key_xy;
 ?.gameKey.alt.G: ^g
 
 ! Editor key bindings

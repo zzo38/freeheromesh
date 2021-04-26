@@ -13,7 +13,6 @@
   * Operations with marks (duplicate a list, length of a list, etc)
   * "Goto message" instruction
   * Class inheritance (abstract)
-  * Case blocks
   * Returning a class from COLLIDE/COLLIDEBY to transform
 * Editor
   * Mouse dragging

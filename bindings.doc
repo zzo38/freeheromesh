@@ -41,8 +41,9 @@ not need that many arguments.
 
 SQL statements can also contain host parameters. The valid host parameters
 are $X (clicked X coordinate), $Y (clicked Y coordinate), $LEVEL (level
-order number), $LEVEL_ID (level ID number), and any name with : at first
-to ask the user for the value to use.
+order number), $LEVEL_ID (level ID number), $KEY_XY (ask for X and Y
+coordinates, and produce a single number like the XY function does), and
+any name with : at first to ask the user for the value to use.
 
 
 === Game commands ===

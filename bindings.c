@@ -17,6 +17,7 @@ exit
 #include "smallxrm.h"
 #include "quarks.h"
 #include "heromesh.h"
+#include "cursorshapes.h"
 
 #define MOD_SHIFT 1
 #define MOD_CTRL 2
@@ -220,6 +221,76 @@ static void sql_interactive(void) {
   done: if(tab) sqlite3_free_table(tab); sqlite3_free(err);
 }
 
+static int key_xy(void) {
+  char buf[32];
+  SDL_Rect r;
+  SDL_Event ev;
+  int x,y;
+  int xc=pfwidth/2+1;
+  int yc=pfheight/2+1;
+  set_cursor(XC_hand1);
+  redraw:
+  r.x=r.y=0;
+  r.h=screen->h;
+  r.w=left_margin;
+  SDL_FillRect(screen,&r,0xF0);
+  r.x=left_margin-1;
+  r.w=1;
+  SDL_FillRect(screen,&r,0xF7);
+  r.x=left_margin;
+  r.w=screen->w-r.x;
+  SDL_FillRect(screen,&r,back_color);
+  for(x=1;x<=pfwidth;x++) for(y=1;y<=pfheight;y++) draw_cell(x,y);
+  SDL_LockSurface(screen);
+  snprintf(buf,8,"(%2d,%2d)",xc,yc);
+  draw_text(0,0,buf,0xF0,0xF7);
+  SDL_UnlockSurface(screen);
+  r.x=left_margin+(xc-1)*picture_size+picture_size/2;
+  r.y=(yc-1)*picture_size;
+  r.w=1;
+  r.h=picture_size;
+  SDL_FillRect(screen,&r,0xF6);
+  r.x=left_margin+(xc-1)*picture_size;
+  r.y=(yc-1)*picture_size+picture_size/2;
+  r.w=picture_size;
+  r.h=1;
+  SDL_FillRect(screen,&r,0xF6);
+  r.x=left_margin+(xc-1)*picture_size+picture_size/2;
+  r.y=(yc-1)*picture_size+picture_size/2;
+  r.w=r.h=2;
+  SDL_FillRect(screen,&r,0xFE);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) switch(ev.type) {
+    case SDL_KEYDOWN:
+      switch(ev.key.keysym.sym) {
+        case SDLK_h: case SDLK_LEFT: case SDLK_KP4: if(xc>1) xc--; break;
+        case SDLK_j: case SDLK_DOWN: case SDLK_KP2: if(yc<pfheight) yc++; break;
+        case SDLK_k: case SDLK_UP: case SDLK_KP8: if(yc>1) yc--; break;
+        case SDLK_l: case SDLK_RIGHT: case SDLK_KP6: if(xc<pfwidth) xc++; break;
+        case SDLK_RETURN: case SDLK_KP_ENTER: case SDLK_SPACE: return xc+yc*64;
+        case SDLK_ESCAPE: case SDLK_DELETE: case SDLK_q: return -1;
+      }
+      goto redraw;
+    case SDL_MOUSEBUTTONDOWN:
+      if(ev.button.x<left_margin) break;
+      x=(ev.button.x-left_margin)/picture_size+1;
+      y=ev.button.y/picture_size+1;
+      if(x>0 && x<=pfwidth && y>0 && y<=pfheight) {
+        xc=x,yc=y;
+        if(ev.button.button==2) return xc+yc*64;
+        if(ev.button.button==3) return -1;
+        goto redraw;
+      }
+      break;
+    case SDL_VIDEOEXPOSE:
+      goto redraw;
+    case SDL_QUIT:
+      SDL_PushEvent(&ev);
+      return -1;
+  }
+  return -1;
+}
+
 int exec_key_binding(SDL_Event*ev,int editing,int x,int y,int(*cb)(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux),void*aux) {
   const UserCommand*cmd=find_key_binding(ev,editing);
   int prev=0;
@@ -256,6 +327,10 @@ int exec_key_binding(SDL_Event*ev,int editing,int x,int y,int(*cb)(int prev,int 
               sqlite3_bind_int(cmd->stmt,i,level_ord);
             } else if(!sqlite3_stricmp(name+1,"LEVEL_ID")) {
               sqlite3_bind_int(cmd->stmt,i,level_id);
+            } else if(!sqlite3_stricmp(name+1,"KEY_XY")) {
+              j=key_xy();
+              if(j<0) return 0;
+              sqlite3_bind_int(cmd->stmt,i,j);
             }
           } else if(*name==':') {
             name=screen_prompt(name);
