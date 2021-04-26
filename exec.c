@@ -1841,6 +1841,49 @@ static Uint32 v_pattern_anywhere(Uint16*code,int ptr,char all) {
   return VOIDLINK;
 }
 
+static int v_case(Uint16*code,int ptr,Value v) {
+  int n=(code[ptr]&255)+1;
+  int t0=(code[ptr]>>12)&15;
+  int t1=(code[ptr]>>8)&15;
+  int i,j,v0,v1;
+  if(v.t==TY_SOUND || v.t==TY_USOUND) Throw("Cannot use sound in case block");
+  for(i=0;i<n;i++) {
+    v0=code[ptr+i+i+1];
+    v1=code[ptr+i+i+2];
+    if(!v0 && v.t==TY_NUMBER && !v.u) goto found;
+    if(v.t==t0) switch(t0) {
+      case TY_NUMBER:
+        if(!((v0^v.u)&0xFFFF)) goto found;
+        break;
+      case TY_CLASS:
+        if(v.u==v0) goto found;
+        break;
+      case TY_MESSAGE:
+        if(v.u+1==v0) goto found;
+        break;
+    }
+  }
+  v1=code[ptr+n+n+1];
+  found:
+  switch(t1) {
+    case TY_NUMBER:
+      Push(NVALUE(v1));
+      break;
+    case TY_CLASS:
+      if(v1) Push(CVALUE(v1)); else Push(NVALUE(0));
+      break;
+    case TY_MESSAGE:
+      if(v1) Push(MVALUE(v1-1)); else Push(NVALUE(0));
+      break;
+    case TY_STRING:
+      if(v1) Push(UVALUE(v1-1,TY_STRING)); else Push(NVALUE(0));
+      break;
+    case TY_CODE:
+      return v1;
+  }
+  return ptr+n+n+2;
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -1941,6 +1984,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_BUSY_EC: NoIgnore(); StackReq(2,0); SetFlagOf(OF_BUSY); break;
     case OP_BXOR: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u^t2.u)); break;
     case OP_CALLSUB: execute_program(code,code[ptr++],obj); break;
+    case OP_CASE: StackReq(1,1); t1=Pop(); ptr=v_case(code,ptr,t1); break;
     case OP_CHAIN: StackReq(1,1); t1=Pop(); i=v_chain(t1,o->class); if(i==VOIDLINK) { Push(NVALUE(1)); } else { o=objects[obj=i]; Push(NVALUE(0)); } break;
     case OP_CHEBYSHEV: StackReq(1,1); t1=Pop(); i=chebyshev(obj,v_object(t1)); Push(NVALUE(i)); break;
     case OP_CHEBYSHEV_C: StackReq(2,1); t2=Pop(); t1=Pop(); i=chebyshev(v_object(t1),v_object(t2)); Push(NVALUE(i)); break;

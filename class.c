@@ -1059,6 +1059,125 @@ static int parse_pattern(int cla,int ptr,Hash*hash) {
   }
 }
 
+#define CaseT0(t) do{ if(t0!=-1 && t0!=t) ParseError("Type mismatch in case block\n"); t0=t; }while(0)
+#define CaseT1(t) do{ if(t1!=-1 && t1!=t) ParseError("Type mismatch in case block\n"); t1=t; }while(0)
+static int case_block(int cla,int ptr,Hash*hash) {
+  Class*cl=classes[cla];
+  int sptr=ptr++;
+  Sint8 t0=-1;
+  Sint8 t1=-1;
+  Uint16 n=0;
+  Uint8 e=1;
+  Uint8 z=0;
+  for(;;) {
+    nxttok();
+    if(Tokenf(TF_MACRO)) ParseError("Unexpected macro\n");
+    if(tokent==TF_OPEN) {
+      nxttok();
+      if(Tokenf(TF_MACRO)) ParseError("Unexpected macro\n");
+      if(n>=256 && tokenv!=OP_ELSE && !Tokenf(TF_NAME)) ParseError("Too many cases\n");
+      if(!e) ParseError("Cannot add more cases after the default block\n");
+      n++;
+      if(Tokenf(TF_INT) || Tokenf(TF_DIR)) {
+        if(tokenv) CaseT0(TY_NUMBER);
+        cl->codes[ptr++]=tokenv;
+      } else if(Tokenf(TF_NAME)) {
+        switch(tokenv) {
+          case OP_ELSE:
+            e=0;
+            n--;
+            break;
+          case 0x0200 ... 0x02FF:
+            CaseT0(TY_MESSAGE);
+            cl->codes[ptr++]=tokenv+1-0x0200;
+            break;
+          case 0x4000 ... 0x7FFF:
+            CaseT0(TY_CLASS);
+            cl->codes[ptr++]=tokenv-0x4000;
+            break;
+          case 0xC000 ... 0xFFFF:
+            CaseT0(TY_MESSAGE);
+            cl->codes[ptr++]=(tokenv&0x3FFF)+257;
+            break;
+          default:
+            ParseError("Improper token in case block\n");
+            break;
+        }
+      } else if(Tokenf(TF_EOF)) {
+        ParseError("Unexpected end of file\n");
+      } else {
+        ParseError("Improper token in case block\n");
+      }
+      nxttok();
+      if(Tokenf(TF_MACRO)) ParseError("Unexpected macro\n");
+      if(Tokenf(TF_INT) || Tokenf(TF_DIR)) {
+        if(tokenv) CaseT1(TY_NUMBER); else z=1;
+        if(tokenv&~0xFFFF) ParseError("Number in case block out of range\n");
+        cl->codes[ptr++]=tokenv;
+      } else if(Tokenf(TF_NAME)) {
+        switch(tokenv) {
+          case OP_LABEL:
+            CaseT1(TY_CODE);
+            if(Tokenf(TF_COMMA|TF_EQUAL)) ParseError("Improper token in case block\n");
+            tokenv=look_hash(hash,LOCAL_HASH_SIZE,0x8000,0xFFFF,*labelptr,"labels");
+            if(!tokenv) tokenv=*labelptr,++*labelptr;
+            tokenv-=0x8000;
+            cl->codes[ptr++]=labelptr[tokenv];
+            if(labelptr[tokenv]==0xFFFF) {
+            LabelStack*s=malloc(sizeof(LabelStack));
+              if(!s) fatal("Allocation failed\n");
+              s->id=tokenv|0x8000;
+              s->addr=ptr-1;
+              s->next=labelstack;
+              labelstack=s;
+            }
+            break;
+          case OP_STRING:
+            CaseT1(TY_STRING);
+            cl->codes[ptr++]=pool_string(tokenstr)+1;
+            break;
+          case 0x0200 ... 0x02FF:
+            CaseT1(TY_MESSAGE);
+            cl->codes[ptr++]=tokenv+1-0x0200;
+            break;
+          case 0x4000 ... 0x7FFF:
+            CaseT1(TY_CLASS);
+            cl->codes[ptr++]=tokenv-0x4000;
+            break;
+          case 0xC000 ... 0xFFFF:
+            CaseT1(TY_MESSAGE);
+            cl->codes[ptr++]=(tokenv&0x3FFF)+257;
+            break;
+          default:
+            ParseError("Improper token in case block\n");
+            break;
+        }
+      } else if(Tokenf(TF_EOF)) {
+        ParseError("Unexpected end of file\n");
+      } else {
+        ParseError("Improper token in case block\n");
+      }
+      nxttok();
+    } else if(tokent==TF_CLOSE) {
+      if(!n) ParseError("Empty case block\n");
+      if(z && t1==TY_CODE) ParseError("Type mismatch in case block\n");
+      if(e) {
+        cl->codes[ptr]=(t1==TY_CODE?ptr+1:0);
+        ptr++;
+      }
+      if(t0==-1) t0=TY_NUMBER;
+      if(t1==-1) t1=TY_NUMBER;
+      cl->codes[sptr]=(t0<<12)|(t1<<8)|(n-1);
+      return ptr;
+    } else if(Tokenf(TF_EOF)) {
+      ParseError("Unexpected end of file\n");
+    } else {
+      ParseError("Improper token in case block\n");
+    }
+    if(ptr>=0xFFEF) ParseError("Out of code space\n");
+  }
+}
+
 #define AddInst(x) (cl->codes[ptr++]=(x),prflag=0)
 #define AddInst2(x,y) (cl->codes[ptr++]=(x),cl->codes[ptr++]=(y),prflag=0,peep=ptr)
 #define AddInstF(x,y) (cl->codes[ptr++]=(x),prflag=(y))
@@ -1282,6 +1401,10 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
           }
           tokenv=x;
           goto numeric;
+        case OP_CASE:
+          cl->codes[ptr++]=OP_CASE;
+          ptr=peep=case_block(cla,ptr,hash);
+          break;
         default:
           ParseError("Invalid parenthesized instruction\n");
       }

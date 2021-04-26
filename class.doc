@@ -1144,6 +1144,11 @@ c?  ( any -- bool )
   True if the value is a class, or false if it is any other type. Error if
   it is a sound.
 
+(case <cases...>)  ( any -- ??? )
+  A case block. Read one value from stack; find which case it matches, and
+  then push or jump to the result for that case. See the section below
+  about case blocks for details.
+
 chain  ( any -- bool )
   If given an object of the same class as the current object, selects that
   object as the current object and continues executing the code with that
@@ -1721,6 +1726,45 @@ if <truepart> [else <falsepart>] then  ( bool -- )
 mbegin <body> repeat  ( -- any ) ( -- )
   The "mbegin" instruction is a shortcut for "begin tmark while", and it has
   the same behaviour.
+
+
+=== Case blocks ===
+
+A case block consists of (case) with the cases listed inside of the () after
+the word "case". Each case consists of two tokens inside of their own
+parentheses. The first token may be any one of:
+
+* A number or direction (representing a number from 0 to 15); only the low
+16-bits of the number will be used
+
+* A class
+
+* A message
+
+* The word "else"; if present, it must be the last one. This is the case if
+none of the other cases match. It is optional; if not specified, then the
+default is zero or to not jump.
+
+The second token may be any one of:
+
+* A number or direction (representing a number from 0 to 15); this must fit
+in 16-bits (unsigned)
+
+* A class
+
+* A message
+
+* A string literal
+
+* A label name (with the colon at first)
+
+All types on the left must be the same as each other, and all types on the
+right must be the same as each other, except that zero may be mixed with
+other types other than labels.
+
+If the right side is a label, then nothing is pushed to the stack, and it
+jumps to the specified label instead. If not, then the result is pushed to
+the stack instead.
 
 
 === Substitution codes ===

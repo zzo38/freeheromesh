@@ -91,6 +91,7 @@ over
 *goto
 *CallSub
 ret
+-case
 
 ; Arithmetic
 add "+"
