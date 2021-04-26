@@ -277,6 +277,9 @@ in
 nin
 -mbegin
 flip
+count
+clear
+uniq
 
 ; Arrays
 -Array

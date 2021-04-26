@@ -407,33 +407,36 @@
 #define OP_NIN 32971
 #define OP_MBEGIN 32972
 #define OP_FLIP 32973
-#define OP_ARRAY 32974
-#define OP_GETARRAY 32975
-#define OP_INITARRAY 32976
-#define OP_SETARRAY 32977
-#define OP_ARRAYCELL 32978
-#define OP_ARRAYSLICE 32979
-#define OP_COPYARRAY 32980
-#define OP_DOTPRODUCT 32981
-#define OP_PATTERN 32982
-#define OP_PATTERN_C 35030
-#define OP_PATTERN_E 37078
-#define OP_PATTERN_EC 39126
-#define OP_PATTERNS 32983
-#define OP_PATTERNS_C 35031
-#define OP_PATTERNS_E 37079
-#define OP_PATTERNS_EC 39127
-#define OP_FOUR 32984
-#define OP_EIGHT 32985
-#define OP_CUT 32986
-#define OP_FUNCTION 32987
-#define OP_LOCAL 32988
-#define OP_LABEL 32989
-#define OP_STRING 32990
-#define OP_INT16 32991
-#define OP_INT32 32992
-#define OP_DISPATCH 32993
-#define OP_USERFLAG 32994
+#define OP_COUNT 32974
+#define OP_CLEAR 32975
+#define OP_UNIQ 32976
+#define OP_ARRAY 32977
+#define OP_GETARRAY 32978
+#define OP_INITARRAY 32979
+#define OP_SETARRAY 32980
+#define OP_ARRAYCELL 32981
+#define OP_ARRAYSLICE 32982
+#define OP_COPYARRAY 32983
+#define OP_DOTPRODUCT 32984
+#define OP_PATTERN 32985
+#define OP_PATTERN_C 35033
+#define OP_PATTERN_E 37081
+#define OP_PATTERN_EC 39129
+#define OP_PATTERNS 32986
+#define OP_PATTERNS_C 35034
+#define OP_PATTERNS_E 37082
+#define OP_PATTERNS_EC 39130
+#define OP_FOUR 32987
+#define OP_EIGHT 32988
+#define OP_CUT 32989
+#define OP_FUNCTION 32990
+#define OP_LOCAL 32991
+#define OP_LABEL 32992
+#define OP_STRING 32993
+#define OP_INT16 32994
+#define OP_INT32 32995
+#define OP_DISPATCH 32996
+#define OP_USERFLAG 32997
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486937},
@@ -451,9 +454,9 @@ static const Op_Names op_names[]={
 {"Arg1",8552569},
 {"Arg2",8552570},
 {"Arg3",8552571},
-{"Array",8683726},
-{"ArrayCell",8421586},
-{"ArraySlice",8421587},
+{"Array",8683729},
+{"ArrayCell",8421589},
+{"ArraySlice",8421590},
 {"Arrivals",8618086},
 {"Arrived",8618084},
 {"Assassinate",8487051},
@@ -495,7 +498,7 @@ static const Op_Names op_names[]={
 {"CollisionLayers",8487029},
 {"Coloc",8487063},
 {"Compatible",8487028},
-{"CopyArray",8421588},
+{"CopyArray",8421591},
 {"Create",10518680},
 {"DEEP_POP",8389417},
 {"DEPARTED",8389125},
@@ -516,11 +519,11 @@ static const Op_Names op_names[]={
 {"Dir",8618048},
 {"Distance",9142340},
 {"Done",8618097},
-{"DotProduct",8421589},
+{"DotProduct",8421592},
 {"E",9437184},
 {"END_TURN",8389139},
 {"EditorHelp",8683655},
-{"Eight",8683737},
+{"Eight",8683740},
 {"F",9437192},
 {"FAROUT",8389421},
 {"FFFFTT",8389399},
@@ -529,11 +532,11 @@ static const Op_Names op_names[]={
 {"Finished",8552575},
 {"FlushClass",8421532},
 {"FlushObj",8487069},
-{"Four",8683736},
+{"Four",8683739},
 {"From",8421496},
 {"GLASS",8389379},
 {"GLISSANT",8389419},
-{"GetArray",8421583},
+{"GetArray",8421586},
 {"GetInventory",8421534},
 {"HAWK",8389425},
 {"HEARTBEAT",8389407},
@@ -548,7 +551,7 @@ static const Op_Names op_names[]={
 {"Image",8618049},
 {"InPlace",8683652},
 {"Inertia",9142338},
-{"InitArray",8421584},
+{"InitArray",8421587},
 {"Input",8683650},
 {"IntMove",10584225},
 {"Invisible",8618089},
@@ -607,8 +610,8 @@ static const Op_Names op_names[]={
 {"ObjLayerAt",8421557},
 {"ObjMovingTo",8421558},
 {"ObjTopAt",8421559},
-{"P",8880342},
-{"P*",8880343},
+{"P",8880345},
+{"P*",8880346},
 {"PLAYERMOVING",8389133},
 {"POSTINIT",8389138},
 {"POUR",8389377},
@@ -636,7 +639,7 @@ static const Op_Names op_names[]={
 {"Self",8421494},
 {"Send",10584252},
 {"SendEx",10584253},
-{"SetArray",8421585},
+{"SetArray",8421588},
 {"SetInventory",8421566},
 {"Shape",8618045},
 {"ShapeDir",8618068},
@@ -717,7 +720,9 @@ static const Op_Names op_names[]={
 {"c?",8421427},
 {"case",8683542},
 {"chain",8421525},
-{"cut",8683738},
+{"clear",8421583},
+{"count",8421582},
+{"cut",8683741},
 {"cz?",8421428},
 {"dup",8421377},
 {"else",8683530},
@@ -761,8 +766,9 @@ static const Op_Names op_names[]={
 {"then",8683531},
 {"tmark",8421577},
 {"tuck",8421380},
+{"uniq",8421584},
 {"until",8683534},
 {"while",8683535},
 };
-#define N_OP_NAMES 327
+#define N_OP_NAMES 330
 #endif

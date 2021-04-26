@@ -1526,7 +1526,7 @@ static inline void v_flip(void) {
   int p=vstackptr;
   int n;
   Value v;
-  while(p-- && vstack[p].t!=TY_MARK);
+  while(p>0 && vstack[p-1].t!=TY_MARK) p--;
   if(!p) Throw("No mark");
   p++;
   for(n=0;n<(vstackptr-p)/2;n++) {
@@ -1534,6 +1534,28 @@ static inline void v_flip(void) {
     vstack[p+n]=vstack[vstackptr-n-1];
     vstack[vstackptr-n-1]=v;
   }
+}
+
+static int v_count(void) {
+  int p=vstackptr;
+  while(p>0 && vstack[p-1].t!=TY_MARK) p--;
+  if(!p) Throw("No mark");
+  return vstackptr-p;
+}
+
+static int v_uniq(Value v) {
+  int p=vstackptr;
+  if(v.t==TY_SOUND || v.t==TY_USOUND) Throw("Cannot compare sounds");
+  while(p>0) {
+    p--;
+    if(vstack[p].t==TY_MARK) return 1;
+    if(vstack[p].t==TY_SOUND || vstack[p].t==TY_USOUND) Throw("Cannot compare sounds");
+    if(v.t==vstack[p].t && v.u==vstack[p].u) return 0;
+    if((v.t==TY_STRING || v.t==TY_LEVELSTRING) && (vstack[p].t==TY_STRING || vstack[p].t==TY_LEVELSTRING)) {
+      if(!strcmp(value_string_ptr(v),value_string_ptr(vstack[p]))) return 1;
+    }
+  }
+  Throw("No mark");
 }
 
 static inline void v_obj_moving_to(Uint32 x,Uint32 y) {
@@ -1990,6 +2012,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_CHEBYSHEV_C: StackReq(2,1); t2=Pop(); t1=Pop(); i=chebyshev(v_object(t1),v_object(t2)); Push(NVALUE(i)); break;
     case OP_CLASS: StackReq(0,1); Push(CVALUE(o->class)); break;
     case OP_CLASS_C: StackReq(1,1); Push(GetVariableOf(class,CVALUE)); break;
+    case OP_CLEAR: t1.t=TY_NUMBER; while(vstackptr>0) { t1=Pop(); if(t1.t==TY_MARK) break; } if(t1.t!=TY_MARK) Throw("No mark"); break;
     case OP_CLIMB: StackReq(0,1); Push(NVALUE(o->climb)); break;
     case OP_CLIMB_C: StackReq(1,1); Push(GetVariableOrAttributeOf(climb,NVALUE)); break;
     case OP_CLIMB_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->climb=t1.u; break;
@@ -2003,6 +2026,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_COMPATIBLE: StackReq(0,1); if(classes[o->class]->cflags&CF_COMPATIBLE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_COMPATIBLE_C: StackReq(1,1); GetClassFlagOf(CF_COMPATIBLE); break;
     case OP_COPYARRAY: NoIgnore(); StackReq(2,0); t2=Pop(); t1=Pop(); v_copy_array(t1,t2); break;
+    case OP_COUNT: StackReq(1,2); i=v_count(); Push(NVALUE(i)); break;
     case OP_CREATE: NoIgnore(); StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_create(obj,t1,t2,t3,t4,t5)); break;
     case OP_CREATE_D: NoIgnore(); StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_create(obj,t1,t2,t3,t4,t5); break;
     case OP_DELINVENTORY: StackReq(2,0); t2=Pop(); t1=Pop(); v_delete_inventory(t1,t2); break;
@@ -2266,6 +2290,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_TMARK: StackReq(1,2); t1=Pop(); if(t1.t==TY_MARK) { Push(NVALUE(0)); } else { Push(t1); Push(NVALUE(1)); } break;
     case OP_TRACE: StackReq(3,0); trace_stack(obj); break;
     case OP_TUCK: StackReq(2,3); t2=Pop(); t1=Pop(); Push(t2); Push(t1); Push(t2); break;
+    case OP_UNIQ: StackReq(2,3); t1=Pop(); i=v_uniq(t1); if(i) Push(t1); Push(NVALUE(i)); break;
     case OP_USERSIGNAL: StackReq(0,1); if(o->oflags&OF_USERSIGNAL) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_USERSIGNAL_C: StackReq(1,1); GetFlagOf(OF_USERSIGNAL); break;
     case OP_USERSIGNAL_E: NoIgnore(); StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_USERSIGNAL; else o->oflags&=~OF_USERSIGNAL; break;

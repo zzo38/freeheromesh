@@ -1166,6 +1166,9 @@ Chebyshev  ( obj -- number )
   Calculate the Chebyshev distance between thie two specified objects. If
   either specified object is zero, then the result is also zero.
 
+clear  ( mark ... -- )
+  Remove everything above the mark including the mark itself.
+
 Coloc  ( obj -- bool )
   True if this object and the specified object are in the same place, or
   false otherwise. Always false if the object is destroyed, or if one
@@ -1178,6 +1181,9 @@ Coloc  ( obj -- bool )
 
 CopyArray  ( src dest -- ) **
   Copy one array to another. It is OK if the two references overlap.
+
+count  ( mark ... -- mark ... count )
+  Count how many values are above the mark on the stack.
 
 Create  ( class x y image dir -- obj ) **
   Creates a new object at the specified location, and returns it. The
@@ -1663,6 +1669,11 @@ Trace  ( obj arg1 arg2 -- )
   used for debugging class codes.
 
 tuck  ( x y -- y x y )
+
+uniq  ( mark ... value -- mark ... value true | mark ... false )
+  Check if the top value matches any others in the list above the mark. If
+  it doesn't match any, then the value remains and it pushes true; if it
+  does match, then the top value is removed and it pushes false instead.
 
 VolumeAt  ( x y -- volume )
   Finds the greatest volume among objects at the specified location.
