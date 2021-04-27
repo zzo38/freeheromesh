@@ -429,14 +429,17 @@
 #define OP_FOUR 32987
 #define OP_EIGHT 32988
 #define OP_CUT 32989
-#define OP_FUNCTION 32990
-#define OP_LOCAL 32991
-#define OP_LABEL 32992
-#define OP_STRING 32993
-#define OP_INT16 32994
-#define OP_INT32 32995
-#define OP_DISPATCH 32996
-#define OP_USERFLAG 32997
+#define OP_ABSTRACT 32990
+#define OP_SUPER 32991
+#define OP_SUPER_C 35039
+#define OP_FUNCTION 32992
+#define OP_LOCAL 32993
+#define OP_LABEL 32994
+#define OP_STRING 32995
+#define OP_INT16 32996
+#define OP_INT32 32997
+#define OP_DISPATCH 32998
+#define OP_USERFLAG 32999
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486937},
@@ -449,6 +452,7 @@ static const Op_Names op_names[]={
 {"/",8486938},
 {"ANHH",8389394},
 {"ARRIVED",8389124},
+{"Abstract",8683742},
 {"Animate",8421513},
 {"AnimateDead",8421514},
 {"Arg1",8552569},
@@ -648,6 +652,7 @@ static const Op_Names op_names[]={
 {"Sound",8421567},
 {"Stealthy",8618094},
 {"Strength",9142352},
+{"Super",8487135},
 {"Synchronize",8421568},
 {"TAHTASHH",8389409},
 {"THMP_thmp",8389405},
@@ -770,5 +775,5 @@ static const Op_Names op_names[]={
 {"until",8683534},
 {"while",8683535},
 };
-#define N_OP_NAMES 330
+#define N_OP_NAMES 332
 #endif

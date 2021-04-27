@@ -424,6 +424,17 @@ static Uint32 obj_class_at(Uint32 c,Uint32 x,Uint32 y) {
   Uint32 i;
   if(x<1 || x>pfwidth || y<1 || y>pfheight) return VOIDLINK;
   i=playfield[x+y*64-65];
+  if(c && (classes[c]->cflags&CF_GROUP)) {
+    Uint16 k;
+    while(i!=VOIDLINK) {
+      if(!(objects[i]->oflags&OF_DESTROYED)) {
+        k=objects[i]->class;
+        while(k!=c && classes[k]->codes && classes[k]->codes[0]==OP_SUPER) k=classes[k]->codes[1];
+      }
+      i=objects[i]->up;
+    }
+    return VOIDLINK;
+  }
   while(i!=VOIDLINK) {
     if(objects[i]->class==c && !(objects[i]->oflags&OF_DESTROYED)) return i;
     i=objects[i]->up;
@@ -567,13 +578,22 @@ static Uint32 v_is(Value x,Value y) {
     return 0;
   } else if(x.t>TY_MAXTYPE && y.t==TY_CLASS) {
     n=v_object(x);
+    if(classes[y.u]->cflags&CF_GROUP) {
+      n=objects[n]->class;
+      while(n!=y.u && classes[n]->codes && classes[n]->codes[0]==OP_SUPER) n=classes[n]->codes[1];
+      return (n==y.u)?1:0;
+    }
     return (objects[n]->class==y.u)?1:0;
-    //TODO: subclassing (using CF_GROUP)
   } else if((x.t>TY_MAXTYPE || x.t==TY_CLASS) && y.t==TY_NUMBER && !y.u) {
     return 1;
   } else if(x.t==TY_CLASS && y.t==TY_CLASS) {
+    if(classes[y.u]->cflags&CF_GROUP) {
+      n=x.u;
+      while(n!=y.u && classes[n]->codes && classes[n]->codes[0]==OP_SUPER) n=classes[n]->codes[1];
+      return (n==y.u)?1:0;
+    }
     return (x.u==y.u)?1:0;
-    //TODO: subclassing (using CF_GROUP)
+    //TODO: CF_GROUP
   } else {
     Throw("Type mismatch");
   }
@@ -2277,6 +2297,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_STRING: StackReq(0,1); Push(UVALUE(code[ptr++],TY_STRING)); break;
     case OP_SOUND: StackReq(2,0); t2=Pop(); t1=Pop(); break; // Sound not implemented at this time
     case OP_SUB: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u-t2.u)); break;
+    case OP_SUPER: i=code[1]; code=classes[i]->codes; ptr=get_message_ptr(i,msgvars.msg); if(ptr==0xFFFF) break; break;
+    case OP_SUPER_C: i=code[1]; j=get_message_ptr(i,msgvars.msg); if(j!=0xFFFF) execute_program(classes[i]->codes,j,obj); break;
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
     case OP_SYNCHRONIZE: StackReq(2,0); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); animate_sync(obj,t1.u,t2.u); break;
     case OP_TARGET: StackReq(0,1); Push(NVALUE(v_target(obj)?1:0)); break;
@@ -2399,6 +2421,7 @@ static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value
   if(s==2) t=0xFFFFFFFFULL;
   if(lastobj==VOIDLINK) return t;
   n=lastobj;
+  if(c && (classes[c]->cflags&CF_GROUP)) Throw("Broadcast for abstract classes is not implemented yet");
   while(o=objects[n]) {
     if(!c || o->class==c) {
       v=send_message(from,n,msg,arg1,arg2,arg3);

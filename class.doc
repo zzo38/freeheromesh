@@ -271,13 +271,24 @@ the initial value for variables of objects of this class.
 Outside of code blocks, named constants are not normally interchangeable
 with the numbers having the same value.
 
+<class>
+  Inherit the specified class, which must have been previously declared as
+  an abstract class. Flags and message codes are inherited unless they are
+  overridden. Multiple inheritance is not allowed. If inheritance is used,
+  it must be specified before any blocks with program instructions, and
+  any user-defined variables defined in the superclass are not accessible
+  by the code specific to this class; you can define another variable with
+  the same name but it will be a new variable with the same name.
+
 <userflag>
   Set a user flag bit in the definition of Misc4, Misc5, Misc6, Misc7, or
   CollisionLayers of this class. You must previously define this user flag
   as a global definition.
 
 Abstract
-  (Not implemented yet.)
+  Disallows creating objects of this class, but allows other classes to
+  subclass this one. The (Image), (DefaultImage), (Help), and (EditorHelp)
+  blocks are not allowed in abstract classes.
 
 (Arrivals InPlace)
   This is an abbreviation for (Arrivals 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0
@@ -1643,6 +1654,14 @@ Sound  ( sound interruptflag -- )
   Play a sound; if the interrupt flag is zero then it does not interrupt
   existing sounds but otherwise it does. It is not an error if the values
   of the arguments are not valid.
+
+Super  ( ? -- ? )
+  Only allowed in a class which is a subclass of another class. This
+  causes the current code to stop being executed and to instead execute
+  the code of the class it is inheriting.
+
+,Super  ( ? -- ? )
+  Same as Super but return to this code after it is finished.
 
 swap  ( x y -- y x )
 

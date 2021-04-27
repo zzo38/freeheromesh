@@ -147,8 +147,8 @@ typedef struct {
   const char*name;
   const char*edithelp; // not present if CF_GROUP
   const char*gamehelp; // not present if CF_GROUP
-  Uint16*codes; // if this is CF_GROUP, then instead a zero-terminated list of classes
-  Uint16*messages; // use 0xFFFF if no such message block; not present if CF_GROUP
+  Uint16*codes;
+  Uint16*messages; // use 0xFFFF if no such message block
   Uint16*images; // high bit is set if available to editor; not present if CF_GROUP
   Sint32 height,weight,climb,density,volume,strength,arrivals,departures;
   Sint32 temperature,misc4,misc5,misc6,misc7;

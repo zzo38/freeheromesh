@@ -298,6 +298,10 @@ DotProduct
 -Eight
 -cut
 
+; Inheritance
+-Abstract
+,Super
+
 ; Specials
 *Function
 *Local

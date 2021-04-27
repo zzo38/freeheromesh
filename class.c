@@ -1187,7 +1187,7 @@ static int case_block(int cla,int ptr,Hash*hash) {
 #define Inst8bit() (peep<ptr && cl->codes[ptr-1]<0x0100)
 #define AbbrevOp(x,y) case x: if(Inst7bit()) ChangeInst(+=0x1000|((y)<<4)); else AddInstF(x,tokent); break
 #define FlowPush(x) do{ if(flowdepth==64) ParseError("Too much flow control nesting\n"); flowop[flowdepth]=x; flowptr[flowdepth++]=ptr; }while(0)
-#define FlowPop(x) do{ if(!flowdepth || flowop[--flowdepth]!=(x)) ParseError("Flow control mismatch\n"); }while(0)
+#define FlowPop(x) do{ if(!flowdepth || flowop[--flowdepth]!=(x)) ParseError("Flow control mismatch\n"); prflag=0; }while(0)
 static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
   int peep=ptr;
   int prflag=0;
@@ -1359,6 +1359,11 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
             AddInst(0x1F00|(x&0x1F));
           }
           break;
+        case OP_SUPER:
+        case OP_SUPER_C:
+          if(!ptr || cl->codes[0]!=OP_SUPER) ParseError("Use of Super in a class with no parent class\n");
+          AddInst(tokenv);
+          break;
         default:
           if(Tokenf(TF_ABNORMAL)) ParseError("Invalid instruction token\n");
           if(compat && Tokenf(TF_COMPAT) && Tokenf(TF_EQUAL)) ++tokenv;
@@ -1424,6 +1429,7 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
   }
   if(flowdepth) ParseError("Unterminated flow control blocks (%d levels)\n",flowdepth);
   cl->codes=realloc(cl->codes,ptr*sizeof(Uint16))?:cl->codes;
+  if(!ptr) cl->codes=0;
   return ptr;
 }
 
@@ -1685,6 +1691,45 @@ static void class_user_flag(Class*cl) {
   else cl->collisionLayers|=1<<(x&0x1F);
 }
 
+static void set_super_class(Class*cl,int ptr) {
+  Class*su=classes[tokenv&0x3FFF];
+  int i;
+  if(ptr || cl->nmsg) ParseError("Cannot specify superclasses before program blocks\n");
+  if(!su || !(su->cflags&CF_GROUP)) ParseError("Cannot inherit from non-abstract class\n");
+  cl->codes=malloc(8);
+  if(!cl->codes) fatal("Allocation failed\n");
+  cl->codes[0]=OP_SUPER;
+  cl->codes[1]=tokenv&0x3FFF;
+  cl->height=su->height;
+  cl->weight=su->weight;
+  cl->climb=su->climb;
+  cl->density=su->density;
+  cl->volume=su->volume;
+  cl->strength=su->strength;
+  cl->arrivals|=su->arrivals;
+  cl->departures|=su->departures;
+  cl->temperature=su->temperature;
+  cl->misc4|=su->misc4;
+  cl->misc5|=su->misc5;
+  cl->misc6|=su->misc6;
+  cl->misc7|=su->misc7;
+  cl->uservars+=su->uservars;
+  cl->oflags|=su->oflags;
+  for(i=0;i<4;i++) {
+    cl->sharp[i]=su->sharp[i];
+    cl->hard[i]=su->hard[i];
+  }
+  cl->cflags|=su->cflags&(CF_PLAYER|CF_INPUT|CF_COMPATIBLE|CF_QUIZ);
+  cl->shape=su->shape;
+  cl->shovable=su->shovable;
+  cl->collisionLayers|=su->collisionLayers;
+  if(cl->nmsg=su->nmsg) {
+    cl->messages=malloc(cl->nmsg*sizeof(Uint16));
+    if(!cl->messages) fatal("Allocation failed\n");
+    for(i=0;i<cl->nmsg;i++) cl->messages[i]=(su->messages[i]==0xFFFF)?0xFFFF:0x0000;
+  }
+}
+
 static void class_definition(int cla,sqlite3_stmt*vst) {
   Hash*hash=calloc(LOCAL_HASH_SIZE,sizeof(Hash));
   Class*cl=classes[cla];
@@ -1832,6 +1877,8 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
         case OP_USERSTATE: cl->oflags|=OF_USERSTATE; break;
         case OP_SHOVABLE: cl->shovable=0x55; break;
         case OP_USERFLAG: class_user_flag(cl); break;
+        case OP_ABSTRACT: cl->cflags|=CF_GROUP; break;
+        case 0x4000 ... 0x7FFF: set_super_class(cl,ptr); ptr=2; break;
         default: ParseError("Invalid directly inside of a class definition\n");
       }
     } else if(Tokenf(TF_CLOSE)) {
@@ -1841,7 +1888,7 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
     }
   }
   end_label_stack(cl->codes,hash);
-  if(!cl->nimages) cl->oflags|=OF_INVISIBLE;
+  if(!cl->nimages && !(cl->cflags&CF_GROUP)) cl->oflags|=OF_INVISIBLE;
   if(main_options['C']) dump_class(cla,ptr,hash);
   if(main_options['H']) {
     for(i=0;i<LOCAL_HASH_SIZE;i++) if(hash[i].id) printf(" \"%s\": %04X\n",hash[i].txt,hash[i].id);
@@ -1857,6 +1904,9 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
     }
   }
   free(hash);
+  if(cl->cflags&CF_GROUP) {
+    if(cl->edithelp || cl->gamehelp || cl->nimages) ParseError("Invalid in abstract classes");
+  }
 }
 
 static void load_class_numbers(void) {
