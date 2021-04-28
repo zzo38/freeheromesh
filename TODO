@@ -10,8 +10,7 @@
   * Testing the deferred movement
   * String data (?)
   * A ,PopUp command to use a popup with arguments starting from a mark
-  * "Goto message" instruction
-  * Class inheritance (abstract)
+  * "Goto message" instruction (?)
   * Returning a class from COLLIDE/COLLIDEBY to transform
 * Editor
   * Mouse dragging

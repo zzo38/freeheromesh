@@ -1500,7 +1500,7 @@ static int v_dispatch(const Uint16*code) {
   if(msgvars.arg1.t!=TY_NUMBER) Throw("Type mismatch");
   if(!i || (msgvars.arg1.u&~0xFF) || !code[i]) {
     StackReq(0,1);
-    Push(msgvars.arg2);
+    if(!code[256] || !v_bool(msgvars.arg2)) Push(msgvars.arg2);
   }
   if(msgvars.arg1.u&~0xFF) {
     if(current_key && !v_bool(msgvars.arg3)) key_ignored=all_flushed=1;
@@ -1508,6 +1508,7 @@ static int v_dispatch(const Uint16*code) {
   }
   if(!i) return 0;
   if(current_key && !v_bool(msgvars.arg3) && !(keymask[i>>3]&(1<<(i&7)))) key_ignored=all_flushed=1;
+  if(!code[i] && !v_bool(msgvars.arg2) && !msgvars.arg3.t && !msgvars.arg3.u && !key_ignored) i=256;
   return code[i];
 }
 

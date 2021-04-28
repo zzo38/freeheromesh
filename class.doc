@@ -388,6 +388,13 @@ Invisible
 (Misc7 <numbers...>)
   Define the Misc7 variable for this class; see Misc4 above for details.
 
+(Others <code...>)
+  This block must be preceded by another key dispatch block (although not
+  necessarily directly preceded), and it is only allowed in classes with
+  the Input flag. If no key dispatch block matches and it is not a key
+  which is implicitly ignored, and Arg2 and Arg3 are both zero, then it
+  will execute this block instead.
+
 Player
   Set the Player flag for this class.
 

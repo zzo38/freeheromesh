@@ -1758,12 +1758,12 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
           cl->codes=realloc(cl->codes,0x10000*sizeof(Uint16));
           if(!cl->codes) fatal("Allocation failed\n");
           if(get_message_ptr(cla,MSG_KEY)!=0xFFFF) ParseError("Class $%s has a KEY message already\n",cl->name);
-          if(ptr>0xFDFF) ParseError("Out of code space\n");
+          if(ptr>0xFDFE) ParseError("Out of code space\n");
           disp=1;
           set_message_ptr(cla,MSG_KEY,ptr);
           cl->codes[ptr]=OP_DISPATCH;
-          for(i=1;i<256;i++) cl->codes[ptr+i]=0;
-          ptr+=256;
+          for(i=1;i<257;i++) cl->codes[ptr+i]=0;
+          ptr+=257;
         }
         i=tokenv&255;
         cl->codes[cl->messages[MSG_KEY]+i]=ptr;
@@ -1850,6 +1850,12 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
           case OP_COLLISIONLAYERS:
             cl->collisionLayers=i=class_def_misc();
             if(i&~255) ParseError("CollisionLayers out of range\n");
+            break;
+          case OP_OTHERS:
+            if(!disp) ParseError("Others block without key dispatch block\n");
+            if(!(cl->cflags&CF_INPUT)) ParseError("Others block without Input flag\n");
+            cl->codes[cl->messages[MSG_KEY]+256]=ptr;
+            ptr=parse_instructions(cla,ptr,hash,compat);
             break;
           case 0x0200 ... 0x02FF:
             set_message_ptr(cla,tokenv&255,ptr);
