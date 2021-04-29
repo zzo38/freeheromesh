@@ -251,6 +251,7 @@ const char*screen_prompt(const char*txt) {
               const char*s;
               FILE*fp;
               int c;
+              paste:
               optionquery[1]=Q_pasteCommand;
               if((s=xrm_get_resource(resourcedb,optionquery,optionquery,2)) && (fp=popen(s,"r"))) {
                 for(;;) {
@@ -284,6 +285,10 @@ const char*screen_prompt(const char*txt) {
         draw_text(n<<3,8,"\xB1",0xF1,0xFB);
         SDL_UnlockSurface(screen);
         SDL_Flip(screen);
+        break;
+      case SDL_MOUSEBUTTONDOWN:
+        if(ev.button.button==2) goto paste;
+        break;
     }
   }
   return 0;
