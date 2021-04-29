@@ -1,0 +1,102 @@
+This file documents some of the internals of Free Hero Mesh. It is not
+important to someone who will only use Free Hero Mesh normally, but may
+be of interest to those who wish to modify Free Hero Mesh or to understand
+some of its outputs that have internal data.
+
+
+=== Types and values ===
+
+In the Free Hero Mesh VM codes, values on the stack and in user-defined
+local and global variables, as well as Misc1-Misc7, are stored as Value
+structures (defined in heromesh.h).
+
+The t member stores the type, which can be:
+
+* TY_NUMBER: u or s is the 32-bit integer which it represents.
+
+* TY_CLASS: u is the class number.
+
+* TY_MESSAGE: u is the message number. Numbers less than 256 are standard
+messages, and higher numbers are user-defined messages.
+
+* TY_LEVELSTRING and TY_STRING: Represents a text string; u is a string
+number. For TY_LEVELSTRING, this is an index into the levelstrings array,
+and for TY_STRING, it is an index into the stringpool array.
+
+* TY_SOUND and TY_USOUND: A sound.
+
+* TY_FOR: This is used internally for the global variables which keep
+track of the state of a for/next loop. Values of this type should never
+occur on the operand stack.
+
+* TY_MARK: A mark; u is always zero.
+
+* TY_ARRAY: An array reference. The low 16-bits of u are the starting
+index of the array (pointed by array_data), the next 10-bits and the high
+6-bits indicate the size of the array.
+
+* TY_CODE: Currently only used in case blocks; there are no values of this
+type in local or global variables.
+
+* Numbers more than TY_MAXTYPE (15) means it is a generation number of an
+object, and u is the index number of that object. In the internal code,
+VOIDLINK means no object; this is represented in a Value structure as
+t=0 (TY_NUMBER) and u=0.
+
+
+=== Opcodes ===
+
+The opcodes in the P-code are 16-bit unsigned integers. The numbers are
+arranged as follows (giving ranges in hex):
+
+0000-00FF = Short constants 0 to 255
+0100-01FF = Short constants -256 to -1
+0200-02FF = Built-in message constants
+0300-03FF = Built-in sound constants
+0400-04FF = User-defined sound constants
+1000-107F = Short 7-bit constant and +
+1080-10FF = Short 7-bit constant and -
+1100-117F = Short 7-bit constant and *
+1180-11FF = Short 7-bit constant and /
+1200-127F = Short 7-bit constant and mod
+1280-12FF = Short 7-bit constant and ,*
+1300-137F = Short 7-bit constant and ,/
+1380-13FF = Short 7-bit constant and ,mod
+1400-147F = Short 7-bit constant and band
+1480-14FF = Short 7-bit constant and bor
+1500-157F = Short 7-bit constant and bxor
+1580-15FF = Short 7-bit constant and lsh
+1600-167F = Short 7-bit constant and rsh
+1680-16FF = Short 7-bit constant and ,rsh
+1700-177F = Short 7-bit constant and eq
+1780-17FF = Short 7-bit constant and ne
+1800-187F = Short 7-bit constant and lt
+1880-18FF = Short 7-bit constant and gt
+1900-197F = Short 7-bit constant and le
+1980-19FF = Short 7-bit constant and ge
+1A00-1A7F = Short 7-bit constant and ,lt
+1A80-1AFF = Short 7-bit constant and ,gt
+1B00-1B7F = Short 7-bit constant and ,le
+1B80-1BFF = Short 7-bit constant and ,ge
+1E00-1EFF = Short 7-bit constant and ret
+1F00-1F1F = Read bit
+1F20-1F3F = Write bit
+2000-27FF = Read user-defined local variable
+2800-2FFF = Read user-defined global variable
+3000-37FF = Write user-defined local variable
+3800-3FFF = Write user-defined global variable
+4000-7FFF = Class constants
+8000-87FF = Instructions
+8800-8FFF = Instructions with ,
+9000-97FF = Instructions with =
+9800-9FFF = Instructions with = and ,
+A000-BFFF = Instructions followed by .
+C000-FFFF = User-defined message constants
+
+The numbers of individual opcodes (with OP_ names) are not guaranteed to
+remain the same between versions of Free Hero Mesh; they often change.
+
+Some of these numbers, including the OP_ constants, are also used during
+parsing; some of them occur only as tokens and not in the compiled P-code,
+and some only occur in the compiled P-code and not as tokens.
+
