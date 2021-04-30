@@ -30,6 +30,13 @@ The F4 key renames a picture.
 
 The F5 key adds a dependent picture (see the below section).
 
+The F6 key is used to set configuration. Currently, this only sets the
+default picture sizes. If you specify zero, then it will use the user
+configuration, otherwise it is saved with the puzzle set, and will be
+used when adding new pictures. You can specify multiple sizes; it will
+create it with variants of all of those sizes. You can also specify the
+same numbers multiple times if you want multiple variants of that size.
+
 
 === Drawing ===
 

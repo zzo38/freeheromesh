@@ -23,7 +23,6 @@
 * Deal better with allowing to skip past corrupted levels
 * Picture editor/loading
   * Allowing more altimages
-  * Configuration lump for default picture sizes for new pictures
 * Puzzle set catalog format (using with internet; a separate program)
 * Inventory/replay hybrid view
 * Bookmarks

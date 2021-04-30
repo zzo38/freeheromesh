@@ -58,6 +58,7 @@ typedef struct {
 } DependentPicture;
 
 static Uint8 cur_type;
+static Uint8 gsizes[16];
 
 static void fn_valid_name(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   const char*s=sqlite3_value_text(*argv);
@@ -111,9 +112,14 @@ static int load_picture_file(void) {
     i|=fgetc(fp)<<0;
     i|=fgetc(fp)<<8;
     if(!i) continue;
+    if(i<0) fatal("Bad or too big lump in .xclass file\n");
     buf=realloc(buf,i);
     if(!buf) fatal("Allocation failed\n");
     fread(buf,1,i,fp);
+    if(!sqlite3_stricmp(nam,"PICEDIT.CFG")) {
+      memcpy(gsizes,buf,i<15?i:15);
+      if(!*gsizes) *gsizes=picture_size;
+    }
     sqlite3_bind_blob(st,3,buf,i,SQLITE_TRANSIENT);
     while((i=sqlite3_step(st))==SQLITE_ROW);
     if(i!=SQLITE_DONE) fatal("SQL error (%d): %s\n",i,sqlite3_errmsg(userdb));
@@ -1290,11 +1296,13 @@ static void edit_picture(sqlite3_int64 id) {
     load_picture_lump(data,n,pict);
     sqlite3_finalize(st);
     if(!*pict) {
-      i=picture_size;
-      *pict=malloc(sizeof(Picture)+(i+1)*i);
-      if(!*pict) fatal("Allocation failed\n");
-      pict[0]->size=i;
-      memset(pict[0]->data,0,(i+1)*i);
+      if(!*gsizes) *gsizes=picture_size;
+      for(i=0;gsizes[i];i++) {
+        pict[i]=malloc(sizeof(Picture)+(gsizes[i]+1)*gsizes[i]);
+        if(!pict[i]) fatal("Allocation failed\n");
+        pict[i]->size=gsizes[i];
+        memset(pict[i]->data,0,(gsizes[i]+1)*gsizes[i]);
+      }
     }
     edit_picture_1(pict,name);
     fp=open_memstream((char**)&buf,&size);
@@ -1395,6 +1403,30 @@ static void rename_picture(void) {
   if(i!=SQLITE_DONE) screen_message(sqlite3_errmsg(userdb));
 }
 
+static void do_config(void) {
+  sqlite3_stmt*st;
+  const char*s;
+  char buf[16];
+  int i,n;
+  for(n=0;n<15;n++) {
+    snprintf(buf,15,"%d%c%c variant:",n+1,"snrt"[n>3?3:n],"tddh"[n>3?3:n]);
+    s=screen_prompt(buf);
+    if(!s || !*s) break;
+    gsizes[n]=strtol(s,0,10);
+  }
+  if(!n) return;
+  gsizes[n]=0;
+  i=sqlite3_exec(userdb,
+    "INSERT INTO `PICEDIT`(`NAME`,`TYPE`,`DATA`) SELECT 'PICEDIT.CFG',0,'' EXCEPT SELECT `NAME`,0,'' FROM `PICEDIT`;"
+  ,0,0,0);
+  if(i) fatal("SQL error (%d): %s\n",i,sqlite3_errmsg(userdb));
+  i=sqlite3_prepare_v2(userdb,"UPDATE `PICEDIT` SET `DATA`=?1 WHERE `NAME`='PICEDIT.CFG';",-1,&st,0);
+  if(i) fatal("SQL error (%d): %s\n",i,sqlite3_errmsg(userdb));
+  sqlite3_bind_blob(st,1,gsizes,n,0);
+  if(sqlite3_step(st)!=SQLITE_DONE) fatal("SQL error: %s\n",sqlite3_errmsg(userdb));
+  sqlite3_finalize(st);
+}
+
 static void set_caption(void) {
   char buf[256];
   snprintf(buf,255,"Free Hero Mesh - %s - Picture",basefilename);
@@ -1412,7 +1444,7 @@ void run_picture_editor(void) {
   sqlite3_create_function(userdb,"VALID_NAME",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_valid_name,0,0);
   init_palette();
   optionquery[1]=Q_imageSize;
-  picture_size=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"16",0,10);
+  *gsizes=picture_size=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"16",0,10);
   set_cursor(XC_arrow);
   set_caption();
   i=sqlite3_prepare_v3(userdb,"SELECT `ID`,SUBSTR(`NAME`,1,LENGTH(`NAME`)-4),`TYPE` FROM `PICEDIT` WHERE `TYPE` ORDER BY `NAME` LIMIT ?1 OFFSET ?2;",-1,SQLITE_PREPARE_PERSISTENT,&st,0);
@@ -1428,7 +1460,7 @@ void run_picture_editor(void) {
   SDL_LockSurface(screen);
   r.x=r.y=0; r.w=screen->w; r.h=screen->h;
   SDL_FillRect(screen,&r,0xF0);
-  draw_text(0,0,"<ESC> Save/Quit  <F1> Add  <F2> Delete  <F3> Edit  <F4> Rename  <F5> AddDependent",0xF0,0xFB);
+  draw_text(0,0,"<ESC> Save/Quit  <F1> Add  <F2> Delete  <F3> Edit  <F4> Rename  <F5> AddDependent  <F6> Config",0xF0,0xFB);
   n=0;
   while((i=sqlite3_step(st))==SQLITE_ROW) {
     ids[n++]=sqlite3_column_int64(st,0);
@@ -1477,6 +1509,9 @@ void run_picture_editor(void) {
           case SDLK_F5:
             if(max<65535) max+=add_picture(2);
             else screen_message("Too many pictures");
+            goto redraw;
+          case SDLK_F6:
+            do_config();
             goto redraw;
         }
         break;

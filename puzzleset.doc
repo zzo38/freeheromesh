@@ -38,6 +38,9 @@ by rotating, mirroring, changing colours, etc).
 The WAV lumps are sound effects. Each is a RIFF WAVE file; it must be of
 a type which can be loaded by SDL. (This is currently not used.)
 
+The PICEDIT.CFG lump stores the configuration for the picture editor. It
+can safely be deleted.
+
 
 === Class definition file ===
 
