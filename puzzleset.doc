@@ -21,6 +21,10 @@ with the internal contents of those files by yourself. You may extract and
 insert parts of the Hamster archives if you are careful; the descriptions
 below mention what each lump means.
 
+(A "Hamster archive" consists of zero or more lumps, where each lump
+consists of a null-terminated ASCII file name, the 32-bit PDP-endian data
+size, and then the data.)
+
 
 === Class resource file ===
 
