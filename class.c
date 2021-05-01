@@ -1268,8 +1268,8 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
             labelstack=s;
           }
           break;
-        case OP_IF:
-          AddInst(OP_IF);
+        case OP_IF: case OP_OR: case OP_AND:
+          AddInst(tokenv);
           FlowPush(OP_IF);
           peep=++ptr;
           break;

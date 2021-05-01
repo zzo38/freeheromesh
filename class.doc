@@ -1732,6 +1732,10 @@ YDir  ( dir -- newy )
 
 These are block flow controls. They include bodies of other instructions.
 
+and <body> then  ( any -- any )
+  Takes a value from the stack. If it is false, leaves it there and skips the
+  body, otherwise removes it and executes the body.
+
 begin <body> again  ( -- )
   Executes <body> an unlimited number of times; it will only stop once some
   command inside of the loop jumps out, returns, or results in an error.
@@ -1763,6 +1767,10 @@ if <truepart> [else <falsepart>] then  ( bool -- )
 mbegin <body> repeat  ( -- any ) ( -- )
   The "mbegin" instruction is a shortcut for "begin tmark while", and it has
   the same behaviour.
+
+or <body> then  ( any -- any )
+  Takes a value from the stack. If it is true, leaves it there and skips the
+  body, otherwise removes it and executes the body.
 
 
 === Case blocks ===

@@ -1987,6 +1987,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case 0x87E8 ... 0x87FF: StackReq(0,1); Push(NVALUE(1UL<<(code[ptr-1]&31))); break;
     case 0xC000 ... 0xFFFF: StackReq(0,1); Push(MVALUE((code[ptr-1]&0x3FFF)+256)); break;
     case OP_ADD: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u+t2.u)); break;
+    case OP_AND: StackReq(1,0); t1=Pop(); if(!v_bool(t1)) { Push(t1); ptr=code[ptr]; } else { ptr++; } break;
     case OP_ANIMATE: StackReq(4,0); t4=Pop(); Numeric(t4); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); animate(obj,t1.u,t2.u,t3.u,t4.u); break;
     case OP_ANIMATEDEAD: StackReq(6,0); t6=Pop(); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_animate_dead(t1,t2,t3,t4,t5,t6); break;
     case OP_ARG1: StackReq(0,1); Push(msgvars.arg1); break;
@@ -2225,6 +2226,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_OBJLAYERAT: StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); i=obj_layer_at(t1.u,t2.u,t3.u); Push(OVALUE(i)); break;
     case OP_OBJMOVINGTO: StackReq(2,0); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); v_obj_moving_to(t1.u,t2.u); break;
     case OP_OBJTOPAT: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); i=obj_top_at(t1.u,t2.u); Push(OVALUE(i)); break;
+    case OP_OR: StackReq(1,0); t1=Pop(); if(v_bool(t1)) { Push(t1); ptr=code[ptr]; } else { ptr++; } break;
     case OP_OVER: StackReq(2,3); t2=Pop(); t1=Pop(); Push(t1); Push(t2); Push(t1); break;
     case OP_PATTERN: StackReq(0,1); i=code[ptr++]; j=v_pattern(code,ptr,obj,0); ptr=i; Push(OVALUE(j)); break;
     case OP_PATTERN_C: StackReq(1,1); i=code[ptr++]; j=v_object(Pop()); if(j!=VOIDLINK) j=v_pattern(code,ptr,j,0); ptr=i; Push(OVALUE(j)); break;

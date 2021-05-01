@@ -92,6 +92,8 @@ over
 *CallSub
 ret
 -case
+-or
+-and
 
 ; Arithmetic
 add "+"
