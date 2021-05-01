@@ -468,12 +468,12 @@ static void class_image_select(void) {
         goto redraw;
       case SDL_KEYDOWN:
         switch(ev.key.keysym.sym) {
-          case SDLK_HOME: clscroll=0; goto redraw;
-          case SDLK_END: clscroll=clcount-screen->h/8; goto redraw;
-          case SDLK_PAGEDOWN: clscroll+=screen->h/8; goto redraw;
-          case SDLK_PAGEUP: clscroll-=screen->h/8; goto redraw;
+          case SDLK_HOME: case SDLK_KP7: clscroll=0; goto redraw;
+          case SDLK_END: case SDLK_KP1: clscroll=clcount-screen->h/8; goto redraw;
+          case SDLK_PAGEDOWN: case SDLK_KP3: clscroll+=screen->h/8; goto redraw;
+          case SDLK_PAGEUP: case SDLK_KP9: clscroll-=screen->h/8; goto redraw;
           case SDLK_ESCAPE: return;
-          case SDLK_CLEAR: case SDLK_DELETE: namei=0; goto redraw;
+          case SDLK_CLEAR: case SDLK_DELETE: case SDLK_KP_PERIOD: namei=0; goto redraw;
           case SDLK_BACKSPACE: if(namei) --namei; goto redraw;
           case SDLK_TAB:
             if(!cl) break;
@@ -498,26 +498,26 @@ static void class_image_select(void) {
               ++namei;
             }
             goto redraw;
-          case SDLK_LEFT:
+          case SDLK_LEFT: case SDLK_KP4:
             for(i=0;i<imgcount-1;i++) if(img==imglist[i+1]) {
               img=imglist[i];
               goto redraw;
             }
             break;
-          case SDLK_RIGHT:
+          case SDLK_RIGHT: case SDLK_KP6:
             for(i=0;i<imgcount-1;i++) if(img==imglist[i]) {
               img=imglist[i+1];
               goto redraw;
             }
             break;
-          case SDLK_UP:
+          case SDLK_UP: case SDLK_KP8:
             namei=0;
             for(i=1;i<clcount;i++) if(cl==cllist[i]) {
               cl=cllist[i-1];
               goto setclass;
             }
             break;
-          case SDLK_DOWN:
+          case SDLK_DOWN: case SDLK_KP2:
             namei=0;
             if(!cl) {
               cl=*cllist;
@@ -531,10 +531,10 @@ static void class_image_select(void) {
           case SDLK_RETURN: case SDLK_KP_ENTER:
             add_mru(cl,img);
             return;
-          case SDLK_F1:
+          case SDLK_F1: case SDLK_KP_DIVIDE:
             if(cl && classes[cl] && classes[cl]->gamehelp) modal_draw_popup(classes[cl]->gamehelp);
             goto redraw;
-          case SDLK_F2:
+          case SDLK_F2: case SDLK_KP_MULTIPLY:
             if(cl && classes[cl] && classes[cl]->edithelp) modal_draw_popup(classes[cl]->edithelp);
             goto redraw;
           default:
