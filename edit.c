@@ -367,6 +367,7 @@ static void add_mru(int cl,int img) {
   mru[0].img=img;
   mru[0].dir=0;
   mru[0].misc1=mru[0].misc2=mru[0].misc3=NVALUE(0);
+  curmru=0;
 }
 
 static void class_image_select(void) {
