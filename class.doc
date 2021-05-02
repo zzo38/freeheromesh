@@ -556,8 +556,11 @@ Animation constants:
 Standard messages:
   ARRIVED
   BEGIN_TURN
+  BLOCKED
   COLLIDE
   COLLIDEBY
+  COLLIDING
+  CONFLICT
   CREATE
   CREATED
   DEPARTED
