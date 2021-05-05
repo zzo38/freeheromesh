@@ -57,8 +57,14 @@ typedef struct {
   Uint8 nfilters;
 } DependentPicture;
 
+typedef struct {
+  sqlite3_vtab_cursor super;
+  int pos;
+} Cursor;
+
 static Uint8 cur_type;
 static Uint8 gsizes[16];
+static Picture*cur_pic;
 
 static void fn_valid_name(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   const char*s=sqlite3_value_text(*argv);
@@ -68,6 +74,82 @@ static void fn_valid_name(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   }
   sqlite3_result_value(cxt,*argv);
 }
+
+static int vt_graph_close(sqlite3_vtab_cursor*cur) {
+  sqlite3_free(cur);
+  return SQLITE_OK;
+}
+
+static int vt_graph_eof(sqlite3_vtab_cursor*cc) {
+  Cursor*cur=(void*)cc;
+  return (!cur_pic || cur->pos>=cur_pic->size*cur_pic->size);
+}
+
+static int vt_graph_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
+  *cur=sqlite3_malloc(sizeof(Cursor));
+  return *cur?SQLITE_OK:SQLITE_NOMEM;
+}
+
+static int vt_graph_connect(sqlite3*db,void*aux,int argc,const char*const*argv,sqlite3_vtab**vt,char**ex) {
+  *vt=sqlite3_malloc(sizeof(sqlite3_vtab));
+  if(!*vt) return SQLITE_NOMEM;
+  sqlite3_declare_vtab(db,"CREATE TABLE `GRID`(`X` INT, `Y` INT, `C` INT);");
+  return SQLITE_OK;
+}
+
+static int vt_graph_disconnect(sqlite3_vtab*vt) {
+  sqlite3_free(vt);
+  return SQLITE_OK;
+}
+
+static int vt_graph_filter(sqlite3_vtab_cursor*cc,int n,const char*s,int c,sqlite3_value**v) {
+  Cursor*cur=(void*)cc;
+  cur->pos=0;
+  return SQLITE_OK;
+}
+
+static int vt_graph_index(sqlite3_vtab*vt,sqlite3_index_info*inf) {
+  return SQLITE_OK;
+}
+
+static int vt_graph_column(sqlite3_vtab_cursor*cc,sqlite3_context*cxt,int n) {
+  Cursor*cur=(void*)cc;
+  sqlite3_result_int(cxt,n==0?cur->pos%cur_pic->size:n==1?cur->pos/cur_pic->size:cur_pic->data[cur->pos+cur_pic->size]);
+  return SQLITE_OK;
+}
+
+static int vt_graph_next(sqlite3_vtab_cursor*cc) {
+  Cursor*cur=(void*)cc;
+  cur->pos++;
+  return SQLITE_OK;
+}
+
+static int vt_graph_rowid(sqlite3_vtab_cursor*cc,sqlite3_int64*p) {
+  Cursor*cur=(void*)cc;
+  *p=cur->pos;
+  return SQLITE_OK;
+}
+
+static int vt_graph_update(sqlite3_vtab*vt,int argc,sqlite3_value**argv,sqlite3_int64*rowid) {
+  if(argc!=5 || sqlite3_value_type(argv[0])==SQLITE_NULL) return SQLITE_ERROR;
+  cur_pic->data[cur_pic->size+sqlite3_value_int(argv[0])]=sqlite3_value_int(argv[4]);
+  return SQLITE_OK;
+}
+
+static const sqlite3_module vt_graph={
+  .iVersion=1,
+  .xBestIndex=vt_graph_index,
+  .xClose=vt_graph_close,
+  .xColumn=vt_graph_column,
+  .xConnect=vt_graph_connect,
+  .xDisconnect=vt_graph_disconnect,
+  .xEof=vt_graph_eof,
+  .xFilter=vt_graph_filter,
+  .xNext=vt_graph_next,
+  .xOpen=vt_graph_open,
+  .xRowid=vt_graph_rowid,
+  .xUpdate=vt_graph_update,
+};
 
 static int load_picture_file(void) {
   sqlite3_stmt*st=0;
@@ -521,6 +603,11 @@ static void do_export(Picture*pic) {
   pclose(fp);
 }
 
+static int response_cb(void*aux,int argc,char**argv,char**names) {
+  if(argc && *argv) screen_message(*argv);
+  return 1;
+}
+
 static inline void edit_picture_1(Picture**pict,const char*name) {
   static const Uint8 shade[64]=
     "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F"
@@ -560,6 +647,7 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
   set_cursor(XC_arrow);
   redraw:
   if((sel&~15) || !pict[sel]) sel=0;
+  cur_pic=pict[sel];
   z=screen->w-pict[sel]->size-169;
   if(z>screen->h-49) z=screen->h-49;
   z/=pict[sel]->size;
@@ -904,6 +992,10 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
           case SDLK_UP: case SDLK_KP8: cc-=16; goto redraw;
           case SDLK_DOWN: case SDLK_KP2: cc+=16; goto redraw;
           case SDLK_HOME: case SDLK_KP7: cc=0; goto redraw;
+          case SDLK_F12:
+            p=(Uint8*)screen_prompt("<SQL>");
+            if(p) sqlite3_exec(userdb,p,response_cb,0,0);
+            goto redraw;
         }
         break;
       case SDL_VIDEOEXPOSE:
@@ -1305,6 +1397,7 @@ static void edit_picture(sqlite3_int64 id) {
       }
     }
     edit_picture_1(pict,name);
+    cur_pic=0;
     fp=open_memstream((char**)&buf,&size);
     if(!fp) fatal("Cannot open memory stream\n");
     for(i=n=0;i<16;i++) if(pict[i]) n++;
@@ -1442,6 +1535,7 @@ void run_picture_editor(void) {
   int max=load_picture_file();
   int i,n;
   sqlite3_create_function(userdb,"VALID_NAME",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_valid_name,0,0);
+  sqlite3_create_module(userdb,"GRAPH",&vt_graph,0);
   init_palette();
   optionquery[1]=Q_imageSize;
   *gsizes=picture_size=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"16",0,10);

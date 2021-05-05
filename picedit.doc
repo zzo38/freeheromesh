@@ -121,6 +121,14 @@ F10
   Export a picture. At the prompt, you must enter a system command which
   will read a farbfeld picture from stdin.
 
+F12
+  Enter a SQL statement to edit the current picture. This should be a
+  UPDATE statement which updates the column called "C" of the table called
+  "GRAPH". It has columns "X" and "Y" which are the coordinates of the
+  pixel, and "C" which is the colour of the pixel. It may also be a SELECT
+  statement in order to query it, and the response is then displayed
+  (which must be a single row and single column only).
+
 Click in the colour palette on the right to select a colour. With the left
 button, that colour is selected as the current colour. The middle button
 will replace everything of the current colour with the clicked colour, and
