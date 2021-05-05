@@ -690,6 +690,26 @@ static void mru_edit(MRU*m) {
   }
 }
 
+static void mru_edit_obj(Uint32 obj) {
+  Object*o;
+  MRU m;
+  if(obj>=nobjects) return;
+  o=objects[obj];
+  if(!o) return;
+  m.class=o->class;
+  m.img=o->image;
+  m.misc1=o->misc1;
+  m.misc2=o->misc2;
+  m.misc3=o->misc3;
+  m.dir=o->dir;
+  mru_edit(&m);
+  o->image=m.img;
+  o->misc1=m.misc1;
+  o->misc2=m.misc2;
+  o->misc3=m.misc3;
+  o->dir=m.dir;
+}
+
 static void add_object_at(int x,int y,MRU*m,int d) {
   Uint32 n,u;
   Class*c;
@@ -1426,6 +1446,9 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
       return 1;
     case '^T': // Level title
       edit_string(&level_title);
+      return 0;
+    case 'em': // Edit Misc/Dir of object
+      if(argc>1 && sqlite3_column_type(args,1)!=SQLITE_NULL) mru_edit_obj(sqlite3_column_int64(args,1));
       return 0;
     case 'ex': // Export level
       if(argc<2) return prev;
