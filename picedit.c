@@ -131,8 +131,17 @@ static int vt_graph_rowid(sqlite3_vtab_cursor*cc,sqlite3_int64*p) {
 }
 
 static int vt_graph_update(sqlite3_vtab*vt,int argc,sqlite3_value**argv,sqlite3_int64*rowid) {
-  if(argc!=5 || sqlite3_value_type(argv[0])==SQLITE_NULL) return SQLITE_ERROR;
-  cur_pic->data[cur_pic->size+sqlite3_value_int(argv[0])]=sqlite3_value_int(argv[4]);
+  int x,y;
+  if(argc!=5) return SQLITE_CONSTRAINT_VTAB;
+  if(sqlite3_value_type(argv[0])==SQLITE_NULL) {
+    x=sqlite3_value_int(argv[2]);
+    y=sqlite3_value_int(argv[3]);
+    if(x<0 || x>=cur_pic->size || y<0 || y>=cur_pic->size) return SQLITE_CONSTRAINT_VTAB;
+    x+=y*cur_pic->size;
+  } else {
+    x=sqlite3_value_int(argv[0]);
+  }
+  cur_pic->data[cur_pic->size+x]=sqlite3_value_int(argv[4]);
   return SQLITE_OK;
 }
 
