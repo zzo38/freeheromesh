@@ -37,6 +37,9 @@ and <resources> is optional resources to override.
 -e
   Start in the editor instead of game.
 
+-f
+  Only flush the user cache and then terminate.
+
 -n
   Create a new puzzle set. The .xclass and .class files should already
   exist; the .level and .solution files should not already exist, and will

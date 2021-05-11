@@ -889,6 +889,7 @@ int main(int argc,char**argv) {
   }
   if(main_options['a']) main_options['r']=main_options['x']=1;
   if(main_options['p']) main_options['r']=1;
+  if(main_options['f']) main_options['x']=1;
   if(!main_options['c']) load_options();
   if(argc>optind) read_options(argc-optind,argv+optind);
   *optionquery=xrm_make_quark(globalclassname,0)?:xrm_anyq;
@@ -926,6 +927,10 @@ int main(int argc,char**argv) {
   max_trigger=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,10);
   if(main_options['a']) run_auto_test();
   if(main_options['x']) {
+    if(main_options['f']) {
+      flush_usercache();
+      return 0;
+    }
     fprintf(stderr,"Ready for executing SQL statements.\n");
     no_dead_anim=1;
     do_sql_mode();
