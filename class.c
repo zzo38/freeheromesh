@@ -832,7 +832,7 @@ static void nxttok(void) {
             nxttok();
             if(tokent==TF_MACRO+TF_CLOSE) break;
             if(tokent!=TF_INT) ParseError("Number expected\n");
-            n|=1<<tokenv;
+            if(tokenv<32) n|=1<<tokenv;
           }
           tokent=TF_INT;
           tokenv=n;
