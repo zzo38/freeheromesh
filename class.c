@@ -138,6 +138,7 @@ static const unsigned char chkind[256]={
 #define MAC_BNOT 0xFFC8
 #define MAC_CAT 0xFFC9
 #define MAC_BIT 0xFFCA
+#define MAC_MAKE 0xFFCB
 #define MAC_VERSION 0xFFE0
 #define MAC_DEFINE 0xFFE1
 #define MAC_INCLUDE 0xFFE2
@@ -353,7 +354,7 @@ static void nxttok1(void) {
     tokent=macstack->tok->t;
     if(tokent&TF_EOF) ParseError("Unexpected end of file in macro expansion\n");
     tokenv=macstack->tok->v;
-    *tokenstr=0;
+    if(tokent!=(TF_MACRO|TF_CLOSE)) *tokenstr=0;
     if(macstack->tok->str) strcpy(tokenstr,macstack->tok->str);
     if(main_options['M']) {
       printf("M* Macro %04X %08X \"",tokent,tokenv);
@@ -836,6 +837,125 @@ static void nxttok(void) {
           }
           tokent=TF_INT;
           tokenv=n;
+          break;
+        case MAC_MAKE:
+          nxttok();
+          if(!(tokent&TF_NAME) || tokenv!=OP_STRING) ParseError("String literal expected\n");
+          s=tokenstr;
+          n=0;
+          while(*s) switch(*s++) {
+            case '=': n|=0x0001; break;
+            case ',': n|=0x0002; break;
+            case ':': n|=0x0004; break;
+            case '@': n|=0x0008; break;
+            case '%': n|=0x0010; break;
+            case '#': n|=0x0020; break;
+            case '$': n|=0x0040; break;
+            case '&': n|=0x0080; break;
+            case '^': n|=0x0100; break;
+            case '\'': n|=0x0400; break;
+            case 'D': n|=0x0800; break;
+            case '+': n|=0x1000; break;
+            case 'C': n|=0x2000; break;
+            case 'A': n|=0x4000; break;
+            case '!': n|=0x8000; break;
+            default: ParseError("Incorrect mode of {make}\n");
+          }
+          nxttok();
+          if(tokent==TF_INT || ((tokent&TF_NAME) && !(tokenv&~255))) {
+            n|=0x10000;
+            snprintf(tokenstr,32,"%llu",(long long)tokenv);
+          } else if(!(tokent&TF_NAME) || tokenv!=OP_STRING) {
+            ParseError("Numeric or string literal expected\n");
+          }
+          s=strdup(tokenstr);
+          if(!s) fatal("Allocation failed\n");
+          nxttok();
+          strcpy(tokenstr,s);
+          free(s);
+          if(tokent!=TF_MACRO+TF_CLOSE) ParseError("Too many macro arguments\n");
+          if(n&0x10000) {
+            n&=0xFFFF;
+            tokent=TF_INT;
+            tokenv=strtol(tokenstr,0,10);
+          }
+          switch(n) {
+            case 0x0004: // :
+              ReturnToken(TF_NAME|TF_ABNORMAL,OP_LABEL);
+            case 0x0005: // =:
+              ReturnToken(TF_NAME|TF_ABNORMAL|TF_EQUAL,OP_LABEL);
+            case 0x0006: // ,:
+              ReturnToken(TF_NAME|TF_ABNORMAL|TF_COMMA,OP_LABEL);
+            case 0x0008: // @
+              tokent=TF_NAME;
+              tokenv=look_hash(glohash,HASH_SIZE,0x2800,0x2FFF,num_globals+0x2800,"user global variables")?:(num_globals++)+0x2800;
+              return;
+            case 0x0009: // =@
+              tokent=TF_NAME|TF_EQUAL;
+              tokenv=look_hash(glohash,HASH_SIZE,0x2800,0x2FFF,num_globals+0x2800,"user global variables")?:(num_globals++)+0x2800;
+              return;
+            case 0x0010: // %
+              ReturnToken(TF_NAME|TF_ABNORMAL,OP_LOCAL);
+            case 0x0011: // =%
+              ReturnToken(TF_NAME|TF_ABNORMAL|TF_EQUAL,OP_LOCAL);
+            case 0x0020: // #
+              tokent=TF_NAME;
+              tokenv=look_message_name()+0xC000;
+              return;
+            case 0x0040: // $
+              tokent=TF_NAME;
+              tokenv=look_class_name()+0x4000;
+              return;
+            case 0x0080: // &
+              tokent=TF_FUNCTION|TF_ABNORMAL;
+              tokenv=look_hash(glohash,HASH_SIZE,0x8000,0xBFFF,num_functions+0x8000,"user functions")?:(num_functions++)+0x8000;
+              return;
+            case 0x0100: // ^
+              ReturnToken(TF_NAME|TF_ABNORMAL,OP_USERFLAG);
+            case 0x0101: // =^
+              ReturnToken(TF_NAME|TF_ABNORMAL|TF_EQUAL,OP_USERFLAG);
+            case 0x0102: // ,^
+              ReturnToken(TF_NAME|TF_ABNORMAL|TF_COMMA,OP_USERFLAG);
+            case 0x0103: // =,^
+              ReturnToken(TF_NAME|TF_ABNORMAL|TF_EQUAL|TF_COMMA,OP_USERFLAG);
+            case 0x0400: // '
+              if(tokent==TF_INT) {
+                n=tokenv;
+              } else {
+                for(n=8;n<256;n++) if(heromesh_key_names[n] && !strcmp(heromesh_key_names[n],tokenstr)) break;
+              }
+              if(!heromesh_key_names[n&=255]) ParseError("Invalid key token (%d)\n",n);
+              ReturnToken(TF_NAME|TF_KEY,n);
+            case 0x0800: // D
+              if(tokent==TF_INT) ReturnToken(TF_NAME|TF_DIR,tokenv&15);
+              else ReturnToken(TF_NAME|TF_DIR,strtol(tokenstr,0,10)&15);
+            case 0x1000: // +
+              ReturnToken(TF_INT,strtol(tokenstr,0,10));
+            case 0x1001: // =+
+              ReturnToken(TF_INT,strtol(tokenstr,0,2));
+            case 0x1002: // ,+
+              ReturnToken(TF_INT,strtol(tokenstr,0,16));
+            case 0x1003: // =,+
+              ReturnToken(TF_INT,strtol(tokenstr,0,8));
+            case 0x2000: // C
+              if(tokent!=TF_INT) tokenv=strtol(tokenstr,0,10);
+              *tokenstr=n=tokenv&255;
+              if(n<32) tokenstr[0]=31,tokenstr[1]=n,tokenstr[2]=0; else tokenstr[1]=0;
+              ReturnToken(TF_NAME|TF_ABNORMAL,OP_STRING);
+            case 0x2002: // ,C
+              if(tokent!=TF_INT) tokenv=strtol(tokenstr,0,10);
+              if(n<32) {
+                *tokenstr=0;
+              } else {
+                tokenstr[0]=16;
+                tokenstr[1]=n;
+                tokenstr[2]=0;
+              }
+              ReturnToken(TF_NAME|TF_ABNORMAL,OP_STRING);
+            case 0x4000: // A
+              ReturnToken(TF_INT,*tokenstr&255);
+            default: ParseError("Incorrect mode of {make}\n");
+          }
           break;
         case MAC_VERSION:
           nxttok1();
@@ -1973,6 +2093,7 @@ void load_classes(void) {
   strcpy(tokenstr,"bnot"); glohash[look_hash_mac()].id=MAC_BNOT;
   strcpy(tokenstr,"cat"); glohash[look_hash_mac()].id=MAC_CAT;
   strcpy(tokenstr,"bit"); glohash[look_hash_mac()].id=MAC_BIT;
+  strcpy(tokenstr,"make"); glohash[look_hash_mac()].id=MAC_MAKE;
   strcpy(tokenstr,"version"); glohash[look_hash_mac()].id=MAC_VERSION;
   strcpy(tokenstr,"define"); glohash[look_hash_mac()].id=MAC_DEFINE;
   strcpy(tokenstr,"include"); glohash[look_hash_mac()].id=MAC_INCLUDE;
