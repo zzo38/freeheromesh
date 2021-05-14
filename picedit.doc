@@ -37,6 +37,11 @@ used when adding new pictures. You can specify multiple sizes; it will
 create it with variants of all of those sizes. You can also specify the
 same numbers multiple times if you want multiple variants of that size.
 
+The F7 key copies a picture.
+
+The F12 key allows entering a SQL statement. If there are any result rows,
+only the first row and first column are displayed.
+
 
 === Drawing ===
 

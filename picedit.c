@@ -1505,6 +1505,34 @@ static void rename_picture(void) {
   if(i!=SQLITE_DONE) screen_message(sqlite3_errmsg(userdb));
 }
 
+static sqlite3_int64 copy_picture(void) {
+  sqlite3_stmt*st;
+  const char*s=screen_prompt("Copy from:");
+  int i;
+  sqlite3_set_last_insert_rowid(userdb,0);
+  if(!s || !*s) return 0;
+  if(sqlite3_prepare_v2(userdb,"INSERT INTO `PICEDIT`(`NAME`,`TYPE`,`DATA`) SELECT VALID_NAME(?2)||SUBSTR(`NAME`,-4),`TYPE`,`DATA` "
+   "FROM `PICEDIT` WHERE SUBSTR(`NAME`,1,LENGTH(`NAME`)-4)=?1 AND `TYPE`<>0;",-1,&st,0)) {
+    screen_message(sqlite3_errmsg(userdb));
+    return;
+  }
+  sqlite3_bind_text(st,1,s,-1,SQLITE_TRANSIENT);
+  s=screen_prompt("Copy to:");
+  if(!s || !*s) {
+    sqlite3_finalize(st);
+    return;
+  }
+  sqlite3_bind_text(st,2,s,-1,SQLITE_TRANSIENT);
+  i=sqlite3_step(st);
+  sqlite3_finalize(st);
+  if(i==SQLITE_DONE) {
+    return sqlite3_last_insert_rowid(userdb);
+  } else {
+    screen_message(sqlite3_errmsg(userdb));
+    return 0;
+  }
+}
+
 static void do_config(void) {
   sqlite3_stmt*st;
   const char*s;
@@ -1563,7 +1591,7 @@ void run_picture_editor(void) {
   SDL_LockSurface(screen);
   r.x=r.y=0; r.w=screen->w; r.h=screen->h;
   SDL_FillRect(screen,&r,0xF0);
-  draw_text(0,0,"<ESC> Save/Quit  <F1> Add  <F2> Delete  <F3> Edit  <F4> Rename  <F5> AddDependent  <F6> Config",0xF0,0xFB);
+  draw_text(0,0,"<ESC> Save/Quit  <F1> Add  <F2> Delete  <F3> Edit  <F4> Rename  <F5> AddDependent  <F6> Config  <F7> Copy",0xF0,0xFB);
   n=0;
   while((i=sqlite3_step(st))==SQLITE_ROW) {
     ids[n++]=sqlite3_column_int64(st,0);
@@ -1615,6 +1643,13 @@ void run_picture_editor(void) {
             goto redraw;
           case SDLK_F6:
             do_config();
+            goto redraw;
+          case SDLK_F7:
+            *ids=copy_picture();
+            if(*ids) edit_picture(*ids);
+            goto redraw;
+          case SDLK_F12:
+            sqlite3_exec(userdb,screen_prompt("<SQL>")?:"",response_cb,0,0);
             goto redraw;
         }
         break;
