@@ -33,3 +33,5 @@
 * VCR mode
 * Portable mode, not needing installing files in home directory
 * Command-line switch for batch import/export levels
+* SQL
+  * Implement the GROUP column in the CLASSES table

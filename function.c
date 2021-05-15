@@ -38,6 +38,17 @@ static void fn_cacheid(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_result_int64(cxt,*(sqlite3_int64*)sqlite3_user_data(cxt));
 }
 
+static void fn_cl(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  int a;
+  const char*s=sqlite3_value_text(*argv);
+  if(!s) return;
+  for(a=1;a<0x4000;a++) {
+    if(classes[a] && !(classes[a]->cflags&CF_NOCLASS2) && !strcmp(s,classes[a]->name)) goto found;
+  }
+  return;
+  found: sqlite3_result_int(cxt,a);
+}
+
 static void fn_class_data(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   int id=sqlite3_value_int(argv[0]);
   Class*cl;
@@ -952,6 +963,7 @@ Module(vt_objects,
 
 void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"BASENAME",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_basename,0,0);
+  sqlite3_create_function(userdb,"CL",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_cl,0,0);
   sqlite3_create_function(userdb,"CLASS_DATA",2,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_class_data,0,0);
   sqlite3_create_function(userdb,"CVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_cvalue,0,0);
   sqlite3_create_function(userdb,"HEROMESH_ESCAPE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_heromesh_escape,0,0);
