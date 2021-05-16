@@ -197,7 +197,7 @@ static int load_picture_file(void) {
     sqlite3_reset(st);
     sqlite3_bind_text(st,1,nam,i,SQLITE_TRANSIENT);
     sqlite3_bind_int(st,2,j=(i>4 && !memcmp(".IMG",nam+i-4,4)?1:!memcmp(".DEP",nam+i-4,4)?2:0));
-    r+=j;
+    if(j) r++;
     i=fgetc(fp)<<16;
     i|=fgetc(fp)<<24;
     i|=fgetc(fp)<<0;
@@ -1624,7 +1624,7 @@ void run_picture_editor(void) {
           case SDLK_PAGEUP: case SDLK_KP9: sc-=screen->h/8-1; goto redraw;
           case SDLK_PAGEDOWN: case SDLK_KP3: sc+=screen->h/8-1; goto redraw;
           case SDLK_F1:
-            if(max<65535) max+=add_picture(1);
+            if(max<32767) max+=add_picture(1);
             else screen_message("Too many pictures");
             goto redraw;
           case SDLK_F2:
@@ -1638,7 +1638,7 @@ void run_picture_editor(void) {
             rename_picture();
             goto redraw;
           case SDLK_F5:
-            if(max<65535) max+=add_picture(2);
+            if(max<32767) max+=add_picture(2);
             else screen_message("Too many pictures");
             goto redraw;
           case SDLK_F6:
@@ -1646,7 +1646,7 @@ void run_picture_editor(void) {
             goto redraw;
           case SDLK_F7:
             *ids=copy_picture();
-            if(*ids) edit_picture(*ids);
+            if(*ids) max++,edit_picture(*ids);
             goto redraw;
           case SDLK_F12:
             sqlite3_exec(userdb,screen_prompt("<SQL>")?:"",response_cb,0,0);
