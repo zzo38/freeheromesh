@@ -870,6 +870,7 @@ int main(int argc,char**argv) {
     if(s[1]=='-' && !s[2]) break;
     for(i=1;s[i];i++) main_options[s[i]&127]=1;
   }
+  setbuf(stderr,0);
   if(!main_options['c']) fprintf(stderr,"FREE HERO MESH\n");
   if(argc<=optind) fatal("usage: %s [switches] [--] basename [options...]\n",argc?argv[0]:"heromesh");
   if(xrm_init(realloc)) fatal("Failed to initialize resource manager\n");
