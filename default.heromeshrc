@@ -129,6 +129,7 @@
 ?.gameKey.tab: ^I
 ?.gameKey.alt.D: select '^d',$key_xy;
 ?.gameKey.alt.G: ^g
+?.gameKey.alt.P: ^p
 
 ! Editor key bindings
 ?.editKey.1: select 'mr',0;

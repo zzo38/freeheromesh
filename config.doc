@@ -81,6 +81,10 @@ See bindings.doc for key/mouse bindings.
   auto testing most. If negative, number of milliseconds to sleep before
   each level is executed.
 
+.replaySpeed
+  When the slow replay is used, sets the playback speed; this is a number
+  of centiseconds between turns from 0 to 255.
+
 .saveSolutions
   If true, then solutions are saved if you solve a level in less moves
   than the currently recorded solution (or if no solution is already

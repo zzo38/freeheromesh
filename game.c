@@ -29,12 +29,17 @@ static Uint8*inputs;
 static int inputs_size,inputs_count;
 static Uint8 side_mode=255;
 static Uint8 should_record_solution;
+static Uint8 replay_speed;
+static Uint8 replay_time;
 
 static void setup_game(void) {
   const char*v;
   optionquery[1]=Q_showInventory;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
   side_mode=boolxrm(v,1);
+  optionquery[1]=Q_replaySpeed;
+  v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
+  replay_speed=strtol(v,0,10)?:16;
   if(main_options['r']) {
     should_record_solution=0;
   } else {
@@ -289,6 +294,7 @@ static void load_replay(void) {
 
 static void begin_level(int id) {
   const char*t;
+  replay_time=0;
   if(replay_count) save_replay();
   inputs_count=0;
   replay_pos=0;
@@ -665,6 +671,10 @@ static void do_load_moves(sqlite3_stmt*st) {
 static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
   switch(cmd) {
     case '\' ': // Play a move
+      if(replay_time) {
+        replay_time=0;
+        return -3;
+      }
       if(solution_replay) {
         screen_message("You cannot play your own moves during the solution replay");
         return -3;
@@ -676,6 +686,7 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       inputs[inputs_count++]=number;
       return 0;
     case '+ ': replay: // Replay
+      replay_time=0;
       if(number>replay_count-replay_pos) number=replay_count-replay_pos;
       if(number<=0) return prev;
       if(inputs_count+number>=inputs_size) {
@@ -729,6 +740,9 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
     case '^o': // List objects
       list_objects_at(number-65);
       return prev;
+    case '^p': // Slow replay
+      replay_time=replay_time?0:1;
+      return 0;
     case '^s': // Toggle solution replay
       if(replay_count) save_replay();
       solution_replay^=1;
@@ -853,6 +867,7 @@ void run_game(void) {
   SDL_Event ev;
   set_caption();
   replay_count=0;
+  replay_time=0;
   if(side_mode==255) setup_game();
   begin_level(level_id);
   redraw_game();
@@ -872,6 +887,10 @@ void run_game(void) {
       case SDL_USEREVENT:
         if(!gameover && !quiz_text) continue_animation();
         timerflag=0;
+        if(replay_time && !--replay_time && !game_command(1,'+ ',1,0,0,0)) {
+          replay_time=replay_speed;
+          goto replay;
+        }
         break;
       case SDL_MOUSEBUTTONDOWN:
         if(ev.button.x<left_margin) {

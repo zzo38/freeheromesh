@@ -84,6 +84,9 @@ any name with : at first to ask the user for the value to use.
 '^o' <location>
   List objects at the specified coordinates, to examine their values.
 
+'^p'
+  Start or stop slow replay. Any move input also interrupts slow replay.
+
 '^s'
   Toggle solution replay.
 
