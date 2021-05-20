@@ -1105,8 +1105,9 @@ static int parse_pattern(int cla,int ptr,Hash*hash) {
       cl->codes[ptr++]=tokenv&15;
     } else if(Tokenf(TF_NAME)) {
       switch(tokenv) {
-        case OP_ADD: case OP_CLIMB: case OP_EIGHT: case OP_FOUR:
-        case OP_HEIGHT: case OP_LOC: case OP_MARK: case OP_SUB:
+        case OP_ADD: case OP_CLIMB: case OP_HEIGHT:
+        case OP_LOC: case OP_MARK: case OP_SUB:
+        case OP_QUEEN: case OP_ROOK: case OP_BISHOP:
         case OP_DIR: case OP_DIR_C: case OP_DIR_E: case OP_DIR_EC:
         case OP_OBJTOPAT: case OP_OBJBOTTOMAT: case OP_CUT: case OP_MUL:
         case OP_OBJABOVE: case OP_OBJBELOW: case OP_TRACE: case OP_NEXT:

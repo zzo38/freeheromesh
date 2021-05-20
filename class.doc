@@ -2313,6 +2313,9 @@ again
 begin
   Begin a block.
 
+Bishop
+  Try four directions (NE, NW, SW, and SE).
+
 Climb
   Fail the match if the origin object cannot climb here.
 
@@ -2324,12 +2327,6 @@ cut
 
 else
   Delimits alternatives within a block.
-
-Four
-  Try four directions (E, N, W, and S).
-
-Eight
-  Try all eight directions.
 
 Height
   Fail the match if the origin object can climb here.
@@ -2354,6 +2351,12 @@ ObjBottomAt
 
 ObjTopAt
   Match the object at the top of this location.
+
+Queen
+  Try all eight directions.
+
+Rook
+  Try four directions (E, N, W, and S).
 
 then
   Ends a block started with begin or if.

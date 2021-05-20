@@ -429,20 +429,21 @@
 #define OP_PATTERNS_C 35037
 #define OP_PATTERNS_E 37085
 #define OP_PATTERNS_EC 39133
-#define OP_FOUR 32990
-#define OP_EIGHT 32991
-#define OP_CUT 32992
-#define OP_ABSTRACT 32993
-#define OP_SUPER 32994
-#define OP_SUPER_C 35042
-#define OP_FUNCTION 32995
-#define OP_LOCAL 32996
-#define OP_LABEL 32997
-#define OP_STRING 32998
-#define OP_INT16 32999
-#define OP_INT32 33000
-#define OP_DISPATCH 33001
-#define OP_USERFLAG 33002
+#define OP_ROOK 32990
+#define OP_BISHOP 32991
+#define OP_QUEEN 32992
+#define OP_CUT 32993
+#define OP_ABSTRACT 32994
+#define OP_SUPER 32995
+#define OP_SUPER_C 35043
+#define OP_FUNCTION 32996
+#define OP_LOCAL 32997
+#define OP_LABEL 32998
+#define OP_STRING 32999
+#define OP_INT16 33000
+#define OP_INT32 33001
+#define OP_DISPATCH 33002
+#define OP_USERFLAG 33003
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486939},
@@ -455,7 +456,7 @@ static const Op_Names op_names[]={
 {"/",8486940},
 {"ANHH",8389394},
 {"ARRIVED",8389124},
-{"Abstract",8683745},
+{"Abstract",8683746},
 {"Animate",8421516},
 {"AnimateDead",8421517},
 {"Arg1",8552571},
@@ -480,6 +481,7 @@ static const Op_Names op_names[]={
 {"BUZZER",8389420},
 {"BWEEP",8389397},
 {"Background",8683650},
+{"Bishop",8683743},
 {"Broadcast",10518671},
 {"BroadcastAnd",8421520},
 {"BroadcastAndEx",8421521},
@@ -530,7 +532,6 @@ static const Op_Names op_names[]={
 {"E",9437184},
 {"END_TURN",8389139},
 {"EditorHelp",8683657},
-{"Eight",8683743},
 {"F",9437192},
 {"FAROUT",8389421},
 {"FFFFTT",8389399},
@@ -539,7 +540,6 @@ static const Op_Names op_names[]={
 {"Finished",8552577},
 {"FlushClass",8421535},
 {"FlushObj",8487072},
-{"Four",8683742},
 {"From",8421498},
 {"GLASS",8389379},
 {"GLISSANT",8389419},
@@ -626,6 +626,7 @@ static const Op_Names op_names[]={
 {"POWER",8389386},
 {"Player",8487029},
 {"PopUp",8421563},
+{"Queen",8683744},
 {"Quiz",8683653},
 {"R",9437198},
 {"RATCHET1",8389418},
@@ -634,6 +635,7 @@ static const Op_Names op_names[]={
 {"RB",9437197},
 {"RF",9437199},
 {"Rel",8487101},
+{"Rook",8683742},
 {"S",9437190},
 {"SE",9437191},
 {"SMALL_POP",8389389},
@@ -656,7 +658,7 @@ static const Op_Names op_names[]={
 {"Sound",8421570},
 {"Stealthy",8618096},
 {"Strength",9142354},
-{"Super",8487138},
+{"Super",8487139},
 {"Synchronize",8421571},
 {"TAHTASHH",8389409},
 {"THMP_thmp",8389405},
@@ -732,7 +734,7 @@ static const Op_Names op_names[]={
 {"chain",8421528},
 {"clear",8421586},
 {"count",8421585},
-{"cut",8683744},
+{"cut",8683745},
 {"cz?",8421430},
 {"dup",8421377},
 {"else",8683530},
@@ -781,5 +783,5 @@ static const Op_Names op_names[]={
 {"until",8683534},
 {"while",8683535},
 };
-#define N_OP_NAMES 335
+#define N_OP_NAMES 336
 #endif

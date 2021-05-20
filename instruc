@@ -297,8 +297,9 @@ DotProduct
 ; Pattern matching
 -,=Pattern "P"
 -,=PatternS "P*"
--Four
--Eight
+-Rook
+-Bishop
+-Queen
 -cut
 
 ; Inheritance

@@ -1724,6 +1724,19 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
     case OP_BEGIN:
       ptr++;
       break;
+    case OP_BISHOP:
+      if(cpi>=MAXCHOICE-4) Throw("Choice overflow");
+      d=1;
+      cpi+=3;
+      cp[cpi].x=x;
+      cp[cpi].y=y;
+      cp[cpi].depth=vstackptr;
+      cp[cpi].ptr=ptr;
+      cp[cpi-1]=cp[cpi-2]=cp[cpi];
+      cp[cpi].dir=3;
+      cp[cpi-1].dir=5;
+      cp[cpi-2].dir=7;
+      break;
     case OP_CLIMB:
       if(playfield[x+y*64-65]==VOIDLINK || height_at(x,y)>objects[obj]->climb) goto fail;
       break;
@@ -1750,39 +1763,9 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
       changed=1;
       objects[n]->dir=d;
       break;
-    case OP_EIGHT:
-      if(cpi>=MAXCHOICE-8) Throw("Choice overflow");
-      d=0;
-      cpi+=7;
-      cp[cpi].x=x;
-      cp[cpi].y=y;
-      cp[cpi].depth=vstackptr;
-      cp[cpi].ptr=ptr;
-      cp[cpi-1]=cp[cpi-2]=cp[cpi-3]=cp[cpi-4]=cp[cpi-5]=cp[cpi-6]=cp[cpi];
-      cp[cpi].dir=1;
-      cp[cpi-1].dir=2;
-      cp[cpi-2].dir=3;
-      cp[cpi-3].dir=4;
-      cp[cpi-4].dir=5;
-      cp[cpi-5].dir=6;
-      cp[cpi-6].dir=7;
-      break;
     case OP_ELSE:
       ptr--;
       while(code[ptr]==OP_ELSE) ptr=code[ptr+2];
-      break;
-    case OP_FOUR:
-      if(cpi>=MAXCHOICE-4) Throw("Choice overflow");
-      d=0;
-      cpi+=3;
-      cp[cpi].x=x;
-      cp[cpi].y=y;
-      cp[cpi].depth=vstackptr;
-      cp[cpi].ptr=ptr;
-      cp[cpi-1]=cp[cpi-2]=cp[cpi];
-      cp[cpi].dir=2;
-      cp[cpi-1].dir=4;
-      cp[cpi-2].dir=6;
       break;
     case OP_HEIGHT:
       if(playfield[x+y*64-65]==VOIDLINK || height_at(x,y)<=objects[obj]->climb) goto fail;
@@ -1830,6 +1813,23 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
     case OP_OBJTOPAT:
       n=obj_top_at(x,y);
       break;
+    case OP_QUEEN:
+      if(cpi>=MAXCHOICE-8) Throw("Choice overflow");
+      d=0;
+      cpi+=7;
+      cp[cpi].x=x;
+      cp[cpi].y=y;
+      cp[cpi].depth=vstackptr;
+      cp[cpi].ptr=ptr;
+      cp[cpi-1]=cp[cpi-2]=cp[cpi-3]=cp[cpi-4]=cp[cpi-5]=cp[cpi-6]=cp[cpi];
+      cp[cpi].dir=1;
+      cp[cpi-1].dir=2;
+      cp[cpi-2].dir=3;
+      cp[cpi-3].dir=4;
+      cp[cpi-4].dir=5;
+      cp[cpi-5].dir=6;
+      cp[cpi-6].dir=7;
+      break;
     case OP_RET:
       if(all) {
         if(vstackptr>=VSTACKSIZE-1) Throw("Stack overflow");
@@ -1839,6 +1839,19 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
       } else {
         return n==VOIDLINK?obj_bottom_at(x,y):n;
       }
+      break;
+    case OP_ROOK:
+      if(cpi>=MAXCHOICE-4) Throw("Choice overflow");
+      d=0;
+      cpi+=3;
+      cp[cpi].x=x;
+      cp[cpi].y=y;
+      cp[cpi].depth=vstackptr;
+      cp[cpi].ptr=ptr;
+      cp[cpi-1]=cp[cpi-2]=cp[cpi];
+      cp[cpi].dir=2;
+      cp[cpi-1].dir=4;
+      cp[cpi-2].dir=6;
       break;
     case OP_SUB:
       if(vstackptr>=VSTACKSIZE-1) Throw("Stack overflow");
