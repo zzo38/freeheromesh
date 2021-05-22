@@ -18,6 +18,30 @@ CL(text)
 
 CLASS_DATA(id,info)
   Returns data about a class.
+   0 = ID
+   1 = Temperature
+   2 = Shape
+   7 = First usable image
+   12 = Misc4
+   13 = Misc5
+   14 = Misc6
+   15 = Misc7
+   18 = Arrivals
+   19 = Departures
+   33 = Invisible
+   35 = UserState
+   37 = Player
+   39 = Stealthy
+   40 = VisualOnly
+   64 = Density
+   65 = Volume
+   66 = Strength
+   67 = Weight
+   69 = Height
+   70 = Climb
+   128 = Volume fraction
+   130 = CollisionLayers
+   132 = Compatible
 
 CVALUE(number)
   Makes a game value of type 'class', given the class number. You can also

@@ -50,7 +50,7 @@ static void fn_cl(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
 }
 
 static void fn_class_data(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
-  int id=sqlite3_value_int(argv[0]);
+  int id=sqlite3_value_int(argv[0])&0xFFFF;
   Class*cl;
   if(id<0 || id>=0x4000 || !classes[id]) return;
   cl=classes[id];
