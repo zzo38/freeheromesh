@@ -31,6 +31,9 @@ You can also use it with some other options to display details.
 Start the level editor.
 .IP -f
 Only flush the user cache and then terminate.
+.IP -h
+Disable portable mode;
+always use the HOME environment variable to find the files.
 .IP -n
 Create a new puzzle set.
 The class definition file and image set must already exist.
@@ -56,9 +59,28 @@ A SQLite database containing user cache data.
 .TP
 .I \*[Document_Dir]/*.doc
 Documentation.
+.PP
+The files it expects to find in the home directory may be looked for elsewhere if portable mode is used.
 .SH ENVIRONMENT
+.TP
+.B HEROMESH_PREFIX
+If defined, force portable mode.
+This value is used as the prefix to find the files.
+(It may include a file name prefix as well as a directory path.)
 .TP
 .B HOME
 The home directory; used to find .heromeshrc and .heromeshsession files.
 .PP
 Any of the SDL environment variables can also be used.
+.SH "PORTABLE MODE"
+There is a "portable mode" available.
+The following rules are used to determine if portable mode should be used:
+.PP
+1. If the -h switch is specified, use home mode.
+.PP
+2. If the HEROMESH_PREFIX environment variable is nonempty, use portable mode.
+.PP
+3. If argv[0] contains a forward slash, use portable mode.
+In this case, the files are named "current.heromeshrc" and "current.heromeshsession" in the directory where the executable file is found.
+.PP
+4. Otherwise, use home mode.

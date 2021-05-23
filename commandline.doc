@@ -40,6 +40,10 @@ and <resources> is optional resources to override.
 -f
   Only flush the user cache and then terminate.
 
+-h
+  Disable portable mode; always use the HOME environment variable to find
+  the configuration and database files.
+
 -n
   Create a new puzzle set. The .xclass and .class files should already
   exist; the .level and .solution files should not already exist, and will
@@ -88,4 +92,23 @@ and <resources> is optional resources to override.
 
 .x1
   Enable loading SQLite extensions.
+
+
+=== Portable mode ===
+
+Free Hero Mesh may run either in "home mode" or in "portable mode". The
+following rules are used to determine which mode to use:
+
+1. If the -h switch is present, use home mode.
+
+2. If the HEROMESH_PREFIX environment variable is present, use portable
+mode; its value is the file name prefix (the ".heromeshsession" and
+".heromeshrc" names are appended directly to this value, so if it does
+not end with a slash, it will be a prefix to the file name too).
+
+3. If argv[0] contains a forward slash, use portable mode; it will use
+files "current.heromeshrc" and "current.heromeshsession" in the directory
+where the executable file is allegedly found.
+
+4. Otherwise, home mode is used.
 

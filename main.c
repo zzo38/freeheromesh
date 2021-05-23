@@ -67,6 +67,7 @@ static FILE*levelfp;
 static FILE*solutionfp;
 static sqlite3_int64 leveluc,solutionuc;
 static sqlite3_stmt*readusercachest;
+static char*hpath;
 
 static sqlite3_int64 reset_usercache(FILE*fp,const char*nam,struct stat*stats,const char*suffix) {
   sqlite3_stmt*st;
@@ -545,15 +546,8 @@ static void init_sql(void) {
   if(sqlite3_initialize()) fatal("Failure to initialize SQLite.\n");
   optionquery[1]=Q_sqlFile;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
-  if(v && *v) {
-    s=sqlite3_mprintf("%s",v);
-  } else {
-    v=getenv("HOME")?:".";
-    s=sqlite3_mprintf("%s%s.heromeshsession",v,v[strlen(v)-1]=='/'?"":"/");
-  }
-  if(!s) fatal("Allocation failed\n");
-  if(z=sqlite3_open(s,&userdb)) fatal("Failed to open user database %s (%s)\n",s,userdb?sqlite3_errmsg(userdb):sqlite3_errstr(z));
-  sqlite3_free(s);
+  if(!v || !*v) strcpy(hpath+strlen(hpath)-2,"session"),v=hpath;
+  if(z=sqlite3_open(v,&userdb)) fatal("Failed to open user database %s (%s)\n",v,userdb?sqlite3_errmsg(userdb):sqlite3_errstr(z));
   optionquery[1]=Q_sqlExtensions;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
   sqlite3_db_config(userdb,SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION,*v?1:0,&z);
@@ -591,14 +585,32 @@ void set_cursor(int id) {
   SDL_SetCursor(cursor[id]);
 }
 
+static void set_path(const char*arg) {
+  const char*s;
+  if(main_options['h']) goto home;
+  if((s=getenv("HEROMESH_PREFIX")) && *s) {
+    hpath=malloc(strlen(s)+32);
+    if(!hpath) fatal("Allocation failed\n");
+    sprintf(hpath,"%s.heromeshrc",s);
+    return;
+  }
+  if(s=strrchr(arg,'/')) {
+    hpath=malloc(s+64-arg);
+    if(!hpath) fatal("Allocation failed\n");
+    sprintf(hpath,"%.*s/current.heromeshrc",(int)(s-arg),arg);
+    return;
+  }
+  home:
+  s=getenv("HOME")?:".";
+  hpath=malloc(strlen(s)+32);
+  if(!hpath) fatal("Allocation failed\n");
+  sprintf(hpath,"%s%s.heromeshrc",s,s[strlen(s)-1]=='/'?"":"/");
+}
+
 static void load_options(void) {
-  const char*home=getenv("HOME")?:".";
-  char*nam=malloc(strlen(home)+16);
   FILE*fp;
-  sprintf(nam,"%s%s.heromeshrc",home,home[strlen(home)-1]=='/'?"":"/");
-  fp=fopen(nam,"r");
-  if(!fp) fatal("Failed to open %s (%m)\n",nam);
-  free(nam);
+  fp=fopen(hpath,"r");
+  if(!fp) fatal("Failed to open %s (%m)\n",hpath);
   if(xrm_load(resourcedb,fp,1)) fatal("Error while loading .heromeshrc\n");
   fclose(fp);
 }
@@ -891,7 +903,10 @@ int main(int argc,char**argv) {
   if(main_options['a']) main_options['r']=main_options['x']=1;
   if(main_options['p']) main_options['r']=1;
   if(main_options['f']) main_options['x']=1;
-  if(!main_options['c']) load_options();
+  if(!main_options['c']) {
+    set_path(argv[0]);
+    load_options();
+  }
   if(argc>optind) read_options(argc-optind,argv+optind);
   *optionquery=xrm_make_quark(globalclassname,0)?:xrm_anyq;
 #ifdef __GNUC__
@@ -911,6 +926,7 @@ int main(int argc,char**argv) {
   }
   load_pictures();
   if(main_options['T']) {
+    printf("argv[0] = %s\n",argv[0]);
     test_mode();
     return 0;
   }
