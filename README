@@ -55,6 +55,12 @@ Before using it, you must create a file called .heromeshrc in your home
 directory; you may use default.heromeshrc to start with, and then customize
 it as you wish.
 
+If compiled with "./compile p" then it is installed as "bin/heromesh"
+(relative to the current directory, which should be the directory where
+the source files are) and installs "bin/current.heromeshrc" as well (if it
+does not already exist; it won't overwrite an existing file). In this case,
+it can be used as a "portable app" mode.
+
 
 === Documentation ===
 
