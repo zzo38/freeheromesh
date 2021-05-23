@@ -72,6 +72,9 @@ any name with : at first to ask the user for the value to use.
 '^M'
   Set the replay mark position.
 
+'^S'
+  If the level is in a won state, record the solution.
+
 '^T'
   Display the level title popup.
 

@@ -32,6 +32,8 @@ static Uint8 should_record_solution;
 static Uint8 replay_speed;
 static Uint8 replay_time;
 
+static void record_solution(void);
+
 static void setup_game(void) {
   const char*v;
   optionquery[1]=Q_showInventory;
@@ -728,6 +730,9 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       return prev;
     case '^Q': // Quit
       return -1;
+    case '^S': // Save solution
+      if(gameover==1) record_solution();
+      return 1;
     case '^T': // Show title
       modal_draw_popup(level_title);
       return prev;

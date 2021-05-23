@@ -108,6 +108,7 @@
 ?.gameKey.ctrl.E: ^E
 ?.gameKey.ctrl.I: select 'mi',:import_move_list;
 ?.gameKey.ctrl.Q: ^Q
+?.gameKey.ctrl.S: ^S
 ?.gameKey.ctrl.T: ^T
 ?.gameKey.ctrl.X: select 'mx',:export_move_list;
 ?.gameClick.right: ^o
