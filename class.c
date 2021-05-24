@@ -144,6 +144,7 @@ static const unsigned char chkind[256]={
 #define MAC_INCLUDE 0xFFE2
 #define MAC_CALL 0xFFE3
 #define MAC_APPEND 0xFFE4
+#define MAC_EDIT 0xFFE5
 #define MAC_UNDEFINED 0xFFFF
 
 static TokenList*add_macro(void) {
@@ -621,6 +622,7 @@ static void begin_macro(TokenList*mac) {
   int a=0;
   int b=0;
   int c=0;
+  if(StackProtection()) fatal("Stack overflow\n");
   ref_macro(mac);
   if(!ms) fatal("Allocation failed\n");
   ms->tok=mac;
@@ -997,13 +999,42 @@ static void nxttok(void) {
           if(!(tokent&TF_NAME) || tokenv!=OP_STRING) ParseError("String literal expected\n");
           define_macro(look_hash_mac(),0);
           goto again;
+        case MAC_EDIT:
+          if(!macros) ParseError("Cannot edit nonexistent macro\n");
+          nxttok();
+          if(!(tokent&TF_NAME) || tokenv!=OP_STRING) ParseError("String literal expected\n");
+          n=glohash[look_hash_mac()].id;
+          if(n<0xC000 || n>MAX_MACRO+0xC000-1 || !macros[n-0xC000]) ParseError("Undefined macro: {%s}\n",tokenstr);
+          nxttok();
+          n-=0xC000;
+          if(macros[n]->t&(TF_MACRO|TF_EOF)) ParseError("Invalid edit token\n");
+          free(macros[n]->str);
+          macros[n]->t=tokent;
+          macros[n]->v=tokenv;
+          macros[n]->str=0;
+          if(*tokenstr) {
+            macros[n]->str=strdup(tokenstr);
+            if(!macros[n]->str) fatal("Allocation failed\n");
+          }
+          if(main_options['M']) {
+            int i;
+            printf("M= @%4d %04X %08X \"",linenum,tokent,tokenv);
+            for(i=0;tokenstr[i];i++) {
+              if(tokenstr[i]<32 || tokenstr[i]>126) printf("<%02X>",tokenstr[i]&255);
+              else putchar(tokenstr[i]);
+            }
+            printf("\"\n");
+          }
+          nxttok();
+          if(tokent!=TF_MACRO+TF_CLOSE) ParseError("Too many macro arguments\n");
+          goto again;
         case MAC_UNDEFINED:
           ParseError("Undefined macro: {%s}\n",tokenstr);
           break;
         default:
           ParseError("Strange macro token: 0x%04X\n",glohash[tokenv].id);
       }
-      if(main_options['M']) printf("M-\n");
+      if(main_options['M']) printf("M- %5d %04X %08X\n",linenum,tokent,tokenv);
     }
   }
 }
@@ -2100,6 +2131,7 @@ void load_classes(void) {
   strcpy(tokenstr,"include"); glohash[look_hash_mac()].id=MAC_INCLUDE;
   strcpy(tokenstr,"call"); glohash[look_hash_mac()].id=MAC_CALL;
   strcpy(tokenstr,"append"); glohash[look_hash_mac()].id=MAC_APPEND;
+  strcpy(tokenstr,"edit"); glohash[look_hash_mac()].id=MAC_EDIT;
   if(main_options['L']) {
     for(;;) {
       nxttok();

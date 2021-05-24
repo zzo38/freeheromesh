@@ -170,6 +170,12 @@ Built-in macros include:
   with multiple tokens becomes the token with one less backslash. It is
   permitted to redefine existing macros as well as new ones.
 
+{edit <string> <token>}
+  Edit a macro. This changes the first token of the definition of the macro
+  (which must not be another macro) to the specified token (which also must
+  not be another macro). The token is expanded, and must be a single token
+  once it is expanded; that is what it will be replaced with.
+
 {include <string>}
   Include text from another file into this one. You cannot use {include}
   inside of another macro or in a macro argument.
