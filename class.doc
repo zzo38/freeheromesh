@@ -82,6 +82,12 @@ string literal) and end at the next line break.
 \c
   Makes further text centred.
 
+\dDATA\
+  Includes inline data in the string. The data is not displayed, but
+  can be read by class codes, or used in level titles to provide data
+  and delimieters for the auto-generated table of contents. Data items
+  are separated by semicolons. (Not fully implemented yet)
+
 \iCLASS:NUMBER\
   Displays a picture. Give the class name (without $ at first) and a
   colon and the zero-based index number of the picture in that class.

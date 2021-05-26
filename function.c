@@ -142,6 +142,7 @@ static void fn_heromesh_escape(sqlite3_context*cxt,int argc,sqlite3_value**argv)
     case 14: e[en++]='\\'; e[en++]='i'; isimg=1; break;
     case 15: e[en++]='\\'; e[en++]='b'; break;
     case 16: e[en++]='\\'; e[en++]='q'; break;
+    case 30: e[en++]='\\'; e[en++]='d'; isimg=1; break;
     case 31:
       if(i==un) break;
       c=u[i++];
@@ -211,6 +212,7 @@ static void fn_heromesh_unescape(sqlite3_context*cxt,int argc,sqlite3_value**arg
         case '0' ... '7': u[un++]=c-'0'+1; break;
         case 'b': u[un++]=15; break;
         case 'c': u[un++]=12; break;
+        case 'd': u[un++]=30; isimg=1; break;
         case 'i': u[un++]=14; isimg=1; break;
         case 'l': u[un++]=11; break;
         case 'n': u[un++]=10; break;

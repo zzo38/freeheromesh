@@ -163,8 +163,8 @@ int draw_text_line(int x,int y,unsigned char*t,int cur,Uint8**cp) {
       bg=0xF0,fg=0xF1;
       e=1;
     } else if(*t<31) {
-      f=fontdata+(" 01234567?NLC#IBQ???????????????"[*t]<<3);
-      if(*t==14) isimg=1;
+      f=fontdata+(" 01234567?NLC#IBQ?????????????D?"[*t]<<3);
+      if(*t==14 || *t==30) isimg=1;
       bg=0xF3,fg=0xF0;
     } else {
       if(*t==31 && t[1]) t++;
@@ -1085,6 +1085,10 @@ void draw_popup(const unsigned char*txt) {
       if(lh<16) lh=16;
       if(*p) p++;
       break;
+    case 30:
+      p=strchr(p,'\\')?:"";
+      if(*p) p++;
+      break;
     case 31:
       lw+=8;
       if(*p) p++;
@@ -1156,6 +1160,10 @@ void draw_popup(const unsigned char*txt) {
       pop_quiz(x,y,li+ln,c,*p);
       if(*p) p++;
       x+=24;
+      break;
+    case 30:
+      p=strchr(p,'\\')?:"";
+      if(*p) p++;
       break;
     case 31:
       pop_char(x,y,li+ln,c,*p);

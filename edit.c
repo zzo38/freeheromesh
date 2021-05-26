@@ -753,6 +753,7 @@ static void fprint_esc(FILE*fp,Uint8 c,const char*t) {
     case 14: fprintf(fp,"\\i"); isimg=1; break;
     case 15: fprintf(fp,"\\b"); break;
     case 16: fprintf(fp,"\\q"); break;
+    case 30: fprintf(fp,"\\d"); isimg=1; break;
     case 31:
       if(!*t) break;
       fprintf(fp,"\\x%02X",*t++);
@@ -889,6 +890,7 @@ static char*import_string(char*p) {
           case '0' ... '7': *q++=*p+1-'0'; break;
           case 'b': *q++=15; break;
           case 'c': *q++=12; break;
+          case 'd': *q++=30; isimg=1; break;
           case 'i': *q++=14; isimg=1; break;
           case 'l': *q++=11; break;
           case 'n': *q++=10; break;
@@ -1154,7 +1156,7 @@ static void edit_string(unsigned char**ps) {
   }
   draw_text(160,16,o?"OVR":"INS",0xF1,0xFE);
   draw_text(0,0,"<Esc> Cancel  <F1> Preview  <F2> Save  <\x18\x19\x1A\x1B> MoveCursor  <^P> InsertChar  <^Y> DelLine",0xF1,0xFB);
-  draw_text(0,8,"ALT+  <0-7> Color  <B> Bar  <C> Center  <I> Image  <L> Left  <Q> Quiz",0xF1,0xFB);
+  draw_text(0,8,"ALT+  <0-7> Color  <B> Bar  <C> Center  <D> Data  <I> Image  <L> Left  <Q> Quiz",0xF1,0xFB);
   draw_text(0,24,"\x10",0xF0,0xF1);
   cp=0;
   for(i=j=n=0;s[i] && n<63;) {
@@ -1241,6 +1243,7 @@ static void edit_string(unsigned char**ps) {
                 case SDLK_7: i=8; goto addch;
                 case SDLK_b: i=15; goto addch;
                 case SDLK_c: i=12; goto addch;
+                case SDLK_d: i=30; goto addch;
                 case SDLK_i: i=14; goto addch;
                 case SDLK_l: i=11; goto addch;
                 case SDLK_n: i=10; goto addch;

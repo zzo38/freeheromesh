@@ -8,7 +8,7 @@
   * Multiple connected objects moving as a unit
   * Bizarro world
   * Testing the deferred movement
-  * String data (?)
+  * String data
   * A ,PopUp command to use a popup with arguments starting from a mark
   * "Goto message" instruction (?)
   * Returning a class from COLLIDE/COLLIDEBY to transform

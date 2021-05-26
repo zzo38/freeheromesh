@@ -203,6 +203,7 @@ static void read_quoted_string(void) {
         case '0' ... '7': tokenstr[i++]=c+1-'0'; break;
         case 'b': tokenstr[i++]=15; break;
         case 'c': tokenstr[i++]=12; break;
+        case 'd': tokenstr[i++]=30; isimg=1; break;
         case 'i': tokenstr[i++]=14; isimg=1; break;
         case 'l': tokenstr[i++]=11; break;
         case 'n': tokenstr[i++]=10; break;
