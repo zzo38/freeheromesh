@@ -124,7 +124,9 @@ See bindings.doc for key/mouse bindings.
 
 .sqlFile
   Name of the user cache database. If not set, then it will use the file
-  called .heromeshsession in the home directory.
+  name of the configuration file replacing "rc" at the end with "session";
+  usually this is the file called .heromeshsession in the home directory,
+  but with some configurations (e.g. portable mode) it might not be.
 
 .sqlInit
   SQL codes to execute when Free Hero Mesh starts.

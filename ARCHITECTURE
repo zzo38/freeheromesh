@@ -69,6 +69,7 @@ picedit.c: The picture editor.
 picture.c: Contains initialization of graphics, and everything to draw
 graphics on the screen, including icons and text. It also contains the
 code for loading icons, for displaying popup messages, and scrollbars.
+Loading fonts for code pages are also included in this file.
 
 quarks/quarks.h/quarks.js: The "quarks" file contains names of predefined
 quarks for use with the resource manager. The quarks.js program converts
