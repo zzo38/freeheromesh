@@ -1940,6 +1940,71 @@ static int v_case(Uint16*code,int ptr,Value v) {
   return ptr+n+n+2;
 }
 
+static void v_data(Value v1,Value v2) {
+  const unsigned char*s;
+  int i;
+  Value v;
+  if(v1.t!=TY_STRING && v1.t!=TY_LEVELSTRING) Throw("Type mismatch");
+  s=value_string_ptr(v1);
+  if(v2.t==TY_NUMBER) {
+    for(;;) {
+      s+=strcspn(s,"\x1F\x1E");
+      if(!*s) return;
+      if(*s==31) {
+        s++;
+        if(*s) s++;
+      } else {
+        s++;
+        if(!v2.u) break;
+        v2.u--;
+      }
+    }
+    while(s && *s && *s!='\\') {
+      if(*s=='_') {
+        v.t=TY_MARK;
+        v.u=0;
+        s++;
+      } else if(*s=='$') {
+        s++;
+        v.t=TY_CLASS;
+        i=strcspn(s,";\\");
+        for(v.u=1;v.u<0x4000;v.u++) {
+          if(classes[v.u] && !(classes[v.u]->cflags&(CF_NOCLASS2|CF_GROUP)) && i==strlen(classes[v.u]->name) && !strncmp(s,classes[v.u]->name,i)) {
+            s+=i;
+            break;
+          }
+        }
+      } else {
+        v.t=TY_NUMBER;
+        v.u=strtol(s,(char**)&s,10);
+      }
+      StackReq(0,1);
+      Push(v);
+      if(*s=='\\') break;
+      if(*s!=';' && *s!='\\') Throw("Invalid string data");
+      if(*s==';') s++; else break;
+    }
+  } else if(v2.t==TY_MESSAGE && v2.u==MSG_KEY) {
+    v.t=TY_NUMBER;
+    v.u=0;
+    for(;;) {
+      s+=strcspn(s,"\x1F\x10");
+      if(!*s) return;
+      if(*s==31) {
+        s++;
+        if(*s) s++;
+      } else {
+        s++;
+        StackReq(0,1);
+        if(*s) v.u=*s++;
+        Push(v);
+      }
+    }
+  } else {
+    Throw("Type mismatch");
+  }
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -2064,6 +2129,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_COUNT: StackReq(1,2); i=v_count(); Push(NVALUE(i)); break;
     case OP_CREATE: NoIgnore(); StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_create(obj,t1,t2,t3,t4,t5)); break;
     case OP_CREATE_D: NoIgnore(); StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_create(obj,t1,t2,t3,t4,t5); break;
+    case OP_DATA: StackReq(2,1); t2=Pop(); t1=Pop(); v_data(t1,t2); break;
     case OP_DELINVENTORY: StackReq(2,0); t2=Pop(); t1=Pop(); v_delete_inventory(t1,t2); break;
     case OP_DELTA: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u>t2.u?t1.u-t2.u:t2.u-t1.u)); break;
     case OP_DENSITY: StackReq(0,1); Push(NVALUE(o->density)); break;

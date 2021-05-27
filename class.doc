@@ -86,7 +86,9 @@ string literal) and end at the next line break.
   Includes inline data in the string. The data is not displayed, but
   can be read by class codes, or used in level titles to provide data
   and delimieters for the auto-generated table of contents. Data items
-  are separated by semicolons. (Not fully implemented yet)
+  are separated by semicolons; each item can be a underscore to mean a
+  mark, a number (decimal integers only), or a class name with $ at front.
+  (Not fully implemented yet)
 
 \iCLASS:NUMBER\
   Displays a picture. Give the class name (without $ at first) and a
@@ -1266,6 +1268,13 @@ Create  ( class x y image dir -- obj ) **
 cz?  ( any -- bool )
   True if the value is a class or zero, or false if it is neither a class
   nor zero. Error if it is a sound.
+
+Data  ( string index -- ... )
+  Read string data. If the index is a number, it is the zero-based number
+  of which data block in the string to read; all of the data in that block
+  is pushed to the stack. If there isn't enough data blocks, then nothing
+  will be pushed to the stack. If the index is the KEY message, then all
+  of the key codes of the quiz buttons in the string are push to stack.
 
 DelInventory  ( class image -- ) **
   Delete an item from the inventory; see SetInventory for more details.

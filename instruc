@@ -208,7 +208,7 @@ Key
 -Others
 -SUBS
 
-; Main operations
+; Main operations / miscellaneous
 Animate
 AnimateDead
 ,Assassinate ; destroy without sending any messages
@@ -225,6 +225,7 @@ chain
 ,Chebyshev
 ,Coloc
 .Create
+Data
 DelInventory
 Delta
 .,Destroy
