@@ -725,7 +725,7 @@ nomore1:
   optionquery[1]=Q_screenFlags;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
   i=v&&strchr(v,'h');
-  picts=SDL_CreateRGBSurface((i?SDL_HWSURFACE:SDL_SWSURFACE)|SDL_SRCCOLORKEY,picture_size<<4,picture_size*((n+15)>>4),8,0,0,0,0);
+  picts=SDL_CreateRGBSurface((i?SDL_HWSURFACE:SDL_SWSURFACE)|SDL_SRCCOLORKEY,picture_size<<4,picture_size*((n+16)>>4),8,0,0,0,0);
   if(!picts) fatal("Error allocating surface for pictures: %s\n",SDL_GetError());
   init_palette();
   for(i=0;i<n;i++) {
