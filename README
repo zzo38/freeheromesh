@@ -136,5 +136,30 @@ Free Hero Mesh is public domain. See the LICENSE file for details.
 
 === Frequently asked questions ===
 
-(Nothing yet. If you have any questions, please ask.)
+(If you have any more questions, please ask.)
+
+** Is it any good?
+
+ I suppose it is a matter of opinion, isn't it?
+
+** It says "FATAL: Failed to open xclass file (No such file or directory)"
+when trying to load the puzzle set. How to load it correctly?
+
+ You must use the base name. For example, if the puzzle set files are
+ named "sokoban.xclass", "sokoban.class", "sokoban.level", and
+ "sokoban.solution", then you must type "heromesh sokoban" to load it.
+
+** How to access the NNTP?
+
+ You can use a NNTP client program, often called a "newsreader" program.
+ Many email programs can also do NNTP, including Mozilla Thunderbird.
+ There are also specialized NNTP programs, including Pan and bystand.
+ (Some are text, some are binary, and some are hybrid; you will need one
+ that supports text or hybrid.)
+
+** Is there documentation with tutorial or introduction?
+
+ I like the kind of documentation that the existing one is, although I
+ am aware that some people prefer a different style. Someone who is better
+ at writing that different style should do so and contribute please.
 

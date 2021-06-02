@@ -112,6 +112,12 @@ string literal) and end at the next line break.
   Hexadecimal escape, where XX is a hexadecimal number from 01 to FF,
   and displays a graphic character with the given PC character code.
 
+\"
+  Literal quotation mark.
+
+\\
+  Literal backslash.
+
 
 === Preprocessor ===
 
