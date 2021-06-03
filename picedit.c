@@ -833,7 +833,7 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
                 p=pict[sel]->data+(j=pict[sel]->size);
                 if(xx<x) i=x,x=xx,xx=i;
                 if(yy<y) i=y,y=yy,yy=i;
-                while(y<yy) memset(p+y*j+x,cc,xx+1-x),y++;
+                while(y<=yy) memset(p+y*j+x,cc,xx+1-x),y++;
                 xx=yy=-1;
               }
               break;
@@ -1575,7 +1575,8 @@ void run_picture_editor(void) {
   sqlite3_create_module(userdb,"GRAPH",&vt_graph,0);
   init_palette();
   optionquery[1]=Q_imageSize;
-  *gsizes=picture_size=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"16",0,10);
+  picture_size=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"16",0,10);
+  if(!*gsizes) *gsizes=picture_size;
   set_cursor(XC_arrow);
   set_caption();
   i=sqlite3_prepare_v3(userdb,"SELECT `ID`,SUBSTR(`NAME`,1,LENGTH(`NAME`)-4),`TYPE` FROM `PICEDIT` WHERE `TYPE` ORDER BY `NAME` LIMIT ?1 OFFSET ?2;",-1,SQLITE_PREPARE_PERSISTENT,&st,0);
