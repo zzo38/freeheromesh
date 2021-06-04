@@ -1866,7 +1866,9 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
         printf("[ptr=%d x=%d y=%d dir=%d]\n",cp[cpi].ptr,cp[cpi].x,cp[cpi].y,cp[cpi].dir);
       }
       break;
-    default: Throw("Unimplemented opcode in pattern");
+    default:
+      fprintf(stderr,"Unrecognized opcode 0x%04X at 0x%04X in pattern\n",code[ptr-1],ptr-1);
+      Throw("Internal error: Unimplemented opcode in pattern");
   }
   goto again;
   fail:

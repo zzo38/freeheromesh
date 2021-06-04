@@ -1157,11 +1157,12 @@ static int parse_pattern(int cla,int ptr,Hash*hash) {
           break;
         case OP_ELSE:
           if(!depth) ParseError("Premature end of subpattern\n");
-          cl->codes[nest[depth-1]+1]=ptr;
+          cl->codes[nest[depth-1]+1]=ptr+1;
           cl->codes[ptr++]=OP_ELSE;
           cl->codes[ptr++]=cl->codes[nest[depth-1]];
           cl->codes[nest[depth-1]]=OP_IF;
           cl->codes[ptr++]=0;
+          nest[depth-1]=ptr-2;
           break;
         case OP_THEN:
           if(!depth) ParseError("Premature end of subpattern\n");
