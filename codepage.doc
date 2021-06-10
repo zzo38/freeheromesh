@@ -14,6 +14,9 @@ character set/encoding, then IBM takes precedence. However, if Microsoft
 uses the code page number for a strict superset of IBM's definition,
 then Microsoft's definition will be used.
 
+* Extensions of FreeDOS are used if they do not conflict with IBM and
+are not already present as official IBM code pages.
+
 * The areas designated as private use areas by IBM (57344-61439 and
 65280-65533) may be defined in future by myself (or others, with my
 approval). Some ranges may also later be reserved as user-defined or
@@ -23,6 +26,28 @@ Note that not all of the code page numbers according to the above are
 actually used in Free Hero Mesh; Free Hero Mesh only uses ASCII-based
 code pages with 8-bit characters. The full set of code page numbers may
 still be useful for other applications, though.
+
+
+=== List of code page numbers ===
+
+In the below list, "=" means that it is already included in the provided
+codepage.har file, and "-" means it isn't included (it might or might not
+be included in future).
+
+   437 = default PC character set
+   850 = PC-like Western Latin
+   852 - PC-like Central European
+   858 - PC-like Western Latin including Euro currency
+   860 - PC-like Portuguese
+   861 - PC-like Icelandic
+   865 = PC-like Nordic
+   866 = DOS Cyrillic Russian
+  1041 - Katakana (Japanese)
+  1125 = DOS Cyrillic Ukrainian/Belarusian
+  1250 - Windows Central Europe
+  1251 - Windows Cyrillic
+  1252 - Windows Western
+  1254 - Windows Turkish
 
 
 === File format ===
@@ -61,5 +86,4 @@ character (the first byte is zero). If it is less than the current
 character code, it is copied from the current code page; if equal or
 greater than the current character code, it is copied from the default
 code page (pcfont.h).
-
 
