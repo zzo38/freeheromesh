@@ -1,0 +1,65 @@
+
+=== Code page numbers ===
+
+Code page numbers are assigned according to the following:
+
+* Code page numbers are 16-bit numbers. Numbers 0, 65534, and 65535 are
+not used; they are reserved for internal use of the software.
+
+* IBM and Microsoft code page numbers can be used.
+
+* If IBM and Microsoft use the same code page number for a different
+character set, or if they use different code page numbers for the same
+character set/encoding, then IBM takes precedence. However, if Microsoft
+uses the code page number for a strict superset of IBM's definition,
+then Microsoft's definition will be used.
+
+* The areas designated as private use areas by IBM (57344-61439 and
+65280-65533) may be defined in future by myself (or others, with my
+approval). Some ranges may also later be reserved as user-defined or
+application-specific areas.
+
+Note that not all of the code page numbers according to the above are
+actually used in Free Hero Mesh; Free Hero Mesh only uses ASCII-based
+code pages with 8-bit characters. The full set of code page numbers may
+still be useful for other applications, though.
+
+
+=== File format ===
+
+The codepage.har file is a Hamster archive containing one lump for each
+code page, named by the code page number in decimal. Code page 437 need
+not be included in this file; pcfont.h is used instead.
+
+The data of the lump can be one of three formats:
+
+* Full set: Consists of 2048 bytes.
+
+* Half set: Consists of 1024 bytes, with only the high half of the
+character set. The low half will be the same as the built-in font.
+
+* Compressed set: Any length less than 2048 bytes except 1024 bytes. See
+below section for the description of this format.
+
+In all cases, character code 0 is not used; if it contains anything, it
+will be erased after it is loaded.
+
+
+=== Compressed set format ===
+
+The first 32 bytes indicate which characters differ from the definitions
+in pcfont.h. The first byte is for character codes 0-7, where the low bit
+means character code 0.
+
+For each character whose bit is set in the header, the first byte tells
+which scanlines to be copied from the base character, the second byte
+tells the base character to use, and the rest of the bytes are one per
+scanline that is changed, with the data to be replaced with.
+
+The second byte is omitted if no scanlines are copied from the base
+character (the first byte is zero). If it is less than the current
+character code, it is copied from the current code page; if equal or
+greater than the current character code, it is copied from the default
+code page (pcfont.h).
+
+
