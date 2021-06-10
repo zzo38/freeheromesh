@@ -31,6 +31,7 @@ static Uint8 side_mode=255;
 static Uint8 should_record_solution;
 static Uint8 replay_speed;
 static Uint8 replay_time;
+static Uint8 solved;
 
 static void record_solution(void);
 
@@ -72,7 +73,7 @@ static void redraw_game(void) {
   SDL_LockSurface(screen);
   if(left_margin>=88) {
     snprintf(buf,32,"%5d/%5d",level_ord,level_nindex);
-    draw_text(0,0,buf,0xF0,0xFC);
+    draw_text(0,0,buf,0xF0,solved?0xFA:0xFC);
     snprintf(buf,32,"%5d",level_id);
     draw_text(0,8,"ID",0xF0,0xF7);
     draw_text(48,8,buf,0xF0,0xFF);
@@ -84,7 +85,7 @@ static void redraw_game(void) {
     draw_text(48,24,buf,0xF0,0xFF);
   } else {
     snprintf(buf,32,"%5d",level_ord);
-    draw_text(16,0,buf,0xF0,0xFC);
+    draw_text(16,0,buf,0xF0,solved?0xFA:0xFC);
     snprintf(buf,32,"%5d",level_id);
     draw_text(0,8,"I",0xF0,0xF7);
     draw_text(16,8,buf,0xF0,0xFF);
@@ -243,14 +244,17 @@ static void show_mouse_xy(SDL_Event*ev) {
 static void save_replay(void) {
   long sz=replay_size;
   if(solution_replay || !replay_list) return;
-  if(sz<replay_count+4) {
-    replay_list=realloc(replay_list,sz=replay_count+4);
+  if(sz<replay_count+6) {
+    replay_list=realloc(replay_list,sz=replay_count+6);
     if(!replay_list) fatal("Allocation failed\n");
     replay_size=(sz>0xFFFF?0xFFFF:sz);
   }
-  sz=replay_count+4;
-  replay_list[sz-4]=replay_mark>>8;
-  replay_list[sz-3]=replay_mark;
+  if(gameover==1) solved=1;
+  sz=replay_count+6;
+  replay_list[sz-6]=replay_mark>>8;
+  replay_list[sz-5]=replay_mark;
+  replay_list[sz-4]=(level_version+solved-1)>>8;
+  replay_list[sz-3]=level_version+solved-1;
   replay_list[sz-2]=replay_count>>8;
   replay_list[sz-1]=replay_count;
   write_userstate(FIL_LEVEL,level_id,sz,replay_list);
@@ -285,6 +289,10 @@ static void load_replay(void) {
       replay_size=(sz>0xFFFF?0xFFFF:sz);
       replay_count=(replay_list[sz-2]<<8)|replay_list[sz-1];
       if(sz-replay_count>=4) replay_mark=(replay_list[replay_count]<<8)|replay_list[replay_count+1]; else replay_mark=0;
+      if(sz-replay_count>=6) {
+        i=(replay_list[replay_count+2]<<8)|replay_list[replay_count+3];
+        if(i==level_version) solved=1;
+      }
     } else {
       notfound:
       replay_count=replay_mark=replay_size=0;
@@ -300,6 +308,7 @@ static void begin_level(int id) {
   if(replay_count) save_replay();
   inputs_count=0;
   replay_pos=0;
+  solved=0;
   t=load_level(id)?:init_level();
   load_replay();
   if(t) {
