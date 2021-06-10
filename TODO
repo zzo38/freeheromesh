@@ -37,4 +37,5 @@
   * Implement the GROUP column in the CLASSES table
   * Allow multiple SQL statements in one binding
 * Large fonts (width 8 or 16, height 8-32)
+* Remember solved levels (store solved version in USERSTATE column)
 

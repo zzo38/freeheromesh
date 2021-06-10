@@ -261,6 +261,10 @@ static void fn_load_level(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   if(s) sqlite3_result_error(cxt,s,-1);
 }
 
+static void fn_max_level(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  sqlite3_result_int(cxt,level_nindex);
+}
+
 static void fn_modstate(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_result_int(cxt,SDL_GetModState());
 }
@@ -976,6 +980,7 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"LEVEL_ID",0,SQLITE_UTF8,&level_id,fn_level,0,0);
   sqlite3_create_function(userdb,"LEVEL_TITLE",0,SQLITE_UTF8,0,fn_level_title,0,0);
   sqlite3_create_function(userdb,"LOAD_LEVEL",1,SQLITE_UTF8,0,fn_load_level,0,0);
+  sqlite3_create_function(userdb,"MAX_LEVEL",0,SQLITE_UTF8,0,fn_max_level,0,0);
   sqlite3_create_function(userdb,"MODSTATE",0,SQLITE_UTF8,0,fn_modstate,0,0);
   sqlite3_create_function(userdb,"MOVE_LIST",0,SQLITE_UTF8,0,fn_move_list,0,0);
   sqlite3_create_function(userdb,"MOVENUMBER",0,SQLITE_UTF8,0,fn_movenumber,0,0);

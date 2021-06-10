@@ -61,7 +61,7 @@ LEVEL()
   The one-based order number of the current level.
 
 LEVEL_CACHEID()
-  The cache ID number of this level in the user cache table.
+  The user cache ID of the level file.
 
 LEVEL_ID()
   The ID number of the current level.
@@ -104,6 +104,9 @@ RESOURCE(...)
 
 SIGN_EXTEND(number)
   Sign extends a 32-bit number to 64-bits.
+
+SOLUTION_CACHEID()
+  The user cache ID of the level file.
 
 TRACE_OFF()
   Disables tracing when called.
