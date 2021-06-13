@@ -93,7 +93,7 @@ static int vt_graph_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
 static int vt_graph_connect(sqlite3*db,void*aux,int argc,const char*const*argv,sqlite3_vtab**vt,char**ex) {
   *vt=sqlite3_malloc(sizeof(sqlite3_vtab));
   if(!*vt) return SQLITE_NOMEM;
-  sqlite3_declare_vtab(db,"CREATE TABLE `GRID`(`X` INT, `Y` INT, `C` INT);");
+  sqlite3_declare_vtab(db,"CREATE TABLE `GRAPH`(`X` INT, `Y` INT, `C` INT);");
   return SQLITE_OK;
 }
 
@@ -544,6 +544,33 @@ static void fill_ellipse(Uint8*p,Uint8 s,Uint8 x0,Uint8 y0,Uint8 x1,Uint8 y1,Uin
   }
 }
 
+static void flood(Uint8 x,Uint8 y,Uint8 mx,Uint8 my,Uint8 mw,Uint8 mh,Uint8 c,Uint8 c0,Uint8 b) {
+  sqlite3_stmt*st;
+  if(c0==c) return;
+  if(sqlite3_prepare_v2(userdb,
+    // This isn't as efficient as it should be, since it has to scan the entire table every time.
+    "INSERT INTO GRAPH(X,Y,C) WITH R(XX,YY) AS ("
+      "SELECT ?1,?2 UNION SELECT X,Y FROM R,GRAPH WHERE C=?4"
+      " AND ABS(X-XX)+ABS(Y-YY)<>?5 AND ABS(X-XX)<2 AND ABS(Y-YY)<2"
+      " AND X>=?6 AND X<?8 AND Y>=?7 AND Y<?9"
+    ") SELECT XX,YY,?3 FROM R;"
+  ,-1,&st,0)) {
+    screen_message(sqlite3_errmsg(userdb));
+    return;
+  }
+  sqlite3_bind_int(st,1,x);
+  sqlite3_bind_int(st,2,y);
+  sqlite3_bind_int(st,3,c);
+  sqlite3_bind_int(st,4,c0);
+  sqlite3_bind_int(st,5,3-b);
+  sqlite3_bind_int(st,6,mx);
+  sqlite3_bind_int(st,7,my);
+  sqlite3_bind_int(st,8,mx+mw);
+  sqlite3_bind_int(st,9,my+mh);
+  sqlite3_step(st);
+  sqlite3_finalize(st);
+}
+
 static Picture*do_import(Picture*pic) {
   SDL_Color*pal=screen->format->palette->colors;
   int a,b,i,j,x,y;
@@ -628,7 +655,7 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
     "\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF"
     "\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF\xF8\xFF"
   ;
-  static const char*const tool[10]={
+  static const char*const tool[11]={
     "Draw",
     "Mark",
     "Pick",
@@ -639,6 +666,7 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
     "fIllcirc",
     "Ellipse",
     "fillellipSe",
+    "flOod",
   };
   static Picture*pclip=0;
   Uint8*p;
@@ -676,7 +704,7 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
   draw_text(0,8,"<ESC> Exit  <1-9> Sel  <SP> Unmark  <RET> Copy  <INS> Paste  <DEL> Erase",0xF0,0xFB);
   draw_text(0,16,"<F1> CW  <F2> CCW  <F3> \x12  <F4> \x1D  <F5> Size  <F6> Add  <F7> Del  <F8> Mark  <F9> In  <F10> Out",0xF0,0xFB);
   x=0;
-  for(i=0;i<10;i++) {
+  for(i=0;i<11;i++) {
     j=snprintf(buf,255,"%c%s%c",i==t?'<':' ',tool[i],i==t?'>':' ');
     draw_text(x<<3,24,buf,0xF0,i==t?0xFE:0xF8);
     x+=j;
@@ -769,19 +797,24 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
           y=(ev.button.y-40)/10;
           i=y*16+x;
           pick:
+          y=SDL_GetModState();
           switch(ev.button.button) {
             case 1: cc=i; break;
             case 2:
               for(x=(m.y+1)*pict[sel]->size+m.x;x<pict[sel]->size*(pict[sel]->size+1);x++) {
-                if(pict[sel]->data[x]==cc) pict[sel]->data[x]=i;
+                if(!y || ((y&(KMOD_CTRL|KMOD_SHIFT)) && (((x-x/pict[sel]->size)^(y&KMOD_CTRL?1:0))&1))) {
+                  if(pict[sel]->data[x]==cc) pict[sel]->data[x]=i;
+                }
                 if(m.w && x%pict[sel]->size==m.x+m.w-1) x+=pict[sel]->size-m.w;
                 if(m.h && x/pict[sel]->size>m.h+m.y) break;
               }
               break;
             case 3:
               for(x=(m.y+1)*pict[sel]->size+m.x;x<pict[sel]->size*(pict[sel]->size+1);x++) {
-                if(pict[sel]->data[x]==cc) pict[sel]->data[x]=i;
-                else if(pict[sel]->data[x]==i) pict[sel]->data[x]=cc;
+                if(!y || ((y&(KMOD_CTRL|KMOD_SHIFT)) && (((x-x/pict[sel]->size)^(y&KMOD_CTRL?1:0))&1))) {
+                  if(pict[sel]->data[x]==cc) pict[sel]->data[x]=i;
+                  else if(pict[sel]->data[x]==i) pict[sel]->data[x]=cc;
+                }
                 if(m.w && x%pict[sel]->size==m.x+m.w-1) x+=pict[sel]->size-m.w;
                 if(m.h && x/pict[sel]->size>m.h+m.y) break;
               }
@@ -870,6 +903,9 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
                 draw_ellipse(pict[sel]->data+pict[sel]->size,pict[sel]->size,x,y,xx,yy,cc);
               }
               break;
+            case 10: // Flood
+              if(!m.w) m.x=m.y=m.h=0;
+              flood(x,y,m.x,m.y,m.w?:pict[sel]->size,m.h?:pict[sel]->size,cc,pict[sel]->data[(y+1)*pict[sel]->size+x],i);
           }
           goto redraw;
         }
@@ -887,6 +923,7 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
           case SDLK_i: t=7; xx=yy=-1; goto redraw;
           case SDLK_l: t=3; xx=yy=-1; goto redraw;
           case SDLK_m: t=1; xx=yy=-1; goto redraw;
+          case SDLK_o: t=10; xx=yy=-1; goto redraw;
           case SDLK_p: t=2; xx=yy=-1; goto redraw;
           case SDLK_r: t=4; xx=yy=-1; goto redraw;
           case SDLK_s: t=9; xx=yy=-1; goto redraw;

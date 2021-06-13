@@ -190,6 +190,16 @@ Filled ellipse (S)
   Click the left button on one corner of the bounding rectangle of the
   ellipse, and then click the middle or right button on the other side.
 
+Flood (O)
+  Click any button to flood an area of a solid colour with the current
+  colour. Which button decides the directions to use, where the left
+  button means the von Neumann neighbourhood and the right button means
+  the Moore neighbourhood.
+
+For clicking in the palette or the Pick mode, with the middle or right
+mouse button, you can also push CTRL or SHIFT keys with it in order to
+affect only odd or only even coordinates.
+
 
 === Dependent pictures ===
 
