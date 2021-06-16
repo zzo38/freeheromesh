@@ -48,6 +48,12 @@ this if you do not wish to modify Free Hero Mesh)
 * The smallxrm is required. It is included with this package; you must
 compile smallxrm.c as smallxrm.o (one way is "bash smallxrm.c").
 
+* Colour display, with resolution at least 640x480 (preferably more), and
+at least 256 colours
+
+* Keyboard and mouse, with three mouse buttons (the mouse wheel is not
+needed and is not used, but it is OK if you have it)
+
 The distributor should edit man6/heromesh.str in order to correctly
 specify the directory containing the documentation files.
 
@@ -60,6 +66,21 @@ If compiled with "./compile p" then it is installed as "bin/heromesh"
 the source files are) and installs "bin/current.heromeshrc" as well (if it
 does not already exist; it won't overwrite an existing file). In this case,
 it can be used as a "portable app" mode.
+
+There are optional runtime features that may require other programs in
+order to use them, but that you can ignore if you do not use them. Such
+optional features include:
+
+* If you want to import/export pictures, you will need an implementation
+of farbfeld. ImageMagick 7 includes an implementation of farbfeld, so if
+you have that, then that will work. There are also other implementations,
+such as the original "farbfeld" package, and Farbfeld Utilities.
+
+* If you want to use the clipboard functions, you will need xclip or some
+other program to interact the clipboard with stdin/stdout.
+
+(The X window system is not necessarily required; you can use any system
+that can be used with SDL.)
 
 
 === Documentation ===

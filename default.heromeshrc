@@ -105,11 +105,9 @@
 ?.gameKey.alt.Z: 'CTRL
 
 ! Game key bindings
+?.gameKey.ctrl.D: select '^d',$key_xy;
 ?.gameKey.ctrl.E: ^E
 ?.gameKey.ctrl.I: select 'mi',:import_move_list;
-?.gameKey.ctrl.Q: ^Q
-?.gameKey.ctrl.S: ^S
-?.gameKey.ctrl.T: ^T
 ?.gameKey.ctrl.X: select 'mx',:export_move_list;
 ?.gameClick.right: ^o
 ?.gameClick.middle: ^d
@@ -128,7 +126,6 @@
 ?.gameKey.f7: ^>
 ?.gameKey.f8: ^s
 ?.gameKey.tab: ^I
-?.gameKey.alt.D: select '^d',$key_xy;
 ?.gameKey.alt.G: ^g
 ?.gameKey.alt.P: ^p
 
@@ -150,9 +147,6 @@
 ?.editKey.R: select 're',substr(:resize,1,instr(:resize,'x')-1),substr(:resize,instr(:resize,'x')+1) where length(:resize);
 ?.editKey.ctrl.N: ^N
 ?.editKey.ctrl.P: ^P
-?.editKey.ctrl.Q: ^Q
-?.editKey.ctrl.S: ^S
-?.editKey.ctrl.T: ^T
 ?.editKey.ctrl.X: select 're',pfwidth(),pfheight();
 ?.editKey.space: ^c
 ?.editKey.return: ^e
@@ -167,6 +161,9 @@
 ?.?.kp_minus: select 'go',-(level()-1) where level()>1;
 ?.?.kp_plus: select 'go',-(level()+1) where level()<max_level();
 ?.?.ctrl.G: select 'go',-:Go_To_Level where :Go_To_Level=cast(:Go_To_Level as int) and cast(:Go_To_Level as int)>0;
+?.?.ctrl.Q: ^Q
+?.?.ctrl.S: ^S
+?.?.ctrl.T: ^T
 ?.?.shift.ctrl.M: select ':s';
 ?.?.f10: select ':x';
 
