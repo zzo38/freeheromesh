@@ -73,7 +73,7 @@ static void redraw_game(void) {
   SDL_LockSurface(screen);
   if(left_margin>=88) {
     snprintf(buf,32,"%5d/%5d",level_ord,level_nindex);
-    draw_text(0,0,buf,0xF0,solved?0xFA:0xFC);
+    draw_text(0,0,buf,0xF0,solution_replay?0xFE:solved?0xFA:0xFC);
     snprintf(buf,32,"%5d",level_id);
     draw_text(0,8,"ID",0xF0,0xF7);
     draw_text(48,8,buf,0xF0,0xFF);
@@ -85,7 +85,7 @@ static void redraw_game(void) {
     draw_text(48,24,buf,0xF0,0xFF);
   } else {
     snprintf(buf,32,"%5d",level_ord);
-    draw_text(16,0,buf,0xF0,solved?0xFA:0xFC);
+    draw_text(16,0,buf,0xF0,solution_replay?0xFE:solved?0xFA:0xFC);
     snprintf(buf,32,"%5d",level_id);
     draw_text(0,8,"I",0xF0,0xF7);
     draw_text(16,8,buf,0xF0,0xFF);
