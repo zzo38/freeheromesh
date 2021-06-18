@@ -420,7 +420,7 @@ static Uint32 obj_bottom_at(Uint32 x,Uint32 y) {
   return VOIDLINK;
 }
 
-static Uint32 obj_class_at(Uint32 c,Uint32 x,Uint32 y) {
+static Uint32 obj_class_at(Uint32 c,Uint16 x,Uint16 y) {
   Uint32 i;
   if(x<1 || x>pfwidth || y<1 || y>pfheight) return VOIDLINK;
   i=playfield[x+y*64-65];
