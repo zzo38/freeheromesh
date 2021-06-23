@@ -23,6 +23,8 @@
 * Deal better with allowing to skip past corrupted levels
 * Picture editor/loading
   * Allowing more altimages
+  * Spare page (for temporary use while editing)
+  * Batch insert multiple dependent image lumps
 * Puzzle set catalog format (using with internet; a separate program)
 * Inventory/replay hybrid view
 * Bookmarks
@@ -38,3 +40,4 @@
   * Allow multiple SQL statements in one binding
 * Large fonts (width 8 or 16, height 8-32)
 * Branching replay recording
+* Slow movement displaying state between triggers

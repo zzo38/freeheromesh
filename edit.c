@@ -239,7 +239,10 @@ static void save_level(void) {
   save_obj(str,0,m,x,y);
   sqlite3_str_appendchar(str,1,0xFF);
   // Level strings
-  for(i=0;i<nlevelstrings;i++) sqlite3_str_appendall(str,levelstrings[i]);
+  for(i=0;i<nlevelstrings;i++) {
+    sqlite3_str_appendall(str,levelstrings[i]);
+    sqlite3_str_appendchar(str,1,0);
+  }
   // Done
   sz=sqlite3_str_length(str);
   if(i=sqlite3_str_errcode(str)) fatal("SQL string error (%d)\n",i);
