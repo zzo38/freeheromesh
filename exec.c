@@ -2007,6 +2007,48 @@ static void v_data(Value v1,Value v2) {
   }
 }
 
+static void v_trigger(Uint32 from,Uint32 to,Value v) {
+  Object*o;
+  Uint32 n;
+  if(v.t!=TY_MESSAGE) Throw("Type mismatch");
+  o=objects[to];
+  if(classes[o->class]->cflags&CF_COMPATIBLE) return;
+  switch(v.u) {
+    case MSG_MOVED:
+      if(o->oflags&OF_MOVED2) {
+        o->oflags&=~OF_MOVED2;
+        send_message(from,to,MSG_MOVED,NVALUE(0),msgvars.arg2,msgvars.arg3);
+      }
+      break;
+    case MSG_DEPARTED:
+      if(o->departed2) {
+        n=o->departed2;
+        o->departed2=0;
+        send_message(from,to,MSG_DEPARTED,NVALUE(n),msgvars.arg2,msgvars.arg3);
+      }
+      break;
+    case MSG_ARRIVED:
+      if(o->arrived2) {
+        n=o->arrived2;
+        o->arrived2=0;
+        send_message(from,to,MSG_ARRIVED,NVALUE(n),msgvars.arg2,msgvars.arg3);
+      }
+      break;
+    default: Throw("Invalid message for Trigger");
+  }
+}
+
+static void v_trigger_at(Uint32 from,Uint32 x,Uint32 y,Value v) {
+  Uint32 m,n;
+  if(x<1 || x>pfwidth || y<1 || y>pfheight) return;
+  n=playfield[x+y*64-65];
+  while(n!=VOIDLINK) {
+    m=objects[n]->up;
+    v_trigger(from,n,v);
+    n=m;
+  }
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -2395,6 +2437,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_TEMPERATURE_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->temperature=t1.u&0xFFFF; break;
     case OP_TMARK: StackReq(1,2); t1=Pop(); if(t1.t==TY_MARK) { Push(NVALUE(0)); } else { Push(t1); Push(NVALUE(1)); } break;
     case OP_TRACE: StackReq(3,0); trace_stack(obj); break;
+    case OP_TRIGGER: NoIgnore(); StackReq(2,0); t1=Pop(); i=v_object(Pop()); if(i!=VOIDLINK) v_trigger(obj,i,t1); break;
+    case OP_TRIGGERAT: NoIgnore(); StackReq(3,0); t3=Pop(); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); v_trigger_at(obj,t1.u,t2.u,t3); break;
     case OP_TUCK: StackReq(2,3); t2=Pop(); t1=Pop(); Push(t2); Push(t1); Push(t2); break;
     case OP_UNIQ: StackReq(2,3); t1=Pop(); i=v_uniq(t1); if(i) Push(t1); Push(NVALUE(i)); break;
     case OP_USERSIGNAL: StackReq(0,1); if(o->oflags&OF_USERSIGNAL) Push(NVALUE(1)); else Push(NVALUE(0)); break;
