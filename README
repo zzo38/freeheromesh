@@ -99,6 +99,9 @@ installation, documentation, discussion/community.
 * class.doc: This document describes the Free Hero Mesh programming
 language. Read this if you want to define your own classes of objects.
 
+* codepage.doc: Describes the use of code pages and the file format of the
+codepage.har file.
+
 * commandline.doc: Describes the command-line arguments. The man page
 also describes the command-line arguments, although the commandline.doc
 file has a more elaborate description.
@@ -108,13 +111,55 @@ file has a more elaborate description.
 * export.doc: The level export format is described in this file; it can
 be used for importing as well as exporting.
 
+* man6/heromesh.6: Man page; includes information about command-line
+arguments, environment variables, and link to further documentation.
+
+* man6/heromesh.str: Must be installed in the same directory as the
+man6/heromesh.6 file. The distributor should change this to point to
+the correct directories where the files are stored; these directories
+will be mentioned in the man page
+
+* misc/mbform.doc: Describes the .mb file format for Hero Mesh. (Not
+directly relevant to Free Hero Mesh. It contains information that was
+used for writing the converter, and may be of interest to some readers
+for other purposes, but is neither used nor does it contain anything
+that is needed for users or developers of Free Hero Mesh.)
+
 * picedit.doc: Describes the picture editor.
 
-* puzzleset.doc: Describes wat makes up a puzzle set.
+* puzzleset.doc: Describes what makes up a puzzle set.
 
 * sql.doc: This file lists and documents each of the SQL functions and SQL
 tables that are available. This is not relevant to programming the rules
 of the game; it is used for user customization.
+
+
+=== Other files ===
+
+Free Hero Mesh also includes the following other files, which are not the
+source code files, compilation files, or documentation files:
+
+* codepage.har: Contains fonts for code pages. Code page 437 is included
+inside of the executable file and does not need this file; this file is
+only needed for code pages other than 437.
+
+* default.heromeshrc: An example configuration file which you can customize
+for your own use. You should at least set the proper paths to the files.
+
+* mbtofhm.c: Converter from Everett Kaser's MESH engine into Free Hero
+Mesh. Give the base name of the output files as the command-line argument,
+and receives the .mb file from stdin.
+
+* misc/har.c: A small C program for dealing with Hamster archives. This is
+not properly a part of Free Hero Mesh (and is not needed in order to use
+or compile Free Hero Mesh), but is included since it is likely to be useful
+for some users.
+
+* misc/sokoban.tar.gz: Example puzzle set.
+
+(The files in the misc/ directory are not part of Free Hero Mesh nor are
+they needed by Free Hero Mesh, but are provided for convenience. They can
+safely be ignored or deleted if you are not using them.)
 
 
 === Community/discussion ===
