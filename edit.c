@@ -79,7 +79,7 @@ static void rewrite_class_def(void) {
   sqlite3_str_appendchar(s,2,0);
   for(i=0;i<0x4000;i++) if(mu[i/8]&(1<<(i&7))) {
     sqlite3_str_appendchar(s,1,i&255);
-    sqlite3_str_appendchar(s,1,i>>8);
+    sqlite3_str_appendchar(s,1,(i+256)>>8);
     sqlite3_str_appendall(s,messages[i]);
     sqlite3_str_appendchar(s,1,0);
   }

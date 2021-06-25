@@ -2078,7 +2078,7 @@ static void load_class_numbers(void) {
   for(i=0;i<size-3;) {
     n=data[i]|(data[i+1]<<8);
     if(!n) break;
-    if(n>=0x4000) fatal("Malformed CLASS.DEF lump\n");
+    if(n>=0x4000) fatal("Malformed CLASS.DEF lump (invalid class number %d)\n",n);
     i+=2;
     p=data+i;
     while(i<size && data[i++]);
@@ -2088,7 +2088,7 @@ static void load_class_numbers(void) {
   i+=2;
   for(;i<size-3;) {
     n=data[i]|(data[i+1]<<8);
-    if(n<256 || n>=0x4100) fatal("Malformed CLASS.DEF lump\n");
+    if(n<256 || n>=0x4100) fatal("Malformed CLASS.DEF lump (invalid message number %d)\n",n);
     n-=256;
     i+=2;
     p=data+i;
