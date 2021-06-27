@@ -939,7 +939,10 @@ int main(int argc,char**argv) {
   set_tracing();
   annihilate();
   optionquery[1]=Q_level;
-  if(level_ord=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,10)) log_if_error(load_level(-level_ord));
+  if(level_ord=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,10)) {
+    if(level_ord>level_nindex) level_ord=level_nindex;
+    log_if_error(load_level(-level_ord));
+  }
   optionquery[1]=Q_maxTrigger;
   max_trigger=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,10);
   if(main_options['a']) run_auto_test();
