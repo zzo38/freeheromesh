@@ -37,6 +37,7 @@ static const char schema[]=
   "CREATE TABLE IF NOT EXISTS `USERCACHEINDEX`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `TIME` INT);"
   "CREATE TABLE IF NOT EXISTS `USERCACHEDATA`(`ID` INTEGER PRIMARY KEY, `FILE` INT, `LEVEL` INT, `NAME` TEXT COLLATE NOCASE, `OFFSET` INT, `DATA` BLOB, `USERSTATE` BLOB);"
   "CREATE UNIQUE INDEX IF NOT EXISTS `USERCACHEDATA_I1` ON `USERCACHEDATA`(`FILE`, `LEVEL`);"
+  "CREATE TRIGGER IF NOT EXISTS `USERCACHEINDEX_DELETION` AFTER DELETE ON `USERCACHEINDEX` BEGIN DELETE FROM `USERCACHEDATA` WHERE `FILE` = OLD.`ID`; END;"
   "CREATE TEMPORARY TABLE `PICTURES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT COLLATE NOCASE, `OFFSET` INT, `DEPENDENT` INT);"
   "CREATE TEMPORARY TABLE `VARIABLES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT);"
   "COMMIT;"
@@ -74,13 +75,6 @@ static sqlite3_int64 reset_usercache(FILE*fp,const char*nam,struct stat*stats,co
   sqlite3_int64 t,id;
   char buf[128];
   int i,z;
-  if(z=sqlite3_prepare_v2(userdb,"DELETE FROM `USERCACHEDATA` WHERE `FILE` = (SELECT `ID` FROM `USERCACHEINDEX` WHERE `NAME` = ?1);",-1,&st,0)) {
-    fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
-  }
-  sqlite3_bind_text(st,1,nam,-1,0);
-  while((z=sqlite3_step(st))==SQLITE_ROW);
-  if(z!=SQLITE_DONE) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
-  sqlite3_finalize(st);
   if(z=sqlite3_prepare_v2(userdb,"DELETE FROM `USERCACHEINDEX` WHERE `NAME` = ?1;",-1,&st,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   sqlite3_bind_text(st,1,nam,-1,0);
   while((z=sqlite3_step(st))==SQLITE_ROW);

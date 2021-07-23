@@ -12,6 +12,7 @@
   * A ,PopUp command to use a popup with arguments starting from a mark
   * "Goto message" instruction (?)
   * Returning a class from COLLIDE/COLLIDEBY to transform
+  * Coordinate input (may be suitable for some kind of games)
 * Editor
   * Mouse dragging
   * Level index editor
@@ -41,3 +42,4 @@
 * Large fonts (width 8 or 16, height 8-32)
 * Branching replay recording
 * Slow movement displaying state between triggers
+* Warning if file changed when uncommited data exists in the cache database
