@@ -1376,8 +1376,8 @@ static int string_list(void) {
           case SDLK_9: case SDLK_KP9: n=10*n+9; break;
           case SDLK_BACKSPACE: n/=10; break;
           case SDLK_ESCAPE: return -1;
-          case SDLK_RETURN: case SDLK_KP_ENTER: if(n<nlevelstrings) return n;
-          case SDLK_SPACE: edit_string(levelstrings+n); break;
+          case SDLK_RETURN: case SDLK_KP_ENTER: if(n<nlevelstrings) return n; break;
+          case SDLK_SPACE: if(n<nlevelstrings) edit_string(levelstrings+n); break;
           case SDLK_INSERT:
             if(nlevelstrings<0x2000) {
               levelstrings=realloc(levelstrings,(nlevelstrings+1)*sizeof(unsigned char*));
