@@ -2,6 +2,7 @@
   * Wave sounds
     * Standard sounds
     * User sounds
+    * Compressed wave sounds (?)
   * MML sounds
   * Numeric sounds (?)
 * Game engine features
@@ -43,3 +44,7 @@
 * Branching replay recording
 * Slow movement displaying state between triggers
 * Warning if file changed when uncommited data exists in the cache database
+* Composite puzzle set format (in a single file; read-only)
+  * Optional hypertext help
+  * Compressed class definitions (?)
+* Option to auto display level titles

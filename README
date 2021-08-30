@@ -29,33 +29,37 @@ Requirements:
 
 * Linux (it should hopefully work on other POSIX systems, although this is
 untested; it might use some Linux-specific functions and/or GNU-specific
-functions; I may be willing to accept contributions if this can be fixed)
+functions; I may be willing to accept contributions if this can be fixed).
 
 * SQLite version 3 (a recent version). Add a symlink to the sqlite3.o file
-into the same directory with the source files.
+into the same directory with the source files (or you can compile it from
+source with the desired options; the default options will do, although it
+is safe to omit the deprecated functions and to set SQLITE_DQS=0).
 
 * SDL1.x (the compatibility layers have not been tested with this
 software; if you have tested it please report it, and you may contribute
-patches to fix it)
+patches to fix it).
 
 * A C compiler, with GNU extensions (tested with GCC; it has not been
-tested with Clang, but I expect it to work; report it if it doesn't work)
+tested with Clang, but I expect it to work; report it if it doesn't work).
 
 * If you wish to alter some of the files, Node.js or a compatible
 JavaScript runtime is required for compiling these files (you do not need
-this if you do not wish to modify Free Hero Mesh)
+this if you do not wish to modify Free Hero Mesh).
 
 * The smallxrm is required. It is included with this package; you must
-compile smallxrm.c as smallxrm.o (one way is "bash smallxrm.c").
+compile smallxrm.c as smallxrm.o (one way is "bash smallxrm.c", or you
+can use gcc or clang with the options you want).
 
 * Colour display, with resolution at least 640x480 (preferably more), and
-at least 256 colours
+at least 256 colours.
 
 * Keyboard and mouse, with three mouse buttons (the mouse wheel is not
-needed and is not used, but it is OK if you have it)
+needed and is not used, but it is OK if you have it).
 
 The distributor should edit man6/heromesh.str in order to correctly
-specify the directory containing the documentation files.
+specify the directory containing the documentation files. (This does not
+affect the working of Free Hero Mesh itself; it only affects the man page.)
 
 Before using it, you must create a file called .heromeshrc in your home
 directory; you may use default.heromeshrc to start with, and then customize
@@ -113,6 +117,7 @@ be used for importing as well as exporting.
 
 * man6/heromesh.6: Man page; includes information about command-line
 arguments, environment variables, and link to further documentation.
+(You should install this in your man pages directory.)
 
 * man6/heromesh.str: Must be installed in the same directory as the
 man6/heromesh.6 file. The distributor should change this to point to
@@ -131,7 +136,8 @@ that is needed for users or developers of Free Hero Mesh.)
 
 * sql.doc: This file lists and documents each of the SQL functions and SQL
 tables that are available. This is not relevant to programming the rules
-of the game; it is used for user customization.
+of the game; it is used for user customization, and for performing batch
+operations when editing, and for producing reports.
 
 
 === Other files ===
@@ -153,7 +159,7 @@ and receives the .mb file from stdin.
 * misc/har.c: A small C program for dealing with Hamster archives. This is
 not properly a part of Free Hero Mesh (and is not needed in order to use
 or compile Free Hero Mesh), but is included since it is likely to be useful
-for some users.
+for some users (e.g. to copy pictures/sounds between puzzle sets).
 
 * misc/sokoban.tar.gz: Example puzzle set.
 
@@ -219,6 +225,9 @@ when trying to load the puzzle set. How to load it correctly?
  You must use the base name. For example, if the puzzle set files are
  named "sokoban.xclass", "sokoban.class", "sokoban.level", and
  "sokoban.solution", then you must type "heromesh sokoban" to load it.
+ (This assumes that the file is in the current directory. If it isn't,
+ then you must also specify the directory name, in addition to the puzzle
+ set base name.)
 
 ** How to access the NNTP?
 
