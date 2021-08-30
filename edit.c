@@ -382,6 +382,7 @@ static void class_image_select(void) {
   int imgcount=0;
   int cl=0;
   int img=0;
+  char re=0;
   Uint16 cllist[0x4000];
   Uint8 imglist[256];
   char name[256];
@@ -408,7 +409,7 @@ static void class_image_select(void) {
   for(i=0;i<screen->h/8;i++) {
     if(i+clscroll>=clcount) break;
     j=cllist[i+clscroll];
-    if(j==cl) SDL_FillRect(screen,&r,0xF3);
+    if(j==cl) SDL_FillRect(screen,&r,0xF3),re=0;
     draw_text(r.x,r.y,classes[j]->name,j==cl?0xF3:0xF1,classes[j]->cflags&CF_PLAYER?0xFE:0xFF);
     if(j==cl && namei) {
       memcpy(name,classes[j]->name,namei);
@@ -418,6 +419,14 @@ static void class_image_select(void) {
     r.y+=8;
   }
   SDL_UnlockSurface(screen);
+  if(re && cl) {
+    for(i=0;i<clcount;i++) if(cllist[i]==cl) {
+      clscroll=i+(clscroll>i?0:1-screen->h/8);
+      break;
+    }
+    re=0;
+    goto redraw;
+  }
   scrollbar(&imgscroll,screen->h/picture_size,imgcount,0,0);
   r.x=14;
   r.y=0;
@@ -462,6 +471,7 @@ static void class_image_select(void) {
           imgscroll=imgcount=0;
           for(i=0;i<classes[cl]->nimages;i++) if(classes[cl]->images[i]&0x8000) imglist[imgcount++]=i;
           img=*imglist;
+          re=1;
         } else {
           i=imgscroll+ev.button.y/picture_size;
           if(i<0 || i>=imgcount) break;
@@ -476,6 +486,8 @@ static void class_image_select(void) {
           case SDLK_END: case SDLK_KP1: clscroll=clcount-screen->h/8; goto redraw;
           case SDLK_PAGEDOWN: case SDLK_KP3: clscroll+=screen->h/8; goto redraw;
           case SDLK_PAGEUP: case SDLK_KP9: clscroll-=screen->h/8; goto redraw;
+          case SDLK_KP_PLUS: clscroll++; goto redraw;
+          case SDLK_KP_MINUS: clscroll--; goto redraw;
           case SDLK_ESCAPE: return;
           case SDLK_CLEAR: case SDLK_DELETE: case SDLK_KP_PERIOD: namei=0; goto redraw;
           case SDLK_BACKSPACE: if(namei) --namei; goto redraw;
@@ -505,12 +517,14 @@ static void class_image_select(void) {
           case SDLK_LEFT: case SDLK_KP4:
             for(i=0;i<imgcount-1;i++) if(img==imglist[i+1]) {
               img=imglist[i];
+              if(imgscroll>i) imgscroll=i;
               goto redraw;
             }
             break;
           case SDLK_RIGHT: case SDLK_KP6:
             for(i=0;i<imgcount-1;i++) if(img==imglist[i]) {
               img=imglist[i+1];
+              if(imgscroll<i+2-screen->h/picture_size) imgscroll=i+2-screen->h/picture_size;
               goto redraw;
             }
             break;
