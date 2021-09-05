@@ -1312,6 +1312,7 @@ static void edit_string(unsigned char**ps) {
   if(i>=32) goto addch;
   if(o && *cp==31) memmove(cp,cp+1,(s+sz)-cp);
   if(!*cp) cp[1]=0;
+  s[sz+2]=0;
   memmove(cp+1,cp,(s+sz+1)-cp);
   if(!o) memmove(cp+1,cp,(s+sz+1)-cp);
   *cp=31;
