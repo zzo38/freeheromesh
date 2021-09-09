@@ -436,17 +436,28 @@
 #define OP_BISHOP 32994
 #define OP_QUEEN 32995
 #define OP_CUT 32996
-#define OP_ABSTRACT 32997
-#define OP_SUPER 32998
-#define OP_SUPER_C 35046
-#define OP_FUNCTION 32999
-#define OP_LOCAL 33000
-#define OP_LABEL 33001
-#define OP_STRING 33002
-#define OP_INT16 33003
-#define OP_INT32 33004
-#define OP_DISPATCH 33005
-#define OP_USERFLAG 33006
+#define OP_BIZARRO 32997
+#define OP_BIZARRO_C 35045
+#define OP_BIZARRO_E 37093
+#define OP_BIZARRO_EC 39141
+#define OP_BIZARROSWAP 32998
+#define OP_BIZARROSWAP_C 35046
+#define OP_BIZARROSWAP_D 41190
+#define OP_BIZARROSWAP_CD 43238
+#define OP_SWAPWORLD 32999
+#define OP_BIZARROTOPAT 33000
+#define OP_BIZARROBOTTOMAT 33001
+#define OP_ABSTRACT 33002
+#define OP_SUPER 33003
+#define OP_SUPER_C 35051
+#define OP_FUNCTION 33004
+#define OP_LOCAL 33005
+#define OP_LABEL 33006
+#define OP_STRING 33007
+#define OP_INT16 33008
+#define OP_INT32 33009
+#define OP_DISPATCH 33010
+#define OP_USERFLAG 33011
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486939},
@@ -459,7 +470,7 @@ static const Op_Names op_names[]={
 {"/",8486940},
 {"ANHH",8389394},
 {"ARRIVED",8389124},
-{"Abstract",8683749},
+{"Abstract",8683754},
 {"Animate",8421516},
 {"AnimateDead",8421517},
 {"Arg1",8552571},
@@ -485,6 +496,10 @@ static const Op_Names op_names[]={
 {"BWEEP",8389397},
 {"Background",8683650},
 {"Bishop",8683746},
+{"Bizarro",8618213},
+{"BizarroBottomAt",8421609},
+{"BizarroSwap",10584294},
+{"BizarroTopAt",8421608},
 {"Broadcast",10518671},
 {"BroadcastAnd",8421520},
 {"BroadcastAndEx",8421521},
@@ -662,7 +677,8 @@ static const Op_Names op_names[]={
 {"Sound",8421571},
 {"Stealthy",8618096},
 {"Strength",9142354},
-{"Super",8487142},
+{"Super",8487147},
+{"SwapWorld",8421607},
 {"Synchronize",8421572},
 {"TAHTASHH",8389409},
 {"THMP_thmp",8389405},
@@ -789,5 +805,5 @@ static const Op_Names op_names[]={
 {"until",8683534},
 {"while",8683535},
 };
-#define N_OP_NAMES 339
+#define N_OP_NAMES 344
 #endif

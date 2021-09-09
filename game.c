@@ -549,7 +549,7 @@ static void global_examine(void) {
   }
 }
 
-static void list_objects_at(int xy) {
+static void list_objects_at(int xy,Uint32*pf,const char*s) {
   static const char*const dirs[8]={"E ","NE","N ","NW","W ","SW","S ","SE"};
   SDL_Event ev;
   SDL_Rect r;
@@ -560,7 +560,7 @@ static void list_objects_at(int xy) {
   Object*o;
   int i,j;
   if(xy<0 || xy>=64*64) return;
-  n=playfield[xy];
+  n=pf[xy];
   if(n==VOIDLINK) return;
   while(n!=VOIDLINK) t=n,count++,n=objects[n]->up;
   redraw:
@@ -571,7 +571,7 @@ static void list_objects_at(int xy) {
   r.y=8;
   r.h-=8;
   scrollbar(&scroll,r.h/8,count,0,&r);
-  snprintf(buf,255," %d objects at (%d,%d): ",count,(xy&63)+1,(xy/64)+1);
+  snprintf(buf,255," %d %sobjects at (%d,%d): ",count,s,(xy&63)+1,(xy/64)+1);
   SDL_LockSurface(screen);
   draw_text(0,0,buf,0xF7,0xF0);
   n=t;
@@ -751,8 +751,11 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
     case '^g': // Display global variables
       global_examine();
       return prev;
+    case '^n': // List objects (bizarro)
+      list_objects_at(number-65,bizplayfield,"bizarro ");
+      return prev;
     case '^o': // List objects
-      list_objects_at(number-65);
+      list_objects_at(number-65,playfield,"");
       return prev;
     case '^p': // Slow replay
       replay_time=replay_time?0:1;

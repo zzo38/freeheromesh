@@ -305,6 +305,13 @@ DotProduct
 -Queen
 -cut
 
+; Bizarro world
+,=Bizarro
+.,BizarroSwap
+SwapWorld
+BizarroTopAt
+BizarroBottomAt
+
 ; Inheritance
 -Abstract
 ,Super

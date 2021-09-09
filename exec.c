@@ -27,6 +27,7 @@ Value globals[0x800];
 Uint32 firstobj=VOIDLINK;
 Uint32 lastobj=VOIDLINK;
 Uint32 playfield[64*64]; // bottom-most object per cell
+Uint32 bizplayfield[64*64]; // bizarro world
 Uint8 pfwidth,pfheight;
 Sint8 gameover,key_ignored;
 Uint8 generation_number_inc;
@@ -2586,7 +2587,7 @@ static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value
 
 void annihilate(void) {
   Uint32 i;
-  for(i=0;i<64*64;i++) playfield[i]=VOIDLINK;
+  for(i=0;i<64*64;i++) playfield[i]=bizplayfield[i]=VOIDLINK;
   firstobj=lastobj=VOIDLINK;
   if(quiz_text) {
     sqlite3_free(quiz_text);

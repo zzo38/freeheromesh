@@ -18,6 +18,8 @@ typedef struct {
   Uint16 arg[4];
 } Cursor;
 
+static void*bizarro_vtab;
+
 static void find_first_usable_image(const Class*cl,sqlite3_context*cxt) {
   int i;
   if(cl->cflags&CF_GROUP) return;
@@ -364,6 +366,7 @@ static int vt0_close(sqlite3_vtab_cursor*cur) {
 static int vt0_connect(sqlite3*db,void*aux,int argc,const char*const*argv,sqlite3_vtab**vt,char**err) {
   sqlite3_declare_vtab(db,aux);
   *vt=sqlite3_malloc(sizeof(sqlite3_vtab));
+  if(*vt && argv[0][0]=='B') bizarro_vtab=*vt;
   return *vt?SQLITE_OK:SQLITE_NOMEM;
 }
 
@@ -635,6 +638,9 @@ static int vt1_objects_column(sqlite3_vtab_cursor*pcur,sqlite3_context*cxt,int n
     case 11: // DENSITY
       sqlite3_result_int(cxt,objects[cur->rowid]->density);
       break;
+    case 12: // BIZARRO
+      sqlite3_result_int(cxt,objects[cur->rowid]->oflags&OF_BIZARRO?1:0);
+      break;
   }
   return SQLITE_OK;
 }
@@ -663,7 +669,7 @@ static int vt1_objects_next(sqlite3_vtab_cursor*pcur) {
     // Find top/bottom at location
     cur->arg[1]=1;
     atxy:
-    cur->rowid=playfield[cur->arg[2]+cur->arg[3]*64-65];
+    cur->rowid=(cur->pVtab==bizarro_vtab?bizplayfield:playfield)[cur->arg[2]+cur->arg[3]*64-65];
     if(cur->rowid==VOIDLINK) goto nextxy;
     if(cur->arg[0]&0x0020) {
       while(cur->rowid!=VOIDLINK && objects[cur->rowid]->up!=VOIDLINK) cur->rowid=objects[cur->rowid]->up;
@@ -702,7 +708,10 @@ static int vt1_objects_next(sqlite3_vtab_cursor*pcur) {
     // This shouldn't happen
     return SQLITE_INTERNAL;
   }
-  if(!cur->eof && !objects[cur->rowid]->generation) goto again;
+  if(!cur->eof) {
+    if(!objects[cur->rowid]->generation) goto again;
+    if((objects[cur->rowid]->oflags&OF_BIZARRO)!=(cur->pVtab==bizarro_vtab?OF_BIZARRO:0)) goto again;
+  }
   return SQLITE_OK;
 }
 
@@ -922,6 +931,7 @@ static int vt1_objects_update(sqlite3_vtab*vt,int argc,sqlite3_value**argv,sqlit
     if(sqlite3_value_int(argv[7])<0 || sqlite3_value_int(argv[7])>=classes[z]->nimages) return SQLITE_CONSTRAINT_CHECK;
     id=objalloc(z);
     if(id==VOIDLINK) return SQLITE_CONSTRAINT_VTAB;
+    if(vt==bizarro_vtab) objects[id]->oflags|=OF_BIZARRO; else objects[id]->oflags&=~OF_BIZARRO;
     goto update;
   } else {
     // UPDATE
@@ -998,9 +1008,12 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"TRACE_ON",0,SQLITE_UTF8,"\x01",fn_trace_on,0,0);
   sqlite3_create_function(userdb,"XY",2,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_xy,0,0);
   sqlite3_create_function(userdb,"ZERO_EXTEND",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_zero_extend,0,0);
+  bizarro_vtab=""; // ensure that it is not null
   sqlite3_create_module(userdb,"CLASSES",&vt_classes,"CREATE TABLE `CLASSES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `EDITORHELP` TEXT, `HELP` TEXT,"
    "`INPUT` INT, `QUIZ` INT, `TRACEIN` INT, `TRACEOUT` INT, `GROUP` TEXT, `PLAYER` INT);");
   sqlite3_create_module(userdb,"MESSAGES",&vt_messages,"CREATE TABLE `MESSAGES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `TRACE` INT);");
   sqlite3_create_module(userdb,"OBJECTS",&vt_objects,"CREATE TABLE `OBJECTS`(`ID` INTEGER PRIMARY KEY, `CLASS` INT, `MISC1` INT, `MISC2` INT, `MISC3` INT,"
-   "`IMAGE` INT, `DIR` INT, `X` INT, `Y` INT, `UP` INT, `DOWN` INT, `DENSITY` INT HIDDEN);");
+   "`IMAGE` INT, `DIR` INT, `X` INT, `Y` INT, `UP` INT, `DOWN` INT, `DENSITY` INT HIDDEN, `BIZARRO` INT HIDDEN);");
+  sqlite3_create_module(userdb,"BIZARRO_OBJECTS",&vt_objects,"CREATE TABLE `OBJECTS`(`ID` INTEGER PRIMARY KEY, `CLASS` INT, `MISC1` INT, `MISC2` INT, `MISC3` INT,"
+   "`IMAGE` INT, `DIR` INT, `X` INT, `Y` INT, `UP` INT, `DOWN` INT, `DENSITY` INT HIDDEN, `BIZARRO` INT HIDDEN);");
 }

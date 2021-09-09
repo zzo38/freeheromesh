@@ -84,6 +84,10 @@ any name with : at first to ask the user for the value to use.
 '^g'
   Display values of global variables.
 
+'^n' <location>
+  List objects at the specified coordinates in the bizarro world, to
+  examine their values.
+
 '^o' <location>
   List objects at the specified coordinates, to examine their values.
 
