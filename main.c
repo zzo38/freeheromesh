@@ -212,6 +212,7 @@ static void load_level_index(void) {
 const char*load_level(int lvl) {
   // Load level by ID. Returns null pointer if successful, or an error message if it failed.
   long sz=0;
+  Uint16 of=0;
   unsigned char*buf=lvl>=0?read_lump(FIL_LEVEL,lvl,&sz):0;
   unsigned char*p=buf;
   unsigned char*end=buf+sz;
@@ -237,6 +238,7 @@ const char*load_level(int lvl) {
   level_version=p[0]|(p[1]<<8);
   level_code=p[2]|(p[3]<<8);
   p+=4;
+  if(*p&0x80) of=OF_BIZARRO;
   pfwidth=(*p++&63)+1;
   pfheight=(*p++&63)+1;
   while(*p && p<end) p++; // skip text for now
@@ -244,14 +246,16 @@ const char*load_level(int lvl) {
   if(p>=end) goto bad1;
   level_title=strdup(buf+6);
   if(!level_title) fatal("Allocation failed\n");
+  mru[0]=mru[1]=VOIDLINK;
+  restart:
   x=0;
   y=1;
   n=0;
-  mru[0]=mru[1]=VOIDLINK;
   for(;;) {
     if(n) {
       o=objalloc(objects[*mru]->class);
       if(o==VOIDLINK) goto bad3;
+      objects[o]->oflags=(objects[o]->oflags&~OF_BIZARRO)|of;
       objects[o]->image=objects[*mru]->image;
       objects[o]->misc1=objects[*mru]->misc1;
       objects[o]->misc2=objects[*mru]->misc2;
@@ -265,7 +269,11 @@ const char*load_level(int lvl) {
     } else {
       if(p>=end) goto bad1;
       z=*p++;
-      if(z==0xFF) break;
+      if(z==0xFF) {
+        if(!of) break;
+        of=0;
+        goto restart;
+      }
       if(z&0x20) x=*p++;
       if(z&0x10) y=*p++;
       if(z&0x40) x++;
@@ -276,6 +284,7 @@ const char*load_level(int lvl) {
         if(mru[n]==VOIDLINK) goto bad1;
         o=objalloc(objects[mru[n]]->class);
         if(o==VOIDLINK) goto bad3;
+        objects[o]->oflags=(objects[o]->oflags&~OF_BIZARRO)|of;
         objects[o]->image=objects[mru[n]]->image;
         objects[o]->misc1=objects[mru[n]]->misc1;
         objects[o]->misc2=objects[mru[n]]->misc2;
@@ -291,6 +300,7 @@ const char*load_level(int lvl) {
         i|=*p++<<8;
         o=objalloc(i&0x3FFF);
         if(o==VOIDLINK) goto bad3;
+        objects[o]->oflags=(objects[o]->oflags&~OF_BIZARRO)|of;
         if(n!=2) mru[n]=o;
         if(i&0x8000) {
           n=objects[o]->class;

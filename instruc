@@ -307,10 +307,8 @@ DotProduct
 
 ; Bizarro world
 ,=Bizarro
-.,BizarroSwap
+.BizarroSwap
 SwapWorld
-BizarroTopAt
-BizarroBottomAt
 
 ; Inheritance
 -Abstract

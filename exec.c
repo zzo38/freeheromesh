@@ -86,7 +86,8 @@ const unsigned char*value_string_ptr(Value v) {
 
 void pfunlink(Uint32 n) {
   Object*o=objects[n];
-  if(o->down==VOIDLINK) playfield[o->x+o->y*64-65]=o->up;
+  Uint32*pf=(o->oflags&OF_BIZARRO?bizplayfield:playfield);
+  if(o->down==VOIDLINK) pf[o->x+o->y*64-65]=o->up;
   else objects[o->down]->up=o->up;
   if(o->up!=VOIDLINK) objects[o->up]->down=o->down;
   o->down=o->up=VOIDLINK;
@@ -94,18 +95,19 @@ void pfunlink(Uint32 n) {
 
 void pflink(Uint32 n) {
   Object*o=objects[n];
+  Uint32*pf=(o->oflags&OF_BIZARRO?bizplayfield:playfield);
   int p=o->x+o->y*64-65;
   if(p<0) return;
-  if(playfield[p]==VOIDLINK) {
-    playfield[p]=n;
+  if(pf[p]==VOIDLINK) {
+    pf[p]=n;
   } else {
     Sint32 d=o->density;
-    Uint32 m=playfield[p];
+    Uint32 m=pf[p];
     Uint32 t=VOIDLINK;
     while(m!=VOIDLINK && objects[m]->density>=d) t=m,m=objects[m]->up;
     o->down=t;
     o->up=m;
-    if(t!=VOIDLINK) objects[t]->up=n; else playfield[p]=n;
+    if(t!=VOIDLINK) objects[t]->up=n; else pf[p]=n;
     if(m!=VOIDLINK) objects[m]->down=n;
   }
 }
@@ -212,7 +214,7 @@ void objtrash(Uint32 n) {
     }
   }
   animfree(o->anim);
-  if(o->down==VOIDLINK) playfield[o->x+o->y*64-65]=o->up;
+  if(o->down==VOIDLINK) (o->oflags&OF_BIZARRO?bizplayfield:playfield)[o->x+o->y*64-65]=o->up;
   else objects[o->down]->up=o->up;
   if(o->up!=VOIDLINK) objects[o->up]->down=o->down;
   if(!(o->oflags&OF_DESTROYED)) {
@@ -508,6 +510,7 @@ static void sink(Uint32 x,Uint32 y) {
 static void change_density(Uint32 n,Sint32 v) {
   Object*o=objects[n];
   Uint32 i;
+  if(o->oflags&OF_BIZARRO) return;
   if(v<o->density) {
     o->density=v;
     for(;;) {
@@ -686,6 +689,7 @@ static Uint32 create(Uint32 from,Uint16 c,Uint32 x,Uint32 y,Uint32 im,Uint32 d) 
   pflink(n);
   v=send_message(from,n,MSG_CREATE,NVALUE(0),NVALUE(0),NVALUE(0));
   if(o->oflags&OF_DESTROYED) return VOIDLINK;
+  if(o->oflags&OF_BIZARRO) return n;
   for(y=0;y<5;y++) for(x=0;x<5;x++) {
     xx=o->x+x-2; yy=o->y+y-2;
     if(xx<1 || xx>pfwidth || yy<1 || yy>pfheight) continue;
@@ -728,7 +732,7 @@ static Value destroy(Uint32 from,Uint32 to,Uint32 why) {
       // This object is not itself removed from the linked list, since it may be destroyed while enumerating all objects
     }
     o->oflags|=OF_DESTROYED;
-    if(why!=8 && !(o->oflags&OF_VISUALONLY)) {
+    if(why!=8 && !(o->oflags&(OF_VISUALONLY|OF_BIZARRO))) {
       // Not checking for stealth; stealth only applies to movement, not destruction
       for(yy=0;yy<5;yy++) for(xx=0;xx<5;xx++) {
         x=objects[to]->x+xx-2; y=objects[to]->y+yy-2;
@@ -765,10 +769,10 @@ static int move_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
     }
   }
   if(!(o->oflags&OF_BIZARRO) && (i=classes[o->class]->collisionLayers) && (xx=collisions_at(x,y)&i)) {
-    if((i=collide_with(xx,VOIDLINK,x,y,o->class))&0x01) return i&0x04?1:0;
+    if((i=collide_with(xx,n,x,y,o->class))&0x01) return i&0x04?1:0;
   }
   pfunlink(n);
-  if(!(o->oflags&((classes[o->class]->cflags&CF_COMPATIBLE?OF_VISUALONLY:0)|OF_STEALTHY))) {
+  if(!(o->oflags&((classes[o->class]->cflags&CF_COMPATIBLE?OF_VISUALONLY:0)|OF_STEALTHY|OF_BIZARRO))) {
     for(i=25;i>=0;i--) {
       xx=o->x+Xbit(i); yy=o->y+Ybit(i);
       if(xx<1 || xx>pfwidth || yy<1 || yy>pfheight) continue;
@@ -783,7 +787,7 @@ static int move_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
   o->distance+=abs(x-o->x)+abs(y-o->y);
   o->x=x;
   o->y=y;
-  if(!(o->oflags&((classes[o->class]->cflags&CF_COMPATIBLE?OF_VISUALONLY:0)|OF_STEALTHY))) {
+  if(!(o->oflags&((classes[o->class]->cflags&CF_COMPATIBLE?OF_VISUALONLY:0)|OF_STEALTHY|OF_BIZARRO))) {
     for(i=25;i>=0;i--) {
       xx=x+Xbit(i); yy=y+Ybit(i);
       if(xx<1 || xx>pfwidth || yy<1 || yy>pfheight) continue;
@@ -796,7 +800,7 @@ static int move_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
     }
   }
   pflink(n);
-  if(!(o->oflags&OF_VISUALONLY)) {
+  if(!(o->oflags&(OF_VISUALONLY|OF_BIZARRO))) {
     m=objects[n]->up;
     if(m!=VOIDLINK) {
       v=send_message(VOIDLINK,n,MSG_SUNK,NVALUE(0),NVALUE(0),NVALUE(0));
@@ -1152,6 +1156,93 @@ static void flush_class(Uint16 c) {
 static inline void flush_all(void) {
   if(current_key) all_flushed=255;
   flush_class(0);
+}
+
+static void set_bizarro(Uint32 n,Uint32 v) {
+  Object*o;
+  Uint8 b;
+  if(n==VOIDLINK) return;
+  o=objects[n];
+  if(o->oflags&OF_DESTROYED) return;
+  if(v) {
+    if(o->oflags&OF_BIZARRO) return;
+    pfunlink(n);
+    o->oflags|=OF_BIZARRO;
+    pflink(n);
+  } else {
+    if(!(o->oflags&OF_BIZARRO)) return;
+    if(b=classes[o->class]->collisionLayers) {
+      Uint32 m=obj_layer_at(b,o->x,o->y);
+      if(m!=VOIDLINK && (collide_with(b,n,o->x,o->y,o->class)&0x01)) return;
+    }
+    pfunlink(n);
+    o->oflags&=~OF_BIZARRO;
+    pflink(n);
+  }
+}
+
+void swap_world(void) {
+  Uint32 n;
+  int i,j,b;
+  if(!main_options['e']) for(i=0;i<64*pfheight;i++) {
+    n=playfield[i];
+    for(b=0;n!=VOIDLINK;) {
+      j=classes[objects[n]->class]->collisionLayers;
+      if(b&j) Throw("SwapWorld attempted while collisions are present");
+      b|=j;
+      n=objects[n]->up;
+    }
+  }
+  for(i=0;i<64*pfheight;i++) {
+    n=playfield[i];
+    playfield[i]=bizplayfield[i];
+    bizplayfield[i]=n;
+  }
+  for(n=0;n<nobjects;n++) if(objects[n]) objects[n]->oflags^=OF_BIZARRO;
+}
+
+static Uint32 v_bizarro_swap(Value x,Value y) {
+  Uint32 k,m,n;
+  Uint8 b,c;
+  if(x.t==TY_NUMBER && y.t==TY_NUMBER) {
+    if(x.u<1 || x.u>pfwidth || y.u<1 || y.u>pfheight) return 0x100;
+    b=c=0;
+    n=bizplayfield[x.u+y.u*64-65];
+    while(n!=VOIDLINK) {
+      c|=b&classes[objects[n]->class]->collisionLayers;
+      b|=classes[objects[n]->class]->collisionLayers;
+      n=objects[n]->up;
+    }
+    if(c) return c;
+    n=playfield[x.u+y.u*64-65];
+    while(n!=VOIDLINK) objects[n]->oflags|=OF_BIZARRO,n=objects[n]->up;
+    m=playfield[x.u+y.u*64-65]=bizplayfield[x.u+y.u*64-65];
+    bizplayfield[x.u+y.u*64-65]=n;
+    while(m!=VOIDLINK) objects[n]->oflags&=~OF_BIZARRO,m=objects[m]->up;
+    return 0;
+  } else {
+    m=v_object(x);
+    n=v_object(y);
+    if(m==VOIDLINK || n==VOIDLINK || m==n) return 0x100;
+    if(objects[m]->x!=objects[n]->x || objects[m]->y!=objects[n]->y) return 0x100;
+    if((objects[m]->oflags|objects[n]->oflags)&OF_DESTROYED) return 0x100;
+    if(!((objects[m]->oflags^objects[n]->oflags)&OF_BIZARRO)) return 0x100;
+    if(objects[n]->oflags&OF_BIZARRO) k=m,m=n,n=k;
+    if(b=classes[objects[m]->class]->collisionLayers) {
+      k=obj_layer_at(b,objects[m]->x,objects[m]->y);
+      if(k!=VOIDLINK && k!=n) {
+        c=collisions_at(objects[m]->x,objects[m]->y)&b;
+        if(collide_with(c,m,objects[m]->x,objects[m]->y,objects[m]->class)&0x01) return c;
+      }
+    }
+    pfunlink(m);
+    pfunlink(n);
+    objects[m]->oflags^=OF_BIZARRO;
+    objects[n]->oflags^=OF_BIZARRO;
+    pflink(m);
+    pflink(n);
+    return 0;
+  }
 }
 
 static inline Value v_broadcast(Uint32 from,Value c,Value msg,Value arg1,Value arg2,Value arg3,int s) {
@@ -2132,6 +2223,12 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_ASSASSINATE: NoIgnore(); destroy(obj,obj,8); break;
     case OP_ASSASSINATE_C: NoIgnore(); StackReq(1,0); i=v_object(Pop()); destroy(obj,i,8); break;
     case OP_BAND: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u&t2.u)); break;
+    case OP_BIZARRO: StackReq(0,1); if(o->oflags&OF_BIZARRO) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_BIZARRO_C: StackReq(1,1); GetFlagOf(OF_BIZARRO); break;
+    case OP_BIZARRO_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); set_bizarro(obj,t1.u); break;
+    case OP_BIZARRO_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); set_bizarro(v_object(Pop()),t1.u); break;
+    case OP_BIZARROSWAP: NoIgnore(); StackReq(2,1); t2=Pop(); t1=Pop(); i=v_bizarro_swap(t1,t2); Push(NVALUE(i)); break;
+    case OP_BIZARROSWAP_D: NoIgnore(); StackReq(2,0); t2=Pop(); t1=Pop(); v_bizarro_swap(t1,t2); break;
     case OP_BNOT: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(~t1.u)); break;
     case OP_BOR: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u|t2.u)); break;
     case OP_BROADCAST: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_broadcast(obj,t1,t2,t3,t4,NVALUE(0),0)); break;
@@ -2427,6 +2524,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_SUPER: i=code[1]; code=classes[i]->codes; ptr=get_message_ptr(i,msgvars.msg); if(ptr==0xFFFF) break; break;
     case OP_SUPER_C: i=code[1]; j=get_message_ptr(i,msgvars.msg); if(j!=0xFFFF) execute_program(classes[i]->codes,j,obj); break;
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
+    case OP_SWAPWORLD: NoIgnore(); swap_world(); break;
     case OP_SYNCHRONIZE: StackReq(2,0); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); animate_sync(obj,t1.u,t2.u); break;
     case OP_TARGET: StackReq(0,1); Push(NVALUE(v_target(obj)?1:0)); break;
     case OP_TARGET_C: StackReq(1,1); i=v_object(Pop()); Push(NVALUE(v_target(i)?1:0)); break;
@@ -2933,11 +3031,16 @@ const char*execute_turn(int key) {
   n=lastobj;
   while(n!=VOIDLINK) {
     o=objects[n];
-    if(o->arrived || o->departed) goto trig;
-    if(o->oflags&OF_MOVED) goto trig;
-    if(o->anim && (o->anim->status&ANISTAT_LOGICAL) && (o->anim->step[o->anim->lstep].flag&ANI_ONCE)) {
-      if(o->anim->ltime>=o->anim->step[o->anim->lstep].speed) goto trig;
-      if(clock>o->anim->step[o->anim->lstep].speed-o->anim->ltime) clock=o->anim->step[o->anim->lstep].speed-o->anim->ltime;
+    if(o->oflags&OF_BIZARRO) {
+      o->arrived=o->departed=0;
+      o->oflags&=~(OF_MOVING|OF_MOVED);
+    } else {
+      if(o->arrived || o->departed) goto trig;
+      if(o->oflags&OF_MOVED) goto trig;
+      if(o->anim && (o->anim->status&ANISTAT_LOGICAL) && (o->anim->step[o->anim->lstep].flag&ANI_ONCE)) {
+        if(o->anim->ltime>=o->anim->step[o->anim->lstep].speed) goto trig;
+        if(clock>o->anim->step[o->anim->lstep].speed-o->anim->ltime) clock=o->anim->step[o->anim->lstep].speed-o->anim->ltime;
+      }
     }
     n=o->prev;
   }

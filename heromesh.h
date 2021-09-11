@@ -278,6 +278,7 @@ void objtrash(Uint32 n);
 void annihilate(void);
 const char*execute_turn(int key);
 const char*init_level(void);
+void swap_world(void);
 
 // == game ==
 

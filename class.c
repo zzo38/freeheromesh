@@ -2035,6 +2035,7 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
         case OP_VISUALONLY: cl->oflags|=OF_VISUALONLY; break;
         case OP_STEALTHY: cl->oflags|=OF_STEALTHY; break;
         case OP_USERSTATE: cl->oflags|=OF_USERSTATE; break;
+        case OP_BIZARRO: cl->oflags|=OF_BIZARRO; break;
         case OP_SHOVABLE: cl->shovable=0x55; break;
         case OP_USERFLAG: class_user_flag(cl); break;
         case OP_ABSTRACT: cl->cflags|=CF_GROUP; break;

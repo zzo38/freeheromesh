@@ -359,6 +359,11 @@ Abstract
   of five numbers each, making a 5x5 matrix, where the centre means this
   object's location.
 
+Bizarro
+  Means that objects of this class created using the Create instruction
+  will be created in the bizarro world by default. (This has no effect on
+  objects placed in the level editor.)
+
 (Climb <number>)
   Define the Climb variable for this class.
 
@@ -836,6 +841,17 @@ Arrived : int32
   write a nonzero number with only the high bits set, then it will still
   be triggered but will be read back as zero.
 
+Bizarro : bool [c]
+  Set if this object is in the bizarro world. Objects in the bizarro world
+  are invisible and intangible, and mostly do not interact with other
+  objects. However, they can still be accessed/affected by anything that
+  references it directly, it is still possible to broadcast messages to
+  them, and they are still affected by most turn-based actions (although
+  not the compatible part of the trigger phase). Objects in the bizarro
+  world are effectively stealthy as well, so do not cause messages due to
+  being moved, created, or destroyed. In some circumstances, attempting
+  to change this flag will have no effect.
+
 Busy : bool
   If any object has either the Busy or UserSignal variable set, then the
   player input is blocked, and the turn may continue. Use this to control
@@ -851,7 +867,7 @@ Climb : int16/int32 [c]
 
 CollisionLayers : int8 [c] [ro]
   Any set bit means no other object with that same bit set in this field
-  may exist at the same location.
+  may exist at the same location. (There is no effect in bizarro world.)
 
 Compatible : bool [c] [ro]
   The compatibility flag. Class definitions imported from EKS Hero Mesh
@@ -1174,6 +1190,14 @@ band  ( in1 in2 -- out )
 
 (bit <numbers>)  ( -- number )
   Make a number with only the specified bits set, given numbers 0 to 31.
+
+BizarroSwap  ( x y | obj1 obj2 -- number ) **
+  Attempt to exchange either two objects (one in the bizarro world, one
+  not) at the same location or all objects at the specified location into
+  or out of the bizarro world. If it is successful, then the result is 0.
+  If unsuccessful due to CollisionLayers, then the result is the bits in
+  the CollisionLayers which are conflicting; if unsuccessful due to any
+  other reason then the result will be 256.
 
 bnot  ( in -- out )
   Bitwise NOT.
@@ -1740,6 +1764,10 @@ Super  ( ? -- ? )
   Same as Super but return to this code after it is finished.
 
 swap  ( x y -- y x )
+
+SwapWorld  ( -- ) **
+  Exchange the entire game with the bizarro world. Sometimes, this might
+  fail due to CollisionLayers bits; in this case, it is an error.
 
 Synchronize  ( slot startimage -- ) **
   Start a synchronized animation. Give the slot number of the animation,

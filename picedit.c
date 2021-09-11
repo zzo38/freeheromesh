@@ -1,5 +1,5 @@
 #if 0
-gcc ${CFLAGS:--s -O2} -c -Wno-multichar picedit.c `sdl-config --cflags`
+gcc ${CFLAGS:--s -O2} -c -Wno-multichar -Wno-unused-result picedit.c `sdl-config --cflags`
 exit
 #endif
 
