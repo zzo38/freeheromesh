@@ -12,6 +12,7 @@
   * "Goto message" instruction (?)
   * Returning a class from COLLIDE/COLLIDEBY to transform
   * Coordinate input (may be suitable for some kind of games)
+  * A way to change the order of objects execution
 * Editor
   * Mouse dragging
   * Level index editor

@@ -129,6 +129,8 @@
 ?.gameKey.tab: ^I
 ?.gameKey.alt.G: ^g
 ?.gameKey.alt.P: ^p
+?.gameKey.alt.leftbracket: select 'rs',-5;
+?.gameKey.alt.rightbracket: select 'rs',+5;
 
 ! Editor key bindings
 ?.editKey.1: select 'mr',0;

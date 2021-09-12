@@ -109,6 +109,10 @@ any name with : at first to ask the user for the value to use.
   Export a move list. The argument is a operating system command that
   will receive the move list (in the same format as above) on stdin.
 
+'rs' <number>
+  Adjust replay speed by the specified number (negative to make faster, or
+  positive to make slower; zero leaves it unchanged).
+
 
 === Editor commands ===
 
