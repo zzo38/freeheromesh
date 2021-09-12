@@ -207,6 +207,7 @@ static void save_level(void) {
      * misc data (variable size)
    Store/use MRU slot 0 if any bits of 0x70 set in flag byte; slot 1 otherwise
   */
+  Uint32*p=playfield;
   Uint8 x=0;
   Uint8 y=1;
   const Object*m[2]={0,0};
@@ -227,8 +228,9 @@ static void save_level(void) {
   if(level_title) sqlite3_str_appendall(str,level_title);
   sqlite3_str_appendchar(str,1,0);
   // Objects
+  again:
   for(i=0;i<64*64;i++) {
-    n=playfield[i];
+    n=p[i];
     while(n!=VOIDLINK) {
       save_obj(str,objects[n],m,x,y);
       x=objects[n]->x;
@@ -237,6 +239,15 @@ static void save_level(void) {
     }
   }
   save_obj(str,0,m,x,y);
+  if(p==playfield) {
+    p=bizplayfield;
+    for(i=0;i<64*64;i++) if(p[i]!=VOIDLINK) {
+      sqlite3_str_appendchar(str,1,0xFE);
+      x=0;
+      y=1;
+      goto again;
+    }
+  }
   sqlite3_str_appendchar(str,1,0xFF);
   // Level strings
   for(i=0;i<nlevelstrings;i++) {
@@ -748,6 +759,7 @@ static void add_object_at(int x,int y,MRU*m,int d) {
   n=objalloc(m->class);
   if(n==VOIDLINK) return;
   level_changed=1;
+  objects[n]->oflags&=~OF_BIZARRO;
   objects[n]->x=x;
   objects[n]->y=y;
   objects[n]->image=m->img;
@@ -798,6 +810,7 @@ static void fprint_misc(FILE*fp,Value v) {
 }
 
 static void export_level(const char*cmd) {
+  Uint32*p=playfield;
   int i;
   Uint32 n;
   Object*o;
@@ -811,8 +824,9 @@ static void export_level(const char*cmd) {
   fprintf(fp,"; Free Hero Mesh exported level ID=%d ORD=%d\n",level_id,level_ord);
   fprint_esc(fp,'@',level_title);
   fprintf(fp,"C %d\nD %d %d\n",level_code,pfwidth,pfheight);
+  again:
   for(i=0;i<64*64;i++) {
-    n=playfield[i];
+    n=p[i];
     while(n!=VOIDLINK) {
       o=objects[n];
       fprintf(fp,"%d %d $%s %d",o->x,o->y,classes[o->class]->name,o->image);
@@ -822,6 +836,15 @@ static void export_level(const char*cmd) {
       fprintf(fp," %d\n",o->dir);
       n=o->up;
     }
+  }
+  if(p==playfield) {
+    p=bizplayfield;
+    for(i=0;i<64*64;i++) if(p[i]!=VOIDLINK) {
+      fprintf(fp,"W\n");
+      goto again;
+    }
+  } else {
+    fprintf(fp,"W\n");
   }
   for(i=0;i<nlevelstrings;i++) fprint_esc(fp,'%',levelstrings[i]);
   pclose(fp);
@@ -1019,6 +1042,10 @@ static void import_level(const char*cmd) {
         if(!p || *p) goto bad;
         level_version=x;
         level_changed=0;
+        break;
+      case 'W':
+        if(!d) goto missd;
+        swap_world();
         break;
       case '@':
         free(level_title);
@@ -1453,6 +1480,10 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
     case '^u': // Add object (allow duplicates)
       if(prev) return prev;
       add_object_at(number&63?:64,number/64?:64,mru+curmru,0);
+      return 0;
+    case '^w': // Swap world
+      swap_world();
+      level_changed=1;
       return 0;
     case '^N': // New level
       if(level_nindex>0xFFFE) return 0;

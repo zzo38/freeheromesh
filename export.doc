@@ -11,6 +11,10 @@ one puzzle set to another one.
 
 * To edit it in a text editor.
 
+(In the first case, when duplicating the level within the same puzzle set,
+you can also just copy the .LVL lump. However, that will not work if you
+are copying between puzzle sets.)
+
 Each line is one record, and is terminated by a line feed. Everything in
 this file is case-sensitive.
 
@@ -36,6 +40,10 @@ V version
   This command never occurs in levels exported from Free Hero Mesh,
   although it can optionally occur in imported levels. If it is specified,
   then it sets the level version number.
+
+W
+  After all objects in the normal world, use this command to start the
+  objects in the bizarro world; you then need another W at the end.
 
 x y $class image misc1 misc2 misc3 dir
   Specify an object. Objects are listed starting from the top left corner,

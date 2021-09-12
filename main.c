@@ -238,7 +238,6 @@ const char*load_level(int lvl) {
   level_version=p[0]|(p[1]<<8);
   level_code=p[2]|(p[3]<<8);
   p+=4;
-  if(*p&0x80) of=OF_BIZARRO;
   pfwidth=(*p++&63)+1;
   pfheight=(*p++&63)+1;
   while(*p && p<end) p++; // skip text for now
@@ -269,9 +268,9 @@ const char*load_level(int lvl) {
     } else {
       if(p>=end) goto bad1;
       z=*p++;
-      if(z==0xFF) {
-        if(!of) break;
-        of=0;
+      if(z==0xFF) break;
+      if(z==0xFE) {
+        of^=OF_BIZARRO;
         goto restart;
       }
       if(z&0x20) x=*p++;

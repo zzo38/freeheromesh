@@ -142,6 +142,9 @@ any name with : at first to ask the user for the value to use.
   Add an object with the current MRU values to that location, even if
   there is already another object of the same class at that location.
 
+'^w'
+  Swap the normal world with the bizarro world.
+
 'em' <object>
   Edit the Misc/Dir of an existing object.
 

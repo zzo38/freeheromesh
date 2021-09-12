@@ -7,8 +7,6 @@
   * Numeric sounds (?)
 * Game engine features
   * Multiple connected objects moving as a unit
-  * Bizarro world
-  * Testing the deferred movement
   * String data
   * A ,PopUp command to use a popup with arguments starting from a mark
   * "Goto message" instruction (?)
@@ -48,3 +46,6 @@
   * Optional hypertext help
   * Compressed class definitions (?)
 * Option to auto display level titles
+* Testing
+  * Bizarro world
+  * Deferred movement
