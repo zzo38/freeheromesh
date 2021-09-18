@@ -1324,6 +1324,14 @@ static void edit_string(unsigned char**ps) {
             break;
         }
         goto redraw;
+      case SDL_MOUSEBUTTONDOWN:
+        if(ev.button.button==1 && ev.button.y>=24) {
+          if(c=ev.button.x>>3) c--;
+          i=(ev.button.y-24)>>3;
+          r=0;
+          while(r<63 && r<i && li[r+1]!=0xFFFF) r++;
+        }
+        goto redraw;
       case SDL_VIDEOEXPOSE:
         goto redraw;
     }
@@ -1451,6 +1459,12 @@ static int string_list(void) {
           case SDLK_DOWN: case SDLK_KP_PLUS: n++; break;
         }
         if(n<=0) n=0; else if(n>=nlevelstrings) n=nlevelstrings-1;
+        goto redraw;
+      case SDL_MOUSEBUTTONDOWN:
+        i=ev.button.y/8-scroll-1;
+        if(i<0 || i>=nlevelstrings) break;
+        n=i;
+        if(ev.button.button==3 && n<nlevelstrings) return n;
         goto redraw;
       case SDL_VIDEOEXPOSE:
         goto redraw;
