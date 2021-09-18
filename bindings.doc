@@ -149,6 +149,9 @@ any name with : at first to ask the user for the value to use.
 '^w'
   Swap the normal world with the bizarro world.
 
+'am' <class> <image> <misc1> <misc2> <misc3> <dir>
+  Add a MRU and select the added MRU.
+
 'em' <object>
   Edit the Misc/Dir of an existing object.
 

@@ -160,6 +160,7 @@
 ?.editClick.ctrl.left: select 'em',id from objects where x=$X and y=$Y and up is null;
 ?.editClick.alt.left: ^u
 ?.editClick.right: delete from objects where x=$X and y=$Y and up is null;
+?.editClick.ctrl.right: select 'am',class,image,misc1,misc2,misc3,dir from objects where x=$X and y=$Y and up is null;
 
 ! Global key bindings
 ?.?.kp_minus: select 'go',-(level()-1) where level()>1;

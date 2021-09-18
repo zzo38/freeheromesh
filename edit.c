@@ -1513,6 +1513,18 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
     case '^T': // Level title
       edit_string(&level_title);
       return 0;
+    case 'am': // Add MRU
+      if(argc<7) return prev;
+      for(x=1;x<7;x++) if(sqlite3_column_type(args,x)==SQLITE_NULL) return prev;
+      x=sqlite3_column_int(args,1)&0x3FFF;
+      if(!x) return prev;
+      y=sqlite3_column_int(args,2)&0xFF;
+      add_mru(x,y);
+      mru->misc1=UVALUE(sqlite3_column_int64(args,3),sqlite3_column_int64(args,3)>>32);
+      mru->misc2=UVALUE(sqlite3_column_int64(args,4),sqlite3_column_int64(args,4)>>32);
+      mru->misc3=UVALUE(sqlite3_column_int64(args,5),sqlite3_column_int64(args,5)>>32);
+      mru->dir=sqlite3_column_int(args,6)&7;
+      return prev;
     case 'em': // Edit Misc/Dir of object
       if(argc>1 && sqlite3_column_type(args,1)!=SQLITE_NULL) mru_edit_obj(sqlite3_column_int64(args,1));
       return 0;
