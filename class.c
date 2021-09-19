@@ -1185,6 +1185,9 @@ static int parse_pattern(int cla,int ptr,Hash*hash) {
           break;
         default: ParseError("Improper token in pattern\n");
       }
+    } else if(Tokenf(TF_FUNCTION)) {
+      cl->codes[ptr++]=OP_FUNCTION;
+      cl->codes[ptr++]=tokenv&0x3FFF;
     } else if(tokent==TF_OPEN) {
       nxttok();
       if(Tokenf(TF_MACRO) || !Tokenf(TF_NAME)) ParseError("Improper token in pattern\n");

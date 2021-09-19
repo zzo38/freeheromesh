@@ -69,6 +69,7 @@ static Value traced_obj;
 #define Xbit(a) ((a)%5-2)
 #define Ybit(a) (2-(a)/5)
 
+static void execute_program(Uint16*code,int ptr,Uint32 obj);
 static Value send_message(Uint32 from,Uint32 to,Uint16 msg,Value arg1,Value arg2,Value arg3);
 static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value arg3,Uint8 s);
 static Value destroy(Uint32 from,Uint32 to,Uint32 why);
@@ -1858,6 +1859,25 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
     case OP_ELSE:
       ptr--;
       while(code[ptr]==OP_ELSE) ptr=code[ptr+2];
+      break;
+    case OP_FUNCTION:
+      StackReq(0,2);
+      Push(OVALUE(n));
+      Push(NVALUE(d));
+      execute_program(classes[0]->codes,functions[code[ptr++]],obj);
+      StackReq(1,0);
+      v=Pop();
+      if(v.t==TY_NUMBER) {
+        d=v.u&7;
+      } else if(v.t==TY_MARK) {
+        goto fail;
+      } else if(v.t>TY_MAXTYPE) {
+        n=v_object(v);
+        x=objects[n]->x;
+        y=objects[n]->y;
+      } else {
+        Throw("Type mismatch");
+      }
       break;
     case OP_HEIGHT:
       if(playfield[x+y*64-65]==VOIDLINK || height_at(x,y)<=objects[obj]->climb) goto fail;

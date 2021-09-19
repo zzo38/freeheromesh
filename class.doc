@@ -2349,6 +2349,14 @@ with P* or ,P* or =P*):
   relative to the current direction (initially the Dir variable of the
   origin object) or absolute.
 
+<function>
+  Call a user-defined function, which should be ( obj dir -- result ),
+  and Self is the position from which the current matching started.
+  The obj is the currently matched object (which may be zero), and the
+  dir is the current direction. If the result is a number, then it sets
+  the direction; if a object, sets the current object and the current
+  location at that object's location; if a mark, the match fails.
+
 <message>
   Send the message to all objects at the current location. From is the
   position from which pattern matching started. Arg1 is the direction.
