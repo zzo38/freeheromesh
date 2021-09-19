@@ -977,6 +977,67 @@ Module(vt_objects,
   .xUpdate=vt1_objects_update,
 );
 
+static int vt1_inventory_index(sqlite3_vtab*vt,sqlite3_index_info*info) {
+  int i;
+  info->estimatedCost=16.0;
+  info->estimatedRows=16;
+  for(i=0;i<info->nConstraint;i++) if(info->aConstraint[i].usable && info->aConstraint[i].op==SQLITE_INDEX_CONSTRAINT_EQ && !info->aConstraint[i].iColumn) {
+    info->aConstraintUsage[i].omit=1;
+    info->aConstraintUsage[i].argvIndex=1;
+    info->idxFlags=SQLITE_INDEX_SCAN_UNIQUE;
+    info->estimatedCost=1.0;
+    info->estimatedRows=1;
+    break;
+  }
+  return SQLITE_OK;
+}
+
+static int vt1_inventory_next(sqlite3_vtab_cursor*pcur) {
+  Cursor*cur=(void*)pcur;
+  ++cur->rowid;
+  if(cur->unique || cur->rowid>=ninventory) cur->eof=1;
+  return SQLITE_OK;
+}
+
+static int vt1_inventory_filter(sqlite3_vtab_cursor*pcur,int idxNum,const char*idxStr,int argc,sqlite3_value**argv) {
+  Cursor*cur=(void*)pcur;
+  if(argc) {
+    if(sqlite3_value_type(*argv)==SQLITE_NULL) {
+      eof:
+      cur->eof=1;
+      return SQLITE_OK;
+    }
+    cur->rowid=sqlite3_value_int(*argv);
+    if(cur->rowid>=ninventory || cur->rowid<0) goto eof;
+    cur->unique=1;
+    cur->eof=0;
+    return SQLITE_OK;
+  } else {
+    cur->rowid=-1;
+    cur->unique=0;
+    cur->eof=0;
+  }
+  return vt1_inventory_next(pcur);
+}
+
+static int vt1_inventory_column(sqlite3_vtab_cursor*pcur,sqlite3_context*cxt,int n) {
+  Cursor*cur=(void*)pcur;
+  switch(n) {
+    case 0: sqlite3_result_int64(cxt,cur->rowid); break;
+    case 1: sqlite3_result_int(cxt,inventory[cur->rowid].class); break;
+    case 2: sqlite3_result_int(cxt,inventory[cur->rowid].image); break;
+    case 3: sqlite3_result_int(cxt,inventory[cur->rowid].value); break;
+  }
+  return SQLITE_OK;
+}
+
+Module(vt_inventory,
+  .xBestIndex=vt1_inventory_index,
+  .xColumn=vt1_inventory_column,
+  .xFilter=vt1_inventory_filter,
+  .xNext=vt1_inventory_next,
+);
+
 void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"BASENAME",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_basename,0,0);
   sqlite3_create_function(userdb,"CL",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_cl,0,0);
@@ -1016,4 +1077,5 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
    "`IMAGE` INT, `DIR` INT, `X` INT, `Y` INT, `UP` INT, `DOWN` INT, `DENSITY` INT HIDDEN, `BIZARRO` INT HIDDEN);");
   sqlite3_create_module(userdb,"BIZARRO_OBJECTS",&vt_objects,"CREATE TABLE `OBJECTS`(`ID` INTEGER PRIMARY KEY, `CLASS` INT, `MISC1` INT, `MISC2` INT, `MISC3` INT,"
    "`IMAGE` INT, `DIR` INT, `X` INT, `Y` INT, `UP` INT, `DOWN` INT, `DENSITY` INT HIDDEN, `BIZARRO` INT HIDDEN);");
+  sqlite3_create_module(userdb,"INVENTORY",&vt_inventory,"CREATE TABLE `INVENTORY`(`ID` INTEGER PRIMARY KEY, `CLASS` INT, `IMAGE` INT, `VALUE` INT);");
 }

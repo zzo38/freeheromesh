@@ -136,6 +136,11 @@ TEXT, "HELP" TEXT, "INPUT" INT, "QUIZ" INT, "TRACEIN" INT, "TRACEOUT" INT,
   TRACEOUT is true then it will trace messages sent by this class (if
   tracing is enabled).
 
+CREATE TABLE `INVENTORY`(`ID` INTEGER PRIMARY KEY, `CLASS` INT, `IMAGE`
+INT, `VALUE` INT);" *
+  This table contains the current inventory, and is read-only. It is not
+  meaningful in the editor.
+
 CREATE TABLE "MESSAGES"("ID" INTEGER PRIMARY KEY, "NAME" TEXT, "TRACE"
 INT); *
   The list of messages in the current puzzle set; mostly read-only. Only
