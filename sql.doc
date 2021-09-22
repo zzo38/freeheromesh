@@ -73,6 +73,10 @@ LOAD_LEVEL(level_id)
   Only valid when Free Hero Mesh is invoked with the -x switch. Loads
   the level with the specified ID number.
 
+MAX_LEVEL()
+  The number of levels in this puzzle set (equal to the maximum valid
+  level order number).
+
 MVALUE(number)
   Makes a game value of type 'message'.
 

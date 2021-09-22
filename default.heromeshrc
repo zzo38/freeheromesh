@@ -165,6 +165,8 @@
 ! Global key bindings
 ?.?.kp_minus: select 'go',-(level()-1) where level()>1;
 ?.?.kp_plus: select 'go',-(level()+1) where level()<max_level();
+?.?.shift.kp_minus: select 'go',-1;
+?.?.shift.kp_plus: select 'go',-max_level();
 ?.?.ctrl.G: select 'go',-:Go_To_Level where :Go_To_Level=cast(:Go_To_Level as int) and cast(:Go_To_Level as int)>0;
 ?.?.ctrl.Q: ^Q
 ?.?.ctrl.S: ^S
