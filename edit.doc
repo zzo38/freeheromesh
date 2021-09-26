@@ -1,0 +1,175 @@
+This file describes the Free Hero Mesh level editor. This file describes
+them in terms of the default key/mouse bindings; if they have been changed,
+then some things mentioned in this file might not apply.
+
+Each level consists of the following:
+
+* Level title: Push CTRL+T to edit it. It may contain one or more lines of
+text and may contain formatting codes too. During the game, CTRL+T will
+display this text (which you can use for whatever purposes you want to:
+the author's name, commentary, hints, etc).
+
+* Order number: The 1-based order number of this level in the puzzle set.
+(Currently there is no way to reorder the levels (other than by tampering
+with the LEVEL.IDX lump by yourself), but hopefully this feature will be
+added in future.) This is usually the number displayed as the "level
+number", and the number pad - and + access levels in this order.
+
+* ID number: The 0-based ID number of the level. This number is unique for
+levels within the same puzzle set, and does not change when the order of
+levels is changed.
+
+* Version number: Normally zero, and is incremented when the level is
+changed after a solution has been recorded, which causes the recorded
+solution to be considered invalid.
+
+* Code number: Normally zero, and has no use within Free Hero Mesh itself.
+This is a 16-bit number which you can use for your own use within the
+class codes. Push C to set this number.
+
+* Level strings: Zero or more level strings (which can have multiple lines
+of text and may contain formatting codes, including data). These are not
+directly accessible to class codes, although a Misc value of any object
+placed in the level can reference one of them, which allows class codes to
+display them and to extract data from them. Push E to display a list of
+the level strings and to edit them.
+
+* Grid: There are two grids, the main world and bizarro world; push W to
+exchange them. Only the main world is displayed. Push R to remove all
+objects and resize the level; at the prompt, type two numbers with "x" in
+between, e.g. "29x21". The maximum size is 64x64, and the minimum is 1x1.
+Objects cannot be created beyond the limits, either in the editor or
+during the game. Within each grid cell, there are zero or more objects
+in an order; some objects are in front of others (this is determined by
+the Density variable of the class; see class.doc for details).
+
+* Objects: The level contains objects, each of which is at a specific
+position in either of the two worlds; see below for more about objects.
+
+Of the above, the level title, order number, ID number, and version number
+have no effect on the game rules; class codes cannot access them.
+
+
+=== Object placement/MRU ===
+
+On the left side of the screen is the MRU list. Each MRU consists of a
+class, image of that class, Misc values, and Dir value. If the Misc values
+are not all zero, then * is displayed next to the MRU icon.
+
+If you push the space bar, then a list of classes is displayed. You can
+type in the class name (tab completion is also implemented), or you can
+use the mouse to select one. On the left shows the possible images for
+that class; you can select those by mouse or by left/right arrows. Push
+enter or click by middle button to return to the level editor screen and
+add the selected class and image to the MRU. If you click with the right
+button, it adds to the MRU without leaving this screen, in case you want
+to select multiples at once. The left button will only select the class on
+this screen to list the images without adding to the MRU.
+
+You can click on the MRU with the left button to select one; with a MRU is
+added, it automatically selects the added one. You can also select MRU by
+up/down arrows or by the numbers 1 to 9 to select any of the first nine.
+If you right click in the grid with the control key pushed, then it will
+add the clicked object to the MRU (and select it).
+
+Once the MRU is selected, you can click in the grid with the left button
+to add the object, or push return to set the properties of the selected
+MRU (the Misc1-Misc3 and Dir). Setting MRU properties will not affect any
+existing objects in the level, but will set the initial properties of any
+new objects placed with that MRU selected. Click in the grid with the
+right button to delete individual objects.
+
+Usually, objects cannot move into areas with no objects, so it will be
+necessary to add background objects to allow movement. If you push F then
+it fills the entire playfield with the current MRU; you can use this to
+easily add the background.
+
+You can also use SQL to add/remove/change/query objects. Push the F10 key
+for a prompt to enter SQL codes. See sql.doc for details about SQL.
+
+
+=== Object properties ===
+
+Each object has the following properties which can be set in the editor:
+
+* Class: The class of object; cannot be changed once the object is placed.
+
+* Image: The image. Some classes will have multiple images; one of the
+images is selected in the class/image selection menu.
+
+* Misc1/Misc2/Misc3: Each of these values is normally zero, and has no
+effect in Free Hero Mesh itself, although class codes may use them. The
+initial values in the level editor can be a 16-bit number, class, message,
+or level string. (At run time, 32-bit numbers are also possible, as are
+values of some other types, but the initial values specified in level
+editor are limited to 16-bit numbers, class, message, and strings.)
+
+* Dir: One of eight directions. Normally this does not need to be set,
+since it will be handled automatically, although you can also set it
+explicitly in the level editor. See class.doc for further details about
+the Dir variable.
+
+(There are other properties too, but those are set only in the class
+definition file or at run time by the class codes.)
+
+Pushing the return key in the main level editor screen edits them for a
+MRU; control and left click in the grid edits a single object.
+
+In the object properties screen, you can push F2 or H to display help
+text about what Misc values it expects; this is the text specified in
+the (EditorHelp) block in the class definition file.
+
+The following controls are available in this screen:
+
+* Push enter, return, or escape to exit this screen.
+
+* Push numbers 1-3 to edit Misc values. At the prompt, you can type in a
+number (if negative, 65536 is added automatically), a class name (with $
+at front), or a message name (user-defined messages have # at front, and
+built-in messages have no prefix). You can also use a key name with ' at
+front in which case it is converted to the appropriate number.
+
+* Push 4-6 to set Misc values to level strings. The list of level strings
+is then displayed, and you can select one from the menu, or add a new
+level string and add that one.
+
+* Push numbers on number pad to set direction. You can also push the +
+and - on number pad to adjust direction.
+
+* Push F1 or G to display the (Help) text for this class.
+
+* Push F2 or H to display the (EditorHelp) text for this class.
+
+
+=== Summary of default key/mouse bindings ===
+
+Keyboard:
+
+  CTRL+G    Go to level (won't auto save)
+  CTRL+N    Add new level (after last one)
+  CTRL+P    Switch to play game (won't auto save)
+  CTRL+Q    Quit (won't auto save)
+  CTRL+S    Save level
+  CTRL+T    Edit level title
+  CTRL+X    Clear level (delete all objects)
+  C         Set level code number
+  E         Edit level strings
+  F         Fill grid with current MRU
+  R         Clear and resize level
+  W         Exchange main/bizarro worlds
+  F1        Import level (replacing current level)
+  F2        Export level
+  F10       SQL
+  SPACE     Select class/image
+  RETURN    Edit Misc/Dir of current MRU
+  UP/DOWN   Select previous/next MRU
+  1-9       Select MRU
+
+Mouse (in grid):
+
+  LEFT        Add object
+  CTRL+LEFT   Edit Misc/Dir of object
+  ALT+LEFT    Add object (allow duplicate)
+  RIGHT       Delete object
+  CTRL+RIGHT  Copy object to MRU
+
