@@ -99,6 +99,10 @@ OVALUE(number)
 PICTURE_SIZE()
   Tell you the picture size.
 
+PIPE(command)
+  Execute a operating system shell command and return the output of that
+  command as a blob.
+
 READ_LUMP_AT(offset,ptr)
   Used internally; there is no way to use this in user SQL codes.
 

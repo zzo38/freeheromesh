@@ -305,6 +305,45 @@ static void fn_picture_size(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_result_int(cxt,picture_size);
 }
 
+static void fn_pipe(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  const char*name=sqlite3_value_text(*argv);
+  FILE*fp;
+  int i;
+  char buf[512];
+  sqlite3_str*str;
+  if(!name) return;
+  fp=popen(name,"r");
+  if(!fp) {
+    sqlite3_result_error(cxt,"Cannot open pipe",-1);
+    return;
+  }
+  str=sqlite3_str_new(userdb);
+  for(;;) {
+    i=fread(buf,1,512,fp);
+    if(i<=0) break;
+    sqlite3_str_append(str,buf,i);
+  }
+  pclose(fp);
+  i=sqlite3_str_errcode(str);
+  if(i==SQLITE_NOMEM) {
+    sqlite3_result_error_nomem(cxt);
+  } else if(i==SQLITE_TOOBIG) {
+    sqlite3_result_error_toobig(cxt);
+  } else if(i) {
+    sqlite3_result_error(cxt,"Unknown error",-1);
+  }
+  if(i) {
+    sqlite3_free(sqlite3_str_finish(str));
+    return;
+  }
+  if(i=sqlite3_str_length(str)) {
+    sqlite3_result_blob(cxt,sqlite3_str_finish(str),i,sqlite3_free);
+  } else {
+    sqlite3_free(sqlite3_str_finish(str));
+    sqlite3_result_zeroblob(cxt,0);
+  }
+}
+
 static void fn_read_lump_at(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_int64 of=sqlite3_value_int64(argv[0]);
   FILE*fp=sqlite3_value_pointer(argv[1],"http://zzo38computer.org/fossil/heromesh.ui#FILE_ptr");
@@ -1061,6 +1100,7 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"PFHEIGHT",0,SQLITE_UTF8,&pfheight,fn_pfsize,0,0);
   sqlite3_create_function(userdb,"PFWIDTH",0,SQLITE_UTF8,&pfwidth,fn_pfsize,0,0);
   sqlite3_create_function(userdb,"PICTURE_SIZE",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_picture_size,0,0);
+  sqlite3_create_function(userdb,"PIPE",1,SQLITE_UTF8,0,fn_pipe,0,0);
   sqlite3_create_function(userdb,"READ_LUMP_AT",2,SQLITE_UTF8,0,fn_read_lump_at,0,0);
   sqlite3_create_function(userdb,"RESOURCE",-1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_resource,0,0);
   sqlite3_create_function(userdb,"SIGN_EXTEND",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_sign_extend,0,0);

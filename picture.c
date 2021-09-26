@@ -1180,13 +1180,6 @@ void draw_popup(const unsigned char*txt) {
 
 int modal_draw_popup(const unsigned char*txt) {
   SDL_Event ev;
-#if 0
-  SDL_Rect r;
-  r.x=r.y=0;
-  r.w=screen->w;
-  r.h=4;
-  SDL_FillRect(screen,&r,0xFE);
-#endif
   set_cursor(XC_iron_cross);
   redraw:
   draw_popup(txt);
