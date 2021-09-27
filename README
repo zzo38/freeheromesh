@@ -112,8 +112,12 @@ file has a more elaborate description.
 
 * config.doc: Describes the configuration options for Free Hero Mesh.
 
+* edit.doc: Describes the use of the level editor.
+
 * export.doc: The level export format is described in this file; it can
 be used for importing as well as exporting.
+
+* game.doc: Describes the game play and the controls for the game play.
 
 * man6/heromesh.6: Man page; includes information about command-line
 arguments, environment variables, and link to further documentation.

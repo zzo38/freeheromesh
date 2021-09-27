@@ -1,0 +1,139 @@
+This file describes the controls for playing the game of Free Hero Mesh.
+This file describes them in terms of the default key/mouse bindings; if
+they have been changed, then some of the things mentioned in this file
+might not apply.
+
+The grid of objects is displayed in the right half of the screen, and the
+left side can be toggled (by pushing the TAB key) between displaying the
+replay list and displaying the inventory. See the below section about the
+margin area for more details.
+
+Play by pushing the keys for this game (normally, the arrows are used to
+move the player object; sometimes diagonals are also allowed, in which
+case the number pad can be used if num lock is off). This game does not
+depend on timing or randomness; you have as much time as you want to
+decide your next move. You can also rewind and replay moves; see the
+below section for details.
+
+The goal of this game depends on the specific puzzle set being played. In
+Hero Hearts, you have to catch all Hearts and then reach the Exit. In the
+left margin will display the win/lose state of the game.
+
+There are two features for helping you: If you click on any object with
+the middle button, help text is displayed with a description of that
+object. If you click with the right button, a list of objects at that
+location is displayed, and you can then view all variables of that object.
+
+You can push the ESC key to restart a level. You can also push the plus
+and minus on the number pad to skip levels, or CTRL+G allows you to access
+a specific level directly by its order number. Push CTRL+T to display the
+level title.
+
+
+=== Margin area ===
+
+At the top of the screen on the left side is displayed the numbers: the
+order number, the ID number, the version number, and the code number, in
+that order. Below that is the grid dimensions, and then the coordinates of
+where the mouse arrow is pointing at (if any). The level order number is
+red if you have not solved the level, green if you have solved the level,
+or yellow during the solution replay.
+
+There are two modes of the display, either the replay list or the
+inventory list.
+
+The replay list displays the blue current move number (initially zero),
+and below that will be the part of the move list, and the total number
+of recorded moves on the bottom (which will be green during the solution
+replay mode). The current move is marked by yellow ~~ mark, and the marked
+move is marked by purple ~~ mark.
+
+The inventory list displays the icons of the inventory items, with their
+number next to each one. Some puzzle sets will display information here
+such as which keys you have.
+
+
+=== Replay and solutions ===
+
+When you play moves, they are automatically recorded in the replay list.
+The replay list is saved with each level even when you access a different
+level, and is saved in the user cache database even if you quit and then
+run Free Hero Mesh again later.
+
+You can click on the replay list to rewind/advance to the specified move;
+you can also use the keys F1, F2, F3, F4 to replay a specified number of
+moves (1, 10, 100, or 1000), or the same keys with SHIFT to rewind that
+number of moves.
+
+You can set a mark by pushing F5. You can then push F6 or F7 to rewind or
+replay up to this point. The marks are also saved with each level and is
+saved in the user cache database too.
+
+You can also import/export move lists. Push CTRL+I to import or CTRL+X
+to export, and at the prompt type the operating system command which will
+send the move list to stdout or receive the move list from stdin, for
+example if you want the file called "Movelist" then you can type "cat
+Movelist" to read that file or "cat > Movelist" to write to that file.
+
+Push F8 to toggle solution replay. During solution replay, you cannot
+play your own moves, but can still rewind/replay as noted above, and you
+can push ALT+P for slow replay. During the slow replay, you can pause it
+by pushing ALT+P again, and you can push ALT+[ and ALT+] to adjust speed.
+
+If you solve a level yourself, you can push CTRL+S to record the solution.
+The solution will be recorded in the puzzle set once the user cache is
+flushed as described below.
+
+IMPORTANT NOTE: Saving the solutions here will only save them in the user
+cache database, not to the puzzle set file. To save them to the puzzle
+set file, you must invoke heromesh -f to flush the user cache. The local
+replay list and mark will not be saved in the puzzle set though; they are
+local to the user account.
+
+
+=== Summary of default key/mouse bindings ===
+
+(Below, "KP" means the "key pad" or "number pad".)
+
+Keyboard:
+
+  CTRL+D      Describe by keyboard
+  CTRL+E      Level editor
+  CTRL+G      Go to level
+  CTRL+I      Import move list
+  CTRL+Q      Quit
+  CTRL+S      Save solution
+  CTRL+T      Display level title
+  CTRL+X      Export move list
+  F1          Replay 1 move
+  F2          Replay 10 moves
+  F3          Replay 100 moves
+  F4          Replay 1000 moves
+  SHIFT+F1    Rewind 1 move
+  SHIFT+F2    Rewind 10 moves
+  SHIFT+F3    Rewind 100 moves
+  SHIFT+F4    Rewind 1000 moves
+  F5          Set mark
+  F6          Rewind to mark
+  F7          Replay to mark
+  F8          Toggle solution replay
+  F10         SQL queries
+  ESCAPE      Restart level
+  TAB         Toggle inventory/replay display
+  KP ENTER    Restart level
+  KP +        Next level
+  KP -        Previous level
+  SHIFT+KP +  Last level
+  SHIFT+KP -  Previous level
+  ALT+G       Inspect globals
+  ALT+P       Begin slow replay
+  ALT+[       Increase slow replay speed
+  ALT+]       Decrease slow replay speed
+
+Mouse (in grid):
+
+  MIDDLE       Describe topmost object
+  RIGHT        Inspect objects (main world)
+  SHIFT+RIGHT  Inspect objects (bizarro world)
+
+

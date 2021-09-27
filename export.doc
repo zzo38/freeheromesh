@@ -70,6 +70,6 @@ have no prefix if it is a standard message.
 
 A reference to a level string starts with % and is then the number.
 
-Nine of the misc values are written with spaces inside the value, although
+None of the misc values are written with spaces inside the value, although
 there are spaces around the value.
 

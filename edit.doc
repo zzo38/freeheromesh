@@ -1,6 +1,6 @@
 This file describes the Free Hero Mesh level editor. This file describes
 them in terms of the default key/mouse bindings; if they have been changed,
-then some things mentioned in this file might not apply.
+then some of the things mentioned in this file might not apply.
 
 Each level consists of the following:
 
@@ -48,6 +48,10 @@ position in either of the two worlds; see below for more about objects.
 
 Of the above, the level title, order number, ID number, and version number
 have no effect on the game rules; class codes cannot access them.
+
+IMPORTANT NOTE: Saving the levels here will only save them in the user
+cache database, not to the puzzle set file. To save them to the puzzle
+set file, you must invoke heromesh -f to flush the user cache.
 
 
 === Object placement/MRU ===
@@ -139,6 +143,23 @@ and - on number pad to adjust direction.
 * Push F1 or G to display the (Help) text for this class.
 
 * Push F2 or H to display the (EditorHelp) text for this class.
+
+
+=== Import/export ===
+
+You can import/export levels.
+
+Push F1 to import, and then at the prompt, type a operating system shell
+command which produces the level text in the exported format (in X window
+system, type "xclip -o" to import from the primary selection; you will
+need to install xclip to use this).
+
+Push F2 to export, and then at the prompt, type a operating system shell
+command which will accept the level text as input (in X window system,
+type "xclip" to export to the primary selection; you will need to install
+xclip to use this).
+
+See export.doc for the file format.
 
 
 === Summary of default key/mouse bindings ===
