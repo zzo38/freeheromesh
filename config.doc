@@ -25,7 +25,7 @@ See bindings.doc for key/mouse bindings.
   If true, saves changes to the level and solution files when the program
   terminates. If false (default), they are only saved to the user cache
   database; to copy the changes to the level and solution files, you must
-  use the .u command in SQL mode (-x).
+  use the .u command in SQL mode (-x), or use the -f switch.
 
 .codepage
   The path to the code page file. If not specified, then code pages other

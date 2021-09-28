@@ -49,9 +49,26 @@ position in either of the two worlds; see below for more about objects.
 Of the above, the level title, order number, ID number, and version number
 have no effect on the game rules; class codes cannot access them.
 
+After making the level, push CTRL+S to save and then CTRL+P to play; if
+you solve the level, you can then save the solution. If you want to modify
+the level, you can then push CTRL+E to edit it again, but if a solution
+was saved, the solution is now considered invalid, so you must play it
+again; if the sequence of moves that has been recorded is still a valid
+solution, then you can just push F4 to replay the same moves automatically
+(the move list will still be available, but not the solution).
+
+Solutions should be recorded before publishing the puzzle set, and you
+should test them with the -a switch (which can also be used for regression
+testing, in case you modified the class definitions and will need to
+ensure that it doesn't make any of the existing solutions invalid). A
+puzzle catalog server may also verify that the solutions are valid, and
+might reject the puzzle set if they aren't valid.
+
 IMPORTANT NOTE: Saving the levels here will only save them in the user
 cache database, not to the puzzle set file. To save them to the puzzle
-set file, you must invoke heromesh -f to flush the user cache.
+set file, you must invoke heromesh -f to flush the user cache. If the
+.autoSave resource is true, then it will do this automatically, and then
+you do not need to worry about this.
 
 
 === Object placement/MRU ===

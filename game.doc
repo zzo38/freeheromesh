@@ -24,6 +24,9 @@ the middle button, help text is displayed with a description of that
 object. If you click with the right button, a list of objects at that
 location is displayed, and you can then view all variables of that object.
 
+Different puzzle sets may have different game rules; you can read the
+class definition file to learn more precisely the rules of the game.
+
 You can push the ESC key to restart a level. You can also push the plus
 and minus on the number pad to skip levels, or CTRL+G allows you to access
 a specific level directly by its order number. Push CTRL+T to display the
@@ -82,13 +85,16 @@ by pushing ALT+P again, and you can push ALT+[ and ALT+] to adjust speed.
 
 If you solve a level yourself, you can push CTRL+S to record the solution.
 The solution will be recorded in the puzzle set once the user cache is
-flushed as described below.
+flushed as described below. If the .saveSolution resource is true, then
+it will automatically save the solution (although not necessarily to the
+puzzle set files).
 
 IMPORTANT NOTE: Saving the solutions here will only save them in the user
 cache database, not to the puzzle set file. To save them to the puzzle
 set file, you must invoke heromesh -f to flush the user cache. The local
 replay list and mark will not be saved in the puzzle set though; they are
-local to the user account.
+local to the user account. If the .autoSave resource is true, then it will
+do this automatically.
 
 
 === Summary of default key/mouse bindings ===
