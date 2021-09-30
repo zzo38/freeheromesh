@@ -108,6 +108,7 @@ void draw_cell(int x,int y);
 void draw_text(int x,int y,const unsigned char*t,int bg,int fg);
 int draw_text_line(int x,int y,unsigned char*t,int cur,Uint8**cp);
 void draw_key(int x,int y,int k,int bg,int fg);
+void draw_selection_rectangle(void);
 
 const char*screen_prompt(const char*txt);
 int screen_message(const char*txt);
@@ -291,6 +292,12 @@ void run_auto_test(void);
 void locate_me(int x,int y);
 
 // == edit ==
+
+typedef struct {
+  Uint8 x0,y0,x1,y1;
+} EditorRect;
+
+extern EditorRect editrect;
 
 void run_editor(void);
 void write_empty_level_set(FILE*);

@@ -127,6 +127,9 @@ any name with : at first to ask the user for the value to use.
 '^T'
   Edit the level title.
 
+'^Z'
+  Cancel selection rectangle.
+
 '^a' <location>
   Add an object with the current MRU values to that location, if there
   is not already another object of the same class there.
@@ -148,6 +151,12 @@ any name with : at first to ask the user for the value to use.
 
 '^w'
   Swap the normal world with the bizarro world.
+
+'^<' <location>
+  Set top corner of selection rectangle.
+
+'^>' <location>
+  Set bottom corner of selection rectangle.
 
 'am' <class> <image> <misc1> <misc2> <misc3> <dir>
   Add a MRU and select the added MRU.

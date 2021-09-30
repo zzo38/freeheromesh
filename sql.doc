@@ -57,6 +57,10 @@ HEROMESH_TYPE(value)
 HEROMESH_UNESCAPE(text)
   Converts escaped representation of a game string into text format.
 
+INRECT(x,y)
+  True if the coordinates are inside of the current selection rectangle.
+  If no selection rectangle is set, then the result is null.
+
 LEVEL()
   The one-based order number of the current level.
 
@@ -106,6 +110,18 @@ PIPE(command)
 READ_LUMP_AT(offset,ptr)
   Used internally; there is no way to use this in user SQL codes.
 
+RECT_X0()
+  X0 coordinate of selection rectangle.
+
+RECT_X1()
+  X1 coordinate of selection rectangle.
+
+RECT_Y0()
+  Y0 coordinate of selection rectangle.
+
+RECT_Y1()
+  Y1 coordinate of selection rectangle.
+
 RESOURCE(...)
   Given the list of resource names, read a value from the X resource
   manager. Returns null if there is no such resource value.
@@ -133,7 +149,8 @@ ZERO_EXTEND(number)
 
 === Tables ===
 
-Asterisks denote virtual tables.
+Asterisks denote virtual tables. (The only disk tables are USERCACHEDATA
+and USERCACHEINDEX; all others are eiter temporary or virtual.)
 
 CREATE TABLE "CLASSES"("ID" INTEGER PRIMARY KEY, "NAME" TEXT, "EDITORHELP"
 TEXT, "HELP" TEXT, "INPUT" INT, "QUIZ" INT, "TRACEIN" INT, "TRACEOUT" INT,
@@ -144,8 +161,8 @@ TEXT, "HELP" TEXT, "INPUT" INT, "QUIZ" INT, "TRACEIN" INT, "TRACEOUT" INT,
   TRACEOUT is true then it will trace messages sent by this class (if
   tracing is enabled).
 
-CREATE TABLE `INVENTORY`(`ID` INTEGER PRIMARY KEY, `CLASS` INT, `IMAGE`
-INT, `VALUE` INT);" *
+CREATE TABLE "INVENTORY"("ID" INTEGER PRIMARY KEY, "CLASS" INT, "IMAGE"
+INT, "VALUE" INT); *
   This table contains the current inventory, and is read-only. It is not
   meaningful in the editor.
 
@@ -170,6 +187,9 @@ INT, "DOWN" INT, "DENSITY" INT HIDDEN); *
 CREATE TEMPORARY TABLE "PICTURES"("ID" INTEGER PRIMARY KEY, "NAME" TEXT
 COLLATE NOCASE, "OFFSET" INT, "DEPENDENT" INT);
   List of all pictures available in this puzzle set.
+
+CREATE TABLE "PLAYFIELD"("X" INT, "Y" INT, "OBJ" INT, "BIZARRO_OBJ" INT); *
+  All playfield cells, with their coordinates and bottom objects.
 
 CREATE TABLE "USERCACHEDATA"("ID" INTEGER PRIMARY KEY, "FILE" INT,
 "LEVEL" INT, "NAME" TEXT COLLATE NOCASE, "OFFSET" INT, "DATA" BLOB,

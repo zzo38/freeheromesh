@@ -112,6 +112,24 @@ void draw_cell(int x,int y) {
   }
 }
 
+void draw_selection_rectangle(void) {
+  Uint16 pitch=screen->pitch;
+  Uint8*p=screen->pixels+left_margin+(editrect.x0-1)*picture_size+pitch*(editrect.y0-1)*picture_size;
+  int xr=(editrect.x1+1-editrect.x0)*picture_size-1;
+  int yr=(editrect.y1+1-editrect.y0)*picture_size-1;
+  int i;
+  if(p+xr+yr*pitch>=((Uint8*)screen->pixels)+screen->h*pitch+screen->w) return;
+  memset(p,0xF7,xr);
+  memset(p+yr*pitch,0xF7,xr);
+  for(i=1;i<yr;i++) {
+    p[i*pitch]=p[i*pitch+xr]=0xF7;
+    p[i*pitch+1]=p[i*pitch+xr-1]=0xF0;
+  }
+  memset(p+pitch+1,0xF0,xr-2);
+  memset(p+(yr-1)*pitch+1,0xF0,xr-2);
+  p[0]=p[xr]=p[yr*pitch]=p[yr*pitch+xr]=0xF8;
+}
+
 void draw_text(int x,int y,const unsigned char*t,int bg,int fg) {
   // To be called only when screen is locked!
   int len=strlen(t);

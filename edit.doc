@@ -162,6 +162,19 @@ and - on number pad to adjust direction.
 * Push F2 or H to display the (EditorHelp) text for this class.
 
 
+=== Selection rectangle ===
+
+You can use shift and the left/right mouse buttons to set the selection
+rectangle, and escape to cancel. If it is selected, then:
+
+* SHIFT+D deletes everything in that area, but leaves the rest of the
+game unchanged.
+
+* SHIFT+F fills it with the current MRU. (Existing objects at those
+locations will be retained; they are not deleted unless CollisionLayers
+bits cause conflicts.)
+
+
 === Import/export ===
 
 You can import/export levels.
@@ -202,12 +215,17 @@ Keyboard:
   RETURN    Edit Misc/Dir of current MRU
   UP/DOWN   Select previous/next MRU
   1-9       Select MRU
+  ESC       Cancel selection rectangle
+  SHIFT+D   Delete all objects in selection rectangle
+  SHIFT+F   Fill selection rectangle with current MRU
 
 Mouse (in grid):
 
-  LEFT        Add object
-  CTRL+LEFT   Edit Misc/Dir of object
-  ALT+LEFT    Add object (allow duplicate)
-  RIGHT       Delete object
-  CTRL+RIGHT  Copy object to MRU
+  LEFT         Add object
+  CTRL+LEFT    Edit Misc/Dir of object
+  ALT+LEFT     Add object (allow duplicate)
+  SHIFT+LEFT   Set top corner of selection rectangle
+  RIGHT        Delete object
+  CTRL+RIGHT   Copy object to MRU
+  SHIFT+RIGHT  Set bottom corner of selection rectangle
 

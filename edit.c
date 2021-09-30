@@ -17,6 +17,8 @@ exit
 #include "quarks.h"
 #include "cursorshapes.h"
 
+EditorRect editrect;
+
 typedef struct {
   Uint16 class;
   Uint8 img,dir;
@@ -324,6 +326,7 @@ static void redraw_editor(void) {
     if(x==curmru) draw_text(0,y,">",0xF0,0xFE);
     if(mru[x].misc1.u|mru[x].misc1.t|mru[x].misc2.u|mru[x].misc2.t|mru[x].misc3.u|mru[x].misc3.t) draw_text(picture_size+16,y,"*",0xF0,0xFB);
   }
+  if(editrect.x0 && editrect.x1) draw_selection_rectangle();
   SDL_UnlockSurface(screen);
   r.w=r.h=picture_size;
   r.x=8;
@@ -1513,6 +1516,24 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
     case '^T': // Level title
       edit_string(&level_title);
       return 0;
+    case '^Z': // Cancel rectangle
+      editrect.x0=editrect.y0=editrect.x1=editrect.y1=0;
+      return prev;
+    case '^<': // First corner
+      if((number&63?:64)>pfwidth || (number/64?:64)>pfheight) return prev;
+      editrect.x0=number&63?:64;
+      editrect.y0=number/64?:64;
+      goto setrect;
+    case '^>': // Second corner
+      if((number&63?:64)>pfwidth || (number/64?:64)>pfheight) return prev;
+      editrect.x1=number&63?:64;
+      editrect.y1=number/64?:64;
+      setrect:
+      if(!editrect.x1) editrect.x1=editrect.x0;
+      if(!editrect.y1) editrect.y1=editrect.y0;
+      if(editrect.x0>editrect.x1) x=editrect.x0,editrect.x0=editrect.x1,editrect.x1=x;
+      if(editrect.y0>editrect.y1) y=editrect.y0,editrect.y0=editrect.y1,editrect.y1=y;
+      return prev;
     case 'am': // Add MRU
       if(argc<7) return prev;
       for(x=1;x<7;x++) if(sqlite3_column_type(args,x)==SQLITE_NULL) return prev;
@@ -1561,6 +1582,7 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
       return 0;
     case 're': // Resize and clear
       if(argc<3) return 0;
+      editrect.x0=editrect.y0=editrect.x1=editrect.y1=0;
       x=sqlite3_column_int(args,1);
       y=sqlite3_column_int(args,2);
       if(x<1 || y<1 || x>64 || y>64) return 0;

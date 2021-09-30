@@ -1,4 +1,4 @@
-! Hero Mesh configuration settings
+! hERo Mesh configuration settings
 ?.screenWidth: 800
 ?.screenHeight: 600
 ?.imageSize: 24
@@ -156,11 +156,16 @@
 ?.editKey.return: ^e
 ?.editKey.f1: select 'im',:Import_Level;
 ?.editKey.f2: select 'ex',:Export_Level;
+?.editKey.escape: ^Z
+?.editKey.shift.D: delete from objects where inrect(x,y);
+?.editKey.shift.F: select '^a',xy(x,y) from playfield where inrect(x,y);
 ?.editClick.left: ^a
 ?.editClick.ctrl.left: select 'em',id from objects where x=$X and y=$Y and up is null;
 ?.editClick.alt.left: ^u
 ?.editClick.right: delete from objects where x=$X and y=$Y and up is null;
 ?.editClick.ctrl.right: select 'am',class,image,misc1,misc2,misc3,dir from objects where x=$X and y=$Y and up is null;
+?.editClick.shift.left: ^<
+?.editClick.shift.right: ^>
 
 ! Global key bindings
 ?.?.kp_minus: select 'go',-(level()-1) where level()>1;

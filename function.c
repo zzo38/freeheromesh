@@ -244,6 +244,13 @@ static void fn_heromesh_unescape(sqlite3_context*cxt,int argc,sqlite3_value**arg
   sqlite3_result_blob(cxt,u,un,sqlite3_free);
 }
 
+static void fn_inrect(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  int x=sqlite3_value_int(argv[0]);
+  int y=sqlite3_value_int(argv[1]);
+  if(!editrect.x0 || !editrect.y0) return;
+  sqlite3_result_int(cxt,(x>=editrect.x0 && x<=editrect.x1 && y>=editrect.y0 && y<=editrect.y1));
+}
+
 static void fn_level(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_result_int(cxt,*(Uint16*)sqlite3_user_data(cxt));
 }
@@ -361,6 +368,10 @@ static void fn_read_lump_at(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   } else {
     sqlite3_result_zeroblob64(cxt,0);
   }
+}
+
+static void fn_rect_x0(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  sqlite3_result_int(cxt,*(Uint8*)sqlite3_user_data(cxt));
 }
 
 static void fn_resource(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
@@ -1077,6 +1088,46 @@ Module(vt_inventory,
   .xNext=vt1_inventory_next,
 );
 
+static int vt1_playfield_index(sqlite3_vtab*vt,sqlite3_index_info*info) {
+  int i;
+  info->estimatedCost=32*32;
+  info->estimatedRows=32*64;
+  return SQLITE_OK;
+}
+
+static int vt1_playfield_next(sqlite3_vtab_cursor*pcur) {
+  Cursor*cur=(void*)pcur;
+  ++cur->rowid;
+  if((cur->rowid&63)>=pfwidth) cur->rowid=(cur->rowid&~63)+64;
+  if(cur->rowid/64>=pfheight) cur->eof=1;
+  return SQLITE_OK;
+}
+
+static int vt1_playfield_filter(sqlite3_vtab_cursor*pcur,int idxNum,const char*idxStr,int argc,sqlite3_value**argv) {
+  Cursor*cur=(void*)pcur;
+  cur->rowid=0;
+  cur->eof=0;
+  return SQLITE_OK;
+}
+
+static int vt1_playfield_column(sqlite3_vtab_cursor*pcur,sqlite3_context*cxt,int n) {
+  Cursor*cur=(void*)pcur;
+  switch(n) {
+    case 0: sqlite3_result_int(cxt,(cur->rowid&63)+1); break;
+    case 1: sqlite3_result_int(cxt,(cur->rowid/64)+1); break;
+    case 2: if(playfield[cur->rowid]!=VOIDLINK) sqlite3_result_int64(cxt,playfield[cur->rowid]); break;
+    case 3: if(bizplayfield[cur->rowid]!=VOIDLINK) sqlite3_result_int64(cxt,bizplayfield[cur->rowid]); break;
+  }
+  return SQLITE_OK;
+}
+
+Module(vt_playfield,
+  .xBestIndex=vt1_playfield_index,
+  .xColumn=vt1_playfield_column,
+  .xFilter=vt1_playfield_filter,
+  .xNext=vt1_playfield_next,
+);
+
 void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"BASENAME",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_basename,0,0);
   sqlite3_create_function(userdb,"CL",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_cl,0,0);
@@ -1085,6 +1136,7 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"HEROMESH_ESCAPE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_heromesh_escape,0,0);
   sqlite3_create_function(userdb,"HEROMESH_TYPE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_heromesh_type,0,0);
   sqlite3_create_function(userdb,"HEROMESH_UNESCAPE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_heromesh_unescape,0,0);
+  sqlite3_create_function(userdb,"INRECT",2,SQLITE_UTF8,0,fn_inrect,0,0);
   sqlite3_create_function(userdb,"LEVEL",0,SQLITE_UTF8,&level_ord,fn_level,0,0);
   sqlite3_create_function(userdb,"LEVEL_CACHEID",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,ptr0,fn_cacheid,0,0);
   sqlite3_create_function(userdb,"LEVEL_ID",0,SQLITE_UTF8,&level_id,fn_level,0,0);
@@ -1102,6 +1154,10 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"PICTURE_SIZE",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_picture_size,0,0);
   sqlite3_create_function(userdb,"PIPE",1,SQLITE_UTF8,0,fn_pipe,0,0);
   sqlite3_create_function(userdb,"READ_LUMP_AT",2,SQLITE_UTF8,0,fn_read_lump_at,0,0);
+  sqlite3_create_function(userdb,"RECT_X0",0,SQLITE_UTF8,&editrect.x0,fn_rect_x0,0,0);
+  sqlite3_create_function(userdb,"RECT_X1",0,SQLITE_UTF8,&editrect.x1,fn_rect_x0,0,0);
+  sqlite3_create_function(userdb,"RECT_Y0",0,SQLITE_UTF8,&editrect.y0,fn_rect_x0,0,0);
+  sqlite3_create_function(userdb,"RECT_Y1",0,SQLITE_UTF8,&editrect.y1,fn_rect_x0,0,0);
   sqlite3_create_function(userdb,"RESOURCE",-1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_resource,0,0);
   sqlite3_create_function(userdb,"SIGN_EXTEND",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_sign_extend,0,0);
   sqlite3_create_function(userdb,"SOLUTION_CACHEID",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,ptr1,fn_cacheid,0,0);
@@ -1118,4 +1174,5 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_module(userdb,"BIZARRO_OBJECTS",&vt_objects,"CREATE TABLE `OBJECTS`(`ID` INTEGER PRIMARY KEY, `CLASS` INT, `MISC1` INT, `MISC2` INT, `MISC3` INT,"
    "`IMAGE` INT, `DIR` INT, `X` INT, `Y` INT, `UP` INT, `DOWN` INT, `DENSITY` INT HIDDEN, `BIZARRO` INT HIDDEN);");
   sqlite3_create_module(userdb,"INVENTORY",&vt_inventory,"CREATE TABLE `INVENTORY`(`ID` INTEGER PRIMARY KEY, `CLASS` INT, `IMAGE` INT, `VALUE` INT);");
+  sqlite3_create_module(userdb,"PLAYFIELD",&vt_playfield,"CREATE TABLE `PLAYFIELD`(`X` INT, `Y` INT, `OBJ` INT, `BIZARRO_OBJ` INT);");
 }
