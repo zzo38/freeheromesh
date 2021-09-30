@@ -132,6 +132,10 @@ SIGN_EXTEND(number)
 SOLUTION_CACHEID()
   The user cache ID of the level file.
 
+SOLUTION_MOVE_LIST(boolean)
+  Returns the solution move list. If the boolean value is true, then it
+  always loads it even if the level version number doesn't match.
+
 TRACE_OFF()
   Disables tracing when called.
 

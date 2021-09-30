@@ -768,6 +768,9 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
     case 'go': // Select level
       begin_level(number);
       return 1;
+    case 'lo': // Locate me
+      locate_me(number&63?:64,number/64?:64);
+      return prev;
     case 'mi': // Move list import
       if(argc<2 || solution_replay) break;
       if(replay_pos) begin_level(level_id);

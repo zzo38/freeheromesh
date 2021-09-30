@@ -391,6 +391,23 @@ static void fn_sign_extend(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_result_int64(cxt,a-(a&0x80000000?0x100000000LL:0));
 }
 
+static void fn_solution_move_list(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  long sz;
+  int i=3;
+  unsigned char*d=read_lump(FIL_SOLUTION,level_id,&sz);
+  if(sz<4 || !d || ((!argc || !sqlite3_value_int(*argv)) && (d[0]|(d[1]<<8))!=level_version)) {
+    free(d);
+    return;
+  }
+  if(d[2]&1) {
+    while(i<sz && d[i]) i++;
+    i++;
+  }
+  if(d[2]&2) i+=8;
+  if(i<sz) sqlite3_result_blob(cxt,d+i,sz-i,SQLITE_TRANSIENT);
+  free(d);
+}
+
 static void fn_trace_on(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   const char*v=sqlite3_user_data(cxt);
   if(main_options['t']=*v) puts("[Tracing enabled]"); else puts("[Tracing disabled]");
@@ -1161,6 +1178,8 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"RESOURCE",-1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_resource,0,0);
   sqlite3_create_function(userdb,"SIGN_EXTEND",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_sign_extend,0,0);
   sqlite3_create_function(userdb,"SOLUTION_CACHEID",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,ptr1,fn_cacheid,0,0);
+  sqlite3_create_function(userdb,"SOLUTION_MOVE_LIST",0,SQLITE_UTF8,0,fn_solution_move_list,0,0);
+  sqlite3_create_function(userdb,"SOLUTION_MOVE_LIST",1,SQLITE_UTF8,0,fn_solution_move_list,0,0);
   sqlite3_create_function(userdb,"TRACE_OFF",0,SQLITE_UTF8,"",fn_trace_on,0,0);
   sqlite3_create_function(userdb,"TRACE_ON",0,SQLITE_UTF8,"\x01",fn_trace_on,0,0);
   sqlite3_create_function(userdb,"XY",2,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_xy,0,0);

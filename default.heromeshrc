@@ -126,6 +126,8 @@
 ?.gameKey.f6: ^<
 ?.gameKey.f7: ^>
 ?.gameKey.f8: ^s
+?.gameKey.shift.f8: select 'ml',solution_move_list(1);
+?.gameKey.f9: select 'lo',xy(o.x,o.y) from objects o,classes c on(o.class=c.id) where c.player;
 ?.gameKey.tab: ^I
 ?.gameKey.alt.G: ^g
 ?.gameKey.alt.P: ^p
@@ -165,6 +167,7 @@
 ?.editClick.right: delete from objects where x=$X and y=$Y and up is null;
 ?.editClick.ctrl.right: select 'am',class,image,misc1,misc2,misc3,dir from objects where x=$X and y=$Y and up is null;
 ?.editClick.shift.left: ^<
+?.editClick.shift.middle: values('^Z',null),('^<',xy($X,$Y));
 ?.editClick.shift.right: ^>
 
 ! Global key bindings

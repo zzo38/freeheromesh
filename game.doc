@@ -123,14 +123,16 @@ Keyboard:
   F6          Rewind to mark
   F7          Replay to mark
   F8          Toggle solution replay
+  SHIFT+F8    Copy solution
+  F9          Flash player position
   F10         SQL queries
-  ESCAPE      Restart level
+  ESC         Restart level
   TAB         Toggle inventory/replay display
   KP ENTER    Restart level
   KP +        Next level
   KP -        Previous level
   SHIFT+KP +  Last level
-  SHIFT+KP -  Previous level
+  SHIFT+KP -  First level
   ALT+G       Inspect globals
   ALT+P       Begin slow replay
   ALT+[       Increase slow replay speed
@@ -141,5 +143,4 @@ Mouse (in grid):
   MIDDLE       Describe topmost object
   RIGHT        Inspect objects (main world)
   SHIFT+RIGHT  Inspect objects (bizarro world)
-
 
