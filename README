@@ -167,6 +167,10 @@ for some users (e.g. to copy pictures/sounds between puzzle sets).
 
 * misc/sokoban.tar.gz: Example puzzle set.
 
+* smallxrm.c and smallxrm.h: This is an implementation of the X resource
+manager which is used in Free Hero Mesh but can also be used in other
+programs independently from Free Hero Mesh.
+
 (The files in the misc/ directory are not part of Free Hero Mesh nor are
 they needed by Free Hero Mesh, but are provided for convenience. They can
 safely be ignored or deleted if you are not using them.)
@@ -239,8 +243,8 @@ when trying to load the puzzle set. How to load it correctly?
  then you must also specify the directory name, in addition to the puzzle
  set base name.)
 
- (Later versions of Free Hero Mesh might add support for composite puzzle
- sets, although the current version does not have this.)
+ You may also use a composite puzzle set. In this case, use the -z switch
+ and pass the name including the file name suffix.
 
 ** How to access the NNTP?
 

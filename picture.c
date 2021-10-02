@@ -669,7 +669,7 @@ void load_pictures(void) {
   int i,j,n;
   if(!nam) fatal("Allocation failed\n");
   fprintf(stderr,"Loading pictures...\n");
-  fp=fopen(nam,"r");
+  fp=main_options['z']?composite_slice("xclass",1):fopen(nam,"r");
   if(!fp) fatal("Failed to open xclass file (%m)\n");
   sqlite3_free(nam);
   optionquery[1]=Q_altImage;

@@ -7,7 +7,7 @@ exit
   This program is part of Free Hero Mesh and is public domain.
 */
 
-#define _BSD_SOURCE
+//#define _GNU_SOURCE
 #define HEROMESH_MAIN
 #include "SDL.h"
 #include <limits.h>
@@ -66,9 +66,88 @@ static const char*globalclassname;
 static SDL_Cursor*cursor[77];
 static FILE*levelfp;
 static FILE*solutionfp;
+static FILE*compositefp;
 static sqlite3_int64 leveluc,solutionuc;
 static sqlite3_stmt*readusercachest;
 static char*hpath;
+
+typedef struct {
+  FILE*fp;
+  sqlite3_uint64 start,length,offset;
+} SliceCookie;
+
+static ssize_t slice_read(void*cookie,char*buf,size_t size) {
+  SliceCookie*d=cookie;
+  fseek(d->fp,d->start+d->offset,SEEK_SET);
+  if(size>d->length-d->offset) size=d->length-d->offset;
+  d->offset+=size=fread(buf,1,size,d->fp);
+  return size;
+}
+
+static int slice_seek(void*cookie,off64_t*offset,int whence) {
+  SliceCookie*d=cookie;
+  switch(whence) {
+    case SEEK_SET: d->offset=*offset; break;
+    case SEEK_CUR: d->offset+=*offset; break;
+    case SEEK_END: d->offset=d->length+*offset; break;
+  }
+  if(d->offset<0 || d->offset>d->length) return -1;
+  return fseek(d->fp,d->start+(*offset=d->offset),SEEK_SET);
+}
+
+static int slice_close(void*cookie) {
+  free(cookie);
+  return 0;
+}
+
+FILE*composite_slice(const char*suffix,char isfatal) {
+  FILE*fp;
+  SliceCookie*d;
+  int c,n;
+  sqlite3_int64 t;
+  rewind(compositefp);
+  look:
+  n=0;
+  if(*suffix>'Z') for(;;) {
+    c=fgetc(compositefp);
+    if(c==EOF) goto notfound;
+    if(!c) goto skip;
+    if(c=='.') break;
+  }
+  for(;;) {
+    c=fgetc(compositefp);
+    if(c==EOF) goto notfound;
+    if(!c) {
+      if(suffix[n]) goto skip; else goto found;
+    }
+    if(c==suffix[n]) {
+      n++;
+    } else {
+      do c=fgetc(compositefp); while(c>0);
+      goto skip;
+    }
+  }
+  skip:
+  t=fgetc(compositefp)<<16; t|=fgetc(compositefp)<<24;
+  t|=fgetc(compositefp); t|=fgetc(compositefp)<<8;
+  fseek(compositefp,t,SEEK_CUR);
+  goto look;
+  found:
+  t=fgetc(compositefp)<<16; t|=fgetc(compositefp)<<24;
+  t|=fgetc(compositefp); t|=fgetc(compositefp)<<8;
+  d=malloc(sizeof(SliceCookie));
+  if(!d) fatal("Allocation failed\n");
+  d->fp=compositefp;
+  d->start=ftell(compositefp);
+  d->length=t;
+  d->offset=0;
+  fp=fopencookie(d,"r",(cookie_io_functions_t){.read=slice_read,.seek=slice_seek,.close=slice_close});
+  if(!fp) fatal("Allocation failed\n");
+  return fp;
+  notfound:
+  if(isfatal) fatal("Cannot find '%s' lump in composite puzzle set file\n",suffix);
+  return 0;
+}
 
 static sqlite3_int64 reset_usercache(FILE*fp,const char*nam,struct stat*stats,const char*suffix) {
   sqlite3_stmt*st;
@@ -459,11 +538,67 @@ static void flush_usercache_1(int sol) {
 
 static void flush_usercache(void) {
   int e;
+  if(main_options['r']) return;
   fprintf(stderr,"Flushing user cache...\n");
   if(e=sqlite3_exec(userdb,"BEGIN;",0,0,0)) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
   flush_usercache_1(FIL_LEVEL);
   flush_usercache_1(FIL_SOLUTION);
   if(e=sqlite3_exec(userdb,"COMMIT;",0,0,0)) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
+  fprintf(stderr,"Done\n");
+}
+
+static void init_composite(void) {
+  FILE*fp=compositefp=fopen(basefilename,"r");
+  sqlite3_stmt*st;
+  sqlite3_int64 t1,t2;
+  int z;
+  struct stat fst;
+  if(!fp) fatal("Cannot open '%s' for reading: %m\n",basefilename);
+  fprintf(stderr,"Loading puzzle set...\n");
+  if(z=sqlite3_exec(userdb,"BEGIN;",0,0,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  if(z=sqlite3_prepare_v2(userdb,"SELECT `ID`, `TIME` FROM `USERCACHEINDEX` WHERE `NAME` = CHAR(?2)||'//'||?1;",-1,&st,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  basefilename=realpath(basefilename,0);
+  if(!basefilename) fatal("Cannot find real path of puzzle set: %m\n");
+  sqlite3_bind_text(st,1,basefilename,-1,0);
+  levelfp=composite_slice("level",1);
+  solutionfp=composite_slice("solution",1);
+  sqlite3_bind_int(st,2,'L');
+  z=sqlite3_step(st);
+  if(z==SQLITE_ROW) {
+    leveluc=sqlite3_column_int64(st,0);
+    t1=sqlite3_column_int64(st,1);
+  } else if(z==SQLITE_DONE) {
+    leveluc=t1=-1;
+  } else {
+    fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  }
+  sqlite3_reset(st);
+  sqlite3_bind_int(st,2,'S');
+  z=sqlite3_step(st);
+  if(z==SQLITE_ROW) {
+    solutionuc=sqlite3_column_int64(st,0);
+    t2=sqlite3_column_int64(st,1);
+  } else if(z==SQLITE_DONE) {
+    solutionuc=t2=-1;
+  } else {
+    fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  }
+  sqlite3_finalize(st);
+  if(stat(basefilename,&fst)) fatal("Unable to stat '%s': %m\n",basefilename);
+  if(!fst.st_size) fatal("File '%s' has zero size\n",basefilename);
+  if(fst.st_mtime>t1 || fst.st_ctime>t1) {
+    char*p=sqlite3_mprintf("L//%s",basefilename);
+    if(!p) fatal("Allocation failed\n");
+    leveluc=reset_usercache(levelfp,p,&fst,".LVL");
+    *p='S';
+    solutionuc=reset_usercache(solutionfp,p,&fst,".SOL");
+    sqlite3_free(p);
+  }
+  if(z=sqlite3_prepare_v3(userdb,"SELECT `OFFSET`, CASE WHEN ?3 THEN `USERSTATE` ELSE `DATA` END "
+   "FROM `USERCACHEDATA` WHERE `FILE` = ?1 AND `LEVEL` = ?2;",-1,SQLITE_PREPARE_PERSISTENT,&readusercachest,0)) {
+    fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
+  }
+  if(z=sqlite3_exec(userdb,"COMMIT;",0,0,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   fprintf(stderr,"Done\n");
 }
 
@@ -899,6 +1034,10 @@ int main(int argc,char**argv) {
     globalclassname=strrchr(basefilename,'/');
     globalclassname=globalclassname?globalclassname+1:basefilename;
   }
+  if(main_options['z']) {
+    if(main_options['p'] || main_options['f'] || main_options['e']) fatal("Switches are conflicting with -z\n");
+    main_options['r']=1;
+  }
   if(main_options['n']) {
     if(main_options['r']) fatal("Switches -r and -n are conflicting\n");
     main_options['x']=1;
@@ -927,13 +1066,14 @@ int main(int argc,char**argv) {
     run_picture_editor();
     return 0;
   }
+  if(main_options['z']) init_composite();
   load_pictures();
   if(main_options['T']) {
     printf("argv[0] = %s\n",argv[0]);
     test_mode();
     return 0;
   }
-  init_usercache();
+  if(!main_options['z']) init_usercache();
   if(main_options['n']) return 0;
   load_classes();
   load_level_index();
@@ -951,6 +1091,7 @@ int main(int argc,char**argv) {
   if(main_options['a']) run_auto_test();
   if(main_options['x']) {
     if(main_options['f']) {
+      if(main_options['r']) fatal("Cannot flush user cache; puzzle set is read-only\n");
       flush_usercache();
       return 0;
     }

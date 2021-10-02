@@ -730,7 +730,7 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       number=replay_mark-replay_pos;
       goto replay;
     case '^E': // Edit
-      return -2;
+      return main_options['r']?1:-2;
     case '^I': // Toggle inventory display
       side_mode^=1;
       return prev;

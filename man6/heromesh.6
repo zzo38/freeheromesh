@@ -11,7 +11,7 @@ It is fully deterministic and depends only on the sequence of inputs, not on tim
 Free Hero Mesh allows you to define your own classes of objects using the included programming language.
 .PP
 The "basename" above is the filename of the puzzle set without the extension.
-A puzzle set consists of four files.
+A puzzle set consists of four files (except composite puzzle sets).
 .PP
 The "resources" above is optional resources to override, in the X resource manager format.
 .SH OPTIONS
@@ -47,9 +47,13 @@ Enable message tracing.
 More verbose error logging.
 .IP -x
 Does not start the GUI; instead, accepts SQL statements from stdin.
+.IP -z
+Load a composite puzzle set.
+In this case, pass the full file name instead only the base name.
 .SH FILES
 A puzzle set consists of four files, with filename suffixes
 .BR ".class" ", " ".xclass" ", " ".level" ", and " ".solution" "."
+A composite puzzle set consists of a single file.
 .TP
 .I ~/.heromeshrc
 The configuration file, in X resource manager format.

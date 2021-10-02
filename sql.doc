@@ -215,7 +215,10 @@ CREATE TABLE "USERCACHEINDEX"("ID" INTEGER PRIMARY KEY, "NAME" TEXT,
   and TIME is the UNIX timestamp. If you want to delete a record, then
   you should also delete all records from USERCACHEDATA whose FILE value
   is the same as the ID value in this table for which it is deleted. You
-  should not touch it while Free Hero Mesh is running, though.
+  should not touch it while Free Hero Mesh is running, though. If it is a
+  composite puzzle set, then NAME consists of the full path prefixed by
+  L// for the level file or S// for the solution file (this will then
+  probably be followed by a third slash indicating the root directory).
 
 CREATE TEMPORARY TABLE "VARIABLES"("ID" INTEGER PRIMARY KEY, "NAME" TEXT);
   List of all global and local user variables used in the game.

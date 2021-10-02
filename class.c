@@ -2113,7 +2113,7 @@ void load_classes(void) {
   sqlite3_stmt*vst=0;
   fprintf(stderr,"Loading class definitions...\n");
   if(!nam) fatal("Allocation failed\n");
-  classfp=fopen(nam,"r");
+  classfp=main_options['z']?composite_slice("class",1):fopen(nam,"r");
   sqlite3_free(nam);
   if(!classfp) fatal("Cannot open class file '%s': %m\n",nam);
   glohash=calloc(HASH_SIZE,sizeof(Hash));

@@ -74,6 +74,7 @@ extern void*stack_protect_high;
 #define StackProtection() 0
 #endif
 
+FILE*composite_slice(const char*suffix,char isfatal);
 unsigned char*read_lump_or_userstate(int sol,int lvl,long*sz,char us);
 void write_lump(int sol,int lvl,long sz,const unsigned char*data);
 void write_userstate(int sol,int lvl,long sz,const unsigned char*data);

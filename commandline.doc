@@ -66,6 +66,10 @@ and <resources> is optional resources to override.
   the results to stdout. See sql.doc for the fuunctions and tables that
   may be used. Dot commands are also possible; see the below section.
 
+-z
+  Load a composite puzzle set. In this case, the <basename> should be the
+  full file name of the puzzle, including the suffix.
+
 
 === Dot commands ===
 
