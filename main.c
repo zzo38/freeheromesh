@@ -108,15 +108,16 @@ FILE*composite_slice(const char*suffix,char isfatal) {
   rewind(compositefp);
   look:
   n=0;
-  if(*suffix>'Z') for(;;) {
+  if(*suffix=='.') for(;;) {
     c=fgetc(compositefp);
     if(c==EOF) goto notfound;
     if(!c) goto skip;
-    if(c=='.') break;
+    if(c=='.') goto name;
   }
   for(;;) {
     c=fgetc(compositefp);
     if(c==EOF) goto notfound;
+    name:
     if(!c) {
       if(suffix[n]) goto skip; else goto found;
     }
@@ -560,8 +561,8 @@ static void init_composite(void) {
   basefilename=realpath(basefilename,0);
   if(!basefilename) fatal("Cannot find real path of puzzle set: %m\n");
   sqlite3_bind_text(st,1,basefilename,-1,0);
-  levelfp=composite_slice("level",1);
-  solutionfp=composite_slice("solution",1);
+  levelfp=composite_slice(".level",1);
+  solutionfp=composite_slice(".solution",1);
   sqlite3_bind_int(st,2,'L');
   z=sqlite3_step(st);
   if(z==SQLITE_ROW) {
