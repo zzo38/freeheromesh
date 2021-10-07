@@ -329,3 +329,16 @@ the same thing?
  don't know why it was designed that way. If you do not like to have
  both flags, then you do not have to use both.
 
+** What is the MIME type for Free Hero Mesh?
+
+ None is officially assigned, but unofficially, a composite puzzle set
+ can use the following MIME type:
+
+ application/freeheromesh.composite+hamarc
+
+ Optional parameters for this MIME type are "codepage" which is a IBM
+ code page number, and "version" which is the version of Free Hero Mesh
+ (same as the numbers of the {version} macro). Both are optional.
+
+ MIME types for the other file formats are not defined.
+
