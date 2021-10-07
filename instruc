@@ -233,6 +233,7 @@ FlushClass
 ,FlushObj
 GetInventory
 HeightAt
+HitMe
 IgnoreKey
 .,IntMove ; move without initializing Inertia
 .,JumpTo
@@ -265,6 +266,8 @@ PopUp
 .,SendEx ; send with three arguments
 SetInventory
 Sound
+Sweep
+SweepEx
 Synchronize
 ,Target
 Trace

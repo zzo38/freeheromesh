@@ -2161,6 +2161,67 @@ static void v_trigger_at(Uint32 from,Uint32 x,Uint32 y,Value v) {
   }
 }
 
+static void v_sweep(Uint32 from,Value arg3) {
+  Value arg2=Pop();
+  Value arg1=Pop();
+  Value v=Pop();
+  Uint8 hv=v_bool(Pop());
+  Uint16 msg=v.u;
+  Uint8 x0,y0,x1,y1,x,y;
+  Uint32 m,n;
+  if(v.t!=TY_MESSAGE) Throw("Type mismatch");
+  v=Pop(); if(v.t) Throw("Type mismatch"); y1=(v.s<0?0:v.s>pfheight?pfheight+1:v.s);
+  v=Pop(); if(v.t) Throw("Type mismatch"); x1=(v.s<0?0:v.s>pfheight?pfheight+1:v.s);
+  v=Pop(); if(v.t) Throw("Type mismatch"); y0=(v.s<0?0:v.s>pfheight?pfheight+1:v.s);
+  v=Pop(); if(v.t) Throw("Type mismatch"); x0=(v.s<0?0:v.s>pfheight?pfheight+1:v.s);
+  if((!x0 && !x1) || (!y0 && !y1) || (x0>pfwidth && x1>pfwidth) || (y0>pfheight && y1>pfheight)) return;
+  if(!x0) x0=1;
+  if(!x1) x1=1;
+  if(!y0) y0=1;
+  if(!y1) y1=1;
+  if(x0>pfwidth) x0=pfwidth;
+  if(y0>pfheight) y0=pfheight;
+  if(x1>pfwidth) x1=pfwidth;
+  if(y1>pfheight) y1=pfheight;
+  for(x=x0,y=y0;;) {
+    n=playfield[x+y*64-65];
+    while(n!=VOIDLINK) {
+      m=objects[n]->up;
+      send_message(from,n,msg,arg1,arg2,arg3);
+      n=m;
+    }
+    if(x==x1 && y==y1) break;
+    if(hv) {
+      if(y==y1) y=y0,x+=(x1>x0?1:-1); else y+=(y1>y0?1:-1);
+    } else {
+      if(x==x1) x=x0,y+=(y1>y0?1:-1); else x+=(x1>x0?1:-1);
+    }
+  }
+}
+
+static Uint32 v_hitme(Uint32 objE,Uint16 dir) {
+  Object*o;
+  Object*oE=objects[objE];
+  Uint32 hit=msgvars.arg3.u&~0x8000;
+  if(msgvars.from==VOIDLINK) return 0;
+  if(msgvars.arg3.t) Throw("Type mismatch in HitMe");
+  o=objects[msgvars.from];
+  if(dir>7) dir=(o->dir+dir)&7;
+  if(!(dir&1) && !(hit&0x122)) {
+    if(o->sharp[dir>>1]>oE->hard[(dir^4)>>1] && !v_bool(destroy(msgvars.from,objE,2))) hit|=0x8004;
+    if(oE->sharp[(dir^4)>>1]>o->hard[dir>>1] && !v_bool(destroy(objE,msgvars.from,1))) hit|=0x4C;
+  }
+  if(!(hit&0x344) && (oE->shovable&(1<<dir)) && o->inertia>=oE->weight) {
+    oE->inertia=o->inertia;
+    if(move_dir(msgvars.from,objE,dir)) {
+      if(!(oE->oflags&OF_DESTROYED)) o->inertia=oE->inertia;
+      hit|=0x8000;
+    }
+  }
+  msgvars.arg3.u=hit|7;
+  return (hit&0x8008)==0x8000?1:0;
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -2362,6 +2423,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_HEIGHT_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->height=t1.u; break;
     case OP_HEIGHT_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->height=t1.u&0xFFFF; break;
     case OP_HEIGHTAT: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(height_at(t1.u,t2.u))); break;
+    case OP_HITME: NoIgnore(); StackReq(1,1); t1=Pop(); Numeric(t1); i=v_hitme(obj,t1.u); break;
     case OP_IF: StackReq(1,0); if(v_bool(Pop())) ptr++; else ptr=code[ptr]; break;
     case OP_IGNOREKEY: if(current_key) key_ignored=all_flushed=1; break;
     case OP_IMAGE: StackReq(0,1); Push(NVALUE(o->image)); break;
@@ -2545,6 +2607,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_SUPER_C: i=code[1]; j=get_message_ptr(i,msgvars.msg); if(j!=0xFFFF) execute_program(classes[i]->codes,j,obj); break;
     case OP_SWAP: StackReq(2,2); t1=Pop(); t2=Pop(); Push(t1); Push(t2); break;
     case OP_SWAPWORLD: NoIgnore(); swap_world(); break;
+    case OP_SWEEP: StackReq(8,0); v_sweep(obj,NVALUE(0)); break;
+    case OP_SWEEPEX: StackReq(9,0); t1=Pop(); v_sweep(obj,t1); break;
     case OP_SYNCHRONIZE: StackReq(2,0); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); animate_sync(obj,t1.u,t2.u); break;
     case OP_TARGET: StackReq(0,1); Push(NVALUE(v_target(obj)?1:0)); break;
     case OP_TARGET_C: StackReq(1,1); i=v_object(Pop()); Push(NVALUE(v_target(i)?1:0)); break;

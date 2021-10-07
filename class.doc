@@ -1398,6 +1398,16 @@ gt  ( in1 in2 -- bool )
 HeightAt  ( x y -- height )
   Finds the greatest height among objects at the specified location.
 
+HitMe  ( dir -- bool ) **
+  Checks hardness/sharpness and shoving like is done by Move, subject to
+  From and Arg3. The direction is a direction relative to From, not to
+  Self. The result is 1 if shoving or sharpness is successful, or 0
+  otherwise. This will update Arg3,including at least setting the low
+  three bits; the new value of Arg3 may then be used as the return value
+  from HITBY. It is intended that this instruction is used inside of a
+  HITBY block, in case you want to do some of your own processing. The
+  Comaptible and VisualOnly flags of this object are not checked.
+
 IgnoreKey  ( -- )
   There is no effect outside of the input phase. During the input phase,
   indicates that this input is not part of the solution, so it will not
@@ -1768,6 +1778,19 @@ swap  ( x y -- y x )
 SwapWorld  ( -- ) **
   Exchange the entire game with the bizarro world. Sometimes, this might
   fail due to CollisionLayers bits; in this case, it is an error.
+
+Sweep  ( xstart ystart xend yend order msg arg1 arg2 -- )
+  Send a message to all objects in the specified rectangle, given its
+  corners. The coordinates are treated as signed, so you can safely make
+  a surrounding rectangle with a specified radius if wanted. If all of the
+  coordinates are out of range and not on opposite sides of the playfield,
+  no messages are sent. The order of sending the messages is starting at
+  the start coordinates and ending at the end cordinates, regardless of
+  which are greater than the others; if the order is true then it does
+  vertical movement first and if false then horizontal movement first.
+
+SweepEx  ( xstart ystart xend yend order msg arg1 arg2 arg3 -- )
+  Same as Sweep but three message arguments.
 
 Synchronize  ( slot startimage -- ) **
   Start a synchronized animation. Give the slot number of the animation,
