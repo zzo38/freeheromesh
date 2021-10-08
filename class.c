@@ -2112,6 +2112,7 @@ static void parse_order_block(void) {
   // 0x1000...0x10FF = Have flag
   // OP_RET = end of block
   Uint16 beg,ptr;
+  ParseError("(Not implemented yet)\n"); //TODO: remove this when it is implemented in exec.c too
   orders=malloc(0x4000*sizeof(Uint16));
   if(!orders) fatal("Allocation failed\n");
   nxttok();
@@ -2127,8 +2128,8 @@ static void parse_order_block(void) {
     if(ptr>=0x3FFD) ParseError("Out of order memory\n");
     nxttok();
     if(Tokenf(TF_MACRO|TF_COMMA|TF_EQUAL) || !Tokenf(TF_NAME)) ParseError("Unexpected token in (Order) block\n");
+    orders[++norders]=ptr;
     if(norders==beg) ParseError("Too many orders\n");
-    orders[norders++]=ptr;
     switch(tokenv) {
       case OP_INPUT: case OP_PLAYER:
         orders[ptr++]=tokenv;
@@ -2169,7 +2170,23 @@ static void parse_order_block(void) {
 }
 
 static void set_class_orders(void) {
-  //TODO
+  int i,j,k;
+  for(i=1;i<undef_class;i++) if(classes[i] && !(classes[i]->cflags&(CF_GROUP|CF_NOCLASS2))) {
+    for(j=1;j<norders;j++) {
+      k=orders[orders[j]];
+      switch(k) {
+        case 0x1000 ... 0x101F: if(classes[i]->misc4&(1UL<<(k&0x1F))) goto found; break;
+        case 0x1020 ... 0x103F: if(classes[i]->misc5&(1UL<<(k&0x1F))) goto found; break;
+        case 0x1040 ... 0x105F: if(classes[i]->misc6&(1UL<<(k&0x1F))) goto found; break;
+        case 0x1060 ... 0x107F: if(classes[i]->misc7&(1UL<<(k&0x1F))) goto found; break;
+        case 0x1080 ... 0x1087: if(classes[i]->collisionLayers&(1L<<(k&0x07))) goto found; break;
+        case OP_PLAYER: if(classes[i]->cflags&CF_PLAYER) goto found; break;
+        case OP_INPUT: if(classes[i]->cflags&CF_INPUT) goto found; break;
+      }
+      continue;
+      found: classes[i]->order=j; break;
+    }
+  }
 }
 
 void load_classes(void) {
@@ -2307,7 +2324,7 @@ void load_classes(void) {
         case OP_MISC5: define_user_flags(0x1020,0x103F); break;
         case OP_MISC6: define_user_flags(0x1040,0x105F); break;
         case OP_MISC7: define_user_flags(0x1060,0x107F); break;
-        case OP_COLLISIONLAYERS: define_user_flags(0x1C80,0x1C87); break;
+        case OP_COLLISIONLAYERS: define_user_flags(0x1080,0x1087); break;
         case OP_CODEPAGE:
           nxttok();
           if(tokent!=TF_INT || tokenv<1 || tokenv>65535) ParseError("Number from 1 to 65535 expected\n");
