@@ -50,6 +50,8 @@ char**stringpool;
 AnimationSlot anim_slot[8];
 Uint8 keymask[256/8];
 Uint16 array_size;
+Uint16*orders;
+Uint8 norders;
 
 #define HASH_SIZE 8888
 #define LOCAL_HASH_SIZE 5555
@@ -256,7 +258,7 @@ static Class*initialize_class(int n,int f,const char*name) {
   cl->temperature=cl->misc4=cl->misc5=cl->misc6=cl->misc7=0;
   cl->uservars=cl->hard[0]=cl->hard[1]=cl->hard[2]=cl->hard[3]=cl->nmsg=0;
   cl->oflags=cl->sharp[0]=cl->sharp[1]=cl->sharp[2]=cl->sharp[3]=0;
-  cl->shape=cl->shovable=cl->collisionLayers=cl->nimages=0;
+  cl->shape=cl->shovable=cl->collisionLayers=cl->nimages=cl->order=0;
   cl->cflags=f;
   if(undef_class<=n) undef_class=n+1;
 }
@@ -2105,6 +2107,71 @@ static void load_class_numbers(void) {
   free(data);
 }
 
+static void parse_order_block(void) {
+  // OP_MISC1, OP_MISC1_C, etc = properties (_C=reverse)
+  // 0x1000...0x10FF = Have flag
+  // OP_RET = end of block
+  Uint16 beg,ptr;
+  orders=malloc(0x4000*sizeof(Uint16));
+  if(!orders) fatal("Allocation failed\n");
+  nxttok();
+  if(tokent==TF_INT) {
+    if(tokenv<1 || tokenv>254) ParseError("Order number out of range\n");
+    beg=ptr=tokenv;
+    nxttok();
+  } else {
+    beg=ptr=128;
+  }
+  while(tokent!=TF_CLOSE) {
+    if(tokent!=TF_OPEN) ParseError("Open or close parenthesis expected\n");
+    if(ptr>=0x3FFD) ParseError("Out of order memory\n");
+    nxttok();
+    if(Tokenf(TF_MACRO|TF_COMMA|TF_EQUAL) || !Tokenf(TF_NAME)) ParseError("Unexpected token in (Order) block\n");
+    if(norders==beg) ParseError("Too many orders\n");
+    orders[norders++]=ptr;
+    switch(tokenv) {
+      case OP_INPUT: case OP_PLAYER:
+        orders[ptr++]=tokenv;
+        break;
+      case OP_USERFLAG:
+        tokenv=look_hash(glohash,HASH_SIZE,0x1000,0x10FF,0,"user flags");
+        if(!tokenv) ParseError("User flag ^%s not defined\n",tokenstr);
+        orders[ptr++]=tokenv;
+        break;
+      default: ParseError("Unexpected token in (Order) block\n");
+    }
+    nxttok();
+    while(tokent!=TF_CLOSE) {
+      if(Tokenf(TF_MACRO|TF_EQUAL) || !Tokenf(TF_NAME)) ParseError("Unexpected token in (Order) block\n");
+      if(ptr>=0x3FFE) ParseError("Out of order memory\n");
+      switch(tokenv) {
+        case OP_MISC1: case OP_MISC1_C:
+        case OP_MISC2: case OP_MISC2_C:
+        case OP_MISC3: case OP_MISC3_C:
+        case OP_MISC4: case OP_MISC4_C:
+        case OP_MISC5: case OP_MISC5_C:
+        case OP_MISC6: case OP_MISC6_C:
+        case OP_MISC7: case OP_MISC7_C:
+        case OP_TEMPERATURE: case OP_TEMPERATURE_C:
+        case OP_DENSITY: case OP_DENSITY_C:
+        case OP_XLOC: case OP_XLOC_C:
+        case OP_YLOC: case OP_YLOC_C:
+        case OP_IMAGE: case OP_IMAGE_C:
+          orders[ptr++]=tokenv;
+          break;
+      }
+      nxttok();
+    }
+    orders[ptr++]=OP_RET;
+  }
+  if(!norders) ParseError("Empty (Order) block\n");
+  orders=realloc(orders,ptr*sizeof(Uint16))?:orders;
+}
+
+static void set_class_orders(void) {
+  //TODO
+}
+
 void load_classes(void) {
   int i;
   int gloptr=0;
@@ -2248,6 +2315,10 @@ void load_classes(void) {
           nxttok();
           if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
           break;
+        case OP_ORDER:
+          if(norders) ParseError("Extra (Order) block\n");
+          parse_order_block();
+          break;
         default:
           ParseError("Invalid top level definition: %s\n",tokenstr);
       }
@@ -2288,5 +2359,6 @@ void load_classes(void) {
     array_data=malloc(array_size*sizeof(Value));
     if(!array_data) fatal("Array allocation failed\n");
   }
+  if(norders) set_class_orders();
   fprintf(stderr,"Done\n");
 }

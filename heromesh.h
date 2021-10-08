@@ -157,7 +157,7 @@ typedef struct {
   Uint16 uservars,oflags,nmsg;
   Uint16 sharp[4];
   Uint16 hard[4];
-  Uint8 cflags,shape,shovable,collisionLayers,nimages;
+  Uint8 cflags,shape,shovable,collisionLayers,nimages,order;
 } Class;
 
 typedef struct {
@@ -175,6 +175,8 @@ extern char**stringpool;
 extern AnimationSlot anim_slot[8];
 extern Uint8 keymask[256/8];
 extern Uint16 array_size;
+extern Uint16*orders;
+extern Uint8 norders;
 
 Uint16 get_message_ptr(int c,int m);
 void load_classes(void);
