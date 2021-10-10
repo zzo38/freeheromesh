@@ -25,6 +25,7 @@ static WaveSound*standardsounds;
 static Uint16 nstandardsounds;
 static WaveSound*usersounds;
 static Uint16 nusersounds;
+static Uint8**user_sound_names;
 static FILE*l_fp;
 static long l_offset,l_size;
 static float wavevolume=1.0;
@@ -35,7 +36,7 @@ static volatile Uint32 wavelen;
 
 static void audio_callback(void*userdata,Uint8*stream,int len) {
   if(wavesound) {
-    if(wavelen<len) {
+    if(wavelen<=len) {
       memcpy(stream,wavesound,wavelen);
       memset(stream+wavelen,0,len-wavelen);
       wavesound=0;
@@ -48,13 +49,14 @@ static void audio_callback(void*userdata,Uint8*stream,int len) {
   } else {
     memset(stream,0,len);
   }
+  //TODO: MML sounds
 }
 
 static int my_seek(SDL_RWops*cxt,int o,int w) {
   switch(w) {
     case RW_SEEK_SET: fseek(l_fp,l_offset+o,SEEK_SET); break;
     case RW_SEEK_CUR: fseek(l_fp,o,SEEK_CUR); break;
-    case RW_SEEK_END: fseek(l_fp,l_offset-o,SEEK_SET); break;
+    case RW_SEEK_END: fseek(l_fp,l_offset+l_size+o,SEEK_SET); break;
   }
   return ftell(l_fp)-l_offset;
 }
@@ -93,7 +95,7 @@ static void load_sound(FILE*fp,long offset,long size,WaveSound*ws) {
   l_offset=offset;
   l_size=size;
   if(!SDL_LoadWAV_RW(&my_rwops,0,&src,&buf,&len)) {
-    //fprintf(stderr,"[Cannot load wave audio at %ld (%ld bytes): %s]\n",offset,size,SDL_GetError());
+    if(main_options['v']) fprintf(stderr,"[Cannot load wave audio at %ld (%ld bytes): %s]\n",offset,size,SDL_GetError());
     return;
   }
   memset(&cvt,0,sizeof(SDL_AudioCVT));
@@ -109,8 +111,62 @@ static void load_sound(FILE*fp,long offset,long size,WaveSound*ws) {
   amplify_wave_sound(ws);
   return;
   fail:
-  //fprintf(stderr,"[Failed to convert wave audio at %ld (%ld bytes)]\n",offset,size);
+  if(main_options['v']) fprintf(stderr,"[Failed to convert wave audio at %ld (%ld bytes)]\n",offset,size);
   SDL_FreeWAV(buf);
+}
+
+static void load_sound_set(int is_user) {
+  const char*v;
+  char*nam;
+  FILE*fp;
+  Uint32 i,j;
+  if(is_user) {
+    if(main_options['z']) {
+      fp=composite_slice(".xclass",0);
+      if(!fp) return;
+    } else {
+      nam=sqlite3_mprintf("%s.xclass",basefilename);
+      if(!nam) return;
+      fp=fopen(nam,"r");
+      sqlite3_free(nam);
+      if(!fp) return;
+    }
+  } else {
+    optionquery[2]=Q_standardSounds;
+    v=xrm_get_resource(resourcedb,optionquery,optionquery,3);
+    if(!v) return;
+    fp=fopen(v,"r");
+    if(!fp) fatal("Cannot open standard sounds file (%m)\n");
+    nstandardsounds=50;
+    standardsounds=malloc(nstandardsounds*sizeof(WaveSoud));
+    if(!standardsounds) fatal("Allocation failed\n");
+    for(i=0;i<nstandardsounds;i++) standardsounds[i].data=0,standardsounds[i].len=0;
+  }
+  nam=malloc(256);
+  for(;;) {
+    for(i=0;;) {
+      if(i==255) goto done;
+      nam[i++]=j=fgetc(fp);
+      if(j==EOF) goto done;
+      if(!j) break;
+    }
+    i--;
+    j=fgetc(fp)<<16; j|=fgetc(fp)<<24; j|=fgetc(fp)<<0; j|=fgetc(fp)<<8;
+    l_offset=ftell(fp); l_size=j;
+    if(i>4 && nam[i-4]=='.' && nam[i-3]=='W' && nam[i-1]=='V' && (nam[i-2]=='A' || nam[i-2]=='Z')) {
+      nam[i-4]=0;
+      if(is_user) {
+        
+      } else {
+        
+      }
+      
+    }
+    fseek(fp,l_offset+l_size,SEEK_CUR);
+  }
+  done:
+  fclose(fp);
+  free(nam);
 }
 
 void init_sound(void) {
@@ -144,7 +200,10 @@ void init_sound(void) {
   }
   optionquery[2]=Q_mmlVolume;
   if(v=xrm_get_resource(resourcedb,optionquery,optionquery,3)) mmlvolume=fmin(strtod(v,0)*32767.0,32767.0);
-  
+  if(wavevolume>0.00001) {
+    load_sound_set(0); // Standard sounds
+    load_sound_set(1); // User sounds
+  }
   fprintf(stderr,"Done.\n");
   wavesound=0;
   SDL_PauseAudio(0);
@@ -175,4 +234,10 @@ void set_sound_effect(Value v1,Value v2) {
       break;
   }
   SDL_UnlockAudio();
+}
+
+Uint16 find_user_sound(const char*name) {
+  int i;
+  for(i=0;i<nusersounds;i++) if(!strcmp(name,user_sound_names[i])) return i+0x0400;
+  return 0x03FF;
 }
