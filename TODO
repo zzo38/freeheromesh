@@ -12,7 +12,6 @@
   * "Goto message" instruction (?)
   * Returning a class from COLLIDE/COLLIDEBY to transform
   * Coordinate input (may be suitable for some kind of games)
-  * A way to change the order of objects execution
 * Editor
   * Mouse dragging
   * Level index editor
@@ -31,6 +30,7 @@
 * Bugs
   * Figure out why the $SeekerCloser class doesn't seem to work properly
   * Level 232 of SUPERHRO puzzle set (the Lava shouldn't expand? why?)
+  * Animation stopping unexpectedly (until a key is pushed)
 * Display solution comments/timestamp
 * VCR mode
 * Command-line switch for batch import/export levels
@@ -49,3 +49,4 @@
   * Bizarro world
   * Deferred movement
   * Sweep, SweepEx, HitMe
+  * Overriding order of execution

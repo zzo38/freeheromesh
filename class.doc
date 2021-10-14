@@ -289,7 +289,9 @@ These are the global definitions in the class definition file.
   32 flags can be defined in this way.
 
 (Order <orders...>)
-  (Not fully implemented yet.)
+  See the section below about order of execution. Normally, order of
+  execution (for broadcasts and some other things) is in the reverse order
+  of creation; the (Order) block allows you to override this order.
 
 (Synchronize <slot> <length> <speed>)
   Define an animation slot for synchronized animation. The slot number can
@@ -2472,10 +2474,6 @@ Trace
 
 === Order of execution ===
 
-(The below describes a feature that is not implemented yet; currently
-only the syntax is implemented. When it is completed, this note will be
-removed and further descriptions will be added below.)
-
 You can specify the order of execution of objects by class by a global
 (Order) block. Inside of this block is a list of sub-lists; each sub-list
 is delimited by parentheses.
@@ -2497,6 +2495,11 @@ The order of execution is then first all objects not listed in the (Order)
 block, and then for each sub-list in the (Order) block, the objects that
 meet that criteria, in that order. (If it meets multiple criteria, only
 the first one that meets that criteria is used.)
+
+Note: If a value used for the criteria changes after the INIT or CREATE
+message of that object returns, then it can result in an unstable (but
+still fully deterministic) order when new objects are created. For this
+reason, you should only use criteria based on values which don't change.
 
 
 === Compatibility ===

@@ -2171,7 +2171,7 @@ static void parse_order_block(void) {
 
 static void set_class_orders(void) {
   int i,j,k;
-  for(i=1;i<undef_class;i++) if(classes[i] && !(classes[i]->cflags&(CF_GROUP|CF_NOCLASS2))) {
+  for(i=1;i<undef_class;i++) if(classes[i] && (classes[i]->nmsg || classes[0]->nmsg) || !(classes[i]->cflags&(CF_GROUP|CF_NOCLASS2))) {
     for(j=1;j<norders;j++) {
       k=orders[orders[j]];
       switch(k) {

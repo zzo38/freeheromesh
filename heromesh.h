@@ -144,6 +144,7 @@ int modal_draw_popup(const unsigned char*txt);
 #define OF_BIZARRO 0x0400
 #define OF_MOVED2 0x0800
 #define OF_MOVING 0x1000
+#define OF_ORDERED 0x2000
 
 typedef struct {
   const char*name;

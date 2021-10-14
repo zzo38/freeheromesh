@@ -669,6 +669,102 @@ static Uint8 collide_with(Uint8 b,Uint32 n,Uint8 x,Uint8 y,Uint16 c) {
   return r;
 }
 
+static void set_order(Uint32 obj) {
+  // To avoid confusing order of execution at the wrong time,
+  // calling this function is limited to only certain times.
+  Object*o=objects[obj];
+  Uint8 ord=classes[objects[obj]->class]->order;
+  Uint8 u;
+  Sint32 v0,v1;
+  Uint16 p=orders[ord]+1;
+  Uint32 n=firstobj;
+  for(;;) {
+    if(n==obj || n==VOIDLINK) goto notfound;
+    u=classes[objects[n]->class]->order;
+    if(u<ord) goto found;
+    if(u==ord) {
+      criteria: switch(orders[p]) {
+        case OP_RET: goto found;
+        case OP_DENSITY: v0=o->density; v1=objects[n]->density; goto compare;
+        case OP_DENSITY_C: v1=o->density; v0=objects[n]->density; goto compare;
+        case OP_IMAGE: v0=o->image; v1=objects[n]->image; goto compare;
+        case OP_IMAGE_C: v1=o->image; v0=objects[n]->image; goto compare;
+        case OP_MISC1:
+          if(o->misc1.t || objects[n]->misc1.t) Throw("Type mismatch in order criteria");
+          v0=o->misc1.s; v1=objects[n]->misc1.s; goto compare;
+        case OP_MISC1_C:
+          if(o->misc1.t || objects[n]->misc1.t) Throw("Type mismatch in order criteria");
+          v1=o->misc1.s; v0=objects[n]->misc1.s; goto compare;
+        case OP_MISC2:
+          if(o->misc2.t || objects[n]->misc2.t) Throw("Type mismatch in order criteria");
+          v0=o->misc2.s; v1=objects[n]->misc2.s; goto compare;
+        case OP_MISC2_C:
+          if(o->misc2.t || objects[n]->misc2.t) Throw("Type mismatch in order criteria");
+          v1=o->misc2.s; v0=objects[n]->misc2.s; goto compare;
+        case OP_MISC3:
+          if(o->misc3.t || objects[n]->misc3.t) Throw("Type mismatch in order criteria");
+          v0=o->misc3.s; v1=objects[n]->misc3.s; goto compare;
+        case OP_MISC3_C:
+          if(o->misc3.t || objects[n]->misc3.t) Throw("Type mismatch in order criteria");
+          v1=o->misc3.s; v0=objects[n]->misc3.s; goto compare;
+        case OP_MISC4:
+          if(o->misc4.t || objects[n]->misc4.t) Throw("Type mismatch in order criteria");
+          v0=o->misc4.s; v1=objects[n]->misc4.s; goto compare;
+        case OP_MISC4_C:
+          if(o->misc4.t || objects[n]->misc4.t) Throw("Type mismatch in order criteria");
+          v1=o->misc4.s; v0=objects[n]->misc4.s; goto compare;
+        case OP_MISC5:
+          if(o->misc5.t || objects[n]->misc5.t) Throw("Type mismatch in order criteria");
+          v0=o->misc5.s; v1=objects[n]->misc5.s; goto compare;
+        case OP_MISC5_C:
+          if(o->misc5.t || objects[n]->misc5.t) Throw("Type mismatch in order criteria");
+          v1=o->misc5.s; v0=objects[n]->misc5.s; goto compare;
+        case OP_MISC6:
+          if(o->misc6.t || objects[n]->misc6.t) Throw("Type mismatch in order criteria");
+          v0=o->misc6.s; v1=objects[n]->misc6.s; goto compare;
+        case OP_MISC6_C:
+          if(o->misc6.t || objects[n]->misc6.t) Throw("Type mismatch in order criteria");
+          v1=o->misc6.s; v0=objects[n]->misc6.s; goto compare;
+        case OP_MISC7:
+          if(o->misc7.t || objects[n]->misc7.t) Throw("Type mismatch in order criteria");
+          v0=o->misc7.s; v1=objects[n]->misc7.s; goto compare;
+        case OP_MISC7_C:
+          if(o->misc7.t || objects[n]->misc7.t) Throw("Type mismatch in order criteria");
+          v1=o->misc7.s; v0=objects[n]->misc7.s; goto compare;
+        case OP_TEMPERATURE: v0=o->temperature; v1=objects[n]->temperature; goto compare;
+        case OP_TEMPERATURE_C: v1=o->temperature; v0=objects[n]->temperature; goto compare;
+        case OP_XLOC: v0=o->x; v1=objects[n]->x; goto compare;
+        case OP_XLOC_C: v1=o->x; v0=objects[n]->x; goto compare;
+        case OP_YLOC: v0=o->y; v1=objects[n]->y; goto compare;
+        case OP_YLOC_C: v1=o->y; v0=objects[n]->y; goto compare;
+        compare:
+          if(v0==v1) {
+            p++;
+            goto criteria;
+          }
+          if(v0>v1) goto found;
+          break;
+        default: fatal("Internal confusion: Invalid order criteria (%d)\n",orders[p]);
+      }
+    }
+    n=objects[n]->next;
+  }
+  found:
+  // Now it has been found; insert this object previous to the found object, removing from its existing slot.
+  // (Objects are executed in reverse order, so previous in the linked list means executed next)
+  if(firstobj==obj) firstobj=o->next;
+  if(lastobj==obj) lastobj=o->prev;
+  if(o->prev!=VOIDLINK) objects[o->prev]->next=o->next;
+  if(o->next!=VOIDLINK) objects[o->next]->prev=o->prev;
+  o->prev=objects[n]->prev;
+  o->next=n;
+  objects[n]->prev=obj;
+  if(o->prev==VOIDLINK) firstobj=obj;
+  if(objects[n]->next==VOIDLINK) lastobj=n;
+  notfound:
+  objects[obj]->oflags|=OF_ORDERED;
+}
+
 static Uint32 create(Uint32 from,Uint16 c,Uint32 x,Uint32 y,Uint32 im,Uint32 d) {
   Uint32 m,n;
   int i,xx,yy;
@@ -703,6 +799,7 @@ static Uint32 create(Uint32 from,Uint16 c,Uint32 x,Uint32 y,Uint32 im,Uint32 d) 
     }
   }
   if(o->oflags&OF_DESTROYED) return VOIDLINK;
+  if(classes[objects[n]->class]->order) set_order(n);
   m=objects[n]->up;
   if(m!=VOIDLINK) {
     v=send_message(VOIDLINK,n,MSG_SUNK,NVALUE(0),NVALUE(0),v);
@@ -3150,6 +3247,7 @@ const char*execute_turn(int key) {
 }
 
 const char*init_level(void) {
+  Uint32 n;
   if(setjmp(my_env)) return my_error;
   clear_inventory();
   if(main_options['t']) {
@@ -3177,7 +3275,12 @@ const char*init_level(void) {
   vstackptr=0;
   move_number=0;
   current_key=0;
-  broadcast(VOIDLINK,0,MSG_INIT,NVALUE(0),NVALUE(0),NVALUE(0),0);
+  n=lastobj;
+  while(n!=VOIDLINK && !(objects[n]->oflags&OF_ORDERED)) {
+    send_message(VOIDLINK,n,MSG_INIT,NVALUE(0),NVALUE(0),NVALUE(0));
+    if(classes[objects[n]->class]->order && !(objects[n]->oflags&OF_DESTROYED)) set_order(n);
+    n=objects[n]->prev;
+  }
   broadcast(VOIDLINK,0,MSG_POSTINIT,NVALUE(0),NVALUE(0),NVALUE(0),0);
   if(gameover) return 0;
   return execute_turn(0);
