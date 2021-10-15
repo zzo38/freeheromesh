@@ -329,7 +329,7 @@ the same thing?
  don't know why it was designed that way. If you do not like to have
  both flags, then you do not have to use both.
 
-** What is the MIME type for Free Hero Mesh?
+** What is the MIME type and UTI for Free Hero Mesh?
 
  None is officially assigned, but unofficially, a composite puzzle set
  can use the following MIME type:
@@ -341,4 +341,13 @@ the same thing?
  (same as the numbers of the {version} macro). Both are optional.
 
  MIME types for the other file formats are not defined.
+
+ The UTI for a Free Hero Mesh composite puzzle set file is:
+
+ org.zzo38computer.freeheromesh.composite
+
+ This UTI conforms to the following other UTIs:
+
+ com.hamsterrepublic.lumped
+ public.data
 

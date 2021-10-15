@@ -6,7 +6,9 @@ Code page numbers are assigned according to the following:
 * Code page numbers are 16-bit numbers. Numbers 0, 65534, and 65535 are
 not used; they are reserved for internal use of the software.
 
-* IBM and Microsoft code page numbers can be used.
+* IBM and Microsoft code page numbers can be used. (Mostly, only IBM
+code page numbers should be used, but in some cases (described below)
+Microsoft code page numbers might be applicable.)
 
 * If IBM and Microsoft use the same code page number for a different
 character set, or if they use different code page numbers for the same
@@ -24,8 +26,10 @@ application-specific areas.
 
 Note that not all of the code page numbers according to the above are
 actually used in Free Hero Mesh; Free Hero Mesh only uses ASCII-based
-code pages with 8-bit characters. The full set of code page numbers may
-still be useful for other applications, though.
+code pages with 8-bit characters (although the implementation may be
+improved in future to allow multibyte code pages, but currently it
+doesn't). The full set of code page numbers may still be useful for
+other applications, though.
 
 
 === List of code page numbers ===
