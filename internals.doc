@@ -41,7 +41,9 @@ type in local or global variables.
 * Numbers more than TY_MAXTYPE (15) means it is a generation number of an
 object, and u is the index number of that object. In the internal code,
 VOIDLINK means no object; this is represented in a Value structure as
-t=0 (TY_NUMBER) and u=0.
+t=0 (TY_NUMBER) and u=0. (Generation numbers are internally used so that
+it can detect invalid references; once a reference becomes invalid, it
+can never become valid again.)
 
 
 === Opcodes ===
@@ -99,4 +101,45 @@ remain the same between versions of Free Hero Mesh; they often change.
 Some of these numbers, including the OP_ constants, are also used during
 parsing; some of them occur only as tokens and not in the compiled P-code,
 and some only occur in the compiled P-code and not as tokens.
+
+
+=== Text encoding ===
+
+The control codes for text formatting are:
+
+1-8 (\0-\7) = Colours
+10 (\n) = Line break
+11 (\l) = Left
+12 (\c) = Centre
+14 (\i) = Icon
+15 (\b) = Horizontal rule
+16 (\q) = Quiz button
+30 (\d) = Data
+31 (\x) = Next byte is a character to display as graphic
+
+Codes 32-255 are displayed as is, but characters 1-31 cannot be displayed
+as a graphic unless a \x escape is present.
+
+
+=== Solution format ===
+
+The .SOL lumps have the following format:
+
+* Level version number (16-bits small-endian): If this does not match the
+level version number in the .LVL lump, then the solution is considered to
+be invalid.
+
+* Flags (8-bits): Specifies which other fields are present.
+
+* Comment (null-terminated; only present if flag bit0 set): Normally
+contains a user name, but may be any arbitrary text.
+
+* Timestamp (64-bits small-endian; only present if flag bit1 set): The
+UNIX timestamp when the solution was recorded.
+
+* Move list: One byte per turn, being the key codes. (Use of numbers 0-7
+here is reserved for future use; they are not valid key codes.)
+
+(Free Hero Mesh currently ignores the comment and time stamp, although
+this might change in a future version of Free Hero Mesh.)
 

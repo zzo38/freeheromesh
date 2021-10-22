@@ -46,7 +46,7 @@ one just handles the input and display, and solution replay, and any move
 which is made calls exec.c to execute the mode. It contains one function
 (locate_me) which is called by exec.c.
 
-instruc/instruc.h/instruc.js: The "instruc" file contains a list of the
+instruc,instruc.h,instruc.js: The "instruc" file contains a list of the
 keywords and internal operator names used in the class definitions. Some
 of these are only used internally, although most are available directly
 as keywords. Many are also opcodes in the compiled P-code, although some
@@ -71,11 +71,11 @@ graphics on the screen, including icons and text. It also contains the
 code for loading icons, for displaying popup messages, and scrollbars.
 Loading fonts for code pages are also included in this file.
 
-quarks/quarks.h/quarks.js: The "quarks" file contains names of predefined
+quarks,quarks.h,quarks.js: The "quarks" file contains names of predefined
 quarks for use with the resource manager. The quarks.js program converts
 quarks into quarks.h.
 
-smallxrm.c/smallxrm.h: An implementation of the X resource manager. This
+smallxrm.c,smallxrm.h: An implementation of the X resource manager. This
 can be used independently from Free Hero Mesh.
 
 sound.c: Implements sound effects. Also deals with loading sound effects,
@@ -98,5 +98,7 @@ Free Hero Mesh uses the PC character set. All contributions shall use this
 character set (of which ASCII is a subset). (Exception: Documentation
 written in languages other than English may use whatever character set is
 appropriate for that document.)
+
+See internals.doc for some details about internal working.
 
 
