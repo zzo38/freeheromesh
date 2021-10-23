@@ -66,6 +66,13 @@ any name with : at first to ask the user for the value to use.
 '^>'
   Replay to mark.
 
+'^-'
+  Delete one move.
+
+'^+'
+  Toggle insertion mode. Insertion mode is automatically reset when
+  restarting a level or when accessing a different level.
+
 '^I'
   Toggle the inventory/move-list display.
 

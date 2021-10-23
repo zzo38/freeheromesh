@@ -32,6 +32,7 @@ static Uint8 should_record_solution;
 static Uint8 replay_speed;
 static Uint8 replay_time;
 static Uint8 solved;
+static Uint8 inserting,saved_inserting;
 
 static void record_solution(void);
 
@@ -139,7 +140,7 @@ static void redraw_game(void) {
       if(y+24>screen->h) break;
       if(x>=0 && x<replay_count) draw_key(16,y,replay_list[x],0xF8,0xFB);
       if(x==replay_count) draw_key(16,y,1,0xF0,0xF8);
-      if(x==replay_pos) draw_text(0,y,"~~",0xF0,0xFE);
+      if(x==replay_pos) draw_text(0,y,inserting?"I~":"~~",0xF0,0xFE);
       if(x==replay_mark) draw_text(32,y,"~~",0xF0,0xFD);
     }
     SDL_UnlockSurface(screen);
@@ -309,6 +310,7 @@ static void begin_level(int id) {
   inputs_count=0;
   replay_pos=0;
   solved=0;
+  inserting=0;
   t=load_level(id)?:init_level();
   load_replay();
   if(t) {
@@ -697,6 +699,7 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       inputs[inputs_count++]=number;
       return 0;
     case '+ ': replay: // Replay
+      saved_inserting=inserting; inserting=0;
       replay_time=0;
       if(number>replay_count-replay_pos) number=replay_count-replay_pos;
       if(number<=0) return prev;
@@ -708,6 +711,7 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       inputs_count+=number;
       return 0;
     case '- ': // Rewind
+      saved_inserting=inserting;
       number=replay_pos-number;
       if(number<0) number=0;
       //fallthru
@@ -729,6 +733,17 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       inputs_count=0;
       number=replay_mark-replay_pos;
       goto replay;
+    case '^-': // Delete move
+      inputs_count=0;
+      if(replay_pos==replay_count) return 0;
+      memmove(replay_list+replay_pos,replay_list+replay_pos+1,replay_count-replay_pos-1);
+      replay_count--;
+      if(replay_mark>replay_pos) replay_mark--;
+      return 0;
+    case '^+': // Insert moves
+      inputs_count=0;
+      inserting^=1;
+      return 0;
     case '^E': // Edit
       return main_options['r']?1:-2;
     case '^I': // Toggle inventory display
@@ -832,6 +847,19 @@ static inline void input_move(Uint8 k) {
     return;
   }
   if(!key_ignored) {
+    if(inserting) {
+      if(replay_pos>=0xFFFE || replay_pos==replay_count) {
+        inserting=0;
+      } else {
+        if(replay_count>=0xFFFE) replay_count=0xFFFD;
+        if(replay_size<0xFFFF) {
+          replay_list=realloc(replay_list,replay_size=0xFFFF);
+          if(!replay_list) fatal("Allocation failed\n");
+        }
+        memmove(replay_list+replay_pos+1,replay_list+replay_pos,replay_count-replay_pos);
+        replay_count++;
+      }
+    }
     if(replay_pos>=replay_size) {
       if(replay_size>0xFDFF) replay_size=0xFDFF;
       if(replay_size+0x200<=replay_pos) fatal("Confusion in input_move function\n");
@@ -948,6 +976,7 @@ void run_game(void) {
         if(inputs_count) {
           for(i=0;i<inputs_count && !gameover;i++) if(inputs[i]) input_move(inputs[i]);
           inputs_count=0;
+          if(saved_inserting) inserting=1,saved_inserting=0;
           no_dead_anim=0;
           if(gameover==1 && should_record_solution) record_solution();
         }

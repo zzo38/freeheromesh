@@ -72,6 +72,14 @@ You can set a mark by pushing F5. You can then push F6 or F7 to rewind or
 replay up to this point. The marks are also saved with each level and is
 saved in the user cache database too.
 
+You can also delete moves by pushing the DELETE key (the next move to be
+played in the replay list is deleted), or toggle insertion mode by pushing
+the INSERT key. While insertion mode is active, the move list displays
+"I~" and any new moves entered will be inserted into the current position
+in the move list instead of overwriting it. Insertion mode is reset when
+restarting a level or accessing a different level, and will be temporarily
+disabled while playing back the replay list.
+
 You can also import/export move lists. Push CTRL+I to import or CTRL+X
 to export, and at the prompt type the operating system command which will
 send the move list to stdout or receive the move list from stdin, for
@@ -137,6 +145,8 @@ Keyboard:
   ALT+P       Begin slow replay
   ALT+[       Increase slow replay speed
   ALT+]       Decrease slow replay speed
+  INS         Toggle insertion mode
+  DEL         Delete a move
 
 Mouse (in grid):
 
