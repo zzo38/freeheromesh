@@ -735,12 +735,17 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       goto replay;
     case '^-': // Delete move
       inputs_count=0;
+      if(solution_replay) {
+        screen_message("You cannot delete moves during the solution replay");
+        return -3;
+      }
       if(replay_pos==replay_count) return 0;
       memmove(replay_list+replay_pos,replay_list+replay_pos+1,replay_count-replay_pos-1);
       replay_count--;
       if(replay_mark>replay_pos) replay_mark--;
       return 0;
     case '^+': // Insert moves
+      if(solution_replay) return 0;
       inputs_count=0;
       inserting^=1;
       return 0;
@@ -776,6 +781,7 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       replay_time=replay_time?0:1;
       return 0;
     case '^s': // Toggle solution replay
+      inserting=0;
       if(replay_count) save_replay();
       solution_replay^=1;
       if(replay_count) replay_count=0,begin_level(level_id); else load_replay();
