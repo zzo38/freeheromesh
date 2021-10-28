@@ -131,6 +131,7 @@
 ?.gameKey.tab: ^I
 ?.gameKey.alt.G: ^g
 ?.gameKey.alt.P: ^p
+?.gameKey.alt.X: ^x
 ?.gameKey.alt.leftbracket: select 'rs',-5;
 ?.gameKey.alt.rightbracket: select 'rs',+5;
 ?.gameKey.delete: ^-

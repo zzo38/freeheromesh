@@ -198,6 +198,10 @@ static void continue_animation(void) {
       d=deadanim+i;
       draw_cell(d->x,d->y);
       if(!d->s.flag) continue;
+      if(d->delay) {
+        --d->delay;
+        continue;
+      }
       if(d->vimage<classes[d->class]->nimages)
        draw_picture((d->x-1)*picture_size+left_margin,(d->y-1)*picture_size,classes[d->class]->images[d->vimage]&0x7FFF);
       if(++d->vtime>=d->s.speed) {
@@ -786,6 +790,9 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       solution_replay^=1;
       if(replay_count) replay_count=0,begin_level(level_id); else load_replay();
       return 1;
+    case '^x': // Cancel dead animation
+      ndeadanim=0;
+      return prev;
     case 'go': // Select level
       begin_level(number);
       return 1;

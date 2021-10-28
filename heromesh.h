@@ -221,7 +221,7 @@ typedef struct {
 
 typedef struct {
   Uint8 x,y,vtime,vimage;
-  Uint16 class;
+  Uint16 class,delay;
   AnimationStep s;
 } DeadAnimation;
 

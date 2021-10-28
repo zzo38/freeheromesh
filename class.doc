@@ -1138,6 +1138,16 @@ Animate  ( flag start end delay -- ) **
   delay between frames is in centiseconds; the start and end are the
   image numbers in this class, and may be ascending or descending.
 
+=Animate  ( mode start end delay -- ) **
+ Set animation for this object, in a similar but different way than
+ Animate does. There is no animation limit if this command is used,
+ and this does not set Image.  The mode can be: 0=stop, 1=logical once,
+ 2=logical/visual once, 3=visual once, 4=visual looped, 5=visual looped
+ oscillating, 6=visual synchronized (the delay is now the slot number
+ instead), 7=logical once (also set Image). You can add 8 to set the
+ initial visible image to the Image variable instead of the start image,
+ and you can add 16 to start at half phase.
+
 AnimateDead  ( x y class start end delay -- )
   Create a dead animation, at the specified coordinates. Give the class
   to use the pictures of, and the start and end image number, and the
@@ -1145,6 +1155,10 @@ AnimateDead  ( x y class start end delay -- )
   the screen without being associated with any object; this animation is
   purely visual and does not affect the game state. The animation will
   play once and then it will disappear.
+
+=AnimateDead  ( delay -- )
+  Define the delay (in centiseconds) for the most recent dead animation.
+  If there isn't one, then this command does nothing.
 
 Arg1  ( -- value )
   The first message argument.
@@ -1486,6 +1500,9 @@ LocateMe  ( -- )
   player to notice where the "Hero" object is more easily, but you can use
   it to make other objects noticeable too if that is appropriate.
 
+,LocateMe  ( obj -- )
+  Is like LocateMe but for a specified object instead of this one.
+
 lor  ( in1 in2 -- out )
   Logical OR.
 
@@ -1578,6 +1595,9 @@ Move+  ( dir -- bool ) **
 MoveNumber  ( -- number )
   The current move number. This is initially zero, and is advanced after
   each input phase (before the beginning phase).
+
+=MoveNumber  ( number -- ) **
+  Allows changing the MoveNumber value.
 
 MoveTo  ( x y -- bool ) **
   Teleports this object to the specified coordinates; the MOVING message

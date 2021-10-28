@@ -181,6 +181,7 @@ static void set_dead_animation(const Object*o) {
   d->s=o->anim->step[o->anim->vstep];
   d->vtime=o->anim->vtime;
   d->vimage=o->anim->vimage;
+  d->delay=0;
 }
 
 static void v_animate_dead(Value x,Value y,Value c,Value s,Value e,Value z) {
@@ -201,6 +202,7 @@ static void v_animate_dead(Value x,Value y,Value c,Value s,Value e,Value z) {
   d->s.speed=z.u;
   d->vtime=0;
   d->vimage=s.u;
+  d->delay=0;
 }
 
 void objtrash(Uint32 n) {
@@ -326,6 +328,28 @@ static void animate(Uint32 n,Uint32 f,Uint32 a0,Uint32 a1,Uint32 t) {
   } else if(an->status&ANISTAT_LOGICAL) {
     an->lstep=(an->lstep?:max_animation)-1;
     an->status&=~ANISTAT_LOGICAL;
+  }
+}
+
+static void animate_ext(Uint32 n,Uint32 f,Uint32 a0,Uint32 a1,Uint32 t) {
+  Animation*an=objects[n]->anim;
+  objects[n]->image=a0;
+  if(!an) an=objects[n]->anim=animalloc();
+  an->lstep=an->vstep=an->count=an->ltime=an->vtime=an->status=0;
+  an->step->start=a0;
+  an->step->end=a1;
+  an->step->speed=t;
+  an->vimage=(f&0x08?objects[n]->image:a0);
+  if(f&0x10) an->ltime=an->vtime=t/2;
+  switch(f&0x07) {
+    case 0: an->status=0; an->step->flag=0; break;
+    case 1: an->status=ANISTAT_LOGICAL; an->step->flag=ANI_ONCE; break;
+    case 2: an->status=ANISTAT_VISUAL|ANISTAT_LOGICAL; an->step->flag=ANI_ONCE; break;
+    case 3: an->status=ANISTAT_VISUAL; an->step->flag=ANI_ONCE; break;
+    case 4: an->status=ANISTAT_VISUAL; an->step->flag=ANI_LOOP; break;
+    case 5: an->status=ANISTAT_VISUAL; an->step->flag=ANI_LOOP|ANI_OSC; break;
+    case 6: an->status=ANISTAT_VISUAL|ANISTAT_SYNCHRONIZED; an->step->flag=ANI_LOOP|ANI_SYNC; an->step->slot=t&7; break;
+    case 7: an->status=ANISTAT_LOGICAL; an->step->flag=ANI_ONCE; objects[n]->image=a0; break;
   }
 }
 
@@ -2380,8 +2404,10 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case 0xC000 ... 0xFFFF: StackReq(0,1); Push(MVALUE((code[ptr-1]&0x3FFF)+256)); break;
     case OP_ADD: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u+t2.u)); break;
     case OP_AND: StackReq(1,0); t1=Pop(); if(!v_bool(t1)) { Push(t1); ptr=code[ptr]; } else { ptr++; } break;
-    case OP_ANIMATE: StackReq(4,0); t4=Pop(); Numeric(t4); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); animate(obj,t1.u,t2.u,t3.u,t4.u); break;
+    case OP_ANIMATE: NoIgnore(); StackReq(4,0); t4=Pop(); Numeric(t4); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); animate(obj,t1.u,t2.u,t3.u,t4.u); break;
+    case OP_ANIMATE_E: NoIgnore(); StackReq(4,0); t4=Pop(); Numeric(t4); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); animate_ext(obj,t1.u,t2.u,t3.u,t4.u); break;
     case OP_ANIMATEDEAD: StackReq(6,0); t6=Pop(); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_animate_dead(t1,t2,t3,t4,t5,t6); break;
+    case OP_ANIMATEDEAD_E: StackReq(1,0); t1=Pop(); if(ndeadanim && !t1.t) deadanim[ndeadanim-1].delay=t1.u; break;
     case OP_ARG1: StackReq(0,1); Push(msgvars.arg1); break;
     case OP_ARG1_E: StackReq(1,0); msgvars.arg1=Pop(); break;
     case OP_ARG2: StackReq(0,1); Push(msgvars.arg2); break;
@@ -2563,6 +2589,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_LOC: StackReq(0,2); Push(NVALUE(o->x)); Push(NVALUE(o->y)); break;
     case OP_LOC_C: StackReq(1,2); i=v_object(Pop()); Push(NVALUE(i==VOIDLINK?0:objects[i]->x)); Push(NVALUE(i==VOIDLINK?0:objects[i]->y)); break;
     case OP_LOCATEME: locate_me(o->x,o->y); break;
+    case OP_LOCATEME_C: StackReq(1,0); i=v_object(Pop()); if(i!=VOIDLINK) locate_me(objects[i]->x,objects[i]->y); break;
     case OP_LOR: StackReq(2,1); t1=Pop(); t2=Pop(); if(v_bool(t1) || v_bool(t2)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_LOSELEVEL: gameover=-1; Throw(0); break;
     case OP_LSH: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t2.u&~31?0:t1.u<<t2.u)); break;
@@ -2592,6 +2619,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_MOVED_E: NoIgnore(); StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_MOVED; else o->oflags&=~OF_MOVED; break;
     case OP_MOVED_EC: NoIgnore(); StackReq(2,0); SetFlagOf(OF_MOVED); break;
     case OP_MOVENUMBER: StackReq(0,1); Push(NVALUE(move_number)); break;
+    case OP_MOVENUMBER_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); move_number=t1.u; break;
     case OP_MOVEPLUS: NoIgnore(); StackReq(1,1); t1=Pop(); Numeric(t1); o->inertia+=o->strength; Push(NVALUE(move_dir(obj,obj,t1.u))); break;
     case OP_MOVEPLUS_C: NoIgnore(); StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else {objects[i]->inertia+=o->strength;Push(NVALUE(move_dir(obj,i,t1.u)));} break;
     case OP_MOVEPLUS_D: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->inertia+=o->strength; move_dir(obj,obj,t1.u); break;

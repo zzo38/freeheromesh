@@ -191,7 +191,7 @@ From
 =Arg1
 =Arg2
 =Arg3
-MoveNumber
+=MoveNumber
 Level
 Key
 =Finished
@@ -210,8 +210,8 @@ Key
 -SUBS
 
 ; Main operations / miscellaneous
-Animate
-AnimateDead
+=Animate
+=AnimateDead
 ,Assassinate ; destroy without sending any messages
 .Broadcast
 BroadcastAnd ; Broadcast, but result is AND of return values
@@ -239,7 +239,7 @@ IgnoreKey
 .,IntMove ; move without initializing Inertia
 .,JumpTo
 ,Loc ; same as: Xloc Yloc
-LocateMe
+,LocateMe
 LoseLevel
 ,Manhattan
 MaxInventory ; error if more than that many slots in inventory

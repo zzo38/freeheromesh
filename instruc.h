@@ -280,6 +280,7 @@
 #define OP_ARG3 32893
 #define OP_ARG3_E 36989
 #define OP_MOVENUMBER 32894
+#define OP_MOVENUMBER_E 36990
 #define OP_LEVEL 32895
 #define OP_KEY 32896
 #define OP_FINISHED 32897
@@ -296,7 +297,9 @@
 #define OP_OTHERS 32907
 #define OP_SUBS 32908
 #define OP_ANIMATE 32909
+#define OP_ANIMATE_E 37005
 #define OP_ANIMATEDEAD 32910
+#define OP_ANIMATEDEAD_E 37006
 #define OP_ASSASSINATE 32911
 #define OP_ASSASSINATE_C 34959
 #define OP_BROADCAST 32912
@@ -342,6 +345,7 @@
 #define OP_LOC 32937
 #define OP_LOC_C 34985
 #define OP_LOCATEME 32938
+#define OP_LOCATEME_C 34986
 #define OP_LOSELEVEL 32939
 #define OP_MANHATTAN 32940
 #define OP_MANHATTAN_C 34988
@@ -471,8 +475,8 @@ static const Op_Names op_names[]={
 {"ANHH",8389394},
 {"ARRIVED",8389124},
 {"Abstract",8683756},
-{"Animate",8421517},
-{"AnimateDead",8421518},
+{"Animate",8552589},
+{"AnimateDead",8552590},
 {"Arg1",8552571},
 {"Arg2",8552572},
 {"Arg3",8552573},
@@ -597,7 +601,7 @@ static const Op_Names op_names[]={
 {"LOOP",8388610},
 {"Level",8421503},
 {"Loc",8487081},
-{"LocateMe",8421546},
+{"LocateMe",8487082},
 {"LoseLevel",8421547},
 {"MOVED",8389127},
 {"MOVING",8389130},
@@ -612,7 +616,7 @@ static const Op_Names op_names[]={
 {"Misc7",9142372},
 {"Move",10584238},
 {"Move+",10584239},
-{"MoveNumber",8421502},
+{"MoveNumber",8552574},
 {"MoveTo",10584240},
 {"Moved",8618097},
 {"Moving",8618098},

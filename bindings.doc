@@ -104,6 +104,9 @@ any name with : at first to ask the user for the value to use.
 '^s'
   Toggle solution replay.
 
+'^x'
+  Cancel dead animation.
+
 'lo' <location>
   Flash the specified location briefly.
 
