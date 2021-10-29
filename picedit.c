@@ -602,7 +602,7 @@ static Picture*do_import(Picture*pic) {
   for(y=0;y<pic->size;y++) for(x=0;x<pic->size;x++) {
     fread(buf,1,8,fp);
     if(buf[6]&0x80) {
-      for(i=1;i<255;i++) if(buf[0]==pal[i].r && buf[1]==pal[i].g && buf[2]==pal[i].b) goto found;
+      for(i=1;i<255;i++) if(buf[0]==pal[i].r && buf[2]==pal[i].g && buf[4]==pal[i].b) goto found;
       i=1;
       a=0x300000;
       for(j=1;j<255;j++) {
