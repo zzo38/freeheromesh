@@ -1,0 +1,66 @@
+/F ARGUMENTS 0 get (r) file def
+ARGUMENTS length 1 gt {F ARGUMENTS 1 get cvi 175 mul setfileposition} if
+/D [
+  []
+  [(Wall 0)]
+  [(Block 0)]
+  [(RedVial 0)]
+  [(UpSpikes 0)]
+  [(Pillar 0)]
+  [(Door 0)]
+  [(Door 1)]
+  [(ClayPot 0)]
+  [(BlockSpecial 0)]
+  [(CyanVial 0)]
+  [(Stone 0)]
+  [(RedVial 0) (Transform 0)]
+  [(Pumpkin 0)]
+  [(Spikes 0)]
+  [(Arrow 3)]
+  [(Arrow 2)]
+  [(Arrow 0)]
+  [(Arrow 1)]
+  [(Ghost 3)]
+  [(Ghost 2)]
+  [(Ghost 0)]
+  [(Ghost 1)]
+  [(Ghost 7)]
+  [(Ghost 6)]
+  [(Ghost 4)]
+  [(Ghost 5)]
+  [(Spikes 0) (Block 0)]
+  [(Arrow 3) (Block 0)]
+  [(Arrow 2) (Block 0)]
+  [(Arrow 0) (Block 0)]
+  [(Arrow 1) (Block 0)]
+  [(Spikes 0) (BlockSpecial 0)]
+  [(Arrow 3) (BlockSpecial 0)]
+  [(Arrow 2) (BlockSpecial 0)]
+  [(Arrow 0) (BlockSpecial 0)]
+  [(Arrow 1) (BlockSpecial 0)]
+  [(Spikes 0) (ClayPot 0)]
+  [(Arrow 3) (ClayPot 0)]
+  [(Arrow 2) (ClayPot 0)]
+  [(Arrow 0) (ClayPot 0)]
+  [(Arrow 1) (ClayPot 0)]
+  [(Spikes 0) (CyanVial 0)]
+  [(Arrow 3) (CyanVial 0)]
+  [(Arrow 2) (CyanVial 0)]
+  [(Arrow 0) (CyanVial 0)]
+  [(Arrow 1) (CyanVial 0)]
+] def
+(D 13 13\n) print
+/E ( 0 0 0 0\n) def
+1 1 13 {
+  /X exch def
+  1 1 13 {
+    /Y exch def
+    X =only ( ) print Y =only ( $Floor 0) print E print
+    D F read pop get {X =only ( ) print Y =only ( $) print print E print} forall
+  } for
+} bind for
+(@Floor ) print F read pop =only
+(\\nRoom ) print F read pop =only (\n) print
+F read pop 1 add =only ( ) print F read pop 1 add =only ( $Man 0) print E print
+(C ) print F read pop =
+flush quit
