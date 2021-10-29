@@ -37,7 +37,10 @@
 * SQL
   * Implement the GROUP column in the CLASSES table
   * Allow multiple SQL statements in one binding
-* Large fonts (width 8 or 16, height 8-32)
+* Fonts/text
+  * More code pages
+  * Large fonts (possibly: width 8 or 16, height 8-32)
+  * Multibyte encodings (e.g. EUC-JP)
 * Branching replay recording
 * Slow movement displaying state between triggers
 * Warning if file changed when uncommited data exists in the cache database
@@ -50,10 +53,12 @@
   * Deferred movement
   * Sweep, SweepEx, HitMe
   * Overriding order of execution
-* Conversion from other game engines
+* Conversion from other games
   * DOS Hero Hearts
+  * Berusky
   * PC Wanderer
   * Escape
   * Brain N Bells
+  * Chroma
   * Xsok
   * PuzzleScript (limited; not everything is or will be capable)
