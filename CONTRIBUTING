@@ -1,0 +1,34 @@
+The recommended way to contribute is to use the NNTP server, but
+the ticket system and IRC can also be used. All contributions must be
+public; private contributions will not be accepted.
+
+Any kinds of contributions may potentially be accepted or rejected.
+However, just because we accept one of your contributions does not
+mean that we will accept all of them, and just because we reject one
+of your contributions does not mean we will reject all of them.
+Discussions can also be made before accepting/rejecting it.
+
+Types of contributions include (but are not necessarily limited to):
+
+* Documentation
+
+* Code improvements
+
+* Bug reports
+
+* Feature requests
+
+* Promotion
+
+Please use only plain ASCII text (no Unicode or HTML). However, if you
+contribute documentation translated into languages other than English,
+or puzzle sets containing text in languages other than English, then you
+may use other character encodings that are appropriate for that language.
+Documentation in other formats than plain text is acceptable, although the
+main documentation must be only plain ASCII text.
+
+You may fork the repository if wanted (although doing so is not required),
+but you may not write to the main or mirror repository; I am the only one
+who has write access and this will not be granted to others.
+
+You can see the TODO list, NNTP, and tickets, for some ideas, too.
