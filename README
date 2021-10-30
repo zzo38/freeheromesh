@@ -176,6 +176,12 @@ only needed for code pages other than 437.
 * default.heromeshrc: An example configuration file which you can customize
 for your own use. You should at least set the proper paths to the files.
 
+* imgtofhm.c: Converts pictures into the Free Hero Mesh format. The command
+line arguments are: the maximum number of pictures, the lump name prefix,
+and then the transparency colour (in hex format) (optional). It receives
+the pictures in farbfeld format in a vertical strip from stdin, and writes
+the Hamster archive to stdout (which can be appended to a .xclass file).
+
 * mbtofhm.c: Converter from Everett Kaser's MESH engine into Free Hero
 Mesh. Give the base name of the output files as the command-line argument,
 and receives the .mb file from stdin.
