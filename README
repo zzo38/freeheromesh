@@ -377,3 +377,64 @@ the same thing?
  com.hamsterrepublic.lumped
  public.data
 
+** If would be very helpful if you could put more information and in
+particular screenshots on the Fossil main page, or at the very least link
+to screenshots, or create a non-Fossil webpage to show the project. They
+say a picture is worth a thousand words, but in this case I think no
+number of words will ever substitute for an image.
+
+ You are probably correct. Once suitable screenshots are available, I can
+ do this, and also add other information if needed.
+
+** It didn't compile using the script, and/or there are compiler warnings,
+and/or some changes were required.
+
+ If the warnings and other issues with compilation are posted on the NNTP,
+ then it can be properly discussed, and then a better compilation code can
+ be written. Proper packaging for different distributions can also be
+ discussed. Please provide the following information:
+
+ - What compiler you used (including the version)
+
+ - What operating system you are using (including the version, and the
+ distribution of Linux, if you are using any)
+
+ - What version of SQLite and SDL you are using
+
+ - What changes you made to the program code, if any
+
+ - What warnings you got, if any
+
+ - Whether or not the program worked after doing these things
+
+ One issue is that the version of SQLite in the system package manager
+ might (depending on the system) not be updated as often as it should be.
+ There is no guarantee that newer versions of Free Hero Mesh will not use
+ features of newer versions of SQLite (or depend on bug fixes), although
+ it also might not. (However, I think it is unlikely that newer versions
+ of SQLite will break it.)
+
+** Apparently in the original you can right click on objects to read
+descriptions?
+
+ In Free Hero Mesh, this function is mapped to the middle instead of
+ right button by default, but the mapping can be redefined. (By default
+ in Free Hero Mesh, the right button accesses the inspection menu,
+ allowing inspecting the variables of objects at that location.)
+
+** What's the X resource manager code for? Clipboard access?
+
+ The user configuration settings are in X resource manager format.
+
+ Free Hero Mesh doesn't depend on the X window system; the X resource
+ manager is actually not a part of the X window system, just it is
+ commonly used with it. Xlib includes a part of the X resource manager,
+ but Free Hero Mesh does not use Xlib (and even if it did, Xlib lacks
+ an equivalent of the xrm_init_quarks function).
+
+ Clipboard access is done using external programs; if the X window
+ system is used, then this will usually be "xclip". This is configured
+ in the user configuration file, so if you are not using the X window
+ system then you can change it to the appropriate commands for whatever
+ you are using on your computer.
+
