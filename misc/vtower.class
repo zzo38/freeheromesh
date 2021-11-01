@@ -56,8 +56,10 @@
   (Climb 100)
   {CommonKeys}
   ('ENTER
-    $Man Loc 0 Dir Create .
-    Destroy .
+    ObjBelow ,Height 50 le if
+      $Man Loc 0 Dir Create .
+      Destroy .
+    then
   )
 )
 
