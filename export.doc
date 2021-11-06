@@ -58,6 +58,15 @@ x y $class image misc1 misc2 misc3 dir
   A level string. The level strings are numbered in order, starting from
   string 0. The format is like that of the title.
 
+'key number
+  Specify the key name (same as the "input constants" described in
+  class.doc), and optionally the repeat count. This enters it into the
+  solution; if at least one command like this is present then it will
+  overwrite the existing solution when this level is saved. (Note: This
+  does not automatically verify the solution; it only records it.)
+  (Currently, this line is implemented only for import, and not for
+  export. Later an option might be added to do this on export, too.)
+
 
 === Misc values ===
 

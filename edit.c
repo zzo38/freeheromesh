@@ -28,6 +28,16 @@ typedef struct {
 #define MRUCOUNT 32
 static MRU mru[MRUCOUNT];
 static int curmru;
+static char*solution_data;
+static int solution_length;
+
+static inline void discard_solution(void) {
+  if(solution_data) {
+    sqlite3_free(solution_data);
+    solution_data=0;
+    solution_length=0;
+  }
+}
 
 static void rewrite_class_def(void) {
   Uint32 i,n;
@@ -266,6 +276,12 @@ static void save_level(void) {
   sqlite3_free(data);
   if(level_ord==level_nindex+1) update_level_index();
   rewrite_class_def();
+  if(solution_data) {
+    solution_data[0]=level_version&255;
+    solution_data[1]=level_version>>8;
+    write_lump(FIL_SOLUTION,level_id,solution_length,solution_data);
+    discard_solution();
+  }
   sqlite3_exec(userdb,"COMMIT;",0,0,0);
 }
 
@@ -975,6 +991,7 @@ static void import_level(const char*cmd) {
   size_t size=0;
   char*buf=0;
   char*p;
+  sqlite3_str*sol=0;
   Value v;
   if(!cmd || !*cmd) return;
   fp=popen(cmd,"r");
@@ -982,6 +999,7 @@ static void import_level(const char*cmd) {
     screen_message("Cannot open pipe");
     return;
   }
+  discard_solution();
   level_changed=1;
   while(getline(&buf,&size,fp)>0) {
     p=buf;
@@ -1063,6 +1081,27 @@ static void import_level(const char*cmd) {
           levelstrings[nlevelstrings++]=import_string(p+1);
         }
         break;
+      case '\'':
+        if(!sol) {
+          sol=sqlite3_str_new(userdb);
+          sqlite3_str_appendchar(sol,3,0); // append level version (will be overwritten later) and flags
+        }
+        p=strchr(buf,' ');
+        if(p) {
+          *p=0;
+          p=import_numbers(p+1,&y,0);
+          if(!p || *p) goto bad;
+        } else {
+          y=1;
+        }
+        for(x=8;x<256;x++) {
+          if(heromesh_key_names[x] && !strcmp(buf+1,heromesh_key_names[x])) {
+            sqlite3_str_appendchar(sol,y,x);
+            break;
+          }
+        }
+        if(x==256) goto bad;
+        break;
       default:
         if(*p && *p!=';') {
           bad:
@@ -1076,6 +1115,11 @@ static void import_level(const char*cmd) {
   free(buf);
   pclose(fp);
   generation_number_inc=0;
+  if(sol) {
+    solution_length=sqlite3_str_length(sol);
+    solution_data=sqlite3_str_finish(sol);
+    if(!solution_data) fatal("Allocation failed");
+  }
 }
 
 static void new_level(void) {
@@ -1094,6 +1138,7 @@ static void new_level(void) {
   i=sqlite3_column_int(st,0);
   sqlite3_finalize(st);
   if(i>0xFFFE) return;
+  discard_solution();
   annihilate();
   level_id=i;
   free(level_title);
@@ -1507,6 +1552,7 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
       new_level();
       return 1;
     case '^P': // Play
+      discard_solution();
       return -2;
     case '^Q': // Quit
       return -1;
@@ -1554,6 +1600,7 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
       export_level(sqlite3_column_text(args,1));
       return prev;
     case 'go': // Select level
+      discard_solution();
       load_level(number);
       return 1;
     case 'im': // Import level
@@ -1571,6 +1618,7 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
       if(!level_title) fatal("Allocation failed\n");
       return 0;
     case 'lv': // Set level version
+      discard_solution();
       level_version=number;
       level_changed=0;
       return 0;
@@ -1587,6 +1635,7 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
       y=sqlite3_column_int(args,2);
       if(x<1 || y<1 || x>64 || y>64) return 0;
       level_changed=1;
+      discard_solution();
       annihilate();
       pfwidth=x;
       pfheight=y;
@@ -1601,6 +1650,7 @@ void run_editor(void) {
   int i;
   curmru=0;
   set_caption();
+  discard_solution();
   load_level(level_id);
   redraw_editor();
   while(SDL_WaitEvent(&ev)) {

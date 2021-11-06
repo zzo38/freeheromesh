@@ -314,8 +314,13 @@ const char*screen_prompt(const char*txt) {
 
 int screen_message(const char*txt) {
   int n=0;
-  SDL_Rect r={0,0,screen->w,16};
+  SDL_Rect r={0,0,0,16};
   SDL_Event ev;
+  if(!screen) {
+    fprintf(stderr," * %s\n",txt);
+    return 0;
+  }
+  r.w=screen->w;
   SDL_FillRect(screen,&r,0xF4);
   r.y=16;
   r.h=1;
