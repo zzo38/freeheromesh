@@ -11,6 +11,14 @@ BASENAME()
   The base name, which is a copy of the first command-line argument (not
   counting the switches or the program name).
 
+BCAT(...)
+  Concatenate several blobs. Nulls are skipped, if any.
+
+BYTE(...)
+  Make a blob; each argument is a number, of which the low 8-bits are used
+  to make the value of one byte in the blob, so the size of the blob will
+  then be the same as the number of arguments.
+
 CL(text)
   Returns the class number, given the class name. If there is no such
   class, then the result is null. (This may be useful as a shortcut when

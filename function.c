@@ -36,6 +36,42 @@ static void fn_basename(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_result_text(cxt,basefilename,-1,SQLITE_STATIC);
 }
 
+static void fn_bcat(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  sqlite3_str*str=sqlite3_str_new(userdb);
+  const char*p;
+  int i;
+  for(i=0;i<argc;i++) if(p=sqlite3_value_blob(argv[i])) sqlite3_str_append(str,p,sqlite3_value_bytes(argv[i]));
+  i=sqlite3_str_errcode(str);
+  if(i==SQLITE_NOMEM) {
+    sqlite3_result_error_nomem(cxt);
+  } else if(i==SQLITE_TOOBIG) {
+    sqlite3_result_error_toobig(cxt);
+  } else if(i) {
+    sqlite3_result_error(cxt,"Unknown error",-1);
+  }
+  if(i) {
+    sqlite3_free(sqlite3_str_finish(str));
+    return;
+  }
+  if(i=sqlite3_str_length(str)) {
+    sqlite3_result_blob(cxt,sqlite3_str_finish(str),i,sqlite3_free);
+  } else {
+    sqlite3_free(sqlite3_str_finish(str));
+    sqlite3_result_zeroblob(cxt,0);
+  }
+}
+
+static void fn_byte(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  Uint8*s=malloc(argc+1);
+  int i;
+  if(!s) {
+    sqlite3_result_error_nomem(cxt);
+    return;
+  }
+  for(i=0;i<argc;i++) s[i]=sqlite3_value_int(argv[i]);
+  sqlite3_result_blob(cxt,s,argc,free);
+}
+
 static void fn_cacheid(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_result_int64(cxt,*(sqlite3_int64*)sqlite3_user_data(cxt));
 }
@@ -1147,6 +1183,8 @@ Module(vt_playfield,
 
 void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"BASENAME",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_basename,0,0);
+  sqlite3_create_function(userdb,"BCAT",-1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_bcat,0,0);
+  sqlite3_create_function(userdb,"BYTE",-1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_byte,0,0);
   sqlite3_create_function(userdb,"CL",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_cl,0,0);
   sqlite3_create_function(userdb,"CLASS_DATA",2,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_class_data,0,0);
   sqlite3_create_function(userdb,"CVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_cvalue,0,0);
