@@ -345,8 +345,8 @@ static void animate_ext(Uint32 n,Uint32 f,Uint32 a0,Uint32 a1,Uint32 t) {
     case 1: an->status=ANISTAT_LOGICAL; an->step->flag=ANI_ONCE; break;
     case 2: an->status=ANISTAT_VISUAL|ANISTAT_LOGICAL; an->step->flag=ANI_ONCE; break;
     case 3: an->status=ANISTAT_VISUAL; an->step->flag=ANI_ONCE; break;
-    case 4: an->status=ANISTAT_VISUAL; an->step->flag=ANI_LOOP; break;
-    case 5: an->status=ANISTAT_VISUAL; an->step->flag=ANI_LOOP|ANI_OSC; break;
+    case 4: an->status=ANISTAT_VISUAL|ANISTAT_LOGICAL; an->step->flag=ANI_LOOP; break;
+    case 5: an->status=ANISTAT_VISUAL|ANISTAT_LOGICAL; an->step->flag=ANI_LOOP|ANI_OSC; break;
     case 6: an->status=ANISTAT_VISUAL|ANISTAT_SYNCHRONIZED; an->step->flag=ANI_LOOP|ANI_SYNC; an->step->slot=t&7; break;
     case 7: an->status=ANISTAT_LOGICAL; an->step->flag=ANI_ONCE; objects[n]->image=a0; break;
   }
@@ -659,10 +659,12 @@ static Uint8 collide_with(Uint8 b,Uint32 n,Uint8 x,Uint8 y,Uint16 c) {
   Value v;
   if(StackProtection()) Throw("Call stack overflow");
   for(i=0;i<8;i++) if(b&(1<<i)) e[i]=obj_layer_at(1<<i,x,y);
-  for(i=0;i<7;i++) for(j=i;j<8;j++) if(e[i]==e[j]) e[j]=VOIDLINK;
-  if(n!=VOIDLINK) v=send_message(VOIDLINK,n,MSG_COLLIDE,NVALUE(x),NVALUE(y),NVALUE(b));
-  if(v.t) Throw("Type mismatch in COLLIDE");
-  r=v.u;
+  for(i=0;i<7;i++) for(j=i+1;j<8;j++) if(e[i]==e[j]) e[j]=VOIDLINK;
+  if(n!=VOIDLINK) {
+    v=send_message(VOIDLINK,n,MSG_COLLIDE,NVALUE(x),NVALUE(y),NVALUE(b));
+    if(v.t) Throw("Type mismatch in COLLIDE");
+    r=v.u;
+  }
   for(i=0;i<8;i++) if(e[i]!=VOIDLINK && !(r&0x02)) {
     v=send_message(n,e[i],MSG_COLLIDEBY,NVALUE(n==VOIDLINK?0:objects[n]->x),NVALUE(n==VOIDLINK?0:objects[n]->y),CVALUE(c));
     if(v.t) Throw("Type mismatch in COLLIDEBY");
