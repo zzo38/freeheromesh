@@ -333,7 +333,6 @@ static void animate(Uint32 n,Uint32 f,Uint32 a0,Uint32 a1,Uint32 t) {
 
 static void animate_ext(Uint32 n,Uint32 f,Uint32 a0,Uint32 a1,Uint32 t) {
   Animation*an=objects[n]->anim;
-  objects[n]->image=a0;
   if(!an) an=objects[n]->anim=animalloc();
   an->lstep=an->vstep=an->count=an->ltime=an->vtime=an->status=0;
   an->step->start=a0;
