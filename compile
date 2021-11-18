@@ -21,6 +21,8 @@ test heromesh.h -nt "$EXE" && rm bindings.o class.o picture.o function.o exec.o 
 test instruc.h -nt "$EXE" && rm class.o exec.o || true
 test pcfont.h -nt "$EXE" && rm picture.o || true
 test quarks.h -nt "$EXE" && rm bindings.o edit.o exec.o game.o picture.o picedit.o || true
+echo '* smallxrm'
+test smallxrm.c -nt smallxrm.o && bash smallxrm.c
 echo '* bindings'
 test bindings.c -nt bindings.o && bash bindings.c
 echo '* class'
