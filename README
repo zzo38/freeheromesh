@@ -144,26 +144,6 @@ of the game; it is used for user customization, and for performing batch
 operations when editing, and for producing reports.
 
 
-=== Conversion from other games ===
-
-There are programs to convert from other engines, mostly in the misc/
-directory (except Hero Hearts, which is in the main directory).
-
-* Hero Hearts: Free Hero Mesh was invented to play puzzles from Everett
-Kaser's MESH engine; in that case, the mbtofhm program is used. Give the
-base name of the output files as the command-line argument, and receives
-the contents of the .mb file from stdin.
-
-* Vampiric Tower: A DOS game. The misc/vtower.class contains class
-definitions and vtower_export.ps is a PostScript program which converts
-levels in the Vampiric Tower format to Free Hero Mesh export format. It
-requires two command-line arguments, being the name of the level file
-to read from, and the zero-based level number. The second argument is
-optional; if it is omitted, then zero is assumed by default.
-
-(Hopefully there will be more in future.)
-
-
 === Other files ===
 
 Free Hero Mesh also includes the following other files, which are not the
