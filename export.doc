@@ -67,6 +67,9 @@ x y $class image misc1 misc2 misc3 dir
   (Currently, this line is implemented only for import, and not for
   export. Later an option might be added to do this on export, too.)
 
+=
+  Delimiter between levels; only allowed in batch import mode.
+
 
 === Misc values ===
 

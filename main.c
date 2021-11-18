@@ -788,7 +788,7 @@ static void test_mode(void) {
   SDL_Event ev;
   char buf[32];
   const UserCommand*uc;
-  int i;
+  int i,j;
   set_cursor(XC_tcross);
   SDL_LockSurface(screen);
   draw_text(0,0,"Hello, World!",0xF0,0xFF);
@@ -827,6 +827,15 @@ static void test_mode(void) {
         case SDLK_g:
           n=0;
           goto keytest;
+        case SDLK_i:
+          SDL_FillRect(screen,0,5);
+          for(i=j=0;;i++) {
+            if(picture_size*(i+1)>screen->w) i=0,j++;
+            if(picture_size*(j+1)>screen->h) break;
+            draw_picture(picture_size*i,picture_size*j,n++);
+          }
+          SDL_Flip(screen);
+          break;
         case SDLK_p:
           sqlite3_exec(userdb,"SELECT * FROM `PICTURES`;",test_sql_callback,0,0);
           break;
@@ -1039,8 +1048,9 @@ int main(int argc,char**argv) {
     if(main_options['p'] || main_options['f'] || main_options['e']) fatal("Switches are conflicting with -z\n");
     main_options['r']=1;
   }
-  if(main_options['n']) {
-    if(main_options['r']) fatal("Switches -r and -n are conflicting\n");
+  if(main_options['n'] && main_options['i']) fatal("Switches -n and -i are conflicting\n");
+  if(main_options['n'] || main_options['i']) {
+    if(main_options['r']) fatal("Switches -r and -%c are conflicting\n",main_options['i']?'i':'n');
     main_options['x']=1;
   }
   if(main_options['a']) main_options['r']=main_options['x']=1;
@@ -1091,7 +1101,11 @@ int main(int argc,char**argv) {
   max_trigger=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,10);
   if(main_options['a']) run_auto_test();
   if(main_options['x']) {
-    if(main_options['f']) {
+    if(main_options['i']) {
+      batch_import();
+      if(main_options['f']) flush_usercache();
+      return 0;
+    } else if(main_options['f']) {
       if(main_options['r']) fatal("Cannot flush user cache; puzzle set is read-only\n");
       flush_usercache();
       return 0;

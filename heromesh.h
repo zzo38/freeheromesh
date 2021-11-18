@@ -305,6 +305,7 @@ extern EditorRect editrect;
 
 void run_editor(void);
 void write_empty_level_set(FILE*);
+void batch_import(void);
 
 // == picedit ==
 

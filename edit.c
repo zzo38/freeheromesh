@@ -994,7 +994,7 @@ static void import_level(const char*cmd) {
   sqlite3_str*sol=0;
   Value v;
   if(!cmd || !*cmd) return;
-  fp=popen(cmd,"r");
+  fp=main_options['i']?stdin:popen(cmd,"r");
   if(!fp) {
     screen_message("Cannot open pipe");
     return;
@@ -1010,6 +1010,7 @@ static void import_level(const char*cmd) {
         if(!d) {
           missd:
           screen_message("Missing D line");
+          if(main_options['i']) exit(1);
           goto done;
         }
         p=import_numbers(p,&x,&y);
@@ -1018,6 +1019,7 @@ static void import_level(const char*cmd) {
           range:
           fprintf(stderr,"Imported level coordinates out of range: %d %d\n",x,y);
           screen_message("Coordinates out of range");
+          if(main_options['i']) exit(1);
           goto done;
         }
         p=import_value(p,&v);
@@ -1102,10 +1104,14 @@ static void import_level(const char*cmd) {
         }
         if(x==256) goto bad;
         break;
+      case '=':
+        if(main_options['i']) goto done;
+        // fall through
       default:
         if(*p && *p!=';') {
           bad:
           fprintf(stderr,"Invalid record in imported data:  %s\n",buf);
+          if(main_options['i']) exit(1);
           screen_message("Invalid record");
           goto done;
         }
@@ -1113,7 +1119,7 @@ static void import_level(const char*cmd) {
   }
   done:
   free(buf);
-  pclose(fp);
+  if(!main_options['i']) pclose(fp);
   generation_number_inc=0;
   if(sol) {
     solution_length=sqlite3_str_length(sol);
@@ -1709,4 +1715,17 @@ void write_empty_level_set(FILE*fp) {
   fwrite(d,1,sizeof(d)-1,fp);
   fflush(fp);
   rewind(fp);
+}
+
+void batch_import(void) {
+  load_level(level_id);
+  if(nobjects) new_level();
+  while(!feof(stdin)) {
+    if(main_options['v']) fprintf(stderr,"Level %d\n",level_ord);
+    import_level("#");
+    if(nobjects) {
+      save_level();
+      if(!feof(stdin)) new_level();
+    }
+  }
 }

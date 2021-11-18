@@ -34,7 +34,7 @@
   * Animation stopping unexpectedly (until a key is pushed)
 * Display solution comments/timestamp
 * VCR mode
-* Command-line switch for batch import/export levels
+* Command-line switch for batch export levels
 * SQL
   * Implement the GROUP column in the CLASSES table
   * Allow multiple SQL statements in one binding

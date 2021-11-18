@@ -44,6 +44,11 @@ and <resources> is optional resources to override.
   Disable portable mode; always use the HOME environment variable to find
   the configuration and database files.
 
+-i
+  Batch import levels. Accepts the level import format (see export.doc)
+  from stdin. It will not overwrite existing levels unless the existing
+  level is blank, in which case it will overwrite it.
+
 -n
   Create a new puzzle set. The .xclass and .class files should already
   exist; the .level and .solution files should not already exist, and will
