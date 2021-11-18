@@ -418,3 +418,11 @@ descriptions?
  system then you can change it to the appropriate commands for whatever
  you are using on your computer.
 
+** It cannot find sqlite3.o when compiling. Why not use -lsqlite3 instead?
+
+ The version of SQLite in the package manager is not always the newest
+ version. Sometimes I use features that are in released versions of SQLite
+ but not necessarily in the package manager (and which versions are in the
+ package manager may vary according to the distribution). The version in
+ the package manager might or might not work; it is untested.
+
