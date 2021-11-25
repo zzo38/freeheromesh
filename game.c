@@ -33,6 +33,7 @@ static Uint8 replay_speed;
 static Uint8 replay_time;
 static Uint8 solved;
 static Uint8 inserting,saved_inserting;
+static sqlite3_stmt*autowin;
 
 static void record_solution(void);
 
@@ -52,6 +53,9 @@ static void setup_game(void) {
     should_record_solution=boolxrm(v,0);
   }
   solution_replay=0;
+  optionquery[1]=Q_autoWin;
+  v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
+  if(v && *v) sqlite3_prepare_v3(userdb,v,-1,SQLITE_PREPARE_PERSISTENT,&autowin,0);
 }
 
 static void redraw_game(void) {
@@ -823,6 +827,47 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
   }
 }
 
+static void do_autowin(void) {
+  const char*name;
+  int i,j,k;
+  int prev=0;
+  sqlite3_reset(autowin);
+  if(sqlite3_bind_parameter_count(autowin)) {
+    for(i=sqlite3_bind_parameter_count(autowin);i;--i) if(name=sqlite3_bind_parameter_name(autowin,i)) {
+      if(*name=='$') {
+        if(!sqlite3_stricmp(name+1,"LEVEL")) {
+          sqlite3_bind_int(autowin,i,level_ord);
+        } else if(!sqlite3_stricmp(name+1,"LEVEL_ID")) {
+          sqlite3_bind_int(autowin,i,level_id);
+        }
+      }
+    }
+  }
+  while((i=sqlite3_step(autowin))==SQLITE_ROW) {
+    if(i=sqlite3_data_count(autowin)) {
+      j=(i>1&&sqlite3_column_type(autowin,1)!=SQLITE_NULL)?sqlite3_column_int(autowin,1):0;
+      if((name=sqlite3_column_text(autowin,0)) && *name) {
+        if(name[0]==':') {
+          switch(name[1]) {
+            case '!': if(i>1) i=system(sqlite3_column_text(autowin,1)?:(const unsigned char*)"# "); break;
+            case ';': goto done;
+            case '?': if(i>1) puts(sqlite3_column_text(autowin,1)?:(const unsigned char*)"(null)"); break;
+            case 'm': if(i>1) screen_message(sqlite3_column_text(autowin,1)?:(const unsigned char*)"(null)"); break;
+          }
+        } else {
+          k=name[0]*'\1\0'+name[1]*'\0\1';
+          while(i && sqlite3_column_type(autowin,i-1)==SQLITE_NULL) i--;
+          prev=game_command(prev,k,j,i,autowin,0);
+          if(prev<0) goto done;
+        }
+      }
+    }
+  }
+  if(i!=SQLITE_DONE) screen_message("SQL error");
+  done:
+  sqlite3_reset(autowin);
+}
+
 static void set_caption(void) {
   const char*r;
   char*s;
@@ -991,7 +1036,10 @@ void run_game(void) {
           inputs_count=0;
           if(saved_inserting) inserting=1,saved_inserting=0;
           no_dead_anim=0;
-          if(gameover==1 && should_record_solution) record_solution();
+          if(gameover==1) {
+            if(should_record_solution) record_solution();
+            if(autowin) do_autowin();
+          }
         }
         redraw_game();
         timerflag=0; // ensure we have not missed a timer event

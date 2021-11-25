@@ -187,6 +187,7 @@
 #define Q_pasteCommand 188
 #define Q_codepage 189
 #define Q_replaySpeed 190
+#define Q_autoWin 191
 static const char*const global_quarks[]={
   "screenWidth",
   "screenHeight",
@@ -377,6 +378,7 @@ static const char*const global_quarks[]={
   "pasteCommand",
   "codepage",
   "replaySpeed",
+  "autoWin",
 0};
 #ifdef HEROMESH_BINDINGS
 static const SDLKey quark_to_key[Q_undo+1-Q_backspace]={

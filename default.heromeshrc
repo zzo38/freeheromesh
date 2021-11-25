@@ -1,4 +1,4 @@
-! hERo Mesh configuration settings
+! Hero Mesh configuration settings
 ?.screenWidth: 800
 ?.screenHeight: 600
 ?.imageSize: 24

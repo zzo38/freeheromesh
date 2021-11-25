@@ -27,6 +27,12 @@ See bindings.doc for key/mouse bindings.
   database; to copy the changes to the level and solution files, you must
   use the .u command in SQL mode (-x), or use the -f switch.
 
+.autoWin
+  SQL statement to execute if you win a level. The format is the same as
+  for a key/mouse binding, but must be a SQL statement, and the only valid
+  parameters are $LEVEL and $LEVEL_ID. Furthermore, '^E', '^Q', ':s', and
+  ':x' are not valid.
+
 .codepage
   The path to the code page file. If not specified, then code pages other
   than 437 are not available (code page 437 is built-in).

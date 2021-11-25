@@ -426,3 +426,8 @@ descriptions?
  package manager may vary according to the distribution). The version in
  the package manager might or might not work; it is untested.
 
+** How to make it to automatically advance to next level if you win?
+
+ Add the following into the .heromeshrc file:
+   .?.autoWin: select 'go',-(level()+1) where level()<max_level();
+
