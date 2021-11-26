@@ -2522,6 +2522,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_EQ2: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(NVALUE(v_equal(t1,t3)?(v_equal(t2,t4)?1:0):0)); break;
     case OP_FINISHED: StackReq(0,1); Push(NVALUE(all_flushed)); break;
     case OP_FINISHED_E: StackReq(1,0); t1=Pop(); Numeric(t1); all_flushed=t1.u; break;
+    case OP_FORK: execute_program(code,ptr+1,obj); ptr=code[ptr]; break;
     case OP_FLIP: v_flip(); break;
     case OP_FLUSHCLASS: NoIgnore(); StackReq(1,0); t1=Pop(); if(t1.t==TY_CLASS) flush_class(t1.u); else if(t1.t==TY_NUMBER && t1.s==-1) flush_all(); else if(t1.t) Throw("Type mismatch"); break;
     case OP_FLUSHOBJ: NoIgnore(); flush_object(obj); break;

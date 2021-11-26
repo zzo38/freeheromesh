@@ -1918,6 +1918,14 @@ for <body> next  ( upflag x y -- ) **
   the <body>, the found object is on the stack; you can then use or store it.
   Once "next" is reached, it finds the next object and goes back.
 
+fork <body1> [else <body2>] then  ( -- )
+  Continues executing <body1> as a subroutine; after it finishes then the
+  part after "then" is executed in the same subroutine call (there is no
+  implicit "ret" before "then"), but the "else" part (if any) is skipped.
+  After it returns, then <body2> (if any) is executed, and then it will
+  also continue from after "then". (This is not the same as the fork
+  function (or any other function) in C.)
+
 if <truepart> [else <falsepart>] then  ( bool -- )
   Takes a boolean value from the stack. If true, then <truepart> is executed;
   otherwise it tries the other parts; "else" means always do this if none of

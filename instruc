@@ -94,6 +94,7 @@ ret
 -case
 -or
 -and
+-fork
 
 ; Arithmetic
 add "+"
