@@ -614,8 +614,14 @@ static void begin_include_file(const char*name) {
   inpstack->linenum=linenum;
   inpstack->next=nxt;
   linenum=1;
-  //TODO: Use the correct directory to load the include file
-  classfp=fopen(name,"r");
+  if(*name=='.' || *name=='_' || *name=='-' || !*name || name[strspn(name,"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-")])
+   ParseError("Improper name of include file \"%s\"\n",name);
+  if(main_options['z']) {
+    if(strlen(name)<9 || memcmp(name-strlen(name),".include",8)) ParseError("Include file name doesn't end with .include\n");
+    classfp=composite_slice(name,0)?:fopen(name,"r");
+  } else {
+    classfp=fopen(name,"r");
+  }
   if(!classfp) ParseError("Cannot open include file \"%s\": %m\n",name);
 }
 

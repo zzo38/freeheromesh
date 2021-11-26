@@ -190,7 +190,12 @@ Built-in macros include:
 
 {include <string>}
   Include text from another file into this one. You cannot use {include}
-  inside of another macro or in a macro argument.
+  inside of another macro or in a macro argument. The file must be in the
+  current directory, and its name must contain only letters, digits, dot,
+  underscore, and minus signs, and must start with a letter or digit. If
+  it is a composite puzzle set, then the name must end with ".include",
+  and is looked for first inside of the composite puzzle set; if it is not
+  found there then it is looked for in the current directory.
 
 {make <mode> <arg>}
   Make a synthetic token; see the below section about synthetic tokens for
