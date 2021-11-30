@@ -648,6 +648,17 @@ static void describe_at(int xy) {
   sqlite3_free(s);
 }
 
+static void describe_inventory(int n) {
+  unsigned char*s;
+  if(n<0 || n>=ninventory) return;
+  if(!classes[inventory[n].class]->gamehelp) return;
+  if(classes[inventory[n].class]->gamehelp[0]==16) return;
+  s=sqlite3_mprintf("\x0C\x0E%s:%d\\ %s\x0B\x0F%s",classes[inventory[n].class]->name,inventory[n].image,classes[inventory[n].class]->name,classes[inventory[n].class]->gamehelp);
+  if(!s) fatal("Allocation failed\n");
+  modal_draw_popup(s);
+  sqlite3_free(s);
+}
+
 static void do_import_moves(const char*arg) {
   FILE*fp;
   int i;
@@ -1008,7 +1019,9 @@ void run_game(void) {
           if(ev.button.y<48) break;
           if(side_mode) {
             // Inventory
-            //TODO
+            describe_inventory((ev.button.y-52)/picture_size);
+            timerflag=0;
+            redraw_game();
           } else {
             // Move list
             i=(ev.button.y+4)/16-(screen->h-68)/32-4;
