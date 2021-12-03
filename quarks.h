@@ -167,27 +167,29 @@
 #define Q_saveSolutions 168
 #define Q_solutionComment 169
 #define Q_solutionTimestamp 170
-#define Q_sqlFile 171
-#define Q_sqlInit 172
-#define Q_sqlExtensions 173
-#define Q_sqlMemStatus 174
-#define Q_sqlSmallAllocations 175
-#define Q_sqlCoveringIndexScan 176
-#define Q_sqlPowerSafe 177
-#define Q_level 178
-#define Q_tracePrefix 179
-#define Q_stackProtection 180
-#define Q_maxObjects 181
-#define Q_traceAll 182
-#define Q_traceObject 183
-#define Q_showInventory 184
-#define Q_progress 185
-#define Q_autoSave 186
-#define Q_maxTrigger 187
-#define Q_pasteCommand 188
-#define Q_codepage 189
-#define Q_replaySpeed 190
-#define Q_autoWin 191
+#define Q_picedit 171
+#define Q_macro 172
+#define Q_sqlFile 173
+#define Q_sqlInit 174
+#define Q_sqlExtensions 175
+#define Q_sqlMemStatus 176
+#define Q_sqlSmallAllocations 177
+#define Q_sqlCoveringIndexScan 178
+#define Q_sqlPowerSafe 179
+#define Q_level 180
+#define Q_tracePrefix 181
+#define Q_stackProtection 182
+#define Q_maxObjects 183
+#define Q_traceAll 184
+#define Q_traceObject 185
+#define Q_showInventory 186
+#define Q_progress 187
+#define Q_autoSave 188
+#define Q_maxTrigger 189
+#define Q_pasteCommand 190
+#define Q_codepage 191
+#define Q_replaySpeed 192
+#define Q_autoWin 193
 static const char*const global_quarks[]={
   "screenWidth",
   "screenHeight",
@@ -358,6 +360,8 @@ static const char*const global_quarks[]={
   "saveSolutions",
   "solutionComment",
   "solutionTimestamp",
+  "picedit",
+  "macro",
   "sqlFile",
   "sqlInit",
   "sqlExtensions",

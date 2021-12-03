@@ -66,6 +66,7 @@ static Uint8 cur_type;
 static Uint8 gsizes[16];
 static Picture*cur_pic;
 static Picture*spare_page;
+static sqlite3_stmt**macro[26];
 
 static void fn_valid_name(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   const char*s=sqlite3_value_text(*argv);
@@ -160,6 +161,19 @@ static const sqlite3_module vt_graph={
   .xRowid=vt_graph_rowid,
   .xUpdate=vt_graph_update,
 };
+
+static void*load_macros_1(xrm_db*db,void*usr,int loose,xrm_quark q) {
+  const char*txt;
+  if(q<Q_A || q>Q_Z) return 0;
+  if(!(db=xrm_sub(db,loose,q)) || !(txt=xrm_get(db))) return 0;
+  if(sqlite3_prepare_v3(userdb,txt,-1,SQLITE_PREPARE_PERSISTENT,macro+(q-Q_A),0)) fatal("Error in macro:  %s\n%s\n",txt,sqlite3_errmsg(userdb));
+  return 0;
+}
+
+static void*load_macros(xrm_db*db,void*usr) {
+  xrm_enumerate(db,load_macros_1,0);
+  return 0;
+}
 
 static int load_picture_file(void) {
   sqlite3_stmt*st=0;
@@ -912,6 +926,37 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
         }
         break;
       case SDL_KEYDOWN:
+        if((ev.key.keysym.mod&(KMOD_ALT|KMOD_META)) && ev.key.keysym.sym>=SDLK_a && ev.key.keysym.sym<=SDLK_z) {
+          sqlite3_stmt*st=macro[ev.key.keysym.sym-SDLK_a];
+          if(!st) goto redraw;
+          sqlite3_reset(st);
+          sqlite3_bind_int(st,sqlite3_bind_parameter_index(st,"$cc"),cc);
+          sqlite3_bind_int(st,sqlite3_bind_parameter_index(st,"$xx"),xx);
+          sqlite3_bind_int(st,sqlite3_bind_parameter_index(st,"$yy"),yy);
+          sqlite3_bind_int(st,sqlite3_bind_parameter_index(st,"$mx"),m.x);
+          sqlite3_bind_int(st,sqlite3_bind_parameter_index(st,"$my"),m.y);
+          sqlite3_bind_int(st,sqlite3_bind_parameter_index(st,"$mw"),m.w);
+          sqlite3_bind_int(st,sqlite3_bind_parameter_index(st,"$mh"),m.h);
+          while((i=sqlite3_step(st))==SQLITE_ROW) {
+            for(j=0;j<sqlite3_data_count(st);) switch(sqlite3_column_int(st,j++)) {
+              case 1:
+                xx=sqlite3_column_int(st,j++);
+                yy=sqlite3_column_int(st,j++);
+                break;
+              case 2:
+                m.x=sqlite3_column_int(st,j++);
+                m.y=sqlite3_column_int(st,j++);
+                m.w=sqlite3_column_int(st,j++);
+                m.h=sqlite3_column_int(st,j++);
+                break;
+              case 3:
+                cc=sqlite3_column_int(st,j++);
+                break;
+            }
+          }
+          if(i!=SQLITE_DONE) screen_message(sqlite3_errmsg(userdb));
+          goto redraw;
+        }
         switch(ev.key.keysym.sym) {
           case SDLK_ESCAPE: return;
           case SDLK_LEFTBRACKET: case SDLK_LEFTPAREN: --sel; m.x=m.y=m.w=m.h=0; goto redraw;
@@ -1628,6 +1673,9 @@ void run_picture_editor(void) {
   init_palette();
   optionquery[1]=Q_imageSize;
   picture_size=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"16",0,10);
+  optionquery[1]=Q_picedit;
+  optionquery[2]=Q_macro;
+  xrm_search(resourcedb,optionquery,optionquery,3,load_macros,0);
   if(!*gsizes) *gsizes=picture_size;
   set_cursor(XC_arrow);
   set_caption();

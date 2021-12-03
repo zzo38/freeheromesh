@@ -199,6 +199,10 @@ saveSolutions
 solutionComment
 solutionTimestamp
 
+! Picture editor
+picedit
+macro
+
 ! SQL settings
 sqlFile
 sqlInit

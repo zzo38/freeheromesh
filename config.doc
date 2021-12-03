@@ -82,6 +82,10 @@ See bindings.doc for key/mouse bindings.
   The command to use for pasting text from the clipboard. When it asks for
   a single line of text, you can push SHIFT+INSERT to paste.
 
+.picedit.macro.?
+  Define a macro in the picture editor, if you push ALT and a letter,
+  will execute a SQL statement.
+
 .progress
   If positive, how many steps between dots in the progress report for the
   auto testing mode. If negative, number of milliseconds to sleep before
