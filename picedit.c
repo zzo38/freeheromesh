@@ -65,6 +65,7 @@ typedef struct {
 static Uint8 cur_type;
 static Uint8 gsizes[16];
 static Picture*cur_pic;
+static Picture*spare_page;
 
 static void fn_valid_name(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   const char*s=sqlite3_value_text(*argv);
@@ -1041,6 +1042,20 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
           case SDLK_F12:
             p=(Uint8*)screen_prompt("<SQL>");
             if(p) sqlite3_exec(userdb,p,response_cb,0,0);
+            goto redraw;
+          case SDLK_EQUALS: case SDLK_BACKQUOTE:
+            if(!spare_page) {
+              spare_page=malloc(sizeof(Picture)+(picture_size+1)*picture_size);
+              if(!spare_page) fatal("Allocation failed\n");
+              spare_page->size=picture_size;
+              memset(spare_page->data,0,(picture_size+1)*picture_size);
+            }
+            if(spare_page->size!=cur_pic->size) {
+              m.x=m.y=m.w=m.h=0;
+              xx=yy=-1;
+            }
+            pict[sel]=spare_page;
+            spare_page=cur_pic;
             goto redraw;
         }
         break;

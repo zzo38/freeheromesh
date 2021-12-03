@@ -134,6 +134,10 @@ F12
   statement in order to query it, and the response is then displayed
   (which must be a single row and single column only).
 
+` or =
+  Exchange the current picture with the spare page. (The spare page is not
+  stored in the puzzle set; it is lost when Free Hero Mesh is terminated.)
+
 Click in the colour palette on the right to select a colour. With the left
 button, that colour is selected as the current colour. The middle button
 will replace everything of the current colour with the clicked colour, and
