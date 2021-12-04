@@ -66,7 +66,7 @@ static Uint8 cur_type;
 static Uint8 gsizes[16];
 static Picture*cur_pic;
 static Picture*spare_page;
-static sqlite3_stmt**macro[26];
+static sqlite3_stmt*macro[26];
 
 static void fn_valid_name(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   const char*s=sqlite3_value_text(*argv);
@@ -716,7 +716,7 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
     draw_text(x<<3,0,buf,0xF0,i==sel?0xFF:0xF8);
     x+=j;
   }
-  draw_text(0,8,"<ESC> Exit  <1-9> Sel  <SP> Unmark  <RET> Copy  <INS> Paste  <DEL> Erase",0xF0,0xFB);
+  draw_text(0,8,"<ESC> Exit  <1-9> Sel  <SP> Unmark  <RET> Copy  <INS> Paste  <DEL> Erase  <=> SparePage",0xF0,0xFB);
   draw_text(0,16,"<F1> CW  <F2> CCW  <F3> \x12  <F4> \x1D  <F5> Size  <F6> Add  <F7> Del  <F8> Mark  <F9> In  <F10> Out",0xF0,0xFB);
   x=0;
   for(i=0;i<11;i++) {
