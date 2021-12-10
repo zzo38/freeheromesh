@@ -197,10 +197,13 @@ Level
 Key
 =Finished
 
+; Top level definitions
+-Background
+-CodePage
+-Order
+Control
+
 ; Class definitions
--Background ; used at top level only; not in a class
--CodePage ; used at top level only; not in a class
--Order ; used at top level only; not in a class
 -Input
 -Quiz
 -InPlace

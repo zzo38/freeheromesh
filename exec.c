@@ -59,6 +59,7 @@ static const char*traceprefix;
 static Uint8 current_key;
 static Value quiz_obj;
 static Value traced_obj;
+static Uint32 control_obj=VOIDLINK;
 
 #define Throw(x) (my_error=(x),longjmp(my_env,1))
 #define StackReq(x,y) do{ if(vstackptr<(x)) Throw("Stack underflow"); if(vstackptr-(x)+(y)>=VSTACKSIZE) Throw("Stack overflow"); }while(0)
@@ -535,6 +536,10 @@ static void change_density(Uint32 n,Sint32 v) {
   Object*o=objects[n];
   Uint32 i;
   if(o->oflags&OF_BIZARRO) return;
+  if(n==control_obj) {
+    o->density=v;
+    return;
+  }
   if(v<o->density) {
     o->density=v;
     for(;;) {
@@ -797,7 +802,7 @@ static Uint32 create(Uint32 from,Uint16 c,Uint32 x,Uint32 y,Uint32 im,Uint32 d) 
   Object*p;
   Value v;
   if(d>7) d=0;
-  if(x<1 || y<1 || x>pfwidth || y>pfheight) return VOIDLINK;
+  if(x<1 || y<1 || x>pfwidth || y>pfheight || c==control_class) return VOIDLINK;
   if(!(classes[c]->oflags&OF_BIZARRO) && (i=classes[c]->collisionLayers) && (xx=collisions_at(x,y)&i)) {
     if(collide_with(xx,VOIDLINK,x,y,c)&0x01) return VOIDLINK;
   }
@@ -842,7 +847,7 @@ static Value destroy(Uint32 from,Uint32 to,Uint32 why) {
   Value v;
   int i,x,y,xx,yy;
   Uint32 n;
-  if(to==VOIDLINK) return NVALUE(0);
+  if(to==VOIDLINK || to==control_obj) return NVALUE(0);
   o=objects[to];
   // EKS Hero Mesh doesn't check if it already destroyed.
   v=why==8?NVALUE(0):send_message(from,to,MSG_DESTROY,NVALUE(0),NVALUE(0),NVALUE(why));
@@ -879,7 +884,7 @@ static int move_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
   Object*o;
   Object*p;
   Value v;
-  if(n==VOIDLINK || (objects[n]->oflags&OF_DESTROYED)) return 0;
+  if(n==VOIDLINK || (objects[n]->oflags&OF_DESTROYED) || n==control_obj) return 0;
   o=objects[n];
   if(lastimage_processing) Throw("Can't move during animation processing");
   if(x<1 || y<1 || x>pfwidth || y>pfheight) return 0;
@@ -1200,7 +1205,7 @@ static int defer_move(Uint32 obj,Uint32 dir,Uint8 plus) {
   Uint32 n;
   Value v;
   if(StackProtection()) Throw("Call stack overflow during movement");
-  if(obj==VOIDLINK) return 0;
+  if(obj==VOIDLINK || obj==control_obj) return 0;
   o=objects[obj];
   if(o->oflags&(OF_DESTROYED|OF_BIZARRO)) return 0;
   dir=resolve_dir(obj,dir);
@@ -1284,7 +1289,7 @@ static inline void flush_all(void) {
 static void set_bizarro(Uint32 n,Uint32 v) {
   Object*o;
   Uint8 b;
-  if(n==VOIDLINK) return;
+  if(n==VOIDLINK || n==control_obj) return;
   o=objects[n];
   if(o->oflags&OF_DESTROYED) return;
   if(v) {
@@ -1864,6 +1869,7 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
   Value v;
   static ChoicePoint cp[MAXCHOICE];
   Uint8 cpi=0;
+  if(!x) return VOIDLINK;
   cp->depth=vstackptr;
   again: switch(code[ptr++]) {
     case 0 ... 7:
@@ -1913,6 +1919,7 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
           n=v_object(v);
           x=objects[n]->x;
           y=objects[n]->y;
+          if(!x) return VOIDLINK;
         } else {
           Throw("Type mismatch");
         }
@@ -1997,6 +2004,7 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
         n=v_object(v);
         x=objects[n]->x;
         y=objects[n]->y;
+        if(!x) return VOIDLINK;
       } else {
         Throw("Type mismatch");
       }
@@ -2472,6 +2480,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_COLOC_C: StackReq(2,1); t1=Pop(); t2=Pop(); i=colocation(v_object(t1),v_object(t2)); Push(NVALUE(i)); break;
     case OP_COMPATIBLE: StackReq(0,1); if(classes[o->class]->cflags&CF_COMPATIBLE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_COMPATIBLE_C: StackReq(1,1); GetClassFlagOf(CF_COMPATIBLE); break;
+    case OP_CONTROL: StackReq(0,1); Push(OVALUE(control_obj)); break;
     case OP_COPYARRAY: NoIgnore(); StackReq(2,0); t2=Pop(); t1=Pop(); v_copy_array(t1,t2); break;
     case OP_COUNT: StackReq(1,2); i=v_count(); Push(NVALUE(i)); break;
     case OP_CREATE: NoIgnore(); StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_create(obj,t1,t2,t3,t4,t5)); break;
@@ -2917,6 +2926,7 @@ void annihilate(void) {
   free(deadanim);
   deadanim=0;
   ndeadanim=0;
+  control_obj=VOIDLINK;
 }
 
 static inline int try_sharp(Uint32 n1,Uint32 n2) {
@@ -3305,6 +3315,10 @@ const char*init_level(void) {
   vstackptr=0;
   move_number=0;
   current_key=0;
+  if(control_class) {
+    control_obj=objalloc(control_class);
+    if(control_obj==VOIDLINK) Throw("Error creating object");
+  }
   n=lastobj;
   while(n!=VOIDLINK && !(objects[n]->oflags&OF_ORDERED)) {
     send_message(VOIDLINK,n,MSG_INIT,NVALUE(0),NVALUE(0),NVALUE(0));

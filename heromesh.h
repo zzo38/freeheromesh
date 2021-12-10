@@ -178,6 +178,7 @@ extern Uint8 keymask[256/8];
 extern Uint16 array_size;
 extern Uint16*orders;
 extern Uint8 norders;
+extern Uint16 control_class;
 
 Uint16 get_message_ptr(int c,int m);
 void load_classes(void);

@@ -271,6 +271,14 @@ These are the global definitions in the class definition file.
   Define the code page, from 1 to 65535. If not specified, then the
   default code page is used.
 
+(Control <definitions...>)
+  Define the control class. The format is the same like other class
+  definitions, except that Image and Abstract are not allowed. An
+  object of this class is automatically created when initializing the
+  level, at X and Y coordinates both zero, and cannot otherwise be
+  created, destroyed, or moved. It still receives broadcast messages
+  normally, and can also be addressed specifically.
+
 (CollisionLayers <userflags...>)
   Define user flags as CollisionLayers bits; the first defined flag is
   bit0. Up to 8 flags can be defined in this way.
@@ -320,7 +328,8 @@ These are the global definitions in the class definition file.
 
 (<message> <code...>)
   Defines a default message code for all classes which do not specify
-  their own code for this message.
+  their own code for this message. (It is recommended to not use this
+  block, and to use subclassing instead.)
 
 (&<name> <code...>)
   Define a user-defined function. User-defined functions may take any
@@ -1304,6 +1313,10 @@ Coloc  ( obj -- bool )
   True if the two specified objects are in the same place, or false
   otherwise. Always false if the object is destroyed, or if one object
   is in the bizarro world and the other one isn't.
+
+Control  ( -- obj )
+  Push the control object to the stack. (If no control class is defined,
+  then there will be no control object and this will be zero.)
 
 CopyArray  ( src dest -- ) **
   Copy one array to another. It is OK if the two references overlap.
@@ -2510,22 +2523,29 @@ You can specify the order of execution of objects by class by a global
 is delimited by parentheses.
 
 Each sub-list starts with a flag name, which may be a user flag, or Input,
-or Player. This matches only classes that have that flag (changing that
-flag at run time has no effect on order of execution). The remaining
-elements are optional; if they are present, they are used to break ties.
-First, the second item breaks ties if there is one, and then if there is
-still a tie then the third item breaks ties, etc. These extra elements
-can be one of the following, with or without a comma: Misc1, Misc2, Misc3,
-Misc4, Misc5, Misc6, Misc7, Temperature, Density, Xloc, Yloc, Image. If
-there is no comma, they are lowest to highest, but a comma reverses the
-order to be highest to lowest instead. These values are treated as signed,
-and the values after INIT or CREATE message returns is used. If any of
-the values is not a number, then it is an error.
+or Player, or Control. This matches only classes that have that flag
+(changing that flag at run time has no effect on order of execution).
+
+The remaining elements are optional; if they are present, they are used to
+break ties. First, the second item breaks ties if there is one, and then
+if there is still a tie then the third item breaks ties, etc. These extra
+elements can be one of the following, with or without a comma: Misc1,
+Misc2, Misc3, Misc4, Misc5, Misc6, Misc7, Temperature, Density, Xloc, Yloc,
+Image. If there is no comma, they are lowest to highest, but a comma
+reverses the order to be highest to lowest instead. These values are
+treated as signed, and the values after INIT or CREATE message returns is
+used. If any of the values is not a number, then it is an error.
 
 The order of execution is then first all objects not listed in the (Order)
 block, and then for each sub-list in the (Order) block, the objects that
 meet that criteria, in that order. (If it meets multiple criteria, only
 the first one that meets that criteria is used.)
+
+Objects not listed in the (Order) block are executed in the reverse order
+of their creation. The control object is created after all objects placed
+in the level editor but before any other objects, while objects placed in
+the editor are created in the order by their coordinates (which is not
+necessarily the same order they were put in by the author).
 
 Note: If a value used for the criteria changes after the INIT or CREATE
 message of that object returns, then it can result in an unstable (but

@@ -52,6 +52,7 @@ Uint8 keymask[256/8];
 Uint16 array_size;
 Uint16*orders;
 Uint8 norders;
+Uint16 control_class;
 
 #define HASH_SIZE 8888
 #define LOCAL_HASH_SIZE 5555
@@ -2137,7 +2138,7 @@ static void parse_order_block(void) {
     orders[++norders]=ptr;
     if(norders==beg) ParseError("Too many orders\n");
     switch(tokenv) {
-      case OP_INPUT: case OP_PLAYER:
+      case OP_INPUT: case OP_PLAYER: case OP_CONTROL:
         orders[ptr++]=tokenv;
         break;
       case OP_USERFLAG:
@@ -2188,6 +2189,7 @@ static void set_class_orders(void) {
         case 0x1080 ... 0x1087: if(classes[i]->collisionLayers&(1L<<(k&0x07))) goto found; break;
         case OP_PLAYER: if(classes[i]->cflags&CF_PLAYER) goto found; break;
         case OP_INPUT: if(classes[i]->cflags&CF_INPUT) goto found; break;
+        case OP_CONTROL: if(i==control_class) goto found; break;
       }
       continue;
       found: classes[i]->order=j; break;
@@ -2342,6 +2344,13 @@ void load_classes(void) {
           if(norders) ParseError("Extra (Order) block\n");
           parse_order_block();
           break;
+        case OP_CONTROL:
+          if(control_class) ParseError("Extra (Control) block\n");
+          strcpy(tokenstr,"(Control)");
+          control_class=look_class_name();
+          if(!(classes[control_class]->cflags&CF_NOCLASS1)) ParseError("Conflicting definition of (Control) class\n");
+          class_definition(control_class,vst);
+          break;
         default:
           ParseError("Invalid top level definition: %s\n",tokenstr);
       }
@@ -2376,6 +2385,10 @@ void load_classes(void) {
   if(vst) sqlite3_finalize(vst);
   free(glohash);
   for(i=1;i<undef_class;i++) if(classes[i] && (classes[i]->cflags&CF_NOCLASS1)) fatal("Class $%s mentioned but not defined\n",classes[i]->name);
+  if(control_class) {
+    if(classes[control_class]->nimages) fatal("Images are not allowed in Control class");
+    if(classes[control_class]->cflags&CF_GROUP) fatal("Control class is not allowed to be Abstract");
+  }
   if(macros) for(i=0;i<MAX_MACRO;i++) if(macros[i]) free_macro(macros[i]);
   free(macros);
   if(array_size) {
