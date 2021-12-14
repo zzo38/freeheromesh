@@ -10,6 +10,7 @@ exit
 #include "sqlite3.h"
 #include "smallxrm.h"
 #include "heromesh.h"
+#include "cursorshapes.h"
 
 typedef struct {
   struct sqlite3_vtab_cursor;
@@ -19,6 +20,7 @@ typedef struct {
 } Cursor;
 
 static void*bizarro_vtab;
+static char*levels_schema;
 
 static void find_first_usable_image(const Class*cl,sqlite3_context*cxt) {
   int i;
@@ -1181,6 +1183,88 @@ Module(vt_playfield,
   .xNext=vt1_playfield_next,
 );
 
+static int vt1_levels_connect(sqlite3*db,void*aux,int argc,const char*const*argv,sqlite3_vtab**vt,char**err) {
+  //TODO: Add columns specific to a puzzle set.
+  levels_schema=sqlite3_mprintf("CREATE TEMPORARY TABLE `LEVELS`"
+   "(`ID` INTEGER PRIMARY KEY, `ORD` INT, `CODE` INT, `WIDTH` INT, `HEIGHT` INT, `TITLE` BLOB, `SOLVED` INT, `SOLVABLE` INT);");
+  if(!levels_schema) fatal("Allocation failed\n");
+  sqlite3_declare_vtab(db,levels_schema);
+  *vt=sqlite3_malloc(sizeof(sqlite3_vtab));
+  return *vt?SQLITE_OK:SQLITE_NOMEM;
+}
+
+static int vt1_levels_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
+  //TODO: Add columns specific to a puzzle set.
+  sqlite3_stmt*st1;
+  sqlite3_stmt*st2;
+  const unsigned char*d;
+  unsigned char*p;
+  int i,j;
+  long n;
+  int txn=sqlite3_get_autocommit(userdb)?sqlite3_exec(userdb,"BEGIN;",0,0,0):1;
+  if(!levels_schema) return SQLITE_CORRUPT_VTAB;
+  if(screen) set_cursor(XC_coffee_mug);
+  fprintf(stderr,"Loading level index...\n");
+  if(sqlite3_exec(userdb,levels_schema,0,0,0)) {
+    err: fatal("SQL error while loading LEVELS table: %s\n",sqlite3_errmsg(userdb));
+  }
+  sqlite3_free(levels_schema);
+  levels_schema=0;
+  if(sqlite3_prepare_v2(userdb,"SELECT `LEVEL`, IFNULL(`DATA`,READ_LUMP_AT(`OFFSET`,?1)), `USERSTATE` FROM `USERCACHEDATA`"
+   " WHERE `FILE` = LEVEL_CACHEID() AND `LEVEL` NOT NULL AND `LEVEL` >= 0 ORDER BY `LEVEL`;",-1,&st1,0))
+   goto err;
+  // ?1=ID, ?2=CODE, ?3=WIDTH, ?4=HEIGHT, ?5=TITLE, ?6=SOLVED, ?7=SOLVABLE
+  if(sqlite3_prepare_v3(userdb,"INSERT INTO `LEVELS` VALUES(?1,NULL,?2,?3,?4,?5,?6,?7);",-1,SQLITE_PREPARE_NO_VTAB,&st2,0))
+   goto err;
+  sqlite3_bind_pointer(st1,1,levelfp,"http://zzo38computer.org/fossil/heromesh.ui#FILE_ptr",0);
+  while((i=sqlite3_step(st1))==SQLITE_ROW) {
+    sqlite3_reset(st2);
+    sqlite3_bind_int(st2,1,sqlite3_column_int(st1,0));
+    d=sqlite3_column_blob(st1,1); n=sqlite3_column_bytes(st1,1);
+    if(n<7 || !d) continue;
+    sqlite3_bind_int(st2,2,d[2]|(d[3]<<8));
+    sqlite3_bind_int(st2,3,(d[4]&63)+1);
+    sqlite3_bind_int(st2,4,(d[5]&63)+1);
+    for(i=6;i<n && d[i];i++);
+    j=d[0]|(d[1]<<8);
+    sqlite3_bind_blob(st2,5,d+6,i-6,0);
+    p=read_lump(FIL_SOLUTION,sqlite3_column_int(st1,0),&n);
+    if(p) {
+      sqlite3_bind_int(st2,7,(n>2 && d[0]==p[0] && d[1]==p[1]));
+      free(p);
+    } else {
+      sqlite3_bind_int(st2,7,0);
+    }
+    d=sqlite3_column_blob(st1,2); n=sqlite3_column_bytes(st1,2);
+    sqlite3_bind_int(st2,6,(d && n>5 && n-(d[n-2]<<8)-d[n-1]>3 && (d[n-4]<<8)+d[n-3]==j));
+    while((i=sqlite3_step(st2))==SQLITE_ROW);
+    if(i!=SQLITE_DONE) goto err;
+    sqlite3_bind_null(st2,5);
+  }
+  if(i!=SQLITE_DONE) goto err;
+  sqlite3_finalize(st1);
+  sqlite3_finalize(st2);
+  if(sqlite3_prepare_v3(userdb,"UPDATE `LEVELS` SET `ORD` = ?1 WHERE `ID` = ?2;",-1,SQLITE_PREPARE_NO_VTAB,&st2,0))
+   goto err;
+  for(j=0;j<level_nindex;j++) {
+    sqlite3_reset(st2);
+    sqlite3_bind_int(st2,1,j+1);
+    sqlite3_bind_int(st2,2,level_index[j]);
+    while((i=sqlite3_step(st2))==SQLITE_ROW);
+    if(i!=SQLITE_DONE) goto err;
+  }
+  sqlite3_finalize(st2);
+  if(!txn) sqlite3_exec(userdb,"COMMIT;",0,0,0);
+  fprintf(stderr,"Done\n");
+  if(screen) set_cursor(XC_arrow);
+  return SQLITE_SCHEMA;
+}
+
+Module(vt_levels,
+  .xConnect=vt1_levels_connect,
+  .xOpen=vt1_levels_open,
+);
+
 void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"BASENAME",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_basename,0,0);
   sqlite3_create_function(userdb,"BCAT",-1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_bcat,0,0);
@@ -1232,4 +1316,5 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
    "`IMAGE` INT, `DIR` INT, `X` INT, `Y` INT, `UP` INT, `DOWN` INT, `DENSITY` INT HIDDEN, `BIZARRO` INT HIDDEN);");
   sqlite3_create_module(userdb,"INVENTORY",&vt_inventory,"CREATE TABLE `INVENTORY`(`ID` INTEGER PRIMARY KEY, `CLASS` INT, `IMAGE` INT, `VALUE` INT);");
   sqlite3_create_module(userdb,"PLAYFIELD",&vt_playfield,"CREATE TABLE `PLAYFIELD`(`X` INT, `Y` INT, `OBJ` INT, `BIZARRO_OBJ` INT);");
+  sqlite3_create_module(userdb,"LEVELS",&vt_levels,0);
 }

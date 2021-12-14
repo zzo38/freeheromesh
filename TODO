@@ -16,9 +16,11 @@
 * Editor
   * Mouse dragging
   * Level index editor
-* Table of contents for levels
+* Table of contents for levels (partially implemented)
   * Can define your own columns
-  * User can write SQL queries on them
+  * Update SOLVED (and SOLVABLE) column during playing
+  * Cache invalidation in editor
+  * Can be divisions by sections
 * Deal better with allowing to skip past corrupted levels
 * Picture editor/loading
   * Allowing more altimages

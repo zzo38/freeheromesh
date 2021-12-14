@@ -139,6 +139,8 @@ Keyboard:
   KP ENTER    Restart level
   KP +        Next level
   KP -        Previous level
+  ALT+KP +    Next unsolved level
+  ALT+KP -    Previous unsolved level
   SHIFT+KP +  Last level
   SHIFT+KP -  First level
   ALT+G       Inspect globals

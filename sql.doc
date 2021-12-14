@@ -164,6 +164,11 @@ ZERO_EXTEND(number)
 Asterisks denote virtual tables. (The only disk tables are USERCACHEDATA
 and USERCACHEINDEX; all others are eiter temporary or virtual.)
 
+CREATE TABLE "BIZARRO_OBJECTS"("ID" INTEGER PRIMARY KEY, "CLASS" INT,
+"MISC1" INT, "MISC2" INT, "MISC3" INT, "IMAGE" INT, "DIR" INT, "X" INT,
+"Y" INT, "UP" INT, "DOWN" INT, "DENSITY" INT HIDDEN); *
+  See OBJECTS; this is for the bizarro world only.
+
 CREATE TABLE "CLASSES"("ID" INTEGER PRIMARY KEY, "NAME" TEXT, "EDITORHELP"
 TEXT, "HELP" TEXT, "INPUT" INT, "QUIZ" INT, "TRACEIN" INT, "TRACEOUT" INT,
 "GROUP" TEXT, "PLAYER" INT); *
@@ -177,6 +182,17 @@ CREATE TABLE "INVENTORY"("ID" INTEGER PRIMARY KEY, "CLASS" INT, "IMAGE"
 INT, "VALUE" INT); *
   This table contains the current inventory, and is read-only. It is not
   meaningful in the editor.
+
+CREATE TEMPORARY TABLE "LEVELS"("ID" INTEGER PRIMARY KEY, "ORD" INT,
+"CODE" INT, "WIDTH" INT, "HEIGHT" INT, "TITLE" BLOB, "SOLVED" INT,
+"SOLVABLE" INT); *
+  This table contains a list of the levels in the current puzzle set. The
+  SOLVED column is 1 if the current user has solved the level or 0
+  otherwise; the SOLVABLE column is 1 if a solution is stored for this
+  level or 0 otherwise (it doesn't validate the solution; to do that, use
+  the -a switch instead). Although you can write to this table after it
+  has been read once (this table uses lazy loading), you should not do so,
+  since the changes will not be saved.
 
 CREATE TABLE "MESSAGES"("ID" INTEGER PRIMARY KEY, "NAME" TEXT, "TRACE"
 INT); *

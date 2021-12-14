@@ -54,6 +54,8 @@ unsigned char*level_title;
 Uint16*level_index;
 int level_nindex;
 char level_changed;
+FILE*levelfp;
+FILE*solutionfp;
 
 #ifdef __GNUC__
 char stack_protect_mode=0;
@@ -64,8 +66,6 @@ void*stack_protect_high;
 
 static const char*globalclassname;
 static SDL_Cursor*cursor[77];
-static FILE*levelfp;
-static FILE*solutionfp;
 static FILE*compositefp;
 static sqlite3_int64 leveluc,solutionuc;
 static sqlite3_stmt*readusercachest;
