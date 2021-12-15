@@ -982,6 +982,7 @@ static void record_solution(void) {
   memcpy(p,replay_list,replay_pos);
   write_lump(FIL_SOLUTION,level_id,sz,data);
   free(data);
+  sqlite3_exec(userdb,"UPDATE `LEVELS` SET `SOLVABLE` = 1 WHERE `ID` = LEVEL_ID();",0,0,0);
 }
 
 void run_game(void) {
@@ -1051,6 +1052,7 @@ void run_game(void) {
           no_dead_anim=0;
           if(gameover==1) {
             if(should_record_solution) record_solution();
+            if(!solution_replay && !solved) sqlite3_exec(userdb,"UPDATE `LEVELS` SET `SOLVED` = 1 WHERE `ID` = LEVEL_ID();",0,0,0);
             if(autowin) do_autowin();
           }
         }

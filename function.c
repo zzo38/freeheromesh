@@ -1184,10 +1184,12 @@ Module(vt_playfield,
 );
 
 static int vt1_levels_connect(sqlite3*db,void*aux,int argc,const char*const*argv,sqlite3_vtab**vt,char**err) {
+  if(levels_schema) goto declare;
   //TODO: Add columns specific to a puzzle set.
   levels_schema=sqlite3_mprintf("CREATE TEMPORARY TABLE `LEVELS`"
    "(`ID` INTEGER PRIMARY KEY, `ORD` INT, `CODE` INT, `WIDTH` INT, `HEIGHT` INT, `TITLE` BLOB, `SOLVED` INT, `SOLVABLE` INT);");
   if(!levels_schema) fatal("Allocation failed\n");
+  declare:
   sqlite3_declare_vtab(db,levels_schema);
   *vt=sqlite3_malloc(sizeof(sqlite3_vtab));
   return *vt?SQLITE_OK:SQLITE_NOMEM;
@@ -1204,12 +1206,10 @@ static int vt1_levels_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
   int txn=sqlite3_get_autocommit(userdb)?sqlite3_exec(userdb,"BEGIN;",0,0,0):1;
   if(!levels_schema) return SQLITE_CORRUPT_VTAB;
   if(screen) set_cursor(XC_coffee_mug);
-  fprintf(stderr,"Loading level index...\n");
+  fprintf(stderr,"Loading level table...\n");
   if(sqlite3_exec(userdb,levels_schema,0,0,0)) {
     err: fatal("SQL error while loading LEVELS table: %s\n",sqlite3_errmsg(userdb));
   }
-  sqlite3_free(levels_schema);
-  levels_schema=0;
   if(sqlite3_prepare_v2(userdb,"SELECT `LEVEL`, IFNULL(`DATA`,READ_LUMP_AT(`OFFSET`,?1)), `USERSTATE` FROM `USERCACHEDATA`"
    " WHERE `FILE` = LEVEL_CACHEID() AND `LEVEL` NOT NULL AND `LEVEL` >= 0 ORDER BY `LEVEL`;",-1,&st1,0))
    goto err;

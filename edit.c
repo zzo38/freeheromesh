@@ -272,6 +272,11 @@ static void save_level(void) {
   data=sqlite3_str_finish(str);
   if(!data) fatal("Allocation failed\n");
   sqlite3_exec(userdb,"BEGIN;",0,0,0);
+  // This next line might fail if the LEVELS table has not been loaded yet.
+  // Attempting to drop it before it is loaded is slower than it should be, somehow.
+  // (I also suspect there might be a bug in SQLite, although I am unsure.)
+  // Therefore, it first tries to truncate it; if it hasn't been loaded, it fails.
+  sqlite3_exec(userdb,"DELETE FROM LEVELS; DROP TABLE TEMP.LEVELS;",0,0,0);
   write_lump(FIL_LEVEL,level_id,sz,data);
   sqlite3_free(data);
   if(level_ord==level_nindex+1) update_level_index();
