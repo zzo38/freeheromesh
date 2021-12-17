@@ -190,6 +190,8 @@
 #define Q_codepage 191
 #define Q_replaySpeed 192
 #define Q_autoWin 193
+#define Q_listMode 194
+#define Q_listColumns 195
 static const char*const global_quarks[]={
   "screenWidth",
   "screenHeight",
@@ -383,6 +385,8 @@ static const char*const global_quarks[]={
   "codepage",
   "replaySpeed",
   "autoWin",
+  "listMode",
+  "listColumns",
 0};
 #ifdef HEROMESH_BINDINGS
 static const SDLKey quark_to_key[Q_undo+1-Q_backspace]={

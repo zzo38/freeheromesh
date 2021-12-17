@@ -76,6 +76,9 @@ any name with : at first to ask the user for the value to use.
 '^I'
   Toggle the inventory/move-list display.
 
+'^L'
+  List of levels.
+
 '^M'
   Set the replay mark position.
 

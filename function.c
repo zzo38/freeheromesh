@@ -1254,6 +1254,7 @@ static int vt1_levels_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
     if(i!=SQLITE_DONE) goto err;
   }
   sqlite3_finalize(st2);
+  sqlite3_exec(userdb,"CREATE UNIQUE INDEX `LEVELS_ORD` ON `LEVELS`(`ORD`) WHERE `ORD` NOT NULL;",0,0,0);
   if(!txn) sqlite3_exec(userdb,"COMMIT;",0,0,0);
   fprintf(stderr,"Done\n");
   if(screen) set_cursor(XC_arrow);

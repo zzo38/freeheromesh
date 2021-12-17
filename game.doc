@@ -105,6 +105,23 @@ local to the user account. If the .autoSave resource is true, then it will
 do this automatically.
 
 
+=== List of levels ===
+
+You can push CTRL+L to display a list of levels. This list displays the
+numbers of the levels green if you have solved it or red otherwise. You
+can also push the following:
+
+* F1 = Toggle tall/wide mode. The tall mode lists one level per row, and
+shows the columns of the details. The wide mode only displays the level
+numbers but more will fit on the screen at once.
+
+* F2 = Toggle displaying order numbers or ID numbers.
+
+* Space or middle mouse button = Display title.
+
+* Return or right mouse button = Go to selected level.
+
+
 === Summary of default key/mouse bindings ===
 
 (Below, "KP" means the "key pad" or "number pad".)
@@ -115,6 +132,7 @@ Keyboard:
   CTRL+E      Level editor
   CTRL+G      Go to level
   CTRL+I      Import move list
+  CTRL+L      List of levels
   CTRL+Q      Quit
   CTRL+S      Save solution
   CTRL+T      Display level title

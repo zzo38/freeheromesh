@@ -62,6 +62,15 @@ See bindings.doc for key/mouse bindings.
 .level
   Specifies the 1-based order number of the level to start at.
 
+.listColumns
+  Number of columns in the wide mode of the list of levels. If zero or not
+  specified, determines automatically by the screen width.
+
+.listMode
+  Mode for list of levels, in hexadecimal, where bit0 is set for tall mode
+  or clear for wide mode, and bit1 is set for listing the ID numbers or
+  clear for listing the order numbers.
+
 .margin
   The X coordinate of the left margin. To the left is the status area, and
   to the right of the margin is the playfield. This should be at least 64,
