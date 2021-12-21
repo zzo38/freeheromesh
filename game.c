@@ -700,6 +700,22 @@ static void do_load_moves(sqlite3_stmt*st) {
   if(i) memcpy(replay_list,sqlite3_column_blob(st,1),i);
 }
 
+static void copy_text_to_plain(unsigned char*out,int maxlen,const unsigned char*in) {
+  int at=0;
+  if(!in) {
+    *out=0;
+    return;
+  }
+  while(*in && at<maxlen) switch(*in) {
+    case 10: if(at && out[at-1]!=32) out[at++]=32; in++; break;
+    case 14: case 30: in=strchrnul(in,'\\'); if(*in) in++; break;
+    case 31: in++; if(*in) out[at++]=*in++; break;
+    case 32 ... 255: out[at++]=*in++; break;
+    default: in++;
+  }
+  out[at]=0;
+}
+
 static int list_levels(void) {
   static Sint8 mo=-1;
   static Uint8 columns=0;
@@ -749,7 +765,8 @@ static int list_levels(void) {
   sqlite3_reset(st);
   if(mo&1) {
     scrmax=level_nindex;
-    draw_text(16,16,mo&2?"\xB3 ID  \xB3":"\xB3 ORD \xB3",0xF7,0xF1);
+    draw_text(16,16,"\xB3 ORD \xB3W \xB3H \xB3 TITLE",0xF7,0xF1);
+    if(mo&2) draw_text(24,16," ID ",0xF7,0xF1);
     if(rescroll) {
       if(sel<scroll) scroll=sel;
       if(sel>=scroll+screen->h/8-3) scroll=sel+4-screen->h/8;
@@ -770,6 +787,12 @@ static int list_levels(void) {
       snprintf(buf,6,"%5u",mo&2?sqlite3_column_int(st,0):i);
       draw_text(3*8,y,buf,b,sqlite3_column_int(st,6)?0xFA:0xFC);
       draw_text(8*8,y,"\xB3",b,b^0xFA);
+      snprintf(buf,6,"%2u %2u",sqlite3_column_int(st,3),sqlite3_column_int(st,4));
+      draw_text(9*8,y,buf,b,0xFF);
+      draw_text(11*8,y,"\xB3",b,b^0xFA);
+      draw_text(14*8,y,"\xB3",b,b^0xFA);
+      copy_text_to_plain(buf,255,sqlite3_column_text(st,5));
+      draw_text(15*8,y,buf,b,0xFF);
     }
   } else {
     scrmax=(level_nindex+columns-1)/columns;
@@ -810,7 +833,7 @@ static int list_levels(void) {
       case SDL_KEYDOWN:
         if((ev.key.keysym.mod&KMOD_NUM) && ev.key.keysym.sym>=SDLK_KP0 && ev.key.keysym.sym<=SDLK_KP9) goto digit;
         switch(ev.key.keysym.sym) {
-          case SDLK_ESCAPE: sqlite3_finalize(st); return 0;
+          case SDLK_ESCAPE: i=0; goto final;
           //TODO: Change the scroll to approximately the middle, instead of zero
           case SDLK_F1: scroll=0; mo^=1; rescroll=1; goto redraw;
           case SDLK_F2: mo^=2; goto redraw;
@@ -859,10 +882,7 @@ static int list_levels(void) {
           case SDLK_END:
             sel=level_nindex-1;
             rescroll=1; goto redraw;
-          case SDLK_RETURN: case SDLK_KP_ENTER: play:
-            sqlite3_finalize(st);
-            begin_level(~sel);
-            return 1;
+          case SDLK_RETURN: case SDLK_KP_ENTER: play: i=1; goto final;
         }
         break;
       case SDL_MOUSEBUTTONDOWN:
@@ -879,7 +899,11 @@ static int list_levels(void) {
       case SDL_QUIT: exit(0); break;
     }
   }
-  sqlite3_finalize(st); return -1;
+  i=-1;
+  final:
+  sqlite3_finalize(st);
+  if(i==1) begin_level(~sel);
+  return i;
 }
 
 static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
