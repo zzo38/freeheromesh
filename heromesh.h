@@ -88,6 +88,7 @@ const char*log_if_error(const char*t);
 #define FIL_LEVEL 0
 #define LUMP_LEVEL_IDX (-1)
 #define LUMP_CLASS_DEF (-2)
+#define LUMP_DIVISION_IDX (-3)
 
 #define read_lump(a,b,c) read_lump_or_userstate(a,b,c,0)
 #define read_userstate(a,b,c) read_lump_or_userstate(a,b,c,1)
@@ -181,6 +182,29 @@ extern Uint16 array_size;
 extern Uint16*orders;
 extern Uint8 norders;
 extern Uint16 control_class;
+
+typedef struct {
+  // Flags: 1=fill-width, 2=multi-colours, 4=built-in-data
+  Uint8 width,data,color,flag;
+  Uint8 form[2];
+  Uint16 ptr;
+} DisplayColumn;
+
+typedef struct {
+  union {
+    char*name; // free when loading table
+    Uint8 ag; // aggregate type
+  };
+  Uint16 ptr;
+} DataColumn;
+
+extern char*ll_head;
+extern DisplayColumn*ll_disp;
+extern Uint8 ll_ndisp;
+extern DataColumn*ll_data;
+extern Uint8 ll_ndata;
+extern Uint8 ll_naggregate; // Aggregates will be listed in ll_data after the data columns
+extern Uint16*ll_code;
 
 Uint16 get_message_ptr(int c,int m);
 void load_classes(void);

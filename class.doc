@@ -283,6 +283,10 @@ These are the global definitions in the class definition file.
   Define user flags as CollisionLayers bits; the first defined flag is
   bit0. Up to 8 flags can be defined in this way.
 
+(LevelTable <definitions...>)
+  Define the level table. See the section about level table definition
+  for details. Can only occur once.
+
 (Misc4 <userflags...>)
   Define user flags as Misc4 bits; the first defined flag is bit0. Up to
   32 flags can be defined in this way.
@@ -2574,4 +2578,36 @@ that Inertia is not reset.
 * In the ARRIVED and DEPARTED messages, Arg1 is always zero.
 
 * Diagonal shoving is not possible.
+
+
+=== Level table definition ===
+
+The following blocks are allowed in a level table definition:
+
+(<label> <code...>)
+  Define a data column. The SQL name of the data column will be that of
+  the label name, preceded by a underscore, and some characters will be
+  stripped out.
+
+(<string> <label> <width> <format> <color>)
+  Defines a display column. The <label> is the name of the data column.
+  The <width> is a number 1 to 255 or it can be * for fill width. The
+  <format> is a string of one or two characters; see the below list of
+  possible formats. The <color> is the text colour, and is optional; it
+  can be a number from 1 to 255, or it can be a sequence of parenthesized
+  pairs of a number (-127 to +127) and colour, to mean use those colour if
+  the value of this column is in range. It uses the colour for all values
+  up to and including the specified number, so the numbers should be listed
+  in ascending order, in order to work. The <string> is the heading; it is
+  not allowed to include control characters, nor can it include graphic
+  characters with code number less than 32.
+
+(<local> <type> <code...>)
+  Defines a aggregate calculation. The <local> is the name of the aggregate
+  to be referred by other blocks. The <type> is the type of aggregate,
+  which can be one of: + for the sum, min for the least value (unsigned),
+  max for the greatest value (unsigned), ,min for the least value (signed),
+  and ,max for the greatest value (signed).
+
+(TODO: Mention valid instructions.)
 

@@ -202,6 +202,7 @@ Key
 -CodePage
 -Order
 Control
+-LevelTable
 
 ; Class definitions
 -Input

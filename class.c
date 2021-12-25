@@ -54,6 +54,14 @@ Uint16*orders;
 Uint8 norders;
 Uint16 control_class;
 
+char*ll_head;
+DisplayColumn*ll_disp;
+Uint8 ll_ndisp;
+DataColumn*ll_data;
+Uint8 ll_ndata;
+Uint8 ll_naggregate;
+Uint16*ll_code;
+
 #define HASH_SIZE 8888
 #define LOCAL_HASH_SIZE 5555
 typedef struct {
@@ -2197,6 +2205,196 @@ static void set_class_orders(void) {
   }
 }
 
+static int level_table_code(int ptr,Hash*hash) {
+  int flowdepth=0;
+  Uint16 flowptr[64];
+  int x;
+  for(;;) {
+    if(ptr>=0xFFFA) ParseError("Out of memory\n");
+    nxttok();
+    if(Tokenf(TF_MACRO)) ParseError("Unexpected macro\n");
+    if(tokent==TF_CLOSE) {
+      ll_code[ptr++]=OP_RET;
+      return ptr;
+    } else if(Tokenf(TF_NAME)) {
+      switch(tokenv) {
+        case OP_IF:
+          if(flowdepth==64) ParseError("Too much flow control nesting\n");
+          ll_code[ptr++]=OP_IF;
+          flowptr[flowdepth++]=ptr++;
+          break;
+        case OP_ELSE:
+          if(!flowdepth) ParseError("Flow control mismatch\n");
+          ll_code[flowptr[flowdepth-1]]=ptr+2;
+          ll_code[ptr++]=OP_GOTO;
+          flowptr[flowdepth-1]=ptr++;
+          break;
+        case OP_THEN:
+          if(!flowdepth) ParseError("Flow control mismatch\n");
+          ll_code[flowptr[--flowdepth]]=ptr;
+          break;
+        case OP_STRING:
+          ll_code[ptr++]=OP_STRING;
+          ll_code[ptr++]=pool_string(tokenstr);
+          break;
+        case OP_LOCAL:
+          x=look_hash(hash,LOCAL_HASH_SIZE,0x200,0x23F,ll_naggregate+0x200,"aggregates")?:(ll_naggregate++)+0x200;
+          ll_code[ptr++]=OP_LOCAL;
+          ll_code[ptr++]=x-0x200;
+          break;
+        case OP_USERFLAG:
+          if(Tokenf(TF_COMMA|TF_EQUAL)) ParseError("Invalid instruction token\n");
+          x=look_hash(glohash,HASH_SIZE,0x1000,0x10FF,0,"user flags");
+          if(!x) ParseError("User flag ^%s not defined\n",tokenstr);
+          ll_code[ptr++]=OP_USERFLAG;
+          ll_code[ptr++]=x;
+          break;
+        default:
+          if(Tokenf(TF_ABNORMAL)) ParseError("Invalid instruction token\n");
+          ll_code[ptr++]=tokenv;
+      }
+    } else {
+      ParseError("Invalid instruction token\n");
+    }
+  }
+}
+
+static void level_table_definition(void) {
+  sqlite3_str*str=sqlite3_str_new(0);
+  unsigned char buf[0x2000];
+  Hash*hash=calloc(LOCAL_HASH_SIZE,sizeof(Hash));
+  DataColumn*datac=calloc(0x41,sizeof(DataColumn));
+  DataColumn*aggrc=calloc(0x41,sizeof(DataColumn));
+  DisplayColumn*dispc=calloc(0x41,sizeof(DisplayColumn));
+  int ptr=0;
+  int last=0;
+  int i;
+  if(ll_naggregate || ll_ndata || ll_ndisp || ll_head || ll_code) ParseError("LevelTable block is already defined\n");
+  ll_code=malloc(0x10000*sizeof(Uint16));
+  if(!hash || !ll_code || !datac || !aggrc || !dispc) fatal("Allocation failed\n");
+  sqlite3_str_appendchar(str,1,0xB3);
+  for(;;) {
+    nxttok();
+    if(tokent==TF_EOF) ParseError("Unexpected end of file\n");
+    if(tokent==TF_CLOSE) break;
+    if(tokent!=TF_OPEN) ParseError("Expected ( or )\n");
+    nxttok();
+    if(!Tokenf(TF_NAME)) ParseError("Unexpected token in (LevelTable) block\n");
+    switch(tokenv) {
+      case OP_LABEL:
+        i=look_hash(hash,LOCAL_HASH_SIZE,0x100,0x13F,ll_ndata+0x100,"data columns")?:(ll_ndata++)+0x100;
+        i-=0x100;
+        if(datac[i].name) ParseError("Duplicate definition\n");
+        datac[i].name=strdup(tokenstr);
+        if(datac[i].name) fatal("Allocation failed\n");
+        datac[i].ptr=ptr;
+        ptr=level_table_code(ptr,hash);
+        break;
+      case OP_STRING:
+        if(last) ParseError("Extra columns after fill column\n");
+        for(i=0;tokenstr[i];i++) if(!(tokenstr[i]&~31)) ParseError("Improper column heading\n");
+        strcpy(buf,tokenstr);
+        // Data
+        nxttok();
+        if(Tokenf(TF_NAME) && tokenv==OP_LABEL) {
+          i=look_hash(hash,LOCAL_HASH_SIZE,0x100,0x13F,ll_ndata+0x100,"display columns")?:(ll_ndata++)+0x100;
+          dispc[ll_ndisp].data=i-0x100;
+        } else {
+          ParseError("Syntax error\n");
+        }
+        // Width
+        nxttok();
+        if(tokent==TF_INT && tokenv>0 && tokenv<=255) {
+          dispc[ll_ndisp].width=tokenv;
+        } else if(Tokenf(TF_NAME) && tokenv==OP_MUL) {
+          dispc[ll_ndisp].width=255;
+          dispc[ll_ndisp].flag|=1;
+        } else {
+          ParseError("Syntax error\n");
+        }
+        // Format
+        nxttok();
+        if(!Tokenf(TF_NAME) || tokenv!=OP_STRING || !*tokenstr) ParseError("Syntax error\n");
+        if(*tokenstr<32 || *tokenstr>126) ParseError("Syntax error\n");
+        if(tokenstr[1]>0 && tokenstr[1]<31) ParseError("Syntax error\n");
+        if(tokenstr[1]==31) tokenstr[1]=tokenstr[2],tokenstr[2]=tokenstr[3];
+        if(tokenstr[1] && tokenstr[2]) ParseError("Syntax error\n");
+        memcpy(dispc[ll_ndisp].form,tokenstr,2);
+        // Colour
+        nxttok();
+        if(tokent==TF_INT) {
+          if(tokenv&~255) ParseError("Color out of range\n");
+          dispc[ll_ndisp].color=tokenv;
+          nxttok();
+          if(tokent!=TF_CLOSE) ParseError("Syntax error\n");
+        } else if(tokent==TF_OPEN) {
+          dispc[ll_ndisp].flag|=2;
+          dispc[ll_ndisp].ptr=ptr;
+          for(;;) {
+            if(++dispc[ll_ndisp].color==255) ParseError("Too many colors\n");
+            nxttok();
+            if(tokent!=TF_INT) ParseError("Number expected\n");
+            i=tokenv;
+            if(i<-127 || i>127) ParseError("Number out of range\n");
+            nxttok();
+            if(tokent!=TF_INT) ParseError("Number expected\n");
+            if(ptr>=0xFFFE) ParseError("Out of memory\n");
+            if(tokenv&~255) ParseError("Color out of range\n");
+            ll_code[ptr++]=tokenv|((i+128)<<8);
+            nxttok();
+            if(tokent!=TF_CLOSE) ParseError("Close parenthesis expected\n");
+            nxttok();
+            if(tokent==TF_CLOSE) break;
+            if(tokent!=TF_OPEN) ParseError("Syntax error\n");
+          };
+        } else if(tokent==TF_CLOSE) {
+          dispc[ll_ndisp].color=0xFF;
+        }
+        // End
+        if(dispc[ll_ndisp].flag&1) {
+          last=1;
+          sqlite3_str_appendall(str,buf);
+        } else {
+          i=dispc[ll_ndisp].width;
+          sqlite3_str_appendf(str,"%-*.*s\xB3",i,i,buf);
+        }
+        ll_ndisp++;
+        break;
+      case OP_LOCAL:
+        i=look_hash(hash,LOCAL_HASH_SIZE,0x200,0x23F,ll_naggregate+0x200,"aggregates")?:(ll_naggregate++)+0x200;
+        i-=0x200;
+        if(aggrc[i].ag) ParseError("Duplicate definition\n");
+        nxttok();
+        if(!Tokenf(TF_NAME)) ParseError("Improper aggregate\n");
+        switch(tokenv) {
+          case OP_ADD: aggrc[i].ag=1; break;
+          case OP_MIN: aggrc[i].ag=2; break;
+          case OP_MAX: aggrc[i].ag=3; break;
+          case OP_MIN_C: aggrc[i].ag=4; break;
+          case OP_MAX_C: aggrc[i].ag=5; break;
+          default: ParseError("Improper aggregate\n");
+        }
+        aggrc[i].ptr=ptr;
+        ptr=level_table_code(ptr,hash);
+        break;
+      default: ParseError("Unexpected token in (LevelTable) block\n");
+    }
+  }
+  ll_head=sqlite3_str_finish(str);
+  if(!ll_head) fatal("Allocation failed\n");
+  for(i=0;i<ll_ndata;i++) if(!datac[i].name) ParseError("Undefined data column\n");
+  for(i=0;i<ll_naggregate;i++) if(!aggrc[i].ag) ParseError("Undefined aggregate\n");
+  ll_data=realloc(datac,(ll_ndata+ll_naggregate)*sizeof(DataColumn));
+  if(!ll_data) fatal("Allocation failed\n");
+  for(i=0;i<ll_naggregate;i++) ll_data[i+ll_ndata]=aggrc[i];
+  free(aggrc);
+  // The next line will result in an invalid pointer if ptr is zero,
+  // but this is harmless, since ll_code is never accessed if ptr is zero.
+  ll_code=realloc(ll_code,ptr*sizeof(Uint16))?:ll_code;
+  for(i=0;i<LOCAL_HASH_SIZE;i++) free(hash[i].txt);
+  free(hash);
+}
+
 void load_classes(void) {
   int i;
   int gloptr=0;
@@ -2350,6 +2548,9 @@ void load_classes(void) {
           control_class=look_class_name();
           if(!(classes[control_class]->cflags&CF_NOCLASS1)) ParseError("Conflicting definition of (Control) class\n");
           class_definition(control_class,vst);
+          break;
+        case OP_LEVELTABLE:
+          level_table_definition();
           break;
         default:
           ParseError("Invalid top level definition: %s\n",tokenstr);
