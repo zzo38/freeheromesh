@@ -1184,19 +1184,44 @@ Module(vt_playfield,
 );
 
 static int vt1_levels_connect(sqlite3*db,void*aux,int argc,const char*const*argv,sqlite3_vtab**vt,char**err) {
+  sqlite3_str*str;
+  int c,i,j;
   if(levels_schema) goto declare;
-  //TODO: Add columns specific to a puzzle set.
-  levels_schema=sqlite3_mprintf("CREATE TEMPORARY TABLE `LEVELS`"
-   "(`ID` INTEGER PRIMARY KEY, `ORD` INT, `CODE` INT, `WIDTH` INT, `HEIGHT` INT, `TITLE` BLOB, `SOLVED` INT, `SOLVABLE` INT);");
+  str=sqlite3_str_new(db);
+  sqlite3_str_appendall(str,"CREATE TEMPORARY TABLE `LEVELS`"
+   "(`ID` INTEGER PRIMARY KEY, `ORD` INT, `CODE` INT, `WIDTH` INT, `HEIGHT` INT, `TITLE` BLOB, `SOLVED` INT, `SOLVABLE` INT");
+  for(i=0;i<ll_ndata;i++) {
+    sqlite3_str_append(str,",\"_",3);
+    for(j=0;c=ll_data[i].name[j];j++) if(c>32 && c<127 && c!='"' && c!='[' && c!=']' && c!=';' && c!='`') sqlite3_str_appendchar(str,1,c);
+    free(ll_data[i].name);
+    ll_data[i].name=0;
+    sqlite3_str_appendchar(str,1,'"');
+  }
+  sqlite3_str_appendall(str,");");
+  levels_schema=sqlite3_str_finish(str);
   if(!levels_schema) fatal("Allocation failed\n");
   declare:
-  sqlite3_declare_vtab(db,levels_schema);
+  if(i=sqlite3_declare_vtab(db,levels_schema)) return i;
   *vt=sqlite3_malloc(sizeof(sqlite3_vtab));
   return *vt?SQLITE_OK:SQLITE_NOMEM;
 }
 
+typedef struct {
+  Value misc1,misc2,misc3;
+  Uint8 x,y,dir,bizarro;
+  Uint16 class;
+} ObjInfo;
+
+static void calculate_level_column(sqlite3_stmt*st,const unsigned char*lvl,long sz) {
+  ObjInfo ob;
+  ObjInfo mru[2];
+  mru[0].class=mru[1].class=0;
+  ob.x=ob.y=ob.bizarro=0;
+  
+}
+
 static int vt1_levels_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
-  //TODO: Add columns specific to a puzzle set.
+  sqlite3_str*str;
   sqlite3_stmt*st1;
   sqlite3_stmt*st2;
   const unsigned char*d;
@@ -1214,8 +1239,15 @@ static int vt1_levels_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
    " WHERE `FILE` = LEVEL_CACHEID() AND `LEVEL` NOT NULL AND `LEVEL` >= 0 ORDER BY `LEVEL`;",-1,&st1,0))
    goto err;
   // ?1=ID, ?2=CODE, ?3=WIDTH, ?4=HEIGHT, ?5=TITLE, ?6=SOLVED, ?7=SOLVABLE
-  if(sqlite3_prepare_v3(userdb,"INSERT INTO `LEVELS` VALUES(?1,NULL,?2,?3,?4,?5,?6,?7);",-1,SQLITE_PREPARE_NO_VTAB,&st2,0))
+  str=sqlite3_str_new(userdb);
+  sqlite3_str_appendall(str,"INSERT INTO `LEVELS` VALUES(?1,NULL,?2,?3,?4,?5,?6,?7");
+  for(i=0;i<ll_ndata;i++) sqlite3_str_appendf(str,",?%d",i+8);
+  sqlite3_str_appendall(str,");");
+  p=sqlite3_str_finish(str);
+  if(!p) fatal("Allocation failed\n");
+  if(sqlite3_prepare_v3(userdb,p,-1,SQLITE_PREPARE_NO_VTAB,&st2,0))
    goto err;
+  sqlite3_free(p);
   sqlite3_bind_pointer(st1,1,levelfp,"http://zzo38computer.org/fossil/heromesh.ui#FILE_ptr",0);
   while((i=sqlite3_step(st1))==SQLITE_ROW) {
     sqlite3_reset(st2);
@@ -1228,6 +1260,7 @@ static int vt1_levels_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
     for(i=6;i<n && d[i];i++);
     j=d[0]|(d[1]<<8);
     sqlite3_bind_blob(st2,5,d+6,i-6,0);
+    calculate_level_column(st2,d,n);
     p=read_lump(FIL_SOLUTION,sqlite3_column_int(st1,0),&n);
     if(p) {
       sqlite3_bind_int(st2,7,(n>2 && d[0]==p[0] && d[1]==p[1]));
@@ -1240,6 +1273,7 @@ static int vt1_levels_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
     while((i=sqlite3_step(st2))==SQLITE_ROW);
     if(i!=SQLITE_DONE) goto err;
     sqlite3_bind_null(st2,5);
+    for(i=0;i<ll_ndata;i++) sqlite3_bind_null(st2,i+8);
   }
   if(i!=SQLITE_DONE) goto err;
   sqlite3_finalize(st1);

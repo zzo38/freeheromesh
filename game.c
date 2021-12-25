@@ -745,6 +745,7 @@ static int list_levels(void) {
     if(i>255) i=255;
     columns=i;
   }
+  if(!ll_head) ll_head="\xB3W \xB3H \xB3 TITLE";
   // ID, ORD, CODE, WIDTH, HEIGHT, TITLE, SOLVED, SOLVABLE, ...
   if(sqlite3_prepare_v2(userdb,"SELECT * FROM `LEVELS` WHERE `ORD` NOT NULL AND `ORD` >= ?1 ORDER BY `ORD`;",-1,&st,0)) {
     screen_message(sqlite3_errmsg(userdb));
@@ -765,8 +766,8 @@ static int list_levels(void) {
   sqlite3_reset(st);
   if(mo&1) {
     scrmax=level_nindex;
-    draw_text(16,16,"\xB3 ORD \xB3W \xB3H \xB3 TITLE",0xF7,0xF1);
-    if(mo&2) draw_text(24,16," ID ",0xF7,0xF1);
+    draw_text(16+060,16,ll_head,0xF7,0xF1);
+    draw_text(16,16,mo&2?"\xB3 ID  ":"\xB3 ORD ",0xF7,0xF1);
     if(rescroll) {
       if(sel<scroll) scroll=sel;
       if(sel>=scroll+screen->h/8-3) scroll=sel+4-screen->h/8;

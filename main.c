@@ -1071,7 +1071,6 @@ int main(int argc,char**argv) {
     return 0;
   }
   init_sql();
-  load_key_bindings();
   init_screen();
   if(main_options['p']) {
     run_picture_editor();
@@ -1087,6 +1086,7 @@ int main(int argc,char**argv) {
   if(!main_options['z']) init_usercache();
   if(main_options['n']) return 0;
   load_classes();
+  load_key_bindings();
   load_level_index();
   optionquery[1]=Q_maxObjects;
   max_objects=strtoll(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,0)?:0xFFFF0000L;

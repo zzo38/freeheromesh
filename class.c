@@ -2216,6 +2216,10 @@ static int level_table_code(int ptr,Hash*hash) {
     if(tokent==TF_CLOSE) {
       ll_code[ptr++]=OP_RET;
       return ptr;
+    } else if(Tokenf(TF_INT)) {
+      if(!(tokenv&~0xFFL)) ll_code[ptr++]=tokenv;
+      else if(!(tokenv&~0xFFFFL)) ll_code[ptr++]=OP_INT16,ll_code[ptr++]=tokenv;
+      else ll_code[ptr++]=OP_INT32,ll_code[ptr++]=OP_INT32,ll_code[ptr++]=tokenv>>16,ll_code[ptr++]=tokenv;
     } else if(Tokenf(TF_NAME)) {
       switch(tokenv) {
         case OP_IF:
@@ -2286,7 +2290,7 @@ static void level_table_definition(void) {
         i-=0x100;
         if(datac[i].name) ParseError("Duplicate definition\n");
         datac[i].name=strdup(tokenstr);
-        if(datac[i].name) fatal("Allocation failed\n");
+        if(!datac[i].name) fatal("Allocation failed\n");
         datac[i].ptr=ptr;
         ptr=level_table_code(ptr,hash);
         break;

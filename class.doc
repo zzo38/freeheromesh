@@ -2591,16 +2591,18 @@ The following blocks are allowed in a level table definition:
 
 (<string> <label> <width> <format> <color>)
   Defines a display column. The <label> is the name of the data column.
-  The <width> is a number 1 to 255 or it can be * for fill width. The
-  <format> is a string of one or two characters; see the below list of
-  possible formats. The <color> is the text colour, and is optional; it
-  can be a number from 1 to 255, or it can be a sequence of parenthesized
-  pairs of a number (-127 to +127) and colour, to mean use those colour if
-  the value of this column is in range. It uses the colour for all values
-  up to and including the specified number, so the numbers should be listed
-  in ascending order, in order to work. The <string> is the heading; it is
-  not allowed to include control characters, nor can it include graphic
-  characters with code number less than 32.
+  The <width> is a number 1 to 255 or it can be * for fill width; only
+  the last column is allowed to be fill width (although it is also OK if
+  no colums are fill width). The <format> is a string of exactly one or
+  two characters; see the below list of possible formats. The <color> is
+  the text colour, and is optional; it can be a number from 1 to 255, or
+  it can be a sequence of parenthesized pairs of a number (-127 to +127)
+  and colour, to mean use those colour if the value of this column is
+  in range. It uses the colour for all values up to and including the
+  specified number, so the numbers should be listed in ascending order,
+  in order to work. The <string> is the heading; it is not allowed to
+  include control characters, nor can it include graphic characters with
+  code number less than 32.
 
 (<local> <type> <code...>)
   Defines a aggregate calculation. The <local> is the name of the aggregate
