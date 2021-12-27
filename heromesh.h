@@ -196,6 +196,7 @@ typedef struct {
     Uint8 ag; // aggregate type
   };
   Uint16 ptr;
+  Uint8 sgn; // 0=unsigned, 1=signed
 } DataColumn;
 
 extern char*ll_head;

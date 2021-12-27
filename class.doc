@@ -2587,7 +2587,14 @@ The following blocks are allowed in a level table definition:
 (<label> <code...>)
   Define a data column. The SQL name of the data column will be that of
   the label name, preceded by a underscore, and some characters will be
-  stripped out.
+  stripped out; note that SQL is case-insensitive. (Other implementations
+  or ports of Free Hero Mesh might not implement it as a SQL column, or
+  at all. For best portability, names should contain only ASCII letters,
+  digits, and underscores, and should not start with a digit, and you
+  should not define two or more data columns whose names differ only by
+  their case. Aggregates are not subject to this restriction, though.)
+  The label name must have a colon at front; if a comma is also added
+  then numeric values of this column are treated as signed.
 
 (<string> <label> <width> <format> <color>)
   Defines a display column. The <label> is the name of the data column.
@@ -2606,10 +2613,26 @@ The following blocks are allowed in a level table definition:
 
 (<local> <type> <code...>)
   Defines a aggregate calculation. The <local> is the name of the aggregate
-  to be referred by other blocks. The <type> is the type of aggregate,
-  which can be one of: + for the sum, min for the least value (unsigned),
-  max for the greatest value (unsigned), ,min for the least value (signed),
-  and ,max for the greatest value (signed).
+  to be referred by other blocks (which must start with a percentage sign,
+  like a local variable does). The <type> is the type of aggregate, which
+  can be + (sum of all values), min (least value), or max (greatest value);
+  any one with a comma at first means it is a signed aggregate.
+
+The valid formats are:
+
+* "L" or "R" = Left or right aligned text.
+
+* "L*" or "R*" replacing * with any character = Left or right aligned
+displaying the specified character repeated as many times as the column
+value is.
+
+* "d", "d-", "d+", "x", "x0", "X", "X0", "o", "o0", "u" = Display a number
+(right aligned) as signed decimal (d), hexadecimal (x/X), octal (o),
+unsigned decimal (u). The ones with "0" will pad by 0 instead of spaces,
+and the "d-" and "d+" will display a left aligned sign.
+
+If a numeric format is specified but it is a text value, then it is treated
+as "L" instead, unless format is "R*" in which case it is treated as "R".
 
 (TODO: Mention valid instructions.)
 

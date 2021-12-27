@@ -700,11 +700,11 @@ static void do_load_moves(sqlite3_stmt*st) {
   if(i) memcpy(replay_list,sqlite3_column_blob(st,1),i);
 }
 
-static void copy_text_to_plain(unsigned char*out,int maxlen,const unsigned char*in) {
+static int copy_text_to_plain(unsigned char*out,int maxlen,const unsigned char*in) {
   int at=0;
   if(!in) {
     *out=0;
-    return;
+    return 0;
   }
   while(*in && at<maxlen) switch(*in) {
     case 10: if(at && out[at-1]!=32) out[at++]=32; in++; break;
@@ -714,6 +714,65 @@ static void copy_text_to_plain(unsigned char*out,int maxlen,const unsigned char*
     default: in++;
   }
   out[at]=0;
+  return at;
+}
+
+static inline void levels_column(int x,int y,int n,int bg,sqlite3_stmt*st,char*buf) {
+  const DisplayColumn*dc=ll_disp+n;
+  Uint8 co=dc->color;
+  int w=dc->width;
+  int nc=dc->data+(dc->flag&4?0:8);
+  int t=sqlite3_column_type(st,nc);
+  int a=0;
+  int i;
+  const char*p;
+  sqlite3_int64 v;
+  if(t==SQLITE_NULL) return;
+  if(dc->flag&1) w=255;
+  if(t==SQLITE_BLOB || t==SQLITE_TEXT) {
+    blob:
+    i=copy_text_to_plain(buf,w,sqlite3_column_text(st,nc));
+    if(dc->form[0]=='R') a=w-i;
+    if(dc->flag&2) co=0xFF;
+  } else {
+    // This implementation does not check that the format is necessarily valid.
+    // You should not rely on the use of any undocumented format.
+    v=sqlite3_column_int64(st,nc);
+    if(dc->flag&2) {
+      //TODO: colours
+    }
+    switch(dc->form[0]) {
+      case 'L': case 'R':
+        if(dc->form[1]) {
+          if(v<0 || v>w) v=w;
+          memset(buf,dc->form[1],v);
+          buf[v]=0;
+          if(dc->form[0]=='R') a=w-v;
+        } else {
+          goto blob;
+        }
+        break;
+      case 'd':
+        snprintf(buf,w+1,"%*lld",w,(long long)(dc->form[1] && v<0?-v:v));
+        if(dc->form[1]=='-') *buf=v<0?'-':' ';
+        if(dc->form[1]=='+') *buf=v<0?'-':'+';
+        break;
+      case 'o':
+        snprintf(buf,w+1,dc->form[1]?"%0*llo":"%*llo",w,(unsigned long long)v);
+        break;
+      case 'u':
+        snprintf(buf,w+1,dc->form[1]?"%0*llu":"%*llu",w,(unsigned long long)v);
+        break;
+      case 'x':
+        snprintf(buf,w+1,dc->form[1]?"%0*llx":"%*llx",w,(unsigned long long)v);
+        break;
+      case 'X':
+        snprintf(buf,w+1,dc->form[1]?"%0*llX":"%*llX",w,(unsigned long long)v);
+        break;
+      default: *buf=0;
+    }
+  }
+  draw_text(a*8+x,y,buf,bg,co);
 }
 
 static int list_levels(void) {
@@ -788,12 +847,21 @@ static int list_levels(void) {
       snprintf(buf,6,"%5u",mo&2?sqlite3_column_int(st,0):i);
       draw_text(3*8,y,buf,b,sqlite3_column_int(st,6)?0xFA:0xFC);
       draw_text(8*8,y,"\xB3",b,b^0xFA);
-      snprintf(buf,6,"%2u %2u",sqlite3_column_int(st,3),sqlite3_column_int(st,4));
-      draw_text(9*8,y,buf,b,0xFF);
-      draw_text(11*8,y,"\xB3",b,b^0xFA);
-      draw_text(14*8,y,"\xB3",b,b^0xFA);
-      copy_text_to_plain(buf,255,sqlite3_column_text(st,5));
-      draw_text(15*8,y,buf,b,0xFF);
+      if(ll_ndisp) {
+        x=9*8;
+        for(i=0;i<ll_ndisp && x<screen->w;i++) {
+          levels_column(x,y,i,b,st,buf);
+          x+=ll_disp[i].width*8+8;
+          if(x<screen->w && !(ll_disp[i].flag&1)) draw_text(x-8,y,"\xB3",b,b^0xFA);
+        }
+      } else {
+        snprintf(buf,6,"%2u %2u",sqlite3_column_int(st,3),sqlite3_column_int(st,4));
+        draw_text(9*8,y,buf,b,0xFF);
+        draw_text(11*8,y,"\xB3",b,b^0xFA);
+        draw_text(14*8,y,"\xB3",b,b^0xFA);
+        copy_text_to_plain(buf,255,sqlite3_column_text(st,5));
+        draw_text(15*8,y,buf,b,0xFF);
+      }
     }
   } else {
     scrmax=(level_nindex+columns-1)/columns;

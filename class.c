@@ -2292,6 +2292,7 @@ static void level_table_definition(void) {
         datac[i].name=strdup(tokenstr);
         if(!datac[i].name) fatal("Allocation failed\n");
         datac[i].ptr=ptr;
+        if(Tokenf(TF_COMMA)) datac[i].sgn=1;
         ptr=level_table_code(ptr,hash);
         break;
       case OP_STRING:
@@ -2372,10 +2373,8 @@ static void level_table_definition(void) {
         if(!Tokenf(TF_NAME)) ParseError("Improper aggregate\n");
         switch(tokenv) {
           case OP_ADD: aggrc[i].ag=1; break;
-          case OP_MIN: aggrc[i].ag=2; break;
-          case OP_MAX: aggrc[i].ag=3; break;
-          case OP_MIN_C: aggrc[i].ag=4; break;
-          case OP_MAX_C: aggrc[i].ag=5; break;
+          case OP_MIN_C: aggrc[i].sgn=1; case OP_MIN: aggrc[i].ag=2; break;
+          case OP_MAX_C: aggrc[i].sgn=1; case OP_MAX: aggrc[i].ag=3; break;
           default: ParseError("Improper aggregate\n");
         }
         aggrc[i].ptr=ptr;
@@ -2392,6 +2391,7 @@ static void level_table_definition(void) {
   if(!ll_data) fatal("Allocation failed\n");
   for(i=0;i<ll_naggregate;i++) ll_data[i+ll_ndata]=aggrc[i];
   free(aggrc);
+  ll_disp=realloc(dispc,(ll_ndisp)*sizeof(DisplayColumn))?:dispc;
   // The next line will result in an invalid pointer if ptr is zero,
   // but this is harmless, since ll_code is never accessed if ptr is zero.
   ll_code=realloc(ll_code,ptr*sizeof(Uint16))?:ll_code;
