@@ -2397,6 +2397,24 @@ static void level_table_definition(void) {
   ll_code=realloc(ll_code,ptr*sizeof(Uint16))?:ll_code;
   for(i=0;i<LOCAL_HASH_SIZE;i++) free(hash[i].txt);
   free(hash);
+  if(main_options['C']) {
+    printf("<<<LevelTable>>>\n  Data/Aggregate:\n");
+    for(i=0;i<ll_ndata+ll_naggregate;i++) {
+      printf("    %d: ",i);
+      if(i<ll_ndata) printf(" \"%s\"",ll_data[i].name); else printf(" (%d)",ll_data[i].ag);
+      printf(" 0x%04X %c\n",ll_data[i].ptr,ll_data[i].sgn?'s':'u');
+    }
+    printf("  Display:\n");
+    for(i=0;i<ll_ndisp;i++) printf("    %d: data=%d width=%d format=%c%c color=%d flag=%d ptr=0x%04X\n",i
+     ,ll_disp[i].data,ll_disp[i].width,ll_disp[i].form[0]?:' ',ll_disp[i].form[1]?:' ',ll_disp[i].color,ll_disp[i].flag,ll_disp[i].ptr);
+    printf("  Codes:");
+    for(i=0;i<ptr;i++) {
+      if(!(i&15)) printf("\n    [%04X]",i);
+      printf(" %04X",ll_code[i]);
+    }
+    putchar('\n');
+    printf("---\n\n");
+  }
 }
 
 void load_classes(void) {

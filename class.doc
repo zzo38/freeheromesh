@@ -2607,7 +2607,8 @@ The following blocks are allowed in a level table definition:
   and colour, to mean use those colour if the value of this column is
   in range. It uses the colour for all values up to and including the
   specified number, so the numbers should be listed in ascending order,
-  in order to work. The <string> is the heading; it is not allowed to
+  in order to work. If the last number is 127 then it is also use for all
+  higher numbers too. The <string> is the heading; it is not allowed to
   include control characters, nor can it include graphic characters with
   code number less than 32.
 
@@ -2634,5 +2635,26 @@ and the "d-" and "d+" will display a left aligned sign.
 If a numeric format is specified but it is a text value, then it is treated
 as "L" instead, unless format is "R*" in which case it is treated as "R".
 
-(TODO: Mention valid instructions.)
+Valid instructions in this block include:
+
+ Arithmetic:  + - * ,* / ,/ mod ,mod Delta min ,min max ,max neg
+
+ Bitwise:  band bor bxor bnot lsh rsh ,rsh
+
+ Logical:  land lor lxor lnot
+
+ Compare:  eq ne lt ,lt gt ,gt le ,le ge ,ge
+
+ Misc:  Level _ in nin ret if else then
+
+ Object:  Xloc Yloc Class Dir Misc1 Misc2 Misc3 Misc4 Misc5 Misc6 Misc7
+   Temperature Density Player Input Bizarro CollisionLayers
+
+Additionally, you can include numbers, strings (see below for their
+meaning, which is different from the meaning in class codes), aggregate
+names (with % at first), user flags (with ^ at first), class names, and
+message names (both built-in messages and user messages are possible).
+Accessing values of objects other than the current one is not possible.
+
+(TODO: Usage of strings as instructions in this block.)
 

@@ -739,7 +739,11 @@ static inline void levels_column(int x,int y,int n,int bg,sqlite3_stmt*st,char*b
     // You should not rely on the use of any undocumented format.
     v=sqlite3_column_int64(st,nc);
     if(dc->flag&2) {
-      //TODO: colours
+      co=0xFF;
+      for(i=0;i<dc->color;i++) if(ll_code[dc->ptr+i]>=0xFF00 || v+128<=(ll_code[dc->ptr+i]>>8)) {
+        co=ll_code[dc->ptr+i]&0xFF;
+        break;
+      }
     }
     switch(dc->form[0]) {
       case 'L': case 'R':

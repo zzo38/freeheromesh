@@ -1,5 +1,5 @@
 #if 0
-gcc ${CFLAGS:--s -O2} -c -fplan9-extensions function.c `sdl-config --cflags`
+gcc ${CFLAGS:--s -O2} -c -fplan9-extensions -fwrapv function.c `sdl-config --cflags`
 exit
 #endif
 
@@ -11,6 +11,7 @@ exit
 #include "smallxrm.h"
 #include "heromesh.h"
 #include "cursorshapes.h"
+#include "instruc.h"
 
 typedef struct {
   struct sqlite3_vtab_cursor;
@@ -1212,12 +1213,222 @@ typedef struct {
   Uint16 class;
 } ObjInfo;
 
-static void calculate_level_column(sqlite3_stmt*st,const unsigned char*lvl,long sz) {
+#define ArithOp1(aa) ({ if(sp<1 || stack[sp-1].t) goto bad; Value t1=stack[sp-1]; stack[sp-1]=NVALUE(aa); })
+#define ArithOp2(aa) ({ if(sp<2 || stack[sp-1].t || stack[sp-2].t) goto bad; Value t1=stack[sp-2]; Value t2=stack[sp-1]; sp--; stack[sp-1]=NVALUE(aa); })
+#define ArithDivOp2(aa) ({ if(sp<2 || stack[sp-1].t || stack[sp-2].t || !stack[sp-1].u) goto bad; Value t1=stack[sp-2]; Value t2=stack[sp-1]; sp--; stack[sp-1]=NVALUE(aa); })
+#define OtherOp1(aa) ({ if(sp<1) goto bad; Value t1=stack[sp-1]; stack[sp-1]=(aa); })
+#define OtherOp2(aa) ({ if(sp<2) goto bad; Value t1=stack[sp-2]; Value t2=stack[sp-1]; sp--; stack[sp-1]=(aa); })
+
+static inline Uint32 ll_in(Value*stack,Sint16 top,Sint16 m) {
+  while(--top>m) if(stack[top].t==stack[m-1].t && stack[top].u==stack[m-1].u) return 1;
+  return 0;
+}
+
+static Sint16 level_table_exec(Uint16 ptr,const unsigned char*lvl,long sz,ObjInfo*ob,Value*stack,Value*agg) {
+  Sint16 sp=0;
+  Uint32 k,m;
+  while(sp<62) switch(ll_code[ptr++]) {
+    case 0 ... 255: stack[sp++]=NVALUE(ll_code[ptr-1]); break;
+    case 0x0200 ... 0x02FF: stack[sp++]=MVALUE(ll_code[ptr-1]&255); break;
+    case 0x4000 ... 0x7FFF: stack[sp++]=CVALUE(ll_code[ptr-1]&0x3FFF); break;
+    case 0xC000 ... 0xFFFF: stack[sp++]=MVALUE((ll_code[ptr-1]&0x3FFF)+256); break;
+    case OP_ADD: ArithOp2(t1.u+t2.u); break;
+    case OP_BAND: ArithOp2(t1.u&t2.u); break;
+    case OP_BIZARRO: if(!ob) goto bad; stack[sp++]=NVALUE(ob->bizarro); break;
+    case OP_BNOT: ArithOp1(~t1.u); break;
+    case OP_BOR: ArithOp2(t1.u|t2.u); break;
+    case OP_BXOR: ArithOp2(t1.u^t2.u); break;
+    case OP_CLASS: if(!ob) goto bad; stack[sp++]=CVALUE(ob->class); break;
+    case OP_COLLISIONLAYERS: if(!ob) goto bad; stack[sp++]=NVALUE(classes[ob->class]->collisionLayers); break;
+    case OP_DELTA: ArithOp2(t1.u>t2.u?t1.u-t2.u:t2.u-t1.u); break;
+    case OP_DENSITY: if(!ob) goto bad; stack[sp++]=NVALUE(classes[ob->class]->density); break;
+    case OP_DIR: if(!ob) goto bad; stack[sp++]=NVALUE(ob->dir); break;
+    case OP_DIV: ArithDivOp2(t1.u/t2.u); break;
+    case OP_DIV_C: ArithDivOp2(t1.s/t2.s); break;
+    case OP_EQ: OtherOp2(NVALUE((t1.u==t2.u && t1.t==t2.t)?1:0)); break;
+    case OP_GE: ArithOp2(t1.u>=t2.u?1:0); break;
+    case OP_GE_C: ArithOp2(t1.s>=t2.s?1:0); break;
+    case OP_GOTO: ptr=ll_code[ptr]; break;
+    case OP_GT: ArithOp2(t1.u>t2.u?1:0); break;
+    case OP_GT_C: ArithOp2(t1.s>t2.s?1:0); break;
+    case OP_IF:
+      if(!sp--) goto bad;
+      if(stack[sp].t || stack[sp].u) ptr++; else ptr=ll_code[ptr];
+      break;
+    case OP_IN: case OP_NIN:
+      if(sp<2) goto bad;
+      for(m=sp-1;m;m--) if(stack[m].t==TY_MARK) {
+        k=ll_in(stack,sp,m);
+        sp=m;
+        stack[sp-1].t=TY_NUMBER;
+        stack[sp-1].u=(ll_code[ptr-1]==OP_IN?0:1)^k;
+      }
+      if(!m) goto bad;
+      break;
+    case OP_INPUT: if(!ob) goto bad; stack[sp++]=NVALUE(classes[ob->class]->cflags&CF_INPUT?1:0); break;
+    case OP_INT16: stack[sp++]=NVALUE(ll_code[ptr]); ptr++; break;
+    case OP_INT32: stack[sp++]=NVALUE(ll_code[ptr+1]); stack[sp-1].u|=ll_code[ptr]<<16; ptr+=2; break;
+    case OP_LAND: OtherOp2(NVALUE(((t1.u || t1.t) && (t2.u || t2.t))?1:0)); break;
+    case OP_LE: ArithOp2(t1.u<=t2.u?1:0); break;
+    case OP_LE_C: ArithOp2(t1.s<=t2.s?1:0); break;
+    case OP_LEVEL: stack[sp++]=NVALUE(lvl[2]|(lvl[3]<<8)); break;
+    case OP_LNOT: OtherOp1(NVALUE((t1.u || t1.t)?0:1)); break;
+    case OP_LOCAL: if(!agg) goto bad; stack[sp++]=agg[ll_code[ptr++]]; break;
+    case OP_LOR: OtherOp2(NVALUE((t1.u || t1.t || t2.u || t2.t)?1:0)); break;
+    case OP_LSH: ArithOp2(t2.u&~31?0:t1.u<<t2.u); break;
+    case OP_LT: ArithOp2(t1.u<t2.u?1:0); break;
+    case OP_LT_C: ArithOp2(t1.s<t2.s?1:0); break;
+    case OP_LXOR: OtherOp2(NVALUE(((t1.u || t1.t)?1:0)^((t2.u || t2.t)?1:0))); break;
+    case OP_MARK: stack[sp++]=UVALUE(0,TY_MARK); break;
+    case OP_MAX: ArithOp2(t1.u<t2.u?t2.u:t1.u); break;
+    case OP_MAX_C: ArithOp2(t1.s<t2.s?t2.s:t1.s); break;
+    case OP_MIN: ArithOp2(t1.u>t2.u?t2.u:t1.u); break;
+    case OP_MIN_C: ArithOp2(t1.s>t2.s?t2.s:t1.s); break;
+    case OP_MISC1: if(!ob) goto bad; stack[sp++]=ob->misc1; break;
+    case OP_MISC2: if(!ob) goto bad; stack[sp++]=ob->misc2; break;
+    case OP_MISC3: if(!ob) goto bad; stack[sp++]=ob->misc3; break;
+    case OP_MISC4: if(!ob) goto bad; stack[sp++]=NVALUE(classes[ob->class]->misc4); break;
+    case OP_MISC5: if(!ob) goto bad; stack[sp++]=NVALUE(classes[ob->class]->misc5); break;
+    case OP_MISC6: if(!ob) goto bad; stack[sp++]=NVALUE(classes[ob->class]->misc6); break;
+    case OP_MISC7: if(!ob) goto bad; stack[sp++]=NVALUE(classes[ob->class]->misc7); break;
+    case OP_MOD: ArithDivOp2(t1.u%t2.u); break;
+    case OP_MOD_C: ArithDivOp2(t1.s%t2.s); break;
+    case OP_MUL: ArithOp2(t1.u*t2.u); break;
+    case OP_MUL_C: ArithOp2(t1.s*t2.s); break;
+    case OP_NE: OtherOp2(NVALUE((t1.u==t2.u && t1.t==t2.t)?0:1)); break;
+    case OP_NEG: ArithOp1(-t1.s); break;
+    case OP_PLAYER: if(!ob) goto bad; stack[sp++]=NVALUE(classes[ob->class]->cflags&CF_PLAYER?1:0); break;
+    case OP_RET: return sp;
+    case OP_RSH: ArithOp2(t2.u&~31?0:t1.u>>t2.u); break;
+    case OP_RSH_C: ArithOp2(t2.u&~31?(t1.s<0?-1:0):t1.s>>t2.u); break;
+    case OP_STRING:
+      // If starting with @ then a literal string, otherwise match a part of the level title.
+      //TODO
+      break;
+    case OP_SUB: ArithOp2(t1.u-t2.u); break;
+    case OP_TEMPERATURE: if(!ob) goto bad; stack[sp++]=NVALUE(classes[ob->class]->temperature); break;
+    case OP_USERFLAG:
+      if(!ob) goto bad;
+      if(ll_code[ptr]<0x1020) k=classes[ob->class]->misc4;
+      else if(ll_code[ptr]<0x1040) k=classes[ob->class]->misc5;
+      else if(ll_code[ptr]<0x1060) k=classes[ob->class]->misc6;
+      else if(ll_code[ptr]<0x1080) k=classes[ob->class]->misc7;
+      else k=classes[ob->class]->collisionLayers;
+      stack[sp].t=TY_NUMBER;
+      stack[sp].u=(k&(1LL<<(ll_code[ptr++]&31)))?1:0;
+      sp++;
+      break;
+    case OP_XLOC: if(!ob) goto bad; stack[sp++]=NVALUE(ob->x); break;
+    case OP_YLOC: if(!ob) goto bad; stack[sp++]=NVALUE(ob->y); break;
+    default: goto bad;
+  }
+  bad:
+  if(main_options['v']) fprintf(stderr,"Error in LevelTable definition (at 0x%04X)\n",ptr);
+  return -1;
+}
+
+static void calculate_level_columns(sqlite3_stmt*st,const unsigned char*lvl,long sz) {
   ObjInfo ob;
   ObjInfo mru[2];
+  Value stack[64];
+  Value agg[64];
+  int i,j,n,z;
+  const unsigned char*end=lvl+sz;
+  const unsigned char*p;
   mru[0].class=mru[1].class=0;
-  ob.x=ob.y=ob.bizarro=0;
-  
+  ob.x=ob.bizarro=ob.class=0; ob.y=1;
+  n=0;
+  for(i=0;i<64;i++) agg[i]=UVALUE(1,TY_MARK);
+  p=lvl+6;
+  while(*p && p<end) p++; // skip text for now
+  if(p>=end) return;
+  p++; // skip null terminator
+  // Object loop
+  if(ll_naggregate) while(p<end) {
+    if(n) {
+      ob.class=mru->class;
+      ob.misc1=mru->misc1;
+      ob.misc2=mru->misc2;
+      ob.misc3=mru->misc3;
+      ob.dir=mru->dir;
+      n--;
+      ob.x++;
+    } else {
+      z=*p++;
+      if(z==0xFF) break;
+      if(z==0xFE) {
+        ob.x=0; ob.y=1; ob.bizarro^=1;
+        continue;
+      }
+      if(z&0x20) ob.x=*p++;
+      if(z&0x10) ob.y=*p++;
+      if(z&0x40) ob.x++;
+      n=z&0x70?0:1;
+      if(z&0x80) {
+        // MRU
+        ob.class=mru[n].class;
+        ob.misc1=mru[n].misc1;
+        ob.misc2=mru[n].misc2;
+        ob.misc3=mru[n].misc3;
+        ob.dir=mru[n].dir;
+        n=z&15;
+      } else {
+        // Not MRU
+        i=*p++;
+        i|=*p++<<8;
+        ob.class=i&0x3FFF;
+        if(!classes[ob.class]) {
+          if(main_options['v']) fprintf(stderr,"Class %d at 0x%X (while loading level table aggregate values) not valid\n",ob.class,(int)(p-lvl));
+          return;
+        }
+        if(!(i&0x8000)) p++;
+        ob.dir=z&7;
+        ob.misc1=ob.misc2=ob.misc3=NVALUE(0);
+        if(z&8) {
+          z=*p++;
+          if(z&0xC0) ob.misc1=UVALUE(p[0]|(p[1]<<8),(z>>0)&3),p+=2;
+          if((z&0xC0)!=0x40) ob.misc2=UVALUE(p[0]|(p[1]<<8),(z>>2)&3),p+=2;
+          if(!((z&0xC0)%0xC0)) ob.misc3=UVALUE(p[0]|(p[1]<<8),(z>>4)&3),p+=2;
+        }
+        if(n!=2) {
+          mru[n].class=ob.class;
+          mru[n].misc1=ob.misc1;
+          mru[n].misc2=ob.misc2;
+          mru[n].misc3=ob.misc3;
+          mru[n].dir=ob.dir;
+        }
+        n=0;
+      }
+    }
+    for(i=ll_ndata;i<ll_naggregate+ll_ndata;i++) {
+      j=level_table_exec(ll_data[i].ptr,lvl,sz,&ob,stack,0);
+      if(j<0) return;
+      if(!j) continue;
+      z=ll_data[i].sgn;
+      if(agg[i-ll_ndata].t==TY_MARK) {
+        agg[i-ll_ndata]=*stack;
+      } else if(stack->t==TY_NUMBER && agg[i-ll_ndata].t==TY_NUMBER) switch(ll_data[i].ag) {
+        case 1: agg[i-ll_ndata].u+=stack->u; break;
+        case 2: if(z?(stack->s<agg[i-ll_ndata].s):(stack->u<agg[i-ll_ndata].u)) agg[i-ll_ndata]=*stack; break;
+        case 3: if(z?(stack->s>agg[i-ll_ndata].s):(stack->u>agg[i-ll_ndata].u)) agg[i-ll_ndata]=*stack; break;
+      }
+    }
+  }
+  // Data column values
+  for(i=0;i<ll_ndata;i++) {
+    j=level_table_exec(ll_data[i].ptr,lvl,sz,0,stack,agg);
+    if(j<=0 || stack->t==TY_MARK) {
+      sqlite3_bind_null(st,i+8);
+    } else if(j>1 && (stack->t==TY_STRING || stack->t==TY_FOR)) {
+      //TODO
+    } else if(stack->t==TY_FOR) {
+      sqlite3_bind_blob(st,i+8,lvl+(stack->u>>16)+6,stack->u&0xFFFF,SQLITE_TRANSIENT);
+    } else if(stack->t==TY_STRING) {
+      sqlite3_bind_blob(st,i+8,stringpool[stack->u]+1,strlen(stringpool[stack->u]+1),0);
+    } else {
+      if(ll_data[i].sgn) sqlite3_bind_int64(st,i+8,stack->s); else sqlite3_bind_int64(st,i+8,stack->u); break;
+    }
+  }
 }
 
 static int vt1_levels_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
@@ -1260,7 +1471,7 @@ static int vt1_levels_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
     for(i=6;i<n && d[i];i++);
     j=d[0]|(d[1]<<8);
     sqlite3_bind_blob(st2,5,d+6,i-6,0);
-    calculate_level_column(st2,d,n);
+    calculate_level_columns(st2,d,n);
     p=read_lump(FIL_SOLUTION,sqlite3_column_int(st1,0),&n);
     if(p) {
       sqlite3_bind_int(st2,7,(n>2 && d[0]==p[0] && d[1]==p[1]));
