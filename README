@@ -431,3 +431,9 @@ descriptions?
  Add the following into the .heromeshrc file:
    .?.autoWin: select 'go',-(level()+1) where level()<max_level();
 
+** Trying to run Free Hero Mesh with gdb results in a "No such file or
+directory" error, and it won't work.
+
+ If you have not set up Free Hero Mesh for portable mode, then you must
+ pass the -h switch to Free Hero Mesh to work with gdb.
+
