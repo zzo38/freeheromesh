@@ -2704,3 +2704,20 @@ character on both sides (except a character with code less than 32).
 (The above list of pattern codes maybe it isn't explained very well;
 hopefully someone else know how to improve it better.)
 
+After the instructions for a % block is executed, there should be only one
+or zero items on the stack. If none, then this one is ignored; if there is
+one, then it is added to the accumulation. For all three kinds, if only one
+value is given it can use that even if it is not a number.
+
+After the instructions for a : block is executed, the possible cases are:
+
+* The stack is empty, or contains only a mark: The result is null.
+
+* The stack contains only a number: The result is that number. It will be
+treated as signed or unsigned according to the column type.
+
+* The stack contains one or more items, of which the first (bottom) one is
+a string: Concatenates all of them together, which can be strings, numbers
+(treated as unsigned), or classes. All formatting codes of strings will be
+stripped, so that the result will be a unformatted string.
+
