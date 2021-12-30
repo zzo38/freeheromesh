@@ -17,7 +17,6 @@
   * Mouse dragging
   * Level index editor
 * Table of contents for levels (partially implemented)
-  * Can define your own columns
   * Can be divisions by sections
 * Deal better with allowing to skip past corrupted levels
 * Picture editor/loading

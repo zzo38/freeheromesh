@@ -1213,16 +1213,154 @@ typedef struct {
   Uint16 class;
 } ObjInfo;
 
-#define ArithOp1(aa) ({ if(sp<1 || stack[sp-1].t) goto bad; Value t1=stack[sp-1]; stack[sp-1]=NVALUE(aa); })
-#define ArithOp2(aa) ({ if(sp<2 || stack[sp-1].t || stack[sp-2].t) goto bad; Value t1=stack[sp-2]; Value t2=stack[sp-1]; sp--; stack[sp-1]=NVALUE(aa); })
-#define ArithDivOp2(aa) ({ if(sp<2 || stack[sp-1].t || stack[sp-2].t || !stack[sp-1].u) goto bad; Value t1=stack[sp-2]; Value t2=stack[sp-1]; sp--; stack[sp-1]=NVALUE(aa); })
-#define OtherOp1(aa) ({ if(sp<1) goto bad; Value t1=stack[sp-1]; stack[sp-1]=(aa); })
-#define OtherOp2(aa) ({ if(sp<2) goto bad; Value t1=stack[sp-2]; Value t2=stack[sp-1]; sp--; stack[sp-1]=(aa); })
+static const unsigned char*ll_find(const unsigned char*p,Uint8 c) {
+  int j;
+  for(j=0;*p;p++) {
+    if(j) {
+      if(*p=='\\') j=0;
+    } else {
+      if(*p==c) return p;
+      if(*p==14 || *p==30) j=1;
+      if(*p==31 && p[1]) p++;
+    }
+  }
+  return 0;
+}
+
+static inline Sint16 ll_string(const unsigned char*str,const unsigned char*title,Value*stack,Sint16 sp) {
+  const unsigned char*ps=str; // pointer of string
+  const unsigned char*pt=title; // pointer of title
+  const unsigned char*so=0; // start offset
+  const unsigned char*eo=0; // end offset
+  const unsigned char*pp=pt;
+  const unsigned char*q;
+  int i,j,k;
+  while(*ps) {
+    switch(*ps++) {
+      case '=':
+        k=*ps++;
+        if(k<32) return 64;
+        while(*ps && *ps!=k && *pt==*ps) ps++,pt++;
+        if(*ps!=k) goto notfound;
+        ps++;
+        break;
+      case '/':
+        k=*ps++;
+        if(k<32) return 64;
+        if(*ps==k) goto bad;
+        q=strchr(ps,k);
+        if(!q) goto bad;
+        j=q-ps;
+        while(*pt) {
+          pt=ll_find(pt,*ps);
+          if(!pt) goto notfound;
+          for(i=1;i<j && pt[i]==ps[i];i++);
+          if(i==j) break;
+          pt++;
+        }
+        if(!*pt) goto notfound;
+        pp=pt;
+        ps+=j+1;
+        pt+=j;
+        break;
+      case '[': so=pt; break;
+      case ']': eo=pt; break;
+      case '(': so=pt; break;
+      case ')': eo=pp; break;
+      case 10: // "\n"
+        if(pt==title) break;
+        for(j=0;*pt;pt++) {
+          if(j) {
+            if(*pt=='\\') j=0;
+          } else {
+            if(*pt==10 || *pt==15) break;
+            if(*pt==14 || *pt==30) j=1;
+            if(*pt==31 && pt[1]) pt++;
+          }
+        }
+        if(!*pt) goto notfound;
+        pp=pt++;
+        while(*pt==10) pt++;
+        break;
+      case 30: // "\d"
+        re:
+        pp=pt=ll_find(pt,30);
+        if(!pt) goto notfound;
+        for(i=0;ps[i];i++) {
+          if(ps[i]==':' || ps[i]=='\\') break;
+          if(ps[i]!=pt[i] && ps[i]!='?') {
+            pt+=i;
+            goto re;
+          }
+        }
+        ps+=i+1;
+        pt+=i+2;
+        break;
+      case '+':
+        k=*ps++;
+        if(k<31) return 64;
+        if(k==31) {
+          k=*ps++;
+          if(!k) return 64;
+          while(*pt==31 && pt[1]==k) pt+=2;
+        } else {
+          while(*pt==k) pt++;
+        }
+        break;
+      case '-':
+        while(*pt>='0' && *pt<='9') pt++;
+        break;
+      case '_':
+        while(*pt==' ' || *pt==10) pt++;
+        break;
+      case '\\':
+        pt=ll_find(pt,'\\');
+        if(!pt) goto notfound;
+        pp=pt++;
+        break;
+      case '.':
+        if(*pt==31 && pt[1]) pt+=2;
+        else if(*pt==14 || *pt==30) pt=strchr(pt,'\\'),pt+=pt?1:0;
+        else if(*pt) pt++;
+        if(!pt) return 64;
+        break;
+      case '<': pt=title; break;
+      case '>': pt+=strlen(pt); break;
+      case '#':
+        if(!so || !eo || so>eo) break;
+        k=0;
+        while(*so>='0' && *so<='9') k=10*k+*so++-'0';
+        stack[sp++]=NVALUE(k);
+        stack[sp++]=NVALUE(1);
+        return sp;
+      case '$':
+        if(!so || !eo || so>eo) break;
+        stack[sp++]=UVALUE(((so-title)<<16)|(eo-title),TY_FOR);
+        stack[sp++]=NVALUE(1);
+        return sp;
+      case '%':
+        if(!so || !eo || so>eo) break;
+        stack[sp++]=NVALUE(eo-so);
+        stack[sp++]=NVALUE(1);
+        return sp;
+      default: bad:
+        if(main_options['v']) fprintf(stderr,"Invalid character (0x%02X) in string in LevelTable definition\n",ps[-1]);
+        return 64;
+    }
+  }
+  notfound: stack[sp++]=NVALUE(0); return sp;
+}
 
 static inline Uint32 ll_in(Value*stack,Sint16 top,Sint16 m) {
   while(--top>m) if(stack[top].t==stack[m-1].t && stack[top].u==stack[m-1].u) return 1;
   return 0;
 }
+
+#define ArithOp1(aa) ({ if(sp<1 || stack[sp-1].t) goto bad; Value t1=stack[sp-1]; stack[sp-1]=NVALUE(aa); })
+#define ArithOp2(aa) ({ if(sp<2 || stack[sp-1].t || stack[sp-2].t) goto bad; Value t1=stack[sp-2]; Value t2=stack[sp-1]; sp--; stack[sp-1]=NVALUE(aa); })
+#define ArithDivOp2(aa) ({ if(sp<2 || stack[sp-1].t || stack[sp-2].t || !stack[sp-1].u) goto bad; Value t1=stack[sp-2]; Value t2=stack[sp-1]; sp--; stack[sp-1]=NVALUE(aa); })
+#define OtherOp1(aa) ({ if(sp<1) goto bad; Value t1=stack[sp-1]; stack[sp-1]=(aa); })
+#define OtherOp2(aa) ({ if(sp<2) goto bad; Value t1=stack[sp-2]; Value t2=stack[sp-1]; sp--; stack[sp-1]=(aa); })
 
 static Sint16 level_table_exec(Uint16 ptr,const unsigned char*lvl,long sz,ObjInfo*ob,Value*stack,Value*agg) {
   Sint16 sp=0;
@@ -1245,6 +1383,8 @@ static Sint16 level_table_exec(Uint16 ptr,const unsigned char*lvl,long sz,ObjInf
     case OP_DIR: if(!ob) goto bad; stack[sp++]=NVALUE(ob->dir); break;
     case OP_DIV: ArithDivOp2(t1.u/t2.u); break;
     case OP_DIV_C: ArithDivOp2(t1.s/t2.s); break;
+    case OP_DROP: if(sp) --sp; break;
+    case OP_DUP: if(!sp) goto bad; stack[sp]=stack[sp-1]; sp++; break;
     case OP_EQ: OtherOp2(NVALUE((t1.u==t2.u && t1.t==t2.t)?1:0)); break;
     case OP_GE: ArithOp2(t1.u>=t2.u?1:0); break;
     case OP_GE_C: ArithOp2(t1.s>=t2.s?1:0); break;
@@ -1298,15 +1438,24 @@ static Sint16 level_table_exec(Uint16 ptr,const unsigned char*lvl,long sz,ObjInf
     case OP_NE: OtherOp2(NVALUE((t1.u==t2.u && t1.t==t2.t)?0:1)); break;
     case OP_NEG: ArithOp1(-t1.s); break;
     case OP_PLAYER: if(!ob) goto bad; stack[sp++]=NVALUE(classes[ob->class]->cflags&CF_PLAYER?1:0); break;
+    case OP_QC: OtherOp1(NVALUE(t1.t==TY_CLASS?1:0)); break;
+    case OP_QM: OtherOp1(NVALUE(t1.t==TY_MESSAGE?1:0)); break;
+    case OP_QN: OtherOp1(NVALUE(t1.t==TY_NUMBER?1:0)); break;
     case OP_RET: return sp;
     case OP_RSH: ArithOp2(t2.u&~31?0:t1.u>>t2.u); break;
     case OP_RSH_C: ArithOp2(t2.u&~31?(t1.s<0?-1:0):t1.s>>t2.u); break;
     case OP_STRING:
-      // If starting with @ then a literal string, otherwise match a part of the level title.
-      //TODO
+      k=ll_code[ptr++];
+      if(stringpool[k][0]=='@') stack[sp++]=UVALUE(k,TY_STRING); else sp=ll_string(stringpool[k],lvl+6,stack,sp);
       break;
     case OP_SUB: ArithOp2(t1.u-t2.u); break;
     case OP_TEMPERATURE: if(!ob) goto bad; stack[sp++]=NVALUE(classes[ob->class]->temperature); break;
+    case OP_TRACE:
+      if(main_options['t'] && main_options['v']) {
+        printf("'' ptr=0x%04X sp=%d ll_ndata=%d ll_naggregate=%d\n",ptr,sp,ll_ndata,ll_naggregate);
+        for(k=0;k<sp;k++) printf("''  k=%d u=%u t=%u\n",k,stack[k].u,stack[k].t);
+      }
+      break;
     case OP_USERFLAG:
       if(!ob) goto bad;
       if(ll_code[ptr]<0x1020) k=classes[ob->class]->misc4;
@@ -1325,6 +1474,27 @@ static Sint16 level_table_exec(Uint16 ptr,const unsigned char*lvl,long sz,ObjInf
   bad:
   if(main_options['v']) fprintf(stderr,"Error in LevelTable definition (at 0x%04X)\n",ptr);
   return -1;
+}
+
+static void ll_append_str(sqlite3_str*str,const unsigned char*p,long n) {
+  const unsigned char*end=p+n;
+  while(p<end) {
+    if(*p>=32) {
+      sqlite3_str_appendchar(str,1,*p++);
+    } else if(*p==31) {
+      p++;
+      if(p<end && *p) sqlite3_str_appendchar(str,1,*p++);
+    } else if(*p==10 || *p==15) {
+      sqlite3_str_appendchar(str,1,32);
+      p++;
+    } else if(*p==14 || *p==30) {
+      p=memchr(p,'\\',end-p);
+      if(!p) return;
+      p++;
+    } else {
+      p++;
+    }
+  }
 }
 
 static void calculate_level_columns(sqlite3_stmt*st,const unsigned char*lvl,long sz) {
@@ -1419,14 +1589,36 @@ static void calculate_level_columns(sqlite3_stmt*st,const unsigned char*lvl,long
     j=level_table_exec(ll_data[i].ptr,lvl,sz,0,stack,agg);
     if(j<=0 || stack->t==TY_MARK) {
       sqlite3_bind_null(st,i+8);
-    } else if(j>1 && (stack->t==TY_STRING || stack->t==TY_FOR)) {
-      //TODO
-    } else if(stack->t==TY_FOR) {
-      sqlite3_bind_blob(st,i+8,lvl+(stack->u>>16)+6,stack->u&0xFFFF,SQLITE_TRANSIENT);
-    } else if(stack->t==TY_STRING) {
-      sqlite3_bind_blob(st,i+8,stringpool[stack->u]+1,strlen(stringpool[stack->u]+1),0);
+    } else if(stack->t==TY_STRING || stack->t==TY_FOR || stack->t==TY_LEVELSTRING) {
+      sqlite3_str*str=sqlite3_str_new(userdb);
+      for(n=0;n<j;n++) switch(stack[n].t) {
+        case TY_NUMBER:
+          sqlite3_str_appendf(str,"%u",(unsigned int)stack[n].u);
+          break;
+        case TY_CLASS:
+          z=stack[n].u&0x3FFF;
+          if(classes[z] && classes[z]->name) sqlite3_str_appendf(str,"%s",classes[z]->name);
+          break;
+        case TY_LEVELSTRING:
+          if(stack[n].u>=nlevelstrings) break;
+          ll_append_str(str,levelstrings[stack[n].u],strlen(levelstrings[stack[n].u]));
+          break;
+        case TY_STRING:
+          sqlite3_str_appendall(str,stringpool[stack[n].u]+1);
+          break;
+        case TY_FOR:
+          ll_append_str(str,lvl+(stack[n].u>>16)+6,stack[n].u&0xFFFF);
+          break;
+        // Otherwise, do nothing
+      }
+      if(z=sqlite3_str_length(str)) {
+        sqlite3_bind_blob(st,i+8,sqlite3_str_finish(str),z,sqlite3_free);
+      } else {
+        sqlite3_free(sqlite3_str_finish(str));
+        sqlite3_bind_zeroblob(st,i+8,0);
+      }
     } else {
-      if(ll_data[i].sgn) sqlite3_bind_int64(st,i+8,stack->s); else sqlite3_bind_int64(st,i+8,stack->u); break;
+      if(ll_data[i].sgn) sqlite3_bind_int64(st,i+8,stack->s); else sqlite3_bind_int64(st,i+8,stack->u);
     }
   }
 }

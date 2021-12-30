@@ -2645,7 +2645,7 @@ Valid instructions in this block include:
 
  Compare:  eq ne lt ,lt gt ,gt le ,le ge ,ge
 
- Misc:  Level _ in nin ret if else then
+ Misc:  Level _ in nin ret if else then c? m? n? . dup Trace
 
  Object:  Xloc Yloc Class Dir Misc1 Misc2 Misc3 Misc4 Misc5 Misc6 Misc7
    Temperature Density Player Input Bizarro CollisionLayers
@@ -2656,5 +2656,51 @@ names (with % at first), user flags (with ^ at first), class names, and
 message names (both built-in messages and user messages are possible).
 Accessing values of objects other than the current one is not possible.
 
-(TODO: Usage of strings as instructions in this block.)
+The Trace instruction in the (LevelTable) block is not the same as in the
+class codes. In this block, it doesn't consume anything from the stack;
+instead, if both -t and -v switches are enabled, then it will display data
+relating to the level table calculation on stdout, at the time when the
+level table is loaded. (If the table is dropped, it will automatically be
+reloaded the next time it is accessed.)
+
+If a string is found where an instruction is expected in this block, then
+unlike class codes it is not simply pushing the string to the stack.
+Instead, if it starts with @ then the rest of it is a literal string, but
+otherwise it represents a pattern to match. If the match is successful,
+it pushes the matched substring (or sometimes, a number) to the stack,
+and then pushes 1; if unsuccessful, only pushes 0. These patterns will
+match the title string of the level. Pattern codes are:
+
+  =    Follow by a delimited string; match that string at the current
+        position and skip past it, or if it doesn't match, fail.
+  /    Follow by a delimited string; match that string at the current or
+        any later position (at the first place where it is found), or if
+        it doesn't match, fail.
+  [    Set beginning of slice.
+  ]    Set end of slice.
+  (    Set beginning of slice (same as the [ command);
+  )    Set end of slice, but use the position just before the matched item
+        instead of just after it.
+  \n   Skip until a line break of horizontal bar, and past it. If it is
+        followed by any more consecutive line breaks without anything else
+        in between, skips those ones too.
+  \d   Follow by some text and then : and \ or just \ to skip to and find
+        the data in the string that has the same text. If it contains a
+        question mark then any single character is matched. Between : and \
+        you can have usual other matching commands such as [ and ].
+  +    Follow by one more character, skip past any number of them.
+  -    Skip past any number of digits.
+  _    Skip past any number of spaces and line breaks.
+  <    Rewind back to the beginning.
+  >    Skip to the end.
+  #    Successful match; the result is a number within the slice, converted
+        from a string (parsed as decimal) to a number.
+  $    Successful match; the result is the matched slice.
+  %    Successful match; the result is the length of the matched slice.
+
+A "delimited string" in this block is delimited by any printable
+character on both sides (except a character with code less than 32).
+
+(The above list of pattern codes maybe it isn't explained very well;
+hopefully someone else know how to improve it better.)
 

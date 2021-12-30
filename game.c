@@ -731,8 +731,8 @@ static inline void levels_column(int x,int y,int n,int bg,sqlite3_stmt*st,char*b
   if(dc->flag&1) w=255;
   if(t==SQLITE_BLOB || t==SQLITE_TEXT) {
     blob:
-    i=copy_text_to_plain(buf,w,sqlite3_column_text(st,nc));
-    if(dc->form[0]=='R') a=w-i;
+    i=snprintf(buf,w,"%s",sqlite3_column_text(st,nc));
+    if(dc->form[0]=='R' && i<w) a=w-i;
     if(dc->flag&2) co=0xFF;
   } else {
     // This implementation does not check that the format is necessarily valid.
