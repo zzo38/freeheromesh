@@ -1604,7 +1604,7 @@ static void calculate_level_columns(sqlite3_stmt*st,const unsigned char*lvl,long
           ll_append_str(str,levelstrings[stack[n].u],strlen(levelstrings[stack[n].u]));
           break;
         case TY_STRING:
-          sqlite3_str_appendall(str,stringpool[stack[n].u]+1);
+          ll_append_str(str,stringpool[stack[n].u]+1,strlen(stringpool[stack[n].u]+1));
           break;
         case TY_FOR:
           ll_append_str(str,lvl+(stack[n].u>>16)+6,stack[n].u&0xFFFF);
