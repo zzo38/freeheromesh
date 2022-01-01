@@ -1,0 +1,268 @@
+FREQUENTLY ASKED QUESTIONS -- FREE HERO MESH
+
+(If you have any more questions, please ask.)
+
+
+=== Features/usage ===
+
+** How to make it to automatically advance to next level if you win?
+
+ Add the following into the .heromeshrc file:
+   .?.autoWin: select 'go',-(level()+1) where level()<max_level();
+
+** Apparently in the original you can right click on objects to read
+descriptions?
+
+ In Free Hero Mesh, this function is mapped to the middle instead of
+ right button by default, but the mapping can be redefined. (By default
+ in Free Hero Mesh, the right button accesses the inspection menu,
+ allowing inspecting the variables of objects at that location.)
+
+** Can the inventory and move list be displayed at the same time?
+
+ This feature is planned, but has not been implemented yet. (If you can
+ help by providing a patch or ideas about it, that might help.)
+
+** Is there a table of contents of the levels?
+
+ By default, CTRL+L is mapped to this function. See also class.doc for
+ a description of how to customize this table. This table can also be
+ queried using SQL; see sql.doc for details.
+
+
+=== Programming/making puzzle set ===
+
+** Why is there both Busy and UserSignal flags even though both flags do
+the same thing?
+
+ It is because Everett Kaser designed the MESH engine that way, but I
+ don't know why it was designed that way. If you do not like to have
+ both flags, then you do not have to use both.
+
+** Why do arrays work in the way that they do?
+
+ It is based on their working in Falling Hero, which was done that way
+ to try to fit with the existing implementation, which isn't very well.
+ Free Hero Mesh does it a bit differently; arrays can now be read by any
+ class, and you can store references to arrays and slices of arrays.
+
+** Do variables need to be declared?
+
+ Variables do not need to be declared; any user-defined global or local
+ variable can store any type. You can optionally specify an initial value
+ for global variables; the initial value of local variables is always zero
+ (you can initialize them in the INIT block if needed).
+
+** How to copy a picture including all variants from one puzzle set to
+another one?
+
+ One way to do this is to use the "har" program (included in the misc/
+ directory). Use a command such as:
+
+   har - HERO.IMG < set1.xclass >> set2.xclass
+
+ You can also give it a different name in the new puzzle set:
+
+   her r OLDNAME.IMG NEWNAME.IMG < oldgame.xclass >> newgame.xclass
+
+
+=== Compiling ===
+
+** It cannot find sqlite3.o when compiling. Why not use -lsqlite3 instead?
+
+ The version of SQLite in the package manager is not always the newest
+ version. Sometimes I use features that are in released versions of SQLite
+ but not necessarily in the package manager (and which versions are in the
+ package manager may vary according to the distribution). The version in
+ the package manager might or might not work; it is untested.
+
+ (If you are packaging Free Hero Mesh for a package manager, then you
+ should check if the SQLite in the package manager is suitable, and if so,
+ you can patch the program for use in that system.)
+
+** It didn't compile using the script, and/or there are compiler warnings,
+and/or some changes were required.
+
+ If the warnings and other issues with compilation are posted on the NNTP,
+ then it can be properly discussed, and then a better compilation code can
+ be written. Proper packaging for different distributions can also be
+ discussed. Please provide the following information:
+
+ - What compiler you used (including the version)
+
+ - What operating system you are using (including the version, and the
+ distribution of Linux, if you are using any)
+
+ - What version of SQLite and SDL you are using (if the compatibility
+ layer is used, specify the versions of both the compatibility layer and
+ of SDL2)
+
+ - What changes you made to the program code, if any
+
+ - What warnings you got, if any
+
+ - Whether or not the program worked after doing these things
+
+ One issue is that the version of SQLite in the system package manager
+ might (depending on the system) not be updated as often as it should be.
+ There is no guarantee that newer versions of Free Hero Mesh will not use
+ features of newer versions of SQLite (or depend on bug fixes), although
+ it also might not. (However, I think it is unlikely that newer versions
+ of SQLite will break it.)
+
+
+=== Errors (other than compile errors) ===
+
+** It says "FATAL: Failed to open xclass file (No such file or directory)"
+when trying to load the puzzle set. How to load it correctly?
+
+ You must use the base name. For example, if the puzzle set files are
+ named "sokoban.xclass", "sokoban.class", "sokoban.level", and
+ "sokoban.solution", then you must type "heromesh sokoban" to load it.
+ (This assumes that the file is in the current directory. If it isn't,
+ then you must also specify the directory name, in addition to the puzzle
+ set base name.)
+
+ You may also use a composite puzzle set. In this case, use the -z switch
+ and pass the full name including the file name suffix.
+
+** There is a segmentation fault.
+
+ This is a bug in Free Hero Mesh; segmentation faults should never occur.
+ Please report it so that it can be fixed. Ensure that your bug report
+ includes all information needed for reproducing the bug, including the
+ compiler options you used. (If you can fix it yourself, do so and then
+ post the patch so that I can review it. You will still need to report
+ the bug; a patch does not substitute for a bug report.)
+
+** Trying to run Free Hero Mesh with gdb results in a "No such file or
+directory" error, and it won't work.
+
+ If you have not set up Free Hero Mesh for portable mode, then you must
+ pass the -h switch to Free Hero Mesh to work with gdb (because gdb will
+ set argv[0] to the full path of the executable file, and this is how
+ Free Hero Mesh detects portable mode).
+
+
+=== Converted puzzle sets ===
+
+** Hero Hearts puzzles will cause errors when a Bomb or Missile explodes,
+and won't display Roller animations correctly.
+
+ The first problem is a bug in Hero Hearts (which occasionally causes a
+ GPF in the Windows version, but not always, due to race conditions). This
+ can be corrected by changing the line that says "From =%objFrom" in the
+ #EXPLO_ANIM message block of the $Fire class to "From $Grenade is if
+ From else 0 then =%objFrom".
+
+ The second problem is not a bug, but a bad design in Hero Hearts, which
+ Free Hero Mesh does not emulate. (This problem is purely visual, though.)
+ To fix it, add "(Synchronize 0 4 8)" at the beginning of the file, and
+ then add ":onoff %off if STOP Image 0 0 Animate else 0 Image Synchronize
+ then" to the end of the INIT message block of the $Roller class and then
+ add "=:onoff" at the end of the #ENABLE, #DISABLE, and #TOGGLE blocks.
+
+** Some levels of the SANDY1 puzzle set fail with a "Type mismatch" error
+before any moves are made.
+
+ This is the fault of the author(s) of those levels. The $SwitchFloor
+ class expects Misc1 to be a number, but somehow the level author put a
+ class name there instead.
+
+** The provided solutions of some levels of the SANDY1 puzzle set that
+involve Green Hearts do not work.
+
+ This is due to race conditions; they do not always work in the original
+ game either.
+
+** Level 11 of the CHESSMAZ puzzle set fails with a "Type mismatch" error
+before any moves are made.
+
+ It attempts to perform arithmetic on object references to generate random
+ numbers. The generation of random numbers is not allowed (as it would
+ break the replay feature).
+
+** The provided solutions of some of the Falling Hero levels with Closer
+Seekers do not work.
+
+ I have no idea what's wrong, but I can confirm that this is true.
+
+ (If anyone can figure out what is wrong, please tell me.)
+
+
+=== Internet/communication ===
+
+** How to access the NNTP?
+
+ You can use a NNTP client program, often called a "newsreader" program.
+ Many email programs can also do NNTP, including Mozilla Thunderbird.
+ There are also specialized NNTP programs, including Pan and bystand.
+ (Some are text, some are binary, and some are hybrid; you will need one
+ that supports text or hybrid.)
+
+** If would be very helpful if you could put more information and in
+particular screenshots on the Fossil main page, or at the very least link
+to screenshots, or create a non-Fossil webpage to show the project. They
+say a picture is worth a thousand words, but in this case I think no
+number of words will ever substitute for an image.
+
+ You are probably correct. Once suitable screenshots are available, I can
+ do this, and also add other information if needed.
+
+
+=== Miscellaneous ===
+
+** Is it any good?
+
+ I suppose it is a matter of opinion, isn't it?
+
+** Are any libre puzzle sets currently available?
+
+ Not yet (as of this writing). However, anyone can contribute them; I
+ would be interested to see what you can come up with! (I am also working
+ on my own puzzle sets, too.)
+
+** What is the MIME type and UTI for Free Hero Mesh?
+
+ None is officially assigned, but unofficially, a composite puzzle set
+ can use the following MIME type:
+
+ application/freeheromesh.composite+hamarc
+
+ Optional parameters for this MIME type are "codepage" which is a IBM
+ code page number, and "version" which is the version of Free Hero Mesh
+ (same as the numbers of the {version} macro). Both are optional.
+
+ MIME types for the other file formats are not defined.
+
+ The UTI for a Free Hero Mesh composite puzzle set file is:
+
+ org.zzo38computer.freeheromesh.composite
+
+ This UTI conforms to the following other UTIs:
+
+ com.hamsterrepublic.lumped
+ public.data
+
+** What's the X resource manager code for? Clipboard access?
+
+ The user configuration settings are in X resource manager format.
+
+ Free Hero Mesh doesn't depend on the X window system; the X resource
+ manager is actually not a part of the X window system, just it is
+ commonly used with it. Xlib includes a part of the X resource manager,
+ but Free Hero Mesh does not use Xlib (and even if it did, Xlib lacks
+ an equivalent of the xrm_init_quarks function).
+
+ Clipboard access is done using external programs; if the X window
+ system is used, then this will usually be "xclip". This is configured
+ in the user configuration file, so if you are not using the X window
+ system then you can change it to the appropriate commands for whatever
+ you are using on your computer.
+
+** Is there documentation with tutorial or introduction?
+
+ I like the kind of documentation that the existing one is, although I
+ am aware that some people prefer a different style. Someone who is better
+ at writing that different style should do so and contribute please.
+

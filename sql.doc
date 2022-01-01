@@ -192,7 +192,10 @@ CREATE TEMPORARY TABLE "LEVELS"("ID" INTEGER PRIMARY KEY, "ORD" INT,
   level or 0 otherwise (it doesn't validate the solution; to do that, use
   the -a switch instead). Although you can write to this table after it
   has been read once (this table uses lazy loading), you should not do so,
-  since the changes will not be saved.
+  since the changes will not be saved. There may be additional columns in
+  this table in some puzzle sets (defined in the (LevelTable) block in the
+  class definition file); if so, these extra columns come after the ones
+  listed above, and their names will always start with a underscore.
 
 CREATE TABLE "MESSAGES"("ID" INTEGER PRIMARY KEY, "NAME" TEXT, "TRACE"
 INT); *
