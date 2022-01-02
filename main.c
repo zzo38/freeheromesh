@@ -40,6 +40,7 @@ static const char schema[]=
   "CREATE TRIGGER IF NOT EXISTS `USERCACHEINDEX_DELETION` AFTER DELETE ON `USERCACHEINDEX` BEGIN DELETE FROM `USERCACHEDATA` WHERE `FILE` = OLD.`ID`; END;"
   "CREATE TEMPORARY TABLE `PICTURES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT COLLATE NOCASE, `OFFSET` INT, `DEPENDENT` INT);"
   "CREATE TEMPORARY TABLE `VARIABLES`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT);"
+  "CREATE TEMPORARY TABLE `DIVISIONS`(`HEADING` BLOB NOT NULL, `FIRST` INT NOT NULL);"
   "COMMIT;"
 ;
 
@@ -199,6 +200,8 @@ static sqlite3_int64 reset_usercache(FILE*fp,const char*nam,struct stat*stats,co
       sqlite3_bind_int(st,2,LUMP_CLASS_DEF);
     } else if(i==9 && suffix[1]=='L' && !sqlite3_stricmp(buf,"LEVEL.IDX")) {
       sqlite3_bind_int(st,2,LUMP_LEVEL_IDX);
+    } else if(i==12 && suffix[1]=='L' && !sqlite3_stricmp(buf,"DIVISION.IDX")) {
+      sqlite3_bind_int(st,2,LUMP_DIVISION_IDX);
     } else {
       nomatch: sqlite3_bind_null(st,2);
     }
@@ -279,13 +282,35 @@ void write_userstate(int sol,int lvl,long sz,const unsigned char*data) {
 
 static void load_level_index(void) {
   long sz;
+  sqlite3_stmt*st;
   int i;
   unsigned char*data=read_lump(FIL_LEVEL,LUMP_LEVEL_IDX,&sz);
+  unsigned char*p;
   if(!data) return;
   if(sz>65536) fatal("Too many levels\n");
   level_index=malloc((level_nindex=sz>>1)*sizeof(Uint16));
   if(!level_index) fatal("Allocation failed\n");
   for(i=0;i<level_nindex;i++) level_index[i]=data[i+i]|(data[i+i+1]<<8);
+  free(data);
+  // Load divisions
+  data=read_lump(FIL_LEVEL,LUMP_DIVISION_IDX,&sz);
+  if(!data || sz<3) {
+    free(data);
+    return;
+  }
+  if(i=sqlite3_prepare_v2(userdb,"INSERT INTO `DIVISIONS`(`HEADING`,`FIRST`) VALUES(?1,?2);",-1,&st,0))
+   fatal("SQL error (%d): %s\n",i,sqlite3_errmsg(userdb));
+  p=data;
+  while(p<data+sz-3) {
+    sqlite3_reset(st);
+    sqlite3_bind_int(st,2,p[0]|(p[1]<<8));
+    p+=2;
+    sqlite3_bind_blob(st,1,p,i=strnlen(p,data+sz-p),0);
+    p+=i;
+    if(p<data+sz) p++;
+    while(sqlite3_step(st)==SQLITE_ROW);
+  }
+  sqlite3_finalize(st);
   free(data);
 }
 

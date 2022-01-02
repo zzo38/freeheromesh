@@ -178,6 +178,15 @@ TEXT, "HELP" TEXT, "INPUT" INT, "QUIZ" INT, "TRACEIN" INT, "TRACEOUT" INT,
   TRACEOUT is true then it will trace messages sent by this class (if
   tracing is enabled).
 
+CREATE TEMPORARY TABLE "DIVISIONS"("HEADING" BLOB NOT NULL, "FIRST" INT
+NOT NULL);
+  The list of level divisions. The HEADING is the (unformatted) heading
+  text, and the FIRST is the order number (not ID number) of the first
+  level to which this heading applies. (Note: Writing to this table by
+  use of SQL statements will not automatically update the puzzle set.
+  However, if you use SQL and then use the level index editor, then that
+  will make the changes permanent.)
+
 CREATE TABLE "INVENTORY"("ID" INTEGER PRIMARY KEY, "CLASS" INT, "IMAGE"
 INT, "VALUE" INT); *
   This table contains the current inventory, and is read-only. It is not
