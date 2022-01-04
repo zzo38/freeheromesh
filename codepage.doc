@@ -4,25 +4,21 @@
 Code page numbers are assigned according to the following:
 
 * Code page numbers are 16-bit numbers. Numbers 0, 65534, and 65535 are
-not used; they are reserved for internal use of the software.
+not used; they are reserved for internal use of the software. (TODO:
+Maybe this should be changed to 23-bit code page numbers that I will
+maintain a list of. The below will still apply for code page numbers
+that fit in 16-bits, though.)
 
-* IBM and Microsoft code page numbers can be used. (Mostly, only IBM
-code page numbers should be used, but in some cases (described below)
-Microsoft code page numbers might be applicable.)
+* Mainly, IBM code page numbers are used.
 
-* If IBM and Microsoft use the same code page number for a different
-character set, or if they use different code page numbers for the same
-character set/encoding, then IBM takes precedence. However, if Microsoft
-uses the code page number for a strict superset of IBM's definition,
-then Microsoft's definition will be used.
+* If there is something from Microsoft or FreeDOS that does not already
+have a IBM code page number and does not conflict with IBM assignments,
+then they may also be used.
 
-* Extensions of FreeDOS are used if they do not conflict with IBM and
-are not already present as official IBM code pages.
-
-* The areas designated as private use areas by IBM (57344-61439 and
-65280-65533) may be defined in future by myself (or others, with my
-approval). Some ranges may also later be reserved as user-defined or
-application-specific areas.
+* If a Microsoft code page extends a IBM code page and is otherwise 100%
+backward compatible with it, and ahs the same number as the corresponding
+IBM code page, then the extensions added by Microsoft will also apply to
+that code page (only).
 
 Note that not all of the code page numbers according to the above are
 actually used in Free Hero Mesh; Free Hero Mesh only uses ASCII-based
@@ -31,6 +27,13 @@ improved in future to allow multibyte code pages, but currently it
 doesn't). The full set of code page numbers may still be useful for
 other applications, though.
 
+(Even if multibyte code pages are implemented in future (as well as the
+possibility of different font sizes than 8x8, and for narrow/wide
+characters), Shift-JIS is not suitable for Free Hero Mesh, because Free
+Hero Mesh uses a backslash for string escaping and a multibyte character
+in Shift-JIS can contain the ASCII code for a backslash. However, EUC-JP
+may be suitable.)
+
 
 === List of code page numbers ===
 
@@ -38,6 +41,7 @@ In the below list, "=" means that it is already included in the provided
 codepage.har file, and "-" means it isn't included (it might or might not
 be included in future).
 
+   367 = ASCII only
    437 = default PC character set
    850 = PC-like Western Latin
    852 - PC-like Central European
@@ -52,6 +56,10 @@ be included in future).
   1251 - Windows Cyrillic
   1252 - Windows Western
   1254 - Windows Turkish
+
+(Note: Code page 437 is hard-coded and is compiled into the executable
+file, and if you specify code page 367 then it will automatically change
+it to 437 (since code page 437 is a superset of code page 367).)
 
 
 === File format ===

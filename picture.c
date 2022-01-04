@@ -824,6 +824,7 @@ void set_code_page(Uint16 n) {
   Uint8 b[32];
   FILE*fp;
   if(!n) return;
+  if(n==367) n=437;
   if(fontdata && fontdata!=pcfont) fatal("Multiple code page specifications\n");
   optionquery[1]=Q_codepage;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
