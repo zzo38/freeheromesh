@@ -1534,6 +1534,274 @@ static int string_list(void) {
   }
 }
 
+typedef struct {
+  char*title;
+  Uint16 id,kind,mark;
+} IndexItem;
+
+static void level_index_editor(void) {
+  SDL_Rect r;
+  SDL_Event ev;
+  char had_divisions=0;
+  FILE*out;
+  char*buf=0;
+  char b[32];
+  size_t bufsize=0;
+  IndexItem*items;
+  IndexItem*items2;
+  IndexItem citem;
+  int nitems;
+  int nmark=0;
+  sqlite3_stmt*st=0;
+  int i,j,x,y;
+  int sel=0;
+  int scroll=0;
+  char rescroll=1;
+  const char*q;
+  if(sqlite3_prepare_v2(userdb,"SELECT COUNT() FROM `DIVISIONS`;",-1,&st,0) || sqlite3_step(st)!=SQLITE_ROW) {
+    screen_message(sqlite3_errmsg(userdb));
+    sqlite3_finalize(st);
+    return;
+  }
+  had_divisions=sqlite3_column_int(st,0)?1:0;
+  nitems=level_nindex+sqlite3_column_int(st,0);
+  sqlite3_finalize(st);
+  if(sqlite3_prepare_v2(userdb,"SELECT 0,`FIRST`,0,`HEADING`,_ROWID_ FROM `DIVISIONS` UNION ALL SELECT 1,`ORD`,`ID`,`TITLE`,0 FROM `LEVELS` ORDER BY 2,1,5;",-1,&st,0)) {
+    screen_message(sqlite3_errmsg(userdb));
+    return;
+  }
+  items=calloc(nitems,sizeof(IndexItem));
+  if(!items) fatal("Allocation failed\n");
+  for(i=0;i<nitems;i++) {
+    j=sqlite3_step(st);
+    if(j!=SQLITE_ROW) {
+      if(j!=SQLITE_DONE) screen_message(sqlite3_errmsg(userdb));
+      nitems=i;
+      break;
+    }
+    items[i].kind=sqlite3_column_int(st,0);
+    items[i].id=sqlite3_column_int(st,2);
+    items[i].title=strdup(sqlite3_column_text(st,3)?:(const unsigned char*)"<?>");
+    if(!items[i].title) fatal("Allocation failed\n");
+  }
+  sqlite3_finalize(st);
+  // Main editor loop (GUI)
+  set_cursor(XC_arrow);
+  redraw:
+  if(sel<0) sel=0;
+  if(sel>nitems) sel=nitems;
+  if(rescroll) {
+    if(scroll<0) scroll=0;
+    if(sel<scroll) scroll=sel;
+    if(sel>=scroll+screen->h/8-2) scroll=sel+3-screen->h/8;
+    rescroll=0;
+  }
+  SDL_FillRect(screen,0,0x02);
+  r.x=r.y=0;
+  r.w=screen->w;
+  r.h=16;
+  SDL_FillRect(screen,&r,0xF7);
+  SDL_LockSurface(screen);
+  draw_text(0,0,"<\x18\x19> Cursor  <SHIFT+\x18\x19> Exchange  <INS> Add Division  <DEL> Delete Division  <ESC> Save",0xF7,0xF0);
+  draw_text(0,8,"<F1/E> Edit Title  <F2/M> Mark  <F3/P> Paste  <F4/T> Show Title  <F5/U> Unmark All  <F6/F> Find  <F7> Current",0xF7,0xF0);
+  for(y=16,i=scroll;y<screen->h-7 && i<=nitems;y+=8,i++) {
+    if(i==sel) {
+      r.x=16; r.y=y;
+      r.w=screen->w-16; r.h=8;
+      SDL_FillRect(screen,&r,0xF8);
+      draw_text(16,y,"\x10",x=0xF8,nmark?0xFD:0xFE);
+    } else {
+      draw_text(16,y,"\xB3",x=0x02,0xF8);
+    }
+    draw_text(6*8,y,"\xB3",x,x^0xFA);
+    draw_text(12*8,y,"\xB3",x,x^0xFA);
+    if(i==nitems) {
+      draw_text(4*8,y,"\x04 END \x04",x,0xFC);
+    } else if(items[i].kind) {
+      snprintf(b,8,"%5u",items[i].id);
+      draw_text(7*8,y,b,x,0xFA);
+      draw_text(13*8,y,items[i].title,x,0xFF);
+    } else {
+      draw_text(7*8,y,"\x07\x07\x07\x07\x07",x,0xF9);
+      draw_text(13*8,y,items[i].title,x,0xFE);
+    }
+    if(i<nitems && items[i].mark) {
+      snprintf(b,8,"%3u",items[i].mark);
+      draw_text(3*8,y,b,0xF1,0xFB);
+    }
+  }
+  SDL_UnlockSurface(screen);
+  r.x=r.w=0; r.y=16; r.h=screen->h-16;
+  scrollbar(&scroll,screen->h/8-2,nitems+1,0,&r);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) {
+    if(ev.type!=SDL_VIDEOEXPOSE && scrollbar(&scroll,screen->h/8-2,nitems+1,&ev,&r)) goto redraw;
+    switch(ev.type) {
+      case SDL_MOUSEMOTION:
+        set_cursor(XC_arrow);
+        break;
+      case SDL_MOUSEBUTTONDOWN:
+        if(ev.button.x>=15) sel=(ev.button.y-16)/8+scroll;
+        if(ev.button.button==2) goto paste;
+        if(ev.button.button==3) goto mark;
+        goto redraw;
+      case SDL_KEYDOWN:
+        switch(ev.key.keysym.sym) {
+          case SDLK_UP: case SDLK_k: case SDLK_KP8:
+            if(!sel) break;
+            sel--;
+            if(ev.key.keysym.mod&(KMOD_ALT|KMOD_META)) {
+              while(sel>0 && items[sel].kind) sel--;
+            } else if((ev.key.keysym.mod&KMOD_SHIFT) && sel+1<nitems) {
+              citem=items[sel+1];
+              items[sel+1]=items[sel];
+              items[sel]=citem;
+            }
+            rescroll=1; goto redraw;
+          case SDLK_DOWN: case SDLK_j: case SDLK_KP2:
+            if(sel>=nitems) break;
+            sel++;
+            if(ev.key.keysym.mod&(KMOD_ALT|KMOD_META)) {
+              while(sel<nitems && items[sel].kind) sel++;
+            } else if((ev.key.keysym.mod&KMOD_SHIFT) && sel!=nitems) {
+              citem=items[sel-1];
+              items[sel-1]=items[sel];
+              items[sel]=citem;
+            }
+            rescroll=1; goto redraw;
+          case SDLK_PAGEUP: case SDLK_KP9:
+            sel-=screen->h/8-2;
+            scroll-=screen->h/8-2;
+            rescroll=1; goto redraw;
+          case SDLK_PAGEDOWN: case SDLK_KP3:
+            sel+=screen->h/8-2;
+            scroll+=screen->h/8-2;
+            rescroll=1; goto redraw;
+          case SDLK_HOME: case SDLK_KP7: scroll=sel=0; goto redraw;
+          case SDLK_END: case SDLK_KP1: sel=nitems; rescroll=1; goto redraw;
+          case SDLK_INSERT: case SDLK_KP0:
+            if(nitems>=65535) {
+              screen_message("Too many items");
+              goto redraw;
+            }
+            q=screen_prompt("Add division?");
+            if(!q || !*q) goto redraw;
+            items=realloc(items,(nitems+1)*sizeof(IndexItem));
+            if(!items) fatal("Allocation failed\n");
+            memmove(items+sel+1,items+sel,(nitems-sel)*sizeof(IndexItem));
+            items[sel].kind=items[sel].mark=0;
+            items[sel].title=strdup(q);
+            if(!items[sel].title) fatal("Allocation failed\n");
+            ++nitems;
+            rescroll=1; goto redraw;
+          case SDLK_DELETE: case SDLK_KP_PERIOD:
+            if(sel==nitems || items[sel].kind) break;
+            if(items[sel].mark) {
+              --nmark;
+              for(i=0;i<nitems;i++) if(items[i].mark>items[sel].mark) --items[i].mark;
+            }
+            free(items[sel].title);
+            memmove(items+sel,items+sel+1,(nitems-sel-1)*sizeof(IndexItem));
+            --nitems;
+            goto redraw;
+          case SDLK_F1: case SDLK_e:
+            if(sel==nitems || items[sel].kind) break;
+            q=screen_prompt("Edit division?");
+            if(!q || !*q) goto redraw;
+            free(items[sel].title);
+            items[sel].title=strdup(q);
+            if(!items[sel].title) fatal("Allocation failed");
+            goto redraw;
+          case SDLK_F2: case SDLK_m: mark:
+            if(sel==nitems || items[sel].mark || nmark==999) goto redraw;
+            items[sel].mark=++nmark;
+            goto redraw;
+          case SDLK_F3: case SDLK_p: paste:
+            if(!nmark) goto redraw;
+            x=sel;
+            if(x<nitems) while(x && items[x].mark && items[x-1].mark) --x;
+            items2=items;
+            items=malloc(nitems*sizeof(IndexItem));
+            if(!items) fatal("Allocation failed\n");
+            for(i=j=0;i<x;i++) if(!items2[i].mark) items[j++]=items2[i];
+            sel=j; j+=nmark;
+            for(i=0;i<nitems;i++) {
+              if(y=items2[i].mark) items2[i].mark=0,items[sel+y-1]=items2[i];
+              else if(i>=x) items[j++]=items2[i];
+            }
+            free(items2);
+            nmark=0;
+            rescroll=1; goto redraw;
+          case SDLK_F4: case SDLK_t:
+            if(sel==nitems) break;
+            modal_draw_popup(items[sel].title);
+            goto redraw;
+          case SDLK_F5: case SDLK_u:
+            for(i=0;i<nitems;i++) items[i].mark=0;
+            nmark=0;
+            goto redraw;
+          case SDLK_F6: case SDLK_f:
+            q=screen_prompt("Find?");
+            if(!q || !*q) goto redraw;
+            if(*q>='0' && *q<='9') {
+              j=strtol(q,0,10);
+              for(i=0;i<nitems;i++) if(items[i].kind && items[i].id==j) sel=i;
+            }
+            rescroll=1; goto redraw;
+          case SDLK_F7:
+            for(i=0;i<nitems;i++) if(items[i].kind && items[i].id==level_id) {
+              sel=i;
+              rescroll=1; goto redraw;
+            }
+            break;
+          case SDLK_ESCAPE:
+            if(ev.key.keysym.mod&KMOD_SHIFT) goto final;
+            goto save;
+        }
+        break;
+      case SDL_VIDEOEXPOSE: goto redraw;
+      case SDL_QUIT: SDL_PushEvent(&ev); goto save;
+    }
+  }
+  save:
+  // Saving the changes, including SQL table and DIVISION.IDX lump
+  sqlite3_exec(userdb,"DELETE FROM `DIVISIONS`;",0,0,0);
+  if(sqlite3_prepare_v2(userdb,"INSERT INTO `DIVISIONS`(`HEADING`,`FIRST`) VALUES(?1,?2);",-1,&st,0)) {
+    screen_message(sqlite3_errmsg(userdb));
+    goto final;
+  }
+  out=open_memstream(&buf,&bufsize);
+  if(!out) fatal("Allocation failed");
+  for(i=j=0;i<nitems;i++) {
+    if(items[i].kind) {
+      if(j<level_nindex) level_index[j++]=items[i].id;
+    } else {
+      sqlite3_bind_text(st,1,items[i].title,-1,0);
+      sqlite3_bind_int(st,2,j+1);
+      while(sqlite3_step(st)==SQLITE_ROW);
+      sqlite3_reset(st);
+      fputc((j+1)&255,out); fputc((j+1)>>8,out);
+      fwrite(items[i].title,1,strlen(items[i].title)+1,out);
+    }
+  }
+  sqlite3_finalize(st);
+  if(!ftell(out)) {
+    if(!had_divisions) goto nodiv;
+    fputc(0,out);
+  }
+  fclose(out);
+  if(!buf) fatal("Allocation failed");
+  write_lump(FIL_LEVEL,LUMP_DIVISION_IDX,bufsize,buf);
+  nodiv:
+  free(buf);
+  // LEVEL.IDX lump
+  update_level_index();
+  // Done
+  final:
+  for(i=0;i<nitems;i++) free(items[i].title);
+  free(items);
+}
+
 static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
   int x,y;
   switch(cmd) {
@@ -1557,6 +1825,13 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
     case '^w': // Swap world
       swap_world();
       level_changed=1;
+      return 0;
+    case '^I': // Level index editor
+      sqlite3_exec(userdb,"BEGIN;",0,0,0);
+      level_index_editor();
+      sqlite3_exec(userdb,"DELETE FROM LEVELS; DROP TABLE TEMP.LEVELS;",0,0,0);
+      sqlite3_exec(userdb,"COMMIT;",0,0,0);
+      for(x=0;x<level_nindex;x++) if(level_id==level_index[x]) level_ord=x+1;
       return 0;
     case '^N': // New level
       if(level_nindex>0xFFFE) return 0;

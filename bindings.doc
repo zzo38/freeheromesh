@@ -132,6 +132,9 @@ any name with : at first to ask the user for the value to use.
 
 === Editor commands ===
 
+'^I'
+  Level index editor.
+
 '^N'
   Add a new level (after the last one). The new level has the same
   dimensions as the current level, but contains no objects or strings,

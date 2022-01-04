@@ -157,6 +157,7 @@
 ?.editKey.F: with n(n) as (select 65 union all select n+1 h from n where h<=64*pfheight()+65) select '^a',n from n;
 ?.editKey.R: select 're',substr(:resize,1,instr(:resize,'x')-1),substr(:resize,instr(:resize,'x')+1) where length(:resize);
 ?.editKey.W: ^w
+?.editKey.ctrl.I: ^I
 ?.editKey.ctrl.N: ^N
 ?.editKey.ctrl.P: ^P
 ?.editKey.ctrl.X: select 're',pfwidth(),pfheight();

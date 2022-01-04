@@ -192,11 +192,35 @@ xclip to use this).
 See export.doc for the file format.
 
 
+=== Level index editor ===
+
+You can push CTRL+I to activate the level index editor, which can be used
+for reordering levels and for inserting divisions into the list of levels.
+
+The display shows the level ID number followed by the title of that level;
+if it is a division then there is no ID number. There may also be another
+number to the left of the ID number which is the mark number, if there is
+any mark (see below for information).
+
+You can move cursor by arrows, and you can then exchange an item with the
+one above or below by shift and arrows. If you push alt and arrows, will
+move the cursor to the next division in that direction.
+
+Push insert to add a division (just above the cursor), or delete to delete
+a division (only divisions can be deleted in this way, not levels).
+
+Another way to reorder the items is to add marks by pushing F2 (or click
+by right mouse button) on each one, and tghen push F3 (or click by middle
+mouse button) at the point to be moved to; they are removed from where
+they were before and put here in the order in which they were marked.
+
+
 === Summary of default key/mouse bindings ===
 
 Keyboard:
 
   CTRL+G    Go to level (won't auto save)
+  CTRL+I    Level index editor
   CTRL+N    Add new level (after last one)
   CTRL+P    Switch to play game (won't auto save)
   CTRL+Q    Quit (won't auto save)
