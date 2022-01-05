@@ -260,7 +260,7 @@ void write_lump(int sol,int lvl,long sz,const unsigned char*data) {
    " ON CONFLICT(`FILE`,`LEVEL`) DO UPDATE SET `DATA` = ?4;",-1,&st,0)) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
   sqlite3_bind_int64(st,1,sol?solutionuc:leveluc);
   sqlite3_bind_int(st,2,lvl);
-  sqlite3_bind_text(st,3,lvl==LUMP_CLASS_DEF?"CLASS.DEF":lvl==LUMP_LEVEL_IDX?"LEVEL.IDX":sol?".SOL":".LVL",-1,SQLITE_STATIC);
+  sqlite3_bind_text(st,3,lvl==LUMP_CLASS_DEF?"CLASS.DEF":lvl==LUMP_LEVEL_IDX?"LEVEL.IDX":lvl==LUMP_DIVISION_IDX?"DIVISION.IDX":sol?".SOL":".LVL",-1,SQLITE_STATIC);
   sqlite3_bind_blob64(st,4,data,sz,0);
   while((e=sqlite3_step(st))==SQLITE_ROW);
   if(e!=SQLITE_DONE) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
