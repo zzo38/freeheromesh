@@ -783,6 +783,7 @@ static int list_levels(void) {
   static Sint8 mo=-1;
   static Uint8 columns=0;
   static int scroll=0;
+  static Uint16 divmin,divmax; // 1 less than level order number
   sqlite3_stmt*st;
   SDL_Event ev;
   SDL_Rect r;
@@ -791,7 +792,8 @@ static int list_levels(void) {
   int sel=level_ord-1;
   int b,i,j,x,y;
   char buf[256];
-  char rescroll=1;
+  char rescroll=2;
+  Uint16 ndiv;
   if(mo<0) {
     optionquery[1]=Q_listMode;
     v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
@@ -810,14 +812,29 @@ static int list_levels(void) {
   }
   if(!ll_head) ll_head="\xB3W \xB3H \xB3 TITLE";
   // ID, ORD, CODE, WIDTH, HEIGHT, TITLE, SOLVED, SOLVABLE, ...
-  if(sqlite3_prepare_v2(userdb,"SELECT * FROM `LEVELS` WHERE `ORD` NOT NULL AND `ORD` >= ?1 ORDER BY `ORD`;",-1,&st,0)) {
+  prepare:
+  if(sqlite3_prepare_v2(userdb,mo&4
+   ?"WITH D(F,L,H,R) AS (SELECT `FIRST`, LEAD(`FIRST`,1,MAX_LEVEL()+1) OVER (ORDER BY `FIRST`,_ROWID_), `HEADING`, _ROWID_ FROM `DIVISIONS`)"
+    " SELECT F, L, H, PRINTF('(%d/%d)',(SELECT COUNT() FROM `LEVELS` WHERE `ORD` >= F AND `ORD` < L AND `SOLVED`),L-F) FROM D WHERE F <> L ORDER BY F, R;"
+   :"SELECT * FROM `LEVELS` WHERE `ORD` NOT NULL AND `ORD` >= ?1 AND `ORD` < ?2 ORDER BY `ORD`;"
+   ,-1,&st,0)) {
     screen_message(sqlite3_errmsg(userdb));
     return 0;
+  }
+  if(mo&4) {
+    ndiv=0;
+    while(sqlite3_step(st)==SQLITE_ROW) ndiv++;
+    if(!ndiv) {
+      mo&=3;
+      sqlite3_finalize(st);
+      goto prepare;
+    }
   }
   set_cursor(XC_arrow);
   redraw:
   if(sel<0) sel=0;
   if(sel>=level_nindex) sel=level_nindex-1;
+  if((mo&8) && sel>=divmax-divmin) sel=divmax-divmin-1;
   SDL_FillRect(screen,0,0x02);
   r.x=r.y=0;
   r.w=screen->w;
@@ -825,10 +842,58 @@ static int list_levels(void) {
   SDL_FillRect(screen,&r,0xF7);
   SDL_LockSurface(screen);
   draw_text(0,0,"<LMB/\x18\x19\x1A\x1B> Select  <MMB/SP> Title  <RMB/RET> Play  <0-9> Find  <ESC> Cancel",0xF7,0xF0);
-  draw_text(0,8,"<F1> Wide/Tall  <F2> ID/Ord",0xF7,0xF0);
+  draw_text(0,8,"<F1> Wide/Tall  <F2> ID/Ord  <F3> Divisions  <F4> All",0xF7,0xF0);
+  if(mo&8) draw_text(0,16,"\x15",0xF7,0xF0);
+  reset:
   sqlite3_reset(st);
-  if(mo&1) {
-    scrmax=level_nindex;
+  sqlite3_bind_int(st,2,mo&8?divmax:level_nindex+1);
+  if(mo&4) {
+    scrmax=ndiv;
+    for(i=0;i<scroll;i++) if(sqlite3_step(st)!=SQLITE_ROW) sqlite3_reset(st),scroll=i-1;
+    for(j=0,y=24;y<screen->h-7;y+=8,j++) {
+      i=sqlite3_step(st);
+      if(i!=SQLITE_ROW) break;
+      if(rescroll==2 && sel>=sqlite3_column_int(st,0) && sel<sqlite3_column_int(st,1)) {
+        found:
+        sel=j;
+        rescroll=1;
+        goto reset;
+      }
+      if(j==sel) {
+        divmin=sqlite3_column_int(st,0);
+        divmax=sqlite3_column_int(st,1);
+        r.x=16; r.y=y;
+        r.w=screen->w-16; r.h=8;
+        SDL_FillRect(screen,&r,0xF8);
+        draw_text(2*8,y,"\x10",b=0xF8,0xFE);
+        snprintf(buf,100,"#%d  (%d - %d)",sel+1,divmin,divmax-1);
+        draw_text(80,16,buf,0xF7,0xFE);
+      } else {
+        draw_text(2*8,y,"\xB3",b=0x02,0xF8);
+      }
+      if(v=sqlite3_column_text(st,2)) {
+        x=sqlite3_column_bytes(st,2);
+        draw_text(4*8,y,v,b,0xFF);
+        if(v=sqlite3_column_text(st,3)) draw_text((x+5)*8,y,v,b,0xFB);
+      }
+    }
+    if(rescroll) {
+      if(rescroll==2 && i==SQLITE_ROW) {
+        while((i=sqlite3_step(st))==SQLITE_ROW) {
+          j++;
+          if(sel>=sqlite3_column_int(st,0) && sel<sqlite3_column_int(st,1)) goto found;
+        }
+      }
+      if(sel<scroll) scroll=sel;
+      if(sel>=scroll+screen->h/8-3) scroll=sel+4-screen->h/8;
+      rescroll=0;
+    }
+    if(y<screen->h-7 && sel>=j) {
+      sel=j-1;
+      goto reset;
+    }
+  } else if(mo&1) {
+    scrmax=mo&8?(divmax-divmin):level_nindex;
     draw_text(16+060,16,ll_head,0xF7,0xF1);
     draw_text(16,16,mo&2?"\xB3 ID  ":"\xB3 ORD ",0xF7,0xF1);
     if(rescroll) {
@@ -836,10 +901,11 @@ static int list_levels(void) {
       if(sel>=scroll+screen->h/8-3) scroll=sel+4-screen->h/8;
       rescroll=0;
     }
-    sqlite3_bind_int(st,1,scroll+1);
+    sqlite3_bind_int(st,1,scroll+(mo&8?divmin:1));
     for(y=24;y<screen->h-7;y+=8) {
       if(sqlite3_step(st)!=SQLITE_ROW) break;
       i=sqlite3_column_int(st,1);
+      if(mo&8) i-=divmin-1;
       if(i-1==sel) {
         r.x=16; r.y=y;
         r.w=screen->w-16; r.h=8;
@@ -848,6 +914,7 @@ static int list_levels(void) {
       } else {
         draw_text(2*8,y,"\xB3",b=0x02,0xF8);
       }
+      if(mo&8) i+=divmin-1;
       snprintf(buf,6,"%5u",mo&2?sqlite3_column_int(st,0):i);
       draw_text(3*8,y,buf,b,sqlite3_column_int(st,6)?0xFA:0xFC);
       draw_text(8*8,y,"\xB3",b,b^0xFA);
@@ -868,17 +935,18 @@ static int list_levels(void) {
       }
     }
   } else {
-    scrmax=(level_nindex+columns-1)/columns;
-    draw_text(0,16,mo&2?"(ID)":"(Ord)",0xF7,0xF1);
+    scrmax=((mo&8?divmax-divmin:level_nindex)+columns-1)/columns;
+    draw_text(8,16,mo&2?"(ID)":"(Ord)",0xF7,0xF1);
     if(rescroll) {
       if(sel<scroll*columns) scroll=sel/columns;
       if(sel>(scroll+screen->h/8-3)*columns) scroll=(sel+3-screen->h/8)/columns;
       rescroll=0;
     }
-    sqlite3_bind_int(st,1,scroll*columns+1);
+    sqlite3_bind_int(st,1,scroll*columns+(mo&8?divmin:1));
     for(y=24;y<screen->h-7;y+=8) for(x=0;x<columns;x++) {
       if(sqlite3_step(st)!=SQLITE_ROW) goto done;
       i=sqlite3_column_int(st,1);
+      if(mo&8) i-=divmin-1;
       if(i-1==sel) {
         draw_text(x*070+16,y,"\x10",b=0xF8,0xFE);
         snprintf(buf,128,"[ ID=%u Ord=%u Code=%u Size=%ux%u ]",sqlite3_column_int(st,0),i,sqlite3_column_int(st,2),sqlite3_column_int(st,3),sqlite3_column_int(st,4));
@@ -886,9 +954,10 @@ static int list_levels(void) {
       } else {
         draw_text(x*070+16,y," ",b=0x02,0x02);
       }
+      if(mo&8) i+=divmin-1;
       snprintf(buf,7,"%5u ",mo&2?sqlite3_column_int(st,0):i);
       draw_text(x*070+24,y,buf,b,sqlite3_column_int(st,6)?0xFA:0xFC);
-      if(!sqlite3_column_int(st,7)) draw_text(x*070+64,y,"\a",b,i-1==sel?0xF1:0xF9);
+      if(!sqlite3_column_int(st,7)) draw_text(x*070+64,y,"\a",b,b==0xF8?0xF1:0xF9);
     }
   }
   done:
@@ -910,7 +979,28 @@ static int list_levels(void) {
           //TODO: Change the scroll to approximately the middle, instead of zero
           case SDLK_F1: scroll=0; mo^=1; rescroll=1; goto redraw;
           case SDLK_F2: mo^=2; goto redraw;
+          case SDLK_F3:
+            mo&=~8;
+            if(mo&4) break;
+            mo|=4;
+            rescroll=2;
+            sqlite3_finalize(st);
+            goto prepare;
+          case SDLK_F4:
+            if(mo&8) {
+              sel+=divmin-1;
+              divmin=0;
+            }
+            if(mo&4) {
+              sqlite3_finalize(st);
+              mo&=3;
+              sel=level_ord-1;
+              goto prepare;
+            }
+            mo&=3;
+            goto redraw;
           case SDLK_SPACE: title:
+            if(mo&4) break;
             sqlite3_reset(st);
             sqlite3_bind_int(st,1,sel+1);
             if(sqlite3_step(st)==SQLITE_ROW) {
@@ -919,6 +1009,7 @@ static int list_levels(void) {
             }
             goto redraw;
           case SDLK_0 ... SDLK_9: digit:
+            if(mo&4) break;
             SDL_PushEvent(&ev);
             if(v=screen_prompt("Find?")) {
               if(!*v) goto redraw;
@@ -932,10 +1023,10 @@ static int list_levels(void) {
             }
             goto redraw;
           case SDLK_DOWN: case SDLK_KP2: case SDLK_j:
-            sel+=mo&1?:columns;
+            sel+=mo&5?1:columns;
             rescroll=1; goto redraw;
           case SDLK_UP: case SDLK_KP8: case SDLK_k:
-            sel-=mo&1?:columns;
+            sel-=mo&5?1:columns;
             rescroll=1; goto redraw;
           case SDLK_LEFT: case SDLK_KP4: case SDLK_h:
             sel--;
@@ -944,18 +1035,25 @@ static int list_levels(void) {
             sel++;
             rescroll=1; goto redraw;
           case SDLK_PAGEUP: case SDLK_KP9:
-            sel-=(screen->h/8-3)*(mo&1?:columns);
-            scroll-=(screen->h/8-3)*(mo&1?:columns);
+            sel-=(screen->h/8-3)*(mo&5?1:columns);
+            scroll-=(screen->h/8-3)*(mo&5?1:columns);
             rescroll=1; goto redraw;
           case SDLK_PAGEDOWN: case SDLK_KP3:
-            sel+=(screen->h/8-3)*(mo&1?:columns);
-            scroll+=(screen->h/8-3)*(mo&1?:columns);
+            sel+=(screen->h/8-3)*(mo&5?1:columns);
+            scroll+=(screen->h/8-3)*(mo&5?1:columns);
             rescroll=1; goto redraw;
           case SDLK_HOME: case SDLK_KP7: sel=scroll=0; rescroll=1; goto redraw;
           case SDLK_END:
-            sel=level_nindex-1;
+            sel=mo&8?divmax-divmin-1:level_nindex-1;
             rescroll=1; goto redraw;
-          case SDLK_RETURN: case SDLK_KP_ENTER: play: i=1; goto final;
+          case SDLK_RETURN: case SDLK_KP_ENTER: play:
+            if(mo&4) {
+              mo=(mo|8)&~4;
+              sel=0;
+              sqlite3_finalize(st);
+              goto prepare;
+            }
+            i=1; goto final;
         }
         break;
       case SDL_MOUSEBUTTONDOWN:
@@ -975,7 +1073,7 @@ static int list_levels(void) {
   i=-1;
   final:
   sqlite3_finalize(st);
-  if(i==1) begin_level(~sel);
+  if(i==1) begin_level(mo&8?-sel-divmin:~sel);
   return i;
 }
 

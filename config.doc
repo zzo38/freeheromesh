@@ -69,7 +69,8 @@ See bindings.doc for key/mouse bindings.
 .listMode
   Mode for list of levels, in hexadecimal, where bit0 is set for tall mode
   or clear for wide mode, and bit1 is set for listing the ID numbers or
-  clear for listing the order numbers.
+  clear for listing the order numbers, and bit2 is set to display the list
+  of divisions initially, instead of the list of levels.
 
 .margin
   The X coordinate of the left margin. To the left is the status area, and

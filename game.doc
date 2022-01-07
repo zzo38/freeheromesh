@@ -117,6 +117,12 @@ numbers but more will fit on the screen at once.
 
 * F2 = Toggle displaying order numbers or ID numbers.
 
+* F3 = Display list of divisions of levels. This function is not available
+in all puzzle sets. When this function is activated, you can push return
+or right mouse button to list only the subset of levels in that division.
+
+* F4 = Cancel the division display, and list all levels.
+
 * Space or middle mouse button = Display title.
 
 * Return or right mouse button = Go to selected level.
