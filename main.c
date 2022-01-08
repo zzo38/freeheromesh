@@ -980,6 +980,7 @@ static void do_sql_mode(void) {
           case 'x': sqlite3_enable_load_extension(userdb,strtol(txt+2,0,0)); break;
           default: fatal("Invalid dot command .%c\n",txt[1]);
         }
+        fflush(stdout);
       } else {
         txt[n]=0;
         if(sqlite3_complete(txt)) {
@@ -987,6 +988,7 @@ static void do_sql_mode(void) {
           if(bail && n) fatal("SQL error (%d): %s\n",n,sqlite3_errmsg(userdb));
           else if(n) fprintf(stderr,"SQL error (%d): %s\n",n,sqlite3_errmsg(userdb));
           n=0;
+          fflush(stdout);
         } else {
           txt[n++]='\n';
         }
