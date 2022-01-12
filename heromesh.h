@@ -98,11 +98,12 @@ const char*log_if_error(const char*t);
 extern SDL_Surface*screen;
 extern Uint16 picture_size;
 extern int left_margin;
+extern Uint32 codepage;
 
 void init_palette(void);
 void init_screen(void);
 void load_pictures(void);
-void set_code_page(Uint16 n);
+void set_code_page(Uint32 n);
 
 // Use only when screen is unlocked
 void draw_picture(int x,int y,Uint16 img);

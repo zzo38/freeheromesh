@@ -24,6 +24,7 @@ exit
 SDL_Surface*screen;
 Uint16 picture_size;
 int left_margin;
+Uint32 codepage;
 
 static SDL_Surface*picts;
 static Uint8*curpic;
@@ -817,7 +818,7 @@ void init_screen(void) {
   left_margin=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"65",0,10);
 }
 
-void set_code_page(Uint16 n) {
+void set_code_page(Uint32 n) {
   int c,i,j,s;
   const char*v;
   unsigned char*d;
@@ -853,7 +854,7 @@ void set_code_page(Uint16 n) {
       if(c<'0' || c>'9') s=1;
       else if(c=='0' && !i) s=1;
       else i=10*i+c-'0';
-      if(i>65535) s=1;
+      if(i>0x7FFFFF) s=1;
     }
   }
   if(s || i!=n) goto skip;
@@ -889,6 +890,7 @@ void set_code_page(Uint16 n) {
   fseek(fp,i,SEEK_CUR);
   goto name;
   done:
+  codepage=n;
   fclose(fp);
 }
 

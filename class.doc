@@ -268,7 +268,7 @@ These are the global definitions in the class definition file.
   for the inventory; if not specified, uses the same colour for both.
 
 (CodePage <number>)
-  Define the code page, from 1 to 65535. If not specified, then the
+  Define the code page, from 1 to 8388607. If not specified, then the
   default code page is used.
 
 (Control <definitions...>)

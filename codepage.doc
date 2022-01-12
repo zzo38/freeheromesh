@@ -3,29 +3,11 @@
 
 Code page numbers are assigned according to the following:
 
-* Code page numbers are 16-bit numbers. Numbers 0, 65534, and 65535 are
-not used; they are reserved for internal use of the software. (TODO:
-Maybe this should be changed to 23-bit code page numbers that I will
-maintain a list of. The below will still apply for code page numbers
-that fit in 16-bits, though.)
+* Code page numbers are 23-bit numbers. Numbers 0, 65534, and 65535 are
+not used; they are reserved for internal use of the software.
 
-* Mainly, IBM code page numbers are used.
-
-* If there is something from Microsoft or FreeDOS that does not already
-have a IBM code page number and does not conflict with IBM assignments,
-then they may also be used.
-
-* If a Microsoft code page extends a IBM code page and is otherwise 100%
-backward compatible with it, and ahs the same number as the corresponding
-IBM code page, then the extensions added by Microsoft will also apply to
-that code page (only).
-
-Note that not all of the code page numbers according to the above are
-actually used in Free Hero Mesh; Free Hero Mesh only uses ASCII-based
-code pages with 8-bit characters (although the implementation may be
-improved in future to allow multibyte code pages, but currently it
-doesn't). The full set of code page numbers may still be useful for
-other applications, though.
+* Mainly, IBM code page numbers are used. (Note, these are not all the
+same as Microsoft code page numbers.)
 
 (Even if multibyte code pages are implemented in future (as well as the
 possibility of different font sizes than 8x8, and for narrow/wide

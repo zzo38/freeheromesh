@@ -2555,7 +2555,7 @@ void load_classes(void) {
         case OP_COLLISIONLAYERS: define_user_flags(0x1080,0x1087); break;
         case OP_CODEPAGE:
           nxttok();
-          if(tokent!=TF_INT || tokenv<1 || tokenv>65535) ParseError("Number from 1 to 65535 expected\n");
+          if(tokent!=TF_INT || tokenv<1 || tokenv>0x7FFFFF) ParseError("Number from 1 to 8388607 expected\n");
           set_code_page(tokenv);
           nxttok();
           if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
