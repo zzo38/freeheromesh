@@ -55,6 +55,10 @@ CVALUE(number)
   Makes a game value of type 'class', given the class number. You can also
   specify the class name instead of the number.
 
+HASH(data,algorithm)
+  Make the hash of the data as a binary blob. See hash.h for a list of the
+  valid numbers to use as the hash algorithm numbers.
+
 HEROMESH_ESCAPE(blob)
   Converts blob representation of a game string into escaped format.
 

@@ -12,6 +12,7 @@ exit
 #include "heromesh.h"
 #include "cursorshapes.h"
 #include "instruc.h"
+#include "hash.h"
 
 typedef struct {
   struct sqlite3_vtab_cursor;
@@ -155,6 +156,15 @@ static void fn_cvalue(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
     if(!a || (a&~0x3FFF) || !classes[a] || (classes[a]->cflags&CF_NOCLASS2)) return;
   }
   found: sqlite3_result_int64(cxt,a|((sqlite3_int64)TY_CLASS<<32));
+}
+
+static void fn_hash(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  const unsigned char*u=sqlite3_value_blob(*argv);
+  int n=sqlite3_value_bytes(*argv);
+  long long h=sqlite3_value_int64(argv[1]);
+  int m=hash_length(h);
+  if(sqlite3_value_type(*argv)==SQLITE_NULL || !m) return;
+  sqlite3_result_blob(cxt,hash_buffer(h,u,n),m,free);
 }
 
 static void fn_heromesh_escape(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
@@ -1710,6 +1720,7 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"CL",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_cl,0,0);
   sqlite3_create_function(userdb,"CLASS_DATA",2,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_class_data,0,0);
   sqlite3_create_function(userdb,"CVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_cvalue,0,0);
+  sqlite3_create_function(userdb,"HASH",2,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_hash,0,0);
   sqlite3_create_function(userdb,"HEROMESH_ESCAPE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_heromesh_escape,0,0);
   sqlite3_create_function(userdb,"HEROMESH_TYPE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_heromesh_type,0,0);
   sqlite3_create_function(userdb,"HEROMESH_UNESCAPE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_heromesh_unescape,0,0);

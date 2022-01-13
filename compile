@@ -7,7 +7,7 @@ if test "$1" = "p"; then
   test -e bin/current.heromeshrc || cp default.heromeshrc bin/current.heromeshrc
 fi
 test -f CFLAGS || echo xxx > CFLAGS
-test "xx$CFLAGS" = "x`cat CFLAGS`" || rm bindings.o class.o picture.o function.o exec.o game.o edit.o picedit.o || true
+test "xx$CFLAGS" = "x`cat CFLAGS`" || rm bindings.o class.o picture.o function.o exec.o game.o edit.o picedit.o hash.o || true
 echo "x$CFLAGS" > CFLAGS
 test "x$EXE" = "x" && export EXE=~/bin/heromesh
 echo 'Flags: ' "$CFLAGS"
@@ -21,6 +21,7 @@ test heromesh.h -nt "$EXE" && rm bindings.o class.o picture.o function.o exec.o 
 test instruc.h -nt "$EXE" && rm class.o exec.o || true
 test pcfont.h -nt "$EXE" && rm picture.o || true
 test quarks.h -nt "$EXE" && rm bindings.o edit.o exec.o game.o picture.o picedit.o || true
+test hash.h -nt "$EXE" && rm hash.o function.o || true
 echo '* smallxrm'
 test smallxrm.c -nt smallxrm.o && bash smallxrm.c
 echo '* bindings'
@@ -39,6 +40,8 @@ echo '* edit'
 test edit.c -nt edit.o && bash edit.c
 echo '* picedit'
 test picedit.c -nt picedit.o && bash picedit.c
+echo '* hash'
+test hash.c -nt hash.o && bash hash.c
 echo '* main'
 bash main.c
 echo 'DONE'
