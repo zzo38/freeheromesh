@@ -340,3 +340,11 @@ void batch_import(void);
 
 void run_picture_editor(void);
 
+// == sound ==
+
+void init_sound(void);
+void set_sound_effect(Value v1,Value v2);
+Uint16 find_user_sound(const char*name);
+void set_sound_on(int on);
+void sound_test(void);
+

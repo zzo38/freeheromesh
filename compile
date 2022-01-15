@@ -17,11 +17,10 @@ test instruc.js -nt instruc.h && node instruc.js > instruc.h
 test names.js -nt names.h && node names.js > names.h
 test quarks -nt quarks.h && node quarks.js > quarks.h
 test quarks.js -nt quarks.h && node quarks.js > quarks.h
-test heromesh.h -nt "$EXE" && rm bindings.o class.o picture.o function.o exec.o game.o edit.o picedit.o || true
+test heromesh.h -nt "$EXE" && rm bindings.o class.o picture.o function.o exec.o game.o edit.o picedit.o sound.o || true
 test instruc.h -nt "$EXE" && rm class.o exec.o || true
 test pcfont.h -nt "$EXE" && rm picture.o || true
 test quarks.h -nt "$EXE" && rm bindings.o edit.o exec.o game.o picture.o picedit.o || true
-test hash.h -nt "$EXE" && rm hash.o function.o || true
 echo '* smallxrm'
 test smallxrm.c -nt smallxrm.o && bash smallxrm.c
 echo '* bindings'
@@ -40,6 +39,8 @@ echo '* edit'
 test edit.c -nt edit.o && bash edit.c
 echo '* picedit'
 test picedit.c -nt picedit.o && bash picedit.c
+echo '* sound'
+test sound.c -nt sound.o && bash sound.c
 echo '* hash'
 test hash.c -nt hash.o && bash hash.c
 echo '* main'

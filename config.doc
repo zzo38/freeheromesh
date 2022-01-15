@@ -21,6 +21,27 @@ See bindings.doc for key/mouse bindings.
   then this resource controls which of those pictures is selected. The
   default setting is zero.
 
+.audio.buffer
+  Buffer length for audio, as the number of samples. In order for audio to
+  work at all, this value must be set.
+
+.audio.mmlTempo
+  Define the number of quarter notes per minute. The default is 120.
+
+.audio.mmlTuning
+  The MML tuning of the A4 note, in Hz. The default is 440 Hz, but some
+  people do not like that tuning, so you can change it.
+
+.audio.mmlVolume
+  MML volume, from 0 to 1; fractions are allowed. The default value is 1.
+
+.audio.rate
+  Sample rate to use for audio, in hertz. In order for audio to work at
+  all, this value must be set.
+
+.audio.waveVolume
+  Wave volume, from 0 to 1; fractions are allowed. The default value is 1.
+
 .autoSave
   If true, saves changes to the level and solution files when the program
   terminates. If false (default), they are only saved to the user cache

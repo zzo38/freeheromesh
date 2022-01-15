@@ -32,6 +32,8 @@ buffer
 mmlVolume
 waveVolume
 standardSounds
+mmlTuning
+mmlTempo
 
 ! Keyboard
 keyRepeat

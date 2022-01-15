@@ -1,5 +1,5 @@
 #if 0
-gcc ${CFLAGS:--s -O2} -o ${EXE:-~/bin/heromesh} -Wno-multichar main.c class.o picture.o bindings.o function.o exec.o game.o edit.o picedit.o smallxrm.o hash.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread -lm
+gcc ${CFLAGS:--s -O2} -o ${EXE:-~/bin/heromesh} -Wno-multichar main.c class.o picture.o bindings.o function.o exec.o game.o edit.o picedit.o sound.o smallxrm.o hash.o sqlite3.o `sdl-config --cflags --libs` -ldl -lpthread -lm
 exit
 #endif
 
@@ -872,6 +872,17 @@ static void test_mode(void) {
         case SDLK_t:
           puts(screen_prompt("Testing screen_prompt()")?:"No output.");
           break;
+        case SDLK_u:
+          set_sound_effect(UVALUE(n,TY_USOUND),NVALUE(0));
+          break;
+        case SDLK_w:
+          sound_test();
+          SDL_FillRect(screen,0,0);
+          SDL_Flip(screen);
+          break;
+        case SDLK_z:
+          set_sound_effect(NVALUE(0),NVALUE(1));
+          break;
       }
       break;
     case SDL_MOUSEBUTTONDOWN:
@@ -1107,11 +1118,13 @@ int main(int argc,char**argv) {
   load_pictures();
   if(main_options['T']) {
     printf("argv[0] = %s\n",argv[0]);
+    init_sound();
     test_mode();
     return 0;
   }
   if(!main_options['z']) init_usercache();
   if(main_options['n']) return 0;
+  if(screen) init_sound();
   load_classes();
   load_key_bindings();
   load_level_index();
