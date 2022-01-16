@@ -20,7 +20,7 @@ typedef struct {
 } WaveSound;
 
 static Uint8 sound_on;
-static Sint16 mmlvolume=9001;
+static Sint16 mmlvolume=10000;
 static SDL_AudioSpec spec;
 static WaveSound*standardsounds;
 static Uint16 nstandardsounds;
@@ -261,7 +261,8 @@ void init_sound(void) {
     optionquery[2]=Q_mmlTuning;
     if(v=xrm_get_resource(resourcedb,optionquery,optionquery,3)) f=strtod(v,0); else f=440.0;
     f*=0x80000000U/(double)spec.freq;
-    for(i=0;i<256;i++) mmltuning[i]=f*pow(2.0,(i-96)/24.0);
+    for(i=0;i<190;i++) mmltuning[i]=f*pow(2.0,(i-96)/24.0);
+    for(i=0;i<64;i++) mmltuning[i+190]=(((long long)(i+2))<<37)/spec.freq;
     optionquery[2]=Q_mmlTempo;
     if(v=xrm_get_resource(resourcedb,optionquery,optionquery,3)) i=strtol(v,0,10); else i=120;
     // Convert quarter notes per minute to samples per sixty-fourth note
@@ -323,11 +324,15 @@ static void set_mml(const unsigned char*s) {
 }
 
 void set_sound_effect(Value v1,Value v2) {
-  static const unsigned char*const builtin[4]={
+  static const unsigned char*const builtin[8]={
     "s.g",
     "scdefgab+c-bagfedc-c",
-    "i1c+c+c+c+c+c+c",
+    "i1c+c+c+c+c+c+cx",
     "-cc'c#d,dd'd#ee'ff'f#",
+    "sn190n191n192n193n194n195n196n197n198n199n200n201n202n203n204n205n206n207n208n209n210",
+    "z+c-gec-gec",
+    "t+c-gec",
+    "tc-c+d-d+e-e+f-f+g-g",
   };
   const unsigned char*s;
   if(!sound_on) return;
@@ -355,7 +360,7 @@ void set_sound_effect(Value v1,Value v2) {
     case TY_FOR:
       // (only used for the sound test)
       if(!mmlvolume) break;
-      set_mml(builtin[v1.u&3]);
+      set_mml(builtin[v1.u&7]);
       break;
   }
   SDL_UnlockAudio();
@@ -389,7 +394,7 @@ void sound_test(void) {
     fflush(stdout);
   }
   if(!screen) return;
-  nitems=nusersounds+4;
+  nitems=nusersounds+8;
   columns=(screen->w-16)/240?:1;
   scrmax=(nitems+columns-1)/columns;
   set_cursor(XC_arrow);

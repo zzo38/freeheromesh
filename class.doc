@@ -2721,3 +2721,51 @@ a string: Concatenates all of them together, which can be strings, numbers
 (treated as unsigned), or classes. All formatting codes of strings will be
 stripped, so that the result will be a unformatted string.
 
+
+=== MML sound effects ===
+
+The MML sound effects are similar to ZZT and MegaZeux. It is a string
+consisting of the commands listed below (case-insensitive):
+
+A B C D E F G
+  Play a note of the current length and octave; notes outside of the range
+  of a 88-key piano are not valid, but the quarter tones are possible. It
+  can be followed by zero or more of the following signs:
+  ! flat
+  , half flat
+  ' half sharp
+  # sharp
+
+X
+  Play a silenced rest of the current note length.
+
+W H Q I S T Z
+  Set the note length to one of the predefined note lengths, where W means
+  a whole note, the other letters are successively half until Z which means
+  a sixty-fourth note, which is the shortest possible note.
+
+.
+  Multiply note length by 3/2.
+
+0 1 2 3 4 5 6 7
+  Set the octave to a specified number. Note that notes lower than A are
+  not valid for octave zero.
+
+-
+  Low octave.
+
++
+  High octave.
+
+L
+  Set note length to a following number of sixty-fourth notes.
+
+N
+  Play a note with the following note number, and the current length. The
+  note number 0 is the lowest piano note, and then each next key on the
+  piano is 2 more than the previous one (odd numbers are used for quarter
+  tones that are not on a standard piano). Numbers 190 and higher are used
+  for overtone notes; subtract 188 for the overtone number (although note
+  that overtone numbers 0 and 1 are not usable).
+
+(Note that this is not the same as standard MML.)

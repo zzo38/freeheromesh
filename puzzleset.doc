@@ -43,7 +43,8 @@ lumps, and specifies how to modify them to produce the new picture (e.g.
 by rotating, mirroring, changing colours, etc).
 
 The WAV lumps are sound effects. Each is a RIFF WAVE file; it must be of
-a type which can be loaded by SDL. (This is currently not used.)
+a type which can be loaded by SDL. Lumps can also be WZV if it is a
+compressed audio file, but compressed audio is not currently implemented.
 
 The PICEDIT.CFG lump stores the configuration for the picture editor. It
 can safely be deleted.

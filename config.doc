@@ -30,10 +30,12 @@ See bindings.doc for key/mouse bindings.
 
 .audio.mmlTuning
   The MML tuning of the A4 note, in Hz. The default is 440 Hz, but some
-  people do not like that tuning, so you can change it.
+  people do not like that tuning, so you can change it. This setting only
+  affects 24-TET sounds, and not overtone-based sounds.
 
 .audio.mmlVolume
-  MML volume, from 0 to 1; fractions are allowed. The default value is 1.
+  MML volume, from 0 to 1; fractions are allowed. The default value is
+  approximately one third.
 
 .audio.rate
   Sample rate to use for audio, in hertz. In order for audio to work at
