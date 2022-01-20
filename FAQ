@@ -143,6 +143,19 @@ directory" error, and it won't work.
  set argv[0] to the full path of the executable file, and this is how
  Free Hero Mesh detects portable mode).
 
+** Some levels of HyperHero puzzle set will display a "Attempt to use a
+nonexistent object" error when trying to move a Sliding Door.
+
+ This is deliberate, and is a part of the puzzle. A Sliding Door has two
+ sides. If one side is destroyed, then the other side will remain, but
+ if something tries to move it, then it will try to call the other side
+ to tell it to open/close; if it doesn't exist, then it is this error.
+ If it is necessary to trigger a Sliding Door in such a way that it can
+ move, then you must ensure to avoid destroying it before that happens.
+
+ (In Hero Hearts, this situation causes a GPF, and crashes the game
+ engine. Fortunately, Free Hero Mesh doesn't do that.)
+
 
 === Converted puzzle sets ===
 
