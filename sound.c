@@ -14,6 +14,8 @@ exit
 #include "heromesh.h"
 #include "cursorshapes.h"
 
+#define N_STANDARD_SOUNDS 50
+
 typedef struct {
   Uint8*data;
   Uint32 len; // length in bytes
@@ -171,8 +173,11 @@ static void load_sound_set(int is_user) {
     v=xrm_get_resource(resourcedb,optionquery,optionquery,3);
     if(!v) return;
     fp=fopen(v,"r");
-    if(!fp) fatal("Cannot open standard sounds file (%m)\n");
-    nstandardsounds=50;
+    if(!fp) {
+      fprintf(stderr,"Cannot open standard sounds file (%m)\n");
+      return;
+    }
+    nstandardsounds=N_STANDARD_SOUNDS+N_MESSAGES;
     standardsounds=malloc(nstandardsounds*sizeof(WaveSound));
     if(!standardsounds) fatal("Allocation failed\n");
     for(i=0;i<nstandardsounds;i++) standardsounds[i].data=0,standardsounds[i].len=0;
@@ -203,7 +208,15 @@ static void load_sound_set(int is_user) {
         ws->data=0;
         ws->len=0;
       } else {
-        //TODO: Implement standard sounds.
+        for(i=0;i<N_STANDARD_SOUNDS;i++) if(!sqlite3_stricmp(nam,standard_sound_names[i])) goto found;
+        for(i=0;i<N_MESSAGES;i++) if(!sqlite3_stricmp(nam,standard_message_names[i])) {
+          i+=N_STANDARD_SOUNDS;
+          goto found;
+        }
+        goto notfound;
+        found:
+        ws=standardsounds+i;
+        if(ws->data) goto notfound;
       }
       if(j=='A') {
         load_sound(fp,l_offset,l_size,ws);
@@ -211,6 +224,7 @@ static void load_sound_set(int is_user) {
         //TODO: Compressed sounds.
       }
     }
+    notfound:
     fseek(fp,l_offset+l_size,SEEK_SET);
   }
   done:
@@ -252,7 +266,7 @@ void init_sound(void) {
   optionquery[2]=Q_mmlVolume;
   if(v=xrm_get_resource(resourcedb,optionquery,optionquery,3)) mmlvolume=fmin(strtod(v,0)*32767.0,32767.0);
   if(wavevolume>0.00001) {
-    //load_sound_set(0); // Standard sounds
+    load_sound_set(0); // Standard sounds
     load_sound_set(1); // User sounds
   }
   if(mmlvolume) {
@@ -341,6 +355,9 @@ void set_sound_effect(Value v1,Value v2) {
   wavesound=0;
   mmlpos=0;
   switch(v1.t) {
+    case TY_MESSAGE:
+      v1.u+=N_STANDARD_SOUNDS;
+      //fallthrough
     case TY_SOUND:
       if(v1.u<nstandardsounds) {
         wavesound=standardsounds[v1.u].data;
@@ -394,7 +411,7 @@ void sound_test(void) {
     fflush(stdout);
   }
   if(!screen) return;
-  nitems=nusersounds+8;
+  nitems=nstandardsounds+nusersounds+8;
   columns=(screen->w-16)/240?:1;
   scrmax=(nitems+columns-1)/columns;
   set_cursor(XC_arrow);
@@ -410,8 +427,8 @@ void sound_test(void) {
   for(i=scroll*columns,x=0,y=8;i<nitems;i++) {
     if(y>screen->h-24) break;
     if(i<nstandardsounds) {
-      k=0xF9;
-      snprintf(buf,29,"0"); //TODO
+      k=standardsounds[i].data?0xF9:0xF8;
+      snprintf(buf,29,"%s",i<N_STANDARD_SOUNDS?standard_sound_names[i]:standard_message_names[i-N_STANDARD_SOUNDS]); //TODO
     } else if(i<nstandardsounds+nusersounds) {
       k=0xFA;
       snprintf(buf,29,"%s",user_sound_names[i-nstandardsounds]);
@@ -427,10 +444,10 @@ void sound_test(void) {
   }
   SDL_UnlockSurface(screen);
   r.x=r.w=0; r.y=8; r.h=screen->h-8;
-  scrollbar(&scroll,screen->h/8-1,scrmax,0,&r);
+  scrollbar(&scroll,screen->h/24-1,scrmax,0,&r);
   SDL_Flip(screen);
   while(SDL_WaitEvent(&ev)) {
-    if(ev.type!=SDL_VIDEOEXPOSE && scrollbar(&scroll,screen->h/8-1,scrmax,&ev,&r)) goto redraw;
+    if(ev.type!=SDL_VIDEOEXPOSE && scrollbar(&scroll,screen->h/24-1,scrmax,&ev,&r)) goto redraw;
     switch(ev.type) {
       case SDL_MOUSEMOTION:
         x=ev.button.x-16; y=ev.button.y-8;
@@ -444,11 +461,16 @@ void sound_test(void) {
       case SDL_MOUSEBUTTONDOWN:
         x=ev.button.x-16; y=ev.button.y-8;
         if(x<0 || y<0) break;
-        i=x/240+columns*(y/24); x%=240; y%=24;
+        i=x/240+columns*(y/24)+scroll*columns; x%=240; y%=24;
         if(x<4 || x>236 || y<4 || y>20 || i<0 || i>=nitems) break;
         if(i<nstandardsounds) {
-          v.t=TY_SOUND;
-          v.u=i;
+          if(i<N_STANDARD_SOUNDS) {
+            v.t=TY_SOUND;
+            v.u=i;
+          } else {
+            v.t=TY_MESSAGE;
+            v.u=i-N_STANDARD_SOUNDS;
+          }
         } else if(i<nstandardsounds+nusersounds) {
           v.t=TY_USOUND;
           v.u=i-nstandardsounds;
@@ -469,6 +491,8 @@ void sound_test(void) {
             modal_draw_popup(buf);
             goto redraw;
           case SDLK_HOME: case SDLK_KP7: scroll=0; goto redraw;
+          case SDLK_UP: case SDLK_KP8: if(scroll) --scroll; goto redraw;
+          case SDLK_DOWN: case SDLK_KP2: ++scroll; goto redraw;
         }
         break;
       case SDL_VIDEOEXPOSE: goto redraw;
