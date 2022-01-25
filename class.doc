@@ -1117,6 +1117,17 @@ used on the same turn as the IgnoreKey instruction.
 ,<label>
   Call a label as a subroutine; when it returns, comes back to here.
 
+(<attribute> <userflags...>)  ( -- number )
+  The attribute must be one of Misc4, Misc5, Misc6, Misc7, or
+  CollisionLayers, and may optionally be preceded by a comma. This
+  produces the number with all of the specified bits set only. If the
+  attribute is preceded by a comma, then it is an error to specify any
+  user flags not assigned to that variable, otherwise any user flags
+  that do not belong are ignored. Any user flag may optionally be
+  preceded by a comma, and may occur multiple times; only the last
+  instance of each is used. If the last instance of a flag has a
+  comma then that bit is clear, if without a comma then it is set.
+
 .  ( x -- )
 
 +  ( in1 in2 -- out )

@@ -1584,6 +1584,32 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
           cl->codes[ptr++]=OP_CASE;
           ptr=peep=case_block(cla,ptr,hash);
           break;
+        case OP_MISC4: y=0x000; goto uflags;
+        case OP_MISC4_C: y=0x100; goto uflags;
+        case OP_MISC5: y=0x020; goto uflags;
+        case OP_MISC5_C: y=0x120; goto uflags;
+        case OP_MISC6: y=0x040; goto uflags;
+        case OP_MISC6_C: y=0x140; goto uflags;
+        case OP_MISC7: y=0x060; goto uflags;
+        case OP_MISC7_C: y=0x160; goto uflags;
+        case OP_COLLISIONLAYERS: y=0x080; goto uflags;
+        case OP_COLLISIONLAYERS_C: y=0x180; goto uflags;
+        uflags:
+          x=0;
+          for(;;) {
+            nxttok();
+            if(tokent==TF_CLOSE) break;
+            if(Tokenf(TF_MACRO) || !Tokenf(TF_NAME) || tokenv!=OP_USERFLAG) ParseError("User flag or close parenthesis expected\n");
+            tokenv=look_hash(glohash,HASH_SIZE,0x1000,0x10FF,0,"user flags");
+            if(!tokenv) ParseError("User flag ^%s not defined\n",tokenstr);
+            if((tokenv^y)&0xE0) {
+              if(y&0x100) ParseError("User flag ^%s belongs to the wrong attribute\n",tokenstr);
+            } else {
+              if(Tokenf(TF_COMMA)) x&=~(1<<(tokenv&31)); else x|=1<<(tokenv&31);
+            }
+          }
+          tokenv=x;
+          goto numeric;
         default:
           ParseError("Invalid parenthesized instruction\n");
       }
