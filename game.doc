@@ -143,6 +143,7 @@ Keyboard:
   CTRL+S      Save solution
   CTRL+T      Display level title
   CTRL+X      Export move list
+  CTRL+Y      Sound test
   F1          Replay 1 move
   F2          Replay 10 moves
   F3          Replay 100 moves

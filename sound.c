@@ -197,7 +197,7 @@ static void load_sound_set(int is_user) {
       j=nam[i-2];
       nam[i-4]=0;
       if(is_user) {
-        if(nusersounds>0x03FD) goto done;
+        if(nusersounds>255) goto done;
         i=nusersounds++;
         usersounds=realloc(usersounds,nusersounds*sizeof(WaveSound));
         user_sound_names=realloc(user_sound_names,nusersounds*sizeof(Uint8*));
@@ -410,7 +410,7 @@ void sound_test(void) {
     for(i=0;i<nusersounds;i++) printf("%d: %s (ptr=%p, len=%d bytes)\n",i,user_sound_names[i],usersounds[i].data,usersounds[i].len);
     fflush(stdout);
   }
-  if(!screen) return;
+  if(!screen || !sound_on) return;
   nitems=nstandardsounds+nusersounds+8;
   columns=(screen->w-16)/240?:1;
   scrmax=(nitems+columns-1)/columns;

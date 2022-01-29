@@ -1163,6 +1163,9 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
     case '^T': // Show title
       modal_draw_popup(level_title);
       return prev;
+    case '^Y': // Sound test
+      sound_test();
+      return prev;
     case '^d': // Describe object
       describe_at(number-65);
       return prev;

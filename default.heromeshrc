@@ -186,6 +186,7 @@
 ?.?.ctrl.Q: ^Q
 ?.?.ctrl.S: ^S
 ?.?.ctrl.T: ^T
+?.?.ctrl.Y: ^Y
 ?.?.shift.ctrl.M: select ':s';
 ?.?.f10: select ':x';
 

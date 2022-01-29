@@ -1,9 +1,5 @@
 * Sound effects
-  * Wave sounds
-    * Standard sounds
-    * User sounds
-    * Compressed wave sounds (?)
-  * MML sounds
+  * Compressed wave sounds (?)
   * Numeric sounds (?)
 * Game engine features
   * Multiple connected objects moving as a unit

@@ -528,10 +528,9 @@ static void nxttok1(void) {
       tokenv=look_class_name()+0x4000;
       break;
     case '!':
-      // Just ignore sounds for now
       if(fl) ParseError("Invalid use of , and = in token\n");
       tokent=TF_NAME;
-      tokenv=0x0400;
+      tokenv=find_user_sound(tokenstr);
       break;
     case '%':
       if(fl&TF_COMMA) ParseError("Invalid use of , in token\n");
@@ -1077,8 +1076,8 @@ static Value parse_constant_value(void) {
       case 0x0000 ... 0x00FF: return NVALUE(tokenv);
       case 0x0100 ... 0x01FF: return NVALUE(tokenv-0x0200);
       case 0x0200 ... 0x02FF: return MVALUE(tokenv&255);
-      case 0x0300 ... 0x03FF: return UVALUE(0,TY_SOUND);
-      case 0x0400 ... 0x04FF: return UVALUE(0,TY_USOUND);
+      case 0x0300 ... 0x03FF: return UVALUE(tokenv&255,TY_SOUND);
+      case 0x0400 ... 0x04FF: return UVALUE(tokenv&255,TY_USOUND);
       case 0x4000 ... 0x7FFF: return CVALUE(tokenv-0x4000);
       case OP_STRING: return UVALUE(pool_string(tokenstr),TY_STRING);
       case OP_BITCONSTANT ... OP_BITCONSTANT_LAST: return NVALUE(1<<(tokenv&31));

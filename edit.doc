@@ -227,6 +227,7 @@ Keyboard:
   CTRL+S    Save level
   CTRL+T    Edit level title
   CTRL+X    Clear level (delete all objects)
+  CTRL+Y    Sound test
   C         Set level code number
   E         Edit level strings
   F         Fill grid with current MRU

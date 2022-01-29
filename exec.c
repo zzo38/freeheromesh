@@ -2737,7 +2737,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_STRENGTH_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->strength=t1.u; break;
     case OP_STRENGTH_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->strength=t1.u&0xFFFF; break;
     case OP_STRING: StackReq(0,1); Push(UVALUE(code[ptr++],TY_STRING)); break;
-    case OP_SOUND: StackReq(2,0); t2=Pop(); t1=Pop(); break; // Sound not implemented at this time
+    case OP_SOUND: StackReq(2,0); t2=Pop(); t1=Pop(); set_sound_effect(t1,t2); break;
     case OP_SUB: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u-t2.u)); break;
     case OP_SUPER: i=code[1]; code=classes[i]->codes; ptr=get_message_ptr(i,msgvars.msg); if(ptr==0xFFFF) break; break;
     case OP_SUPER_C: i=code[1]; j=get_message_ptr(i,msgvars.msg); if(j!=0xFFFF) execute_program(classes[i]->codes,j,obj); break;

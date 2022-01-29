@@ -1848,6 +1848,9 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
     case '^T': // Level title
       edit_string(&level_title);
       return 0;
+    case '^Y': // Sound test
+      sound_test();
+      return prev;
     case '^Z': // Cancel rectangle
       editrect.x0=editrect.y0=editrect.x1=editrect.y1=0;
       return prev;

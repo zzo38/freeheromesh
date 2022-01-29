@@ -233,6 +233,9 @@ any name with : at first to ask the user for the value to use.
 '^Q'
   Quit.
 
+'^Y'
+  Sound test. (Does nothing if sound is not configured.)
+
 'go' <level>
   Go to the specified level. If the level number is negative, then it is
   a level order number, otherwise it is a level ID number.
