@@ -1203,12 +1203,15 @@ static int defer_move(Uint32 obj,Uint32 dir,Uint8 plus) {
   Object*o;
   Object*q;
   Uint32 n;
+  Uint8 x,y;
   Value v;
   if(StackProtection()) Throw("Call stack overflow during movement");
   if(obj==VOIDLINK || obj==control_obj) return 0;
   o=objects[obj];
   if(o->oflags&(OF_DESTROYED|OF_BIZARRO)) return 0;
   dir=resolve_dir(obj,dir);
+  x=o->x+x_delta[dir]; y=o->y+y_delta[dir];
+  if(x<1 || x>pfwidth || y<1 || y>pfheight) return 0;
   if(plus) {
     if(o->oflags&OF_MOVING) {
       if(o->dir==dir) return 1;
@@ -1222,10 +1225,10 @@ static int defer_move(Uint32 obj,Uint32 dir,Uint8 plus) {
     if(o->dir!=dir) return 0;
     o->oflags&=~OF_MOVING;
   }
-  n=playfield[o->x+o->y*64-65];
+  n=playfield[x+y*64-65];
   while(n!=VOIDLINK) {
     q=objects[n];
-    if(!(q->oflags&(OF_DESTROYED|OF_VISUALONLY)) && ((q->height>0 && q->height>=o->climb) || (classes[q->class]->collisionLayers&classes[o->class]->collisionLayers))) {
+    if(!(q->oflags&(OF_DESTROYED|OF_VISUALONLY|OF_MOVING)) && ((q->height>0 && q->height>=o->climb) || (classes[q->class]->collisionLayers&classes[o->class]->collisionLayers))) {
       v=send_message(obj,n,MSG_BLOCKED,NVALUE(o->x),NVALUE(o->y),NVALUE(plus));
       if(v.t) Throw("Type mismatch");
       if(v.u&1) o->oflags&=~OF_MOVING;
@@ -3053,7 +3056,7 @@ static Uint32 deferred_colliding(Uint32 obj,int x,int y) {
       objE=oE->up;
     }
   }
-  return ~h;
+  return h;
 }
 
 static void do_deferred_moves(void) {
@@ -3081,8 +3084,7 @@ static void do_deferred_moves(void) {
           if(i<0) i=0;
           goto retry;
         }
-        stop:
-        if((h&5)!=4) o->oflags&=~OF_MOVING;
+        if((h&5)!=4) stop: o->oflags&=~OF_MOVING;
       }
       skip:
       n=o->up;

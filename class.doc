@@ -2116,7 +2116,10 @@ COLLIDING
   space, or 3 if two or more objects forming a loop are trying to move
   into each other). There is no guarantee that this will only be called
   once; sometimes it will be called multiple times for a single collision
-  or for multiple collisions with the same objects. (TODO)
+  or for multiple collisions with the same objects. The return value has
+  bit0 to allow the move, bit1 to handle sharpness, and bit2 to retry if
+  the move fails. The bit16 and higher bits will have the similar effect
+  for the other object instead.
 
 CONFLICT
   Called during scheduling of a deferred move if it is already currently
