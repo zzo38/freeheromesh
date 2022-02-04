@@ -506,7 +506,7 @@ static void nxttok1(void) {
         } else {
           tokenv=strtol(tokenstr+n,&e,10);
         }
-        if(e && *e) ParseError("Invalid token: %s\n",tokenstr);
+        if(e && *e) goto norm;
         if(c=='-') tokenv=-tokenv;
       } else {
         static Op_Names key={tokenstr};
