@@ -1611,13 +1611,13 @@ static sqlite3_int64 copy_picture(void) {
   if(sqlite3_prepare_v2(userdb,"INSERT INTO `PICEDIT`(`NAME`,`TYPE`,`DATA`) SELECT VALID_NAME(?2)||SUBSTR(`NAME`,-4),`TYPE`,`DATA` "
    "FROM `PICEDIT` WHERE SUBSTR(`NAME`,1,LENGTH(`NAME`)-4)=?1 AND `TYPE`<>0;",-1,&st,0)) {
     screen_message(sqlite3_errmsg(userdb));
-    return;
+    return 0;
   }
   sqlite3_bind_text(st,1,s,-1,SQLITE_TRANSIENT);
   s=screen_prompt("Copy to:");
   if(!s || !*s) {
     sqlite3_finalize(st);
-    return;
+    return 0;
   }
   sqlite3_bind_text(st,2,s,-1,SQLITE_TRANSIENT);
   i=sqlite3_step(st);
