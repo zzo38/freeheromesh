@@ -584,6 +584,10 @@ of values on the stack.
 the available array memory is fixed at compile time, subject to the global
 array definitions.
 
+* Link: A link to another point in the code of some class or global. Where
+a link is expected, you can also specify a message to mean that message
+block for the Self object.
+
 Some things are not their own types, and are other uses of numbers:
 
 * Null: A null class or null object is represented as zero.
@@ -1393,6 +1397,14 @@ eq2  ( in1 in2 in3 in4 -- bool )
   Test if in1 is equal to in3 and in2 is equal to in4. Comparison works
   the same way as the "eq" instruction.
 
+exec  ( link -- )
+  Go to a link; does not continue executing from here afterward. If the
+  link is zero then it will be the same as ret.
+
+,exec  ( link -- )
+  Go to a link and then continue executing from here afterward. If the
+  link is zero then this instruction does nothing.
+
 Finished  ( -- number )
   Returns the value of an internal flag which tells it that the beginning
   and ending phases should be skipped. This is a 8-bit number; zero means
@@ -1777,6 +1789,9 @@ rsh  ( in shift -- out )
   then all bits are shifted out; the result will be -1 if the input is
   negative, or 0 otherwise.
 
+rtn  ( -- )
+  Same as "ret then".
+
 s?  ( any -- bool )
   True if the value is a string (which may be either a string in the class
   codes or a string in the level), or false if it is any other type. Error
@@ -1963,6 +1978,11 @@ if <truepart> [else <falsepart>] then  ( bool -- )
   Takes a boolean value from the stack. If true, then <truepart> is executed;
   otherwise it tries the other parts; "else" means always do this if none of
   the previous parts match.
+
+link <body> [else <body2>] then  ( -- link )
+  Skips the body and makes a link to the beginning of the body. If there is
+  a else block, then it executes that instead but will be skipped if the
+  link to the first body is executed.
 
 mbegin <body> repeat  ( -- any ) ( -- )
   The "mbegin" instruction is a shortcut for "begin tmark while", and it has

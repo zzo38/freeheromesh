@@ -230,6 +230,7 @@ static void fn_heromesh_type(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
     [TY_SOUND]="sound",
     [TY_USOUND]="sound",
     [TY_MARK]="mark",
+    [TY_CODE]="link",
   };
   int i;
   if(sqlite3_value_type(*argv)!=SQLITE_INTEGER) return;

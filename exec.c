@@ -2355,6 +2355,23 @@ static Uint32 v_hitme(Uint32 objE,Uint16 dir) {
   return (hit&0x8008)==0x8000?1:0;
 }
 
+static Uint32 convert_link(Value v,Uint32 obj,Uint16*code) {
+  int i;
+  switch(v.t) {
+    case TY_NUMBER:
+      if(v.u) Throw("Type mismatch");
+      return 0xFFFF;
+    case TY_MESSAGE:
+      i=get_message_ptr(objects[obj]->class,v.u);
+      return i==0xFFFF?get_message_ptr(0,v.u):(i|(objects[obj]->class<<16));
+    case TY_CODE:
+      i=v.u>>16;
+      if(i==objects[obj]->class || !i || code==classes[i]->codes) return v.u;
+      Throw("Link mismatch");
+    default: Throw("Type mismatch");
+  }
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -2532,14 +2549,16 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_DUP: StackReq(1,2); t1=Pop(); Push(t1); Push(t1); break;
     case OP_EQ: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_equal(t1,t2)?1:0)); break;
     case OP_EQ2: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(NVALUE(v_equal(t1,t3)?(v_equal(t2,t4)?1:0):0)); break;
+    case OP_EXEC: StackReq(1,0); t1=Pop(); i=convert_link(t1,obj,code); if(i==0xFFFF) return; code=classes[i>>16]->codes; ptr=i&0xFFFF; break;
+    case OP_EXEC_C: StackReq(1,0); t1=Pop(); i=convert_link(t1,obj,code); if(i!=0xFFFF) execute_program(classes[i>>16]->codes,i&0xFFFF,obj); break;
     case OP_FINISHED: StackReq(0,1); Push(NVALUE(all_flushed)); break;
     case OP_FINISHED_E: StackReq(1,0); t1=Pop(); Numeric(t1); all_flushed=t1.u; break;
-    case OP_FORK: execute_program(code,ptr+1,obj); ptr=code[ptr]; break;
     case OP_FLIP: v_flip(); break;
     case OP_FLUSHCLASS: NoIgnore(); StackReq(1,0); t1=Pop(); if(t1.t==TY_CLASS) flush_class(t1.u); else if(t1.t==TY_NUMBER && t1.s==-1) flush_all(); else if(t1.t) Throw("Type mismatch"); break;
     case OP_FLUSHOBJ: NoIgnore(); flush_object(obj); break;
     case OP_FLUSHOBJ_C: NoIgnore(); StackReq(1,0); i=v_object(Pop()); if(i!=VOIDLINK) flush_object(i); break;
     case OP_FOR: NoIgnore(); StackReq(3,1); t3=Pop(); t2=Pop(); t1=Pop(); ptr=v_for(code,ptr,t1,t2,t3); break;
+    case OP_FORK: execute_program(code,ptr+1,obj); ptr=code[ptr]; break;
     case OP_FROM: StackReq(0,1); Push(OVALUE(msgvars.from)); break;
     case OP_FUNCTION: execute_program(classes[0]->codes,functions[code[ptr++]],obj); break;
     case OP_GE: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t2,t1)?0:1)); break;
@@ -2599,6 +2618,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_LE: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t1,t2)?0:1)); break;
     case OP_LE_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t1,t2)?0:1)); break;
     case OP_LEVEL: StackReq(0,1); Push(NVALUE(level_code)); break;
+    case OP_LINK: StackReq(0,1); Push(UVALUE((ptr+2)|(code[ptr+1]<<16),TY_CODE)); ptr=code[ptr]; break;
     case OP_LNOT: StackReq(1,1); if(v_bool(Pop())) Push(NVALUE(0)); else Push(NVALUE(1)); break;
     case OP_LOC: StackReq(0,2); Push(NVALUE(o->x)); Push(NVALUE(o->y)); break;
     case OP_LOC_C: StackReq(1,2); i=v_object(Pop()); Push(NVALUE(i==VOIDLINK?0:objects[i]->x)); Push(NVALUE(i==VOIDLINK?0:objects[i]->y)); break;

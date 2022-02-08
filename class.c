@@ -1537,6 +1537,17 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
           if(!ptr || cl->codes[0]!=OP_SUPER) ParseError("Use of Super in a class with no parent class\n");
           AddInst(tokenv);
           break;
+        case OP_LINK:
+          AddInst(OP_LINK);
+          FlowPush(OP_IF);
+          cl->codes[++ptr]=cla;
+          peep=++ptr;
+          break;
+        case OP_RTN:
+          AddInst(OP_RET);
+          FlowPop(OP_IF);
+          cl->codes[flowptr[flowdepth]]=peep=ptr;
+          break;
         default:
           if(Tokenf(TF_ABNORMAL)) ParseError("Invalid instruction token\n");
           if(compat && Tokenf(TF_COMPAT) && Tokenf(TF_EQUAL)) ++tokenv;

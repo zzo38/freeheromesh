@@ -95,6 +95,9 @@ ret
 -or
 -and
 -fork
+-rtn
+-link
+,exec
 
 ; Arithmetic
 add "+"

@@ -35,8 +35,9 @@ occur on the operand stack.
 index of the array (pointed by array_data), the next 10-bits and the high
 6-bits indicate the size of the array.
 
-* TY_CODE: Currently only used in case blocks; there are no values of this
-type in local or global variables.
+* TY_CODE: Used in case blocks to denote a branch to another address. Also
+used for link values; the high 16-bits are the class number and the low
+16-bits are the address within the class codes for that class.
 
 * Numbers more than TY_MAXTYPE (15) means it is a generation number of an
 object, and u is the index number of that object. In the internal code,

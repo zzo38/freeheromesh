@@ -5,7 +5,6 @@
   * Multiple connected objects moving as a unit
   * String data (partially implemented)
   * A ,PopUp command to use a popup with arguments starting from a mark
-  * "Goto message" instruction (?)
   * Returning a class from COLLIDE/COLLIDEBY to transform
   * Coordinate input (may be suitable for some kind of games)
   * Possibility to define auto-generation levels mode
