@@ -491,6 +491,17 @@ static Uint32 obj_layer_at(Uint8 b,Uint32 x,Uint32 y) {
   return VOIDLINK;
 }
 
+static int connection_collision(Uint8 b,Uint32 x,Uint32 y) {
+  Uint32 i;
+  if(x<1 || x>pfwidth || y<1 || y>pfheight) return 1;
+  i=playfield[x+y*64-65];
+  while(i!=VOIDLINK) {
+    if(!(objects[i]->oflags&OF_DESTROYED) && (classes[objects[i]->class]->collisionLayers&b)) return !!((OF_CONNECTION|OF_MOVING)&~objects[i]->oflags);
+    i=objects[i]->up;
+  }
+  return 0;
+}
+
 static Uint32 obj_top_at(Uint32 x,Uint32 y) {
   Uint32 i,r;
   if(x<1 || x>pfwidth || y<1 || y>pfheight) return VOIDLINK;
@@ -998,7 +1009,7 @@ static int fake_move_dir(Uint32 obj,Uint32 dir,Uint8 no) {
   objRF=obj_dir(obj,(dir-1)&7);
   if(height_at(oF->x,oF->y)<=o->climb) hit|=0x200000;
   if(no) {
-    if((vol=classes[oF->class]->collisionLayers) && obj_layer_at(vol,oF->x,oF->y)!=VOIDLINK) goto fail;
+    if((vol=classes[oF->class]->collisionLayers) && connection_collision(vol,oF->x,oF->y)) goto fail;
     hit|=0x4066;
   }
   if(dir&1) {
@@ -1200,7 +1211,7 @@ static int connected_move(Uint32 obj,Uint8 dir) {
       }
     }
     if(j=classes[o->class]->collisionLayers) {
-      if(obj_layer_at(j,o->x+x_delta[dir],o->y+y_delta[dir])!=VOIDLINK) goto fail;
+      if(connection_collision(j,o->x+x_delta[dir],o->y+y_delta[dir])) goto fail;
     }
   }
   // Move everything in the group
