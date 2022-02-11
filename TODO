@@ -2,7 +2,6 @@
   * Compressed wave sounds (?)
   * Numeric sounds (?)
 * Game engine features
-  * Multiple connected objects moving as a unit
   * String data (partially implemented)
   * A ,PopUp command to use a popup with arguments starting from a mark
   * Returning a class from COLLIDE/COLLIDEBY to transform
@@ -43,7 +42,7 @@
 * Option to auto display level titles
 * Testing
   * Bizarro world
-  * Deferred movement
+  * Connection movement (it is partially tested, already)
   * Sweep, SweepEx, HitMe
   * Overriding order of execution
 * Conversion from other games

@@ -271,6 +271,12 @@ These are the global definitions in the class definition file.
   Define the code page, from 1 to 8388607. If not specified, then the
   default code page is used.
 
+(Connection <string>)
+  Set options for connected movement. The string can include any
+  combination of the below letters:
+  "t" = Use two HIT/HITBY passes, skipping shove/sharp for first pass.
+  "w" = Use the total weight of the group instead of each one separately.
+
 (Control <definitions...>)
   Define the control class. The format is the same like other class
   definitions, except that Image and Abstract are not allowed. An
@@ -400,6 +406,9 @@ Compatible
 ,Compatible
   Sets the Compatible flag for this class, but removes the restriction of
   some variables limited to 16-bits.
+
+Connection
+  Sets the Connection flag for this class.
 
 (DefaultImage <list...>)
   Each entry is either a number of an image in this class, or two
@@ -650,6 +659,7 @@ Standard messages:
   COLLIDEBY
   COLLIDING
   CONFLICT
+  CONNECT
   CREATE
   CREATED
   DEPARTED
@@ -898,6 +908,13 @@ Compatible : bool [c] [ro]
   The compatibility flag. Class definitions imported from EKS Hero Mesh
   always set this flag; in new puzzle sets it is normally not set.
 
+Connection : bool [c]
+  If this flag is set, then moving this object by the use of the Move
+  instruction will try to move an entire connected group of objects,
+  instead of only one. This changes some of the behaviour and will
+  cause additional messages to be sent, too. Deferred movement is not
+  possible if this flag is set.
+
 Density : int16/int32 [c]
   Determines the order that objects are stacked within each cell. When an
   object is moved or created, its Density is compared with the Density of
@@ -1010,6 +1027,7 @@ Moved : bool
 Moving : bool
   This flag indicates that a deferred movement is scheduled for this
   object. The direction of movement is specified by the Dir variable.
+  This flag is also used for connected movement, for a different purpose.
 
 Player : bool [c] [ro]
   If this object is the player. This is used implicitly as the From of
@@ -1033,7 +1051,10 @@ Sharp : int16 [c] [d]
   When one object tries to move into another object, the Hard and Sharp
   values for the sides that are touching will be compared. If the Sharp
   value for one is greater than the Hard of the other, then the object
-  with insufficient Hardness is destroyed.
+  with insufficient Hardness is destroyed. If the object that is trying
+  to move has the Connection flag, it cannot be destroyed due to running
+  into something sharp, but may still destroy other things if it is sharp
+  enough to do so (whether or not the other thing has a Connection flag).
 
 Shovable : int16 [c]
   Defines what directions the object may be shoved, where bit0 means east,
@@ -1333,6 +1354,19 @@ Coloc  ( obj -- bool )
   otherwise. Always false if the object is destroyed, or if one object
   is in the bizarro world and the other one isn't.
 
+Connect  ( -- ) **
+  Adds this object to the connection list; has no effect if this object
+  is already in the connection list or has the Moving, Destroyed, or
+  Bizarro flags set, or does not have the Connection flag. This will
+  also set the Moving and VisualOnly flag of this object; it will
+  automatically clear the Moving flag after it is handled, and will
+  restore the old value of VisualOnly. This should not be used outside
+  of the CONNECT message.
+
+,Connect  ( obj -- ) **
+  Similar to Connect but for a specified object, instead of necessarily
+  this object.
+
 Control  ( -- obj )
   Push the control object to the stack. (If no control class is defined,
   then there will be no control object and this will be zero.)
@@ -1404,6 +1438,17 @@ exec  ( link -- )
 ,exec  ( link -- )
   Go to a link and then continue executing from here afterward. If the
   link is zero then this instruction does nothing.
+
+FakeMove  ( dir -- result ) **
+  Similar to IntMove but omits many capabilities, including the actual
+  movement. This is the same as a function used internally to deal with
+  HIT/HITBY for connection movement. If the HIT or HITBY message returns
+  a mark, then it is added like using Connect (if the object's flags
+  allow it) and then the return value will be 2.
+
+,FakeMove  ( obj dir -- result ) **
+  Works like FakeMove but you can specify a different object instead of
+  the current one.
 
 Finished  ( -- number )
   Returns the value of an internal flag which tells it that the beginning
@@ -2147,6 +2192,16 @@ CONFLICT
   that it is trying to schedule the move in. If the return value is false
   then the schedule fails; if true, then it succeeds.
 
+CONNECT
+  Should use the ,Connect instruction to add additional objects to the
+  connection group; it will then send this message to those objects too.
+  If the return value is true, then the movement fails, and none of the
+  objects in the group will move. The Inertia of this object is set
+  automatically before calling this message; it can change the Inertia
+  before returning if it wants a different value for Inertia. Arg1 is
+  the number of objects in the group previously to this one, Arg2 is the
+  direction of movement, and Arg3 is the total Weight so far.
+
 CREATE
   Sent when the object is created by the Create instruction. This is done
   after the object is created, but before sending any other messages. The
@@ -2256,7 +2311,11 @@ MOVING
   Called when the object is about to be moved (whether due to Move,
   MoveTo, JumpTo, or any other reason). From is the object that caused
   the move, and Arg1 and Arg2 are the target X and Y coordinates. If the
-  return value is true, then the move is aborted.
+  return value is true, then the move is aborted. From will be zero if
+  it is the first pass of checking if it can be moved due to Connection;
+  in that case, if all first passes are successful then it will try again
+  the second pass with From set to the first object of the group, and
+  this second time they will actually be moved.
 
 PLAYERMOVING
   If an object with the Player flag is about to move, then after the
@@ -2292,8 +2351,14 @@ flag is set for the object that returned this value, then all bits with
 the asterisk in the below descriptions are masked out (bit15 is only
 masked out for Compatible objects for diagonal movement).
 
+(If the Connection flag is set for the object that is moving, then the
+Compatible flag is ignored for the purpose of HIT/HITBY bits, but is not
+ignored for other purposes.)
+
 bit0
-  Do not send the HITBY message to the target object.
+  Do not send the HITBY message to the target object. If the moving object
+  has the Connection flag, then this bit is set in Arg3, but this does not
+  prevent sending the HITBY message unless the return value also has bit0.
 
 bit1
   Do not destroy either object due to hardness/sharpness.
@@ -2304,6 +2369,7 @@ bit2
 bit3
   Abort the move attempt immediately. Do not send any more HIT or HITBY
   messages, do not check hardness/sharpness, and do nothing else either.
+  This bit is also set in Arg3 if the object can't move due to Volume.
 
 bit4
   Do not send the HITBY message to the target object or to any further
@@ -2315,10 +2381,13 @@ bit5
 
 bit6
   Do not attempt to shove the target object, nor attempt to shove any
-  other objects at the target location.
+  other objects at the target location. (If you are using the two pass
+  HIT/HITBY for connection movement, then this bit will automatically
+  be set during the first pass.)
 
 bit7 *
-  Do not attempt sliding.
+  Do not attempt sliding. (This bit is always set in Arg3 if it is due
+  to Connection, and always prevents sliding in this case.)
 
 bit8
   Abort after sending the HITBY message.
@@ -2337,13 +2406,17 @@ bit12 *
   If the move attempt fails, pretend it was successful, even though the
   object hasn't actually moved. This means that the result of Move will
   be 1 and that the MOVED message will trigger; it does not trigger any
-  ARRIVED, DEPARTED, FLOATED, or SUNK, nor does it set Distance.
+  ARRIVED, DEPARTED, FLOATED, or SUNK, nor does it set Distance. (If the
+  moving object has the Connection flag, then this does not stop it from
+  moving; it will move anyways if this flag is set.)
 
 bit13 *
   Abort before actually moving the object and before trying sliding.
 
 bit14 *
-  Do not set the Moved flag even if successful.
+  Do not set the Moved flag even if successful. (If you are using two pass
+  HIT/HITBY for connection movement, then this bit will automatically be
+  set in most cases during the first pass.)
 
 bit15 (*)
   Try again after trying shoving (whether or not the shoving is
@@ -2418,7 +2491,14 @@ bit31
 The return value of HITBY can also be an object instead of a number. In
 this case, a warp occurs. The movement is restarted, using the specified
 object as the origin of the movement, and that object's direction as the
-direction of movement.
+direction of movement. (This is not allowed if bit0 of Arg3 is set; in
+that case, it is an error.)
+
+If the moving object has the Connection flag (and bit0 is set in Arg3),
+then the return value of HIT or HITBY may be a mark. In this case, it
+makes the object "sticky", adding it to the list of objects to be moved
+as a part of the same connection group. (Returning a mark if bit0 of
+Arg3 is not set is an error.)
 
 
 === Pattern matching ===

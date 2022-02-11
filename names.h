@@ -24,6 +24,7 @@
 #define MSG_COLLIDE 22
 #define MSG_COLLIDING 23
 #define MSG_BLOCKED 24
+#define MSG_CONNECT 25
 #ifdef HEROMESH_MAIN
 const char*const standard_message_names[]={
  "INIT",
@@ -51,6 +52,7 @@ const char*const standard_message_names[]={
  "COLLIDE",
  "COLLIDING",
  "BLOCKED",
+ "CONNECT",
 };
 #endif
 #define SND_SPLASH 0

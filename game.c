@@ -381,7 +381,7 @@ static inline void exam_flags(int y,Uint16 v) {
   y=(y-exam_scroll)*8;
   if(y<0 || y>screen->h-8) return;
   draw_text(0,y,"Flags:",0xF0,0xF7);
-  draw_text(200,y,"--- --- --- --- --- --- --- --- --- --- ---",0xF0,0xF8);
+  draw_text(200,y,"--- --- --- --- --- --- --- --- --- --- --- --- --- ---",0xF0,0xF8);
   if(v&OF_INVISIBLE) draw_text(200,y,"Inv",0xF0,0xFF);
   if(v&OF_VISUALONLY) draw_text(232,y,"Vis",0xF0,0xFF);
   if(v&OF_STEALTHY) draw_text(264,y,"Stl",0xF0,0xFF);
@@ -393,6 +393,9 @@ static inline void exam_flags(int y,Uint16 v) {
   if(v&OF_KEYCLEARED) draw_text(456,y,"Key",0xF0,0xFF);
   if(v&OF_DESTROYED) draw_text(488,y,"Des",0xF0,0xFF);
   if(v&OF_BIZARRO) draw_text(520,y,"Biz",0xF0,0xFF);
+  if(v&OF_CONNECTION) draw_text(552,y,"Con",0xF0,0xFF);
+  if(v&OF_MOVING) draw_text(584,y,"Mvi",0xF0,0xFF);
+  if(v&OF_ORDERED) draw_text(616,y,"Ord",0xF0,0xFF);
 }
 
 static inline void exam_hardsharp(const char*t,int y,Uint16*v) {

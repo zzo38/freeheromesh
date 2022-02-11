@@ -29,6 +29,7 @@ const standard_message_names=`
  22 = COLLIDE
  23 = COLLIDING
  24 = BLOCKED
+ 25 = CONNECT
 `.split("\n").map(x=>/^ *([0-9]+) = ([^ ]*) *$/.exec(x)).filter(x=>x);
 const standard_sound_names=[];
 `

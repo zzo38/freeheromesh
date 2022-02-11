@@ -185,6 +185,7 @@ qa "a?"
 ,=Moved
 ,=Moving
 ,=Done
+,=Connection
 ,Destroyed
 ,Player
 ,Compatible
@@ -233,11 +234,13 @@ BroadcastSumEx
 chain
 ,Chebyshev
 ,Coloc
+,Connect
 .Create
 Data
 DelInventory
 Delta
 .,Destroy
+,FakeMove
 FlushClass
 ,FlushObj
 GetInventory

@@ -2095,6 +2095,7 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
         case OP_SHOVABLE: cl->shovable=0x55; break;
         case OP_USERFLAG: class_user_flag(cl); break;
         case OP_ABSTRACT: cl->cflags|=CF_GROUP; break;
+        case OP_CONNECTION: cl->oflags|=OF_CONNECTION; break;
         case 0x4000 ... 0x7FFF: set_super_class(cl,ptr); ptr=2; break;
         default: ParseError("Invalid directly inside of a class definition\n");
       }
@@ -2606,6 +2607,17 @@ void load_classes(void) {
           control_class=look_class_name();
           if(!(classes[control_class]->cflags&CF_NOCLASS1)) ParseError("Conflicting definition of (Control) class\n");
           class_definition(control_class,vst);
+          break;
+        case OP_CONNECTION:
+          nxttok();
+          if(!(tokent&TF_NAME) || tokenv!=OP_STRING) ParseError("String literal expected\n");
+          for(i=0;tokenstr[i];i++) switch(tokenstr[i]) {
+            case 't': conn_option|=0x02; break;
+            case 'w': conn_option|=0x01; break;
+            default: ParseError("Unrecognized (Connection) option\n");
+          }
+          nxttok();
+          if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
           break;
         case OP_LEVELTABLE:
           level_table_definition();

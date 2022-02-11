@@ -42,12 +42,19 @@ Uint16 ndeadanim;
 DeadAnimation*deadanim;
 Uint8 no_dead_anim;
 Uint32 max_trigger;
+Uint8 conn_option;
 
 typedef struct {
   Uint16 msg;
   Uint32 from;
   Value arg1,arg2,arg3;
 } MessageVars;
+
+typedef struct {
+  Uint32 obj;
+  Uint16 id;
+  Uint8 visual;
+} Connection;
 
 static jmp_buf my_env;
 static const char*my_error;
@@ -60,6 +67,9 @@ static Uint8 current_key;
 static Value quiz_obj;
 static Value traced_obj;
 static Uint32 control_obj=VOIDLINK;
+static Connection conn[VSTACKSIZE];
+static int nconn,pconn;
+static Uint8 conn_dir;
 
 #define Throw(x) (my_error=(x),longjmp(my_env,1))
 #define StackReq(x,y) do{ if(vstackptr<(x)) Throw("Stack underflow"); if(vstackptr-(x)+(y)>=VSTACKSIZE) Throw("Stack overflow"); }while(0)
@@ -952,6 +962,268 @@ static inline int slide_test(Object*o,Object*oF,Uint32 d1,Uint32 d2,Uint32 vol) 
   return vol+volume_at(o->x+x_delta[d2],o->y+y_delta[d2])<=max_volume;
 }
 
+static int move_dir(Uint32 from,Uint32 obj,Uint32 dir);
+
+static void add_connection(Uint32 obj) {
+  Object*o=objects[obj];
+  if(nconn==VSTACKSIZE) Throw("Connection limit overflow");
+  if((o->oflags^OF_CONNECTION)&(OF_MOVING|OF_DESTROYED|OF_CONNECTION|OF_BIZARRO)) return;
+  conn[nconn].obj=obj;
+  conn[nconn].id=nconn; // used for stable sorting
+  conn[nconn].visual=(o->oflags&OF_VISUALONLY)?1:0;
+  o->oflags|=OF_MOVING|OF_VISUALONLY;
+  nconn++;
+}
+
+static int fake_move_dir(Uint32 obj,Uint32 dir,Uint8 no) {
+  // This is similar to move_dir, but specialized for the HIT/HITBY processing in connected_move.
+  // Note that this may result in calling the real move_dir due to shoving.
+  Object*o;
+  Object*oE;
+  Object*oF;
+  Uint32 objE,objF,objLF,objRF;
+  Uint32 hit=0;
+  Uint32 vol;
+  Value v;
+  if(StackProtection()) Throw("Call stack overflow during movement");
+  if(obj==VOIDLINK) return 0;
+  o=objects[obj];
+  restart:
+  if(hit&0x100000) dir=o->dir;
+  objF=obj_dir(obj,dir);
+  if(objF==VOIDLINK) goto fail;
+  if(hit) hit=0x800|(hit&0x10000000);
+  oF=objects[objF];
+  objLF=obj_dir(obj,(dir+1)&7);
+  objRF=obj_dir(obj,(dir-1)&7);
+  if(height_at(oF->x,oF->y)<=o->climb) hit|=0x200000;
+  if(no) {
+    if((vol=classes[oF->class]->collisionLayers) && obj_layer_at(vol,oF->x,oF->y)!=VOIDLINK) goto fail;
+    hit|=0x4066;
+  }
+  if(dir&1) {
+    // Diagonal movement
+    hit|=0x80000;
+    vol=o->volume;
+    if(objLF!=VOIDLINK) vol+=volume_at(objects[objLF]->x,objects[objLF]->y);
+    if(objRF!=VOIDLINK) vol+=volume_at(objects[objRF]->x,objects[objRF]->y);
+    if(vol<=max_volume) {
+      objE=objF;
+      while(objE!=VOIDLINK) {
+        if(o->oflags&OF_DESTROYED) break;
+        oE=objects[objE];
+        if(oE->height>0) {
+          hit&=0xFC287040;
+          v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit|0x81));
+          if(v.t==TY_MARK) goto sticky;
+          if(v.t) Throw("Type mismatch in HIT/HITBY");
+          hit|=v.u;
+          if(hit&8) goto fail;
+          if(!(hit&0x11)) {
+            v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(hit|0x81));
+            if(v.t==TY_MARK) goto sticky;
+            if(v.t) Throw("Type mismatch in HIT/HITBY");
+            hit|=v.u;
+            if(hit&8) goto fail;
+          }
+        }
+        // Shoving
+        if(!(hit&0x44) && (oE->shovable&(1<<dir)) && o->inertia>=oE->weight && !(oE->oflags&OF_VISUALONLY)) {
+          oE->inertia=o->inertia;
+          if(move_dir(obj,objE,dir)) {
+            if(!(oE->oflags&OF_DESTROYED)) o->inertia=oE->inertia;
+            hit|=0x8000;
+            if(hit&0x800000) goto restart;
+          }
+        }
+        objE=obj_below(objE);
+      }
+      if((hit&0x48000)==0x8000) goto restart;
+      if((hit&0x200000) && !(hit&0x402008)) {
+        if((hit&0x20000) || oF) goto success; else goto fail;
+      }
+    } else {
+      // Volume is too much; hit the objects it won't go between
+      if(o->oflags&OF_DESTROYED) goto fail;
+      objE=objLF;
+      while(objE!=VOIDLINK) {
+        oE=objects[objE];
+        if(oE->height>0) {
+          v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(0x80089));
+          if(v.t==TY_MARK) goto sticky;
+          if(v.t) Throw("Type mismatch in HIT/HITBY");
+          if(!(v.u&1)) v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(v.u|0x80089));
+          if(v.t==TY_MARK) goto sticky;
+          if(v.t==TY_SOUND || v.t==TY_USOUND) Throw("Type mismatch in HIT/HITBY");
+        }
+        objE=obj_below(objE);
+      }
+      if(o->oflags&OF_DESTROYED) goto fail;
+      objE=objRF;
+      while(objE!=VOIDLINK) {
+        oE=objects[objE];
+        if(oE->height>0) {
+          v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(0x80089));
+          if(v.t==TY_MARK) goto sticky;
+          if(v.t) Throw("Type mismatch in HIT/HITBY");
+          if(!(v.u&1)) v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(v.u|0x80089));
+          if(v.t==TY_MARK) goto sticky;
+          if(v.t==TY_SOUND || v.t==TY_USOUND) Throw("Type mismatch in HIT/HITBY");
+        }
+        objE=obj_below(objE);
+      }
+    }
+  } else {
+    // Orthogonal movement
+    if(!oF) goto fail;
+    objE=objF;
+    while(objE!=VOIDLINK) {
+      if(o->oflags&OF_DESTROYED) break;
+      oE=objects[objE];
+      if(oE->height>0) {
+        hit&=~7;
+        // HIT/HITBY messages
+        v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit|0x81));
+        if(v.t==TY_MARK) goto sticky;
+        if(v.t) Throw("Type mismatch in HIT/HITBY");
+        hit|=v.u;
+        if(hit&8) goto fail;
+        if(!(hit&0x11)) {
+          v=send_message(obj,objE,MSG_HITBY,NVALUE(o->x),NVALUE(o->y),NVALUE(hit|0x81));
+          if(v.t==TY_MARK) goto sticky;
+          if(v.t) Throw("Type mismatch in HIT/HITBY");
+          hit|=v.u;
+        }
+        if(hit&0x108) goto fail;
+        // Hardness/sharpness
+        if(!(hit&0x22)) {
+          if(o->sharp[dir>>1]>oE->hard[(dir^4)>>1] && !v_bool(destroy(obj,objE,2))) hit|=0x8004;
+        }
+        if(hit&0x200) goto fail;
+      }
+      // Shoving
+      if(!(hit&0x44) && (oE->shovable&(1<<dir)) && o->inertia>=oE->weight && !(oE->oflags&OF_VISUALONLY)) {
+        oE->inertia=o->inertia;
+        if(move_dir(obj,objE,dir)) {
+          if(!(oE->oflags&OF_DESTROYED)) o->inertia=oE->inertia;
+          hit|=0x8000;
+          if(hit&0x800000) goto restart;
+        }
+      }
+      if(hit&0x400) goto fail;
+      objE=obj_below(objE);
+    }
+    if(hit&0x2008) goto fail;
+    if((hit&0x48000)==0x8000) goto restart;
+    if((hit&0x200000) && !(hit&0x400000)) goto success;
+  }
+  fail: if(hit&0x1000) goto success; o->inertia=0; return 0;
+  success: return 1;
+  sticky: add_connection(objE); return 2;
+}
+
+static int compare_connection(const void*v1,const void*v2) {
+  // Ensure that the sorting is stable.
+  const Connection*c1=v1;
+  const Connection*c2=v2;
+  Object*o1=objects[c1->obj];
+  Object*o2=objects[c2->obj];
+  switch(conn_dir) {
+    case 0: case 1: return (o2->x-o1->x)?:(o1->y-o2->y)?:c2->id-c1->id; // E, NE
+    case 2: case 3: return (o1->y-o2->y)?:(o1->x-o2->x)?:c2->id-c1->id; // N, NW
+    case 4: case 5: return (o1->x-o2->x)?:(o2->y-o1->y)?:c2->id-c1->id; // W, SW
+    case 6: case 7: return (o2->y-o1->y)?:(o2->x-o1->x)?:c2->id-c1->id; // S, SE
+  }
+}
+
+static int connected_move(Uint32 obj,Uint8 dir) {
+  Object*o;
+  Uint32 n;
+  Sint32 inertia=objects[obj]->inertia;
+  Sint32 weight=0;
+  int first=nconn;
+  int last;
+  int i,j;
+  if(nconn!=pconn) Throw("Improper nested connected move");
+  // Find and add all connections
+  add_connection(obj);
+  for(i=first;i<nconn;i++) {
+    loop1:
+    objects[n=conn[i].obj]->inertia=inertia;
+    if(v_bool(send_message(obj,n,MSG_CONNECT,NVALUE(i-first),NVALUE(dir),NVALUE(weight)))) goto fail;
+    weight+=objects[n]->weight;
+  }
+  if(conn_option&0x01) {
+    for(i=first;i<nconn;i++) {
+      o=objects[conn[i].obj];
+      if(o->inertia<weight) goto fail;
+      inertia-=o->weight;
+    }
+  } else {
+    weight=objects[conn[first].obj]->weight;
+  }
+  last=pconn=nconn;
+  // Check HIT/HITBY; may shove other objects
+  if(conn_option&0x02) {
+    for(i=first;i<last;i++) {
+      o=objects[n=conn[i].obj];
+      j=fake_move_dir(n,o->dir=dir,1);
+      if(!j) goto fail;
+      if(j==2) {
+        if(nconn==pconn) Throw("This object cannot be sticky");
+        i=pconn;
+        goto loop1;
+      }
+    }
+  }
+  for(i=first;i<last;i++) {
+    o=objects[n=conn[i].obj];
+    if(conn_option&0x01) o->inertia=inertia;
+    j=fake_move_dir(n,o->dir=dir,0);
+    if(!j) goto fail;
+    if((conn_option&0x01) && !(o->oflags&OF_DESTROYED)) inertia=o->inertia;
+    if(j==2) {
+      if(nconn==pconn) Throw("This object cannot be sticky");
+      i=pconn;
+      goto loop1;
+    }
+  }
+  // Check if each object in the group is movable
+  for(i=first;i<last;i++) {
+    o=objects[n=conn[i].obj];
+    if(v_bool(send_message(VOIDLINK,n,MSG_MOVING,NVALUE(o->x+x_delta[dir]),NVALUE(o->y+y_delta[dir]),NVALUE(0)))) goto fail;
+    if(classes[o->class]->cflags&CF_PLAYER) {
+      n=lastobj;
+      while(n!=VOIDLINK) {
+        if(v_bool(send_message(conn[i].obj,n,MSG_PLAYERMOVING,NVALUE(o->x+x_delta[dir]),NVALUE(o->y+y_delta[dir]),NVALUE(0)))) goto fail;
+        n=objects[n]->prev;
+      }
+    }
+    if(j=classes[o->class]->collisionLayers) {
+      if(obj_layer_at(j,o->x+x_delta[dir],o->y+y_delta[dir])!=VOIDLINK) goto fail;
+    }
+  }
+  // Move everything in the group
+  conn_dir=dir;
+  qsort(conn+first,last-first,sizeof(Connection),compare_connection);
+  for(i=first;i<last;i++) {
+    o=objects[n=conn[i].obj];
+    if(!conn[i].visual) o->oflags&=~OF_VISUALONLY;
+    if(move_to(obj,n,o->x+x_delta[dir],o->y+y_delta[dir])) o->oflags|=OF_MOVED;
+  }
+  // Done
+  j=1; goto done;
+  fail: j=0;
+  done:
+  for(i=first;i<nconn;i++) {
+    o=objects[conn[i].obj];
+    o->oflags&=~OF_MOVING;
+    if(conn[i].visual) o->oflags|=OF_VISUALONLY; else o->oflags&=~OF_VISUALONLY;
+  }
+  pconn=nconn=first;
+  return j;
+}
+
 static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
   // This function is complicated, and there may be mistakes.
   Object*o;
@@ -967,6 +1239,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
   oW=o=objects[objW=obj];
   o->dir=dir=resolve_dir(obj,dir);
   if(o->weight>o->inertia) goto fail;
+  if(o->oflags&OF_CONNECTION) return connected_move(obj,dir);
   o->inertia-=o->weight;
   restart:
   if(hit&0x100000) dir=o->dir;
@@ -989,7 +1262,7 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
         if(o->oflags&(OF_DESTROYED|OF_VISUALONLY)) break;
         oE=objects[objE];
         if(oE->height>0) {
-          hit&=0xFC287000;
+          hit&=0xFC287040;
           v=send_message(objE,obj,MSG_HIT,NVALUE(oE->x),NVALUE(oE->y),NVALUE(hit));
           if(v.t) Throw("Type mismatch in HIT/HITBY");
           hit|=v.u&(classes[o->class]->cflags&CF_COMPATIBLE?0xC0090F7F:-1L);
@@ -1208,7 +1481,7 @@ static int defer_move(Uint32 obj,Uint32 dir,Uint8 plus) {
   if(StackProtection()) Throw("Call stack overflow during movement");
   if(obj==VOIDLINK || obj==control_obj) return 0;
   o=objects[obj];
-  if(o->oflags&(OF_DESTROYED|OF_BIZARRO)) return 0;
+  if(o->oflags&(OF_DESTROYED|OF_BIZARRO|OF_CONNECTION)) return 0;
   dir=resolve_dir(obj,dir);
   x=o->x+x_delta[dir]; y=o->y+y_delta[dir];
   if(x<1 || x>pfwidth || y<1 || y>pfheight) return 0;
@@ -2500,6 +2773,12 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_COLOC_C: StackReq(2,1); t1=Pop(); t2=Pop(); i=colocation(v_object(t1),v_object(t2)); Push(NVALUE(i)); break;
     case OP_COMPATIBLE: StackReq(0,1); if(classes[o->class]->cflags&CF_COMPATIBLE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_COMPATIBLE_C: StackReq(1,1); GetClassFlagOf(CF_COMPATIBLE); break;
+    case OP_CONNECT: NoIgnore(); add_connection(obj); break;
+    case OP_CONNECT_C: NoIgnore(); StackReq(1,0); i=v_object(Pop()); if(i!=VOIDLINK) add_connection(i); break;
+    case OP_CONNECTION: StackReq(0,1); if(o->oflags&OF_CONNECTION) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_CONNECTION_C: StackReq(1,1); GetFlagOf(OF_CONNECTION); break;
+    case OP_CONNECTION_E: NoIgnore(); StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_CONNECTION; else o->oflags&=~OF_CONNECTION; break;
+    case OP_CONNECTION_EC: NoIgnore(); StackReq(2,0); SetFlagOf(OF_CONNECTION); break;
     case OP_CONTROL: StackReq(0,1); Push(OVALUE(control_obj)); break;
     case OP_COPYARRAY: NoIgnore(); StackReq(2,0); t2=Pop(); t1=Pop(); v_copy_array(t1,t2); break;
     case OP_COUNT: StackReq(1,2); i=v_count(); Push(NVALUE(i)); break;
@@ -2551,6 +2830,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_EQ2: StackReq(4,1); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(NVALUE(v_equal(t1,t3)?(v_equal(t2,t4)?1:0):0)); break;
     case OP_EXEC: StackReq(1,0); t1=Pop(); i=convert_link(t1,obj,code); if(i==0xFFFF) return; code=classes[i>>16]->codes; ptr=i&0xFFFF; break;
     case OP_EXEC_C: StackReq(1,0); t1=Pop(); i=convert_link(t1,obj,code); if(i!=0xFFFF) execute_program(classes[i>>16]->codes,i&0xFFFF,obj); break;
+    case OP_FAKEMOVE: NoIgnore(); StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(fake_move_dir(obj,resolve_dir(obj,t1.u),0))); break;
+    case OP_FAKEMOVE_C: NoIgnore(); StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else Push(NVALUE(fake_move_dir(i,resolve_dir(i,t1.u),0))); break;
     case OP_FINISHED: StackReq(0,1); Push(NVALUE(all_flushed)); break;
     case OP_FINISHED_E: StackReq(1,0); t1=Pop(); Numeric(t1); all_flushed=t1.u; break;
     case OP_FLIP: v_flip(); break;
@@ -2950,6 +3231,7 @@ void annihilate(void) {
   deadanim=0;
   ndeadanim=0;
   control_obj=VOIDLINK;
+  nconn=pconn=0;
 }
 
 static inline int try_sharp(Uint32 n1,Uint32 n2) {
