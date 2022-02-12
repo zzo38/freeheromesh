@@ -1152,6 +1152,7 @@ static int connected_move(Uint32 obj,Uint8 dir) {
   Uint32 n;
   Sint32 inertia=objects[obj]->inertia;
   Sint32 weight=0;
+  char bad;
   int first=nconn;
   int last;
   int i,j;
@@ -1174,7 +1175,10 @@ static int connected_move(Uint32 obj,Uint8 dir) {
     weight=objects[conn[first].obj]->weight;
   }
   last=pconn=nconn;
+  bad=0;
   // Check HIT/HITBY; may shove other objects
+  conn_dir=dir;
+  qsort(conn+first,last-first,sizeof(Connection),compare_connection);
   if(conn_option&0x02) {
     for(i=first;i<last;i++) {
       o=objects[n=conn[i].obj];
@@ -1191,7 +1195,7 @@ static int connected_move(Uint32 obj,Uint8 dir) {
     o=objects[n=conn[i].obj];
     if(conn_option&0x01) o->inertia=inertia;
     j=fake_move_dir(n,o->dir=dir,0);
-    if(!j) goto fail;
+    if(!j) bad=1;
     if((conn_option&0x01) && !(o->oflags&OF_DESTROYED)) inertia=o->inertia;
     if(j==2) {
       if(nconn==pconn) Throw("This object cannot be sticky");
@@ -1199,6 +1203,7 @@ static int connected_move(Uint32 obj,Uint8 dir) {
       goto loop1;
     }
   }
+  if(bad) goto fail;
   // Check if each object in the group is movable
   for(i=first;i<last;i++) {
     o=objects[n=conn[i].obj];
@@ -1215,8 +1220,6 @@ static int connected_move(Uint32 obj,Uint8 dir) {
     }
   }
   // Move everything in the group
-  conn_dir=dir;
-  qsort(conn+first,last-first,sizeof(Connection),compare_connection);
   for(i=first;i<last;i++) {
     o=objects[n=conn[i].obj];
     if(!conn[i].visual) o->oflags&=~OF_VISUALONLY;
