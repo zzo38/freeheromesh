@@ -288,8 +288,10 @@ TriggerAt
 VolumeAt
 WinLevel
 ,XDir
+,XStep
 XYDir
 ,YDir
+,YStep
 
 ; Operations with marks
 mark "_"

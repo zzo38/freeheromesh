@@ -1969,6 +1969,15 @@ XDir  ( dir -- newx )
   Finds the X coordinate of the cell in the specified direction of the
   specified object.
 
+XStep  ( dir -- result )
+  Will be -1 or 0 or +1 depending on the direction; this is the X step
+  difference for the specified direction. If it is a relative direction,
+  it is relative to the Self object.
+
+,XStep  ( obj dir -- result )
+  Similar to XStep but relative directions are relative to the specified
+  object, instead of necessarily Self.
+
 XYDir  ( dir -- newx newy )
   Finds the X and Y coordinates of the cell in the given direction.
 
@@ -1978,6 +1987,15 @@ YDir  ( dir -- newy )
 ,YDir  ( obj dir -- newy )
   Finds the Y coordinate of the cell in the specified direction of the
   specified object.
+
+YStep  ( dir -- result )
+  Will be -1 or 0 or +1 depending on the direction; this is the Y step
+  difference for the specified direction. If it is a relative direction,
+  it is relative to the Self object.
+
+,YStep  ( obj dir -- result )
+  Similar to YStep but relative directions are relative to the specified
+  object, instead of necessarily Self.
 
 
 === Block instructions ===

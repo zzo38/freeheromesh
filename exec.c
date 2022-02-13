@@ -3108,11 +3108,15 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_XDIR_C: StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else Push(NVALUE(objects[i]->x+x_delta[resolve_dir(i,t1.u)])); break;
     case OP_XLOC: StackReq(0,1); Push(NVALUE(o->x)); break;
     case OP_XLOC_C: StackReq(1,1); Push(GetVariableOf(x,NVALUE)); break;
+    case OP_XSTEP: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(x_delta[resolve_dir(obj,t1.u)])); break;
+    case OP_XSTEP_C: StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else Push(NVALUE(x_delta[resolve_dir(i,t1.u)])); break;
     case OP_XYDIR: StackReq(1,2); t1=Pop(); Numeric(t1); i=resolve_dir(obj,t1.u); Push(NVALUE(o->x+x_delta[i])); Push(NVALUE(o->y+y_delta[i])); break;
     case OP_YDIR: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(o->y+y_delta[resolve_dir(obj,t1.u)])); break;
     case OP_YDIR_C: StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else Push(NVALUE(objects[i]->y+y_delta[resolve_dir(i,t1.u)])); break;
     case OP_YLOC: StackReq(0,1); Push(NVALUE(o->y)); break;
     case OP_YLOC_C: StackReq(1,1); Push(GetVariableOf(y,NVALUE)); break;
+    case OP_YSTEP: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(y_delta[resolve_dir(obj,t1.u)])); break;
+    case OP_YSTEP_C: StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else Push(NVALUE(y_delta[resolve_dir(i,t1.u)])); break;
 #define MiscVar(a,b) \
     case a: StackReq(0,1); Push(o->b); break; \
     case a+0x0800: StackReq(1,1); Push(GetVariableOf(b,)); break; \
