@@ -1155,6 +1155,10 @@ used on the same turn as the IgnoreKey instruction.
   instance of each is used. If the last instance of a flag has a
   comma then that bit is clear, if without a comma then it is set.
 
+(<userflags...>)  ( -- number )
+  As above, but you can omit the attribute; it will be implied. All
+  flags listed must be the same attribute otherwise it is an error.
+
 .  ( x -- )
 
 +  ( in1 in2 -- out )

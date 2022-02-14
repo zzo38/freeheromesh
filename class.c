@@ -1612,6 +1612,7 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
             if(Tokenf(TF_MACRO) || !Tokenf(TF_NAME) || tokenv!=OP_USERFLAG) ParseError("User flag or close parenthesis expected\n");
             tokenv=look_hash(glohash,HASH_SIZE,0x1000,0x10FF,0,"user flags");
             if(!tokenv) ParseError("User flag ^%s not defined\n",tokenstr);
+            uflags1:
             if((tokenv^y)&0xE0) {
               if(y&0x100) ParseError("User flag ^%s belongs to the wrong attribute\n",tokenstr);
             } else {
@@ -1620,6 +1621,12 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
           }
           tokenv=x;
           goto numeric;
+        case OP_USERFLAG:
+          tokenv=look_hash(glohash,HASH_SIZE,0x1000,0x10FF,0,"user flags");
+          if(!tokenv) ParseError("User flag ^%s not defined\n",tokenstr);
+          x=0;
+          y=(tokenv&0xE0)|0x100;
+          goto uflags1;
         default:
           ParseError("Invalid parenthesized instruction\n");
       }
