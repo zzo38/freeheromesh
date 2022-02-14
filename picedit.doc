@@ -93,7 +93,7 @@ F2
   be square in order for this to work.
 
 F3
-  Flip marked area verticaly.
+  Flip marked area vertically.
 
 F4
   Flip marked area horizontally.
@@ -207,14 +207,14 @@ affect only odd or only even coordinates.
 
 === Dependent pictures ===
 
-A depedent picture depends on one or more independent pictures. It
+A dependent picture depends on one or more independent pictures. It
 consists of any combination of the following items, in any order:
 
 * Base: This one must come first, and is the independent picture which
 will be used as the base; all other filters are applied to alter it.
 
 * Flip/rotation: Flip/rotate the picture. "Identity" also belongs to this
-category, but ahs no effect.
+category, but has no effect.
 
 * Replace colors: A list of pairs of colours. The first of each pair is
 the old colour, and next the colour to replace it with.
@@ -230,5 +230,5 @@ picture, showing through wherever it is transparent.
 
 * Shift: Shift the picture. Specify the sizes and shift amounts in the
 format "size: shift"; each size also affects all multiples of that size,
-in which case the shift amoutn is also multiplied by the same amount.
+in which case the shift amount is also multiplied by the same amount.
 

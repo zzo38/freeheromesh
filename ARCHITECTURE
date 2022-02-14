@@ -52,6 +52,9 @@ to add new algorithms, use the multicodec table to assign the numbers.
 (Currently they are not used for anything, but some planned features may
 use it in future.)
 
+imgtofhm.c: A separate program (not compiled into Free Hero Mesh) for
+batch importing pictures into Free Hero Mesh.
+
 instruc,instruc.h,instruc.js: The "instruc" file contains a list of the
 keywords and internal operator names used in the class definitions. Some
 of these are only used internally, although most are available directly
@@ -60,10 +63,12 @@ are only used as keywords, which are handled during class loading. The
 instruc.js program generates instruc.h from instruc.
 
 keyicons.xbm: Graphics for key icons. These are used to display the replay
-list on the left side of the screen.
+list on the left side of the screen. Consists of a vertical strip of icons
+each of size 16x16, and is compiled into the program.
 
 main.c: Contains code for start-up, and for initializing and dealing with
-the user cache database.
+the user cache database. The code for loading levels and is also here, as
+is the code for loading/saving lumps in the level file and solution file.
 
 mbtofhm.c: The converter from Hero Mesh to Free Hero Mesh. This is not
 compiled into Free Hero Mesh; it is a separate program.
@@ -85,7 +90,8 @@ smallxrm.c,smallxrm.h: An implementation of the X resource manager. This
 can be used independently from Free Hero Mesh.
 
 sound.c: Implements sound effects. Also deals with loading sound effects,
-amplification, MML, etc.
+amplification, MML, etc, and the sound test menu. Sounds are automatically
+converted and amplified when loading.
 
 
 === Invariants ===

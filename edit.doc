@@ -210,7 +210,7 @@ Push insert to add a division (just above the cursor), or delete to delete
 a division (only divisions can be deleted in this way, not levels).
 
 Another way to reorder the items is to add marks by pushing F2 (or click
-by right mouse button) on each one, and tghen push F3 (or click by middle
+by right mouse button) on each one, and then push F3 (or click by middle
 mouse button) at the point to be moved to; they are removed from where
 they were before and put here in the order in which they were marked.
 

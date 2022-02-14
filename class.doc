@@ -83,7 +83,7 @@ string literal) and end at the next line break.
 \dDATA\
   Includes inline data in the string. The data is not displayed, but
   can be read by class codes, or used in level titles to provide data
-  and delimieters for the auto-generated table of contents. Data items
+  and delimiters for the auto-generated table of contents. Data items
   are separated by semicolons; each item can be a underscore to mean a
   mark, a number (decimal integers only), or a class name with $ at front.
   (Not fully implemented yet)
@@ -584,7 +584,8 @@ functions; the only thing that can be done with a string is to display it,
 or to compare if one string matches another.
 
 * Sound: A named sound effect. Values of this type cannot be compared with
-anything, even other values of the same type.
+anything, even other values of the same type. A sound can be either a
+built-in sound or user sound.
 
 * Mark: There is only one value of this type; it is used to delimit lists
 of values on the stack.
@@ -595,7 +596,8 @@ array definitions.
 
 * Link: A link to another point in the code of some class or global. Where
 a link is expected, you can also specify a message to mean that message
-block for the Self object.
+block for the Self object (this is not quite the same as sending that
+message to itself, though).
 
 Some things are not their own types, and are other uses of numbers:
 
@@ -1249,7 +1251,7 @@ ArraySlice  ( array start count -- array )
 Assassinate  ( -- ) **
   Destroy this object without sending any messages. The object is marked
   as destroyed, but its variables are still accessible until the garbage
-  collector runs (during the trigger step for combatible objects, and
+  collector runs (during the trigger step for compatible objects, and
   during the cleanup step for all objects). Assassination always succeeds,
   so there is no result value to indicate success or not.
 
@@ -1513,7 +1515,7 @@ HitMe  ( dir -- bool ) **
   three bits; the new value of Arg3 may then be used as the return value
   from HITBY. It is intended that this instruction is used inside of a
   HITBY block, in case you want to do some of your own processing. The
-  Comaptible and VisualOnly flags of this object are not checked.
+  Compatible and VisualOnly flags of this object are not checked.
 
 IgnoreKey  ( -- )
   There is no effect outside of the input phase. During the input phase,
@@ -1642,7 +1644,7 @@ mod  ( in1 in2 -- out )
   Unsigned divide in1 by in2 producing the remainder.
 
 ,mod  ( in1 in2 -- out )
-  Signed divide in1 by in2 producing the remander.
+  Signed divide in1 by in2 producing the remainder.
 
 Move  ( dir -- bool ) **
   Move this object in the given direction (which may be absolute or
@@ -1767,7 +1769,8 @@ ObjDir  ( dir -- obj )
 ObjLayerAt  ( layers x y -- obj )
   Find an object with the given CollisionLayers bits set at that location.
   If you specify multiple bits, it finds one with any of those bits. (It
-  is not possible for there to be more than one such object.)
+  is not possible for there to be more than one such object if you specify
+  only one bit. If there are multiple, the bottom-most one is returned.)
 
 ObjMovingTo  ( x y -- ... )
   Push on the stack all objects scheduled to move to the specified X and Y
@@ -1812,7 +1815,7 @@ Rel  ( dir -- dir )
 ,Rel  ( obj dir -- dir )
   Resolves a relative direction to an absolute direction, using the
   direction of the specified object as the base. If zero is specified
-  instead of a valid object, thent the result is the same as the input.
+  instead of a valid object, then the result is the same as the input.
 
 ret  ( -- )
   Exit the current subroutine. If this is a message block, it must either
@@ -1901,7 +1904,7 @@ Sweep  ( xstart ystart xend yend order msg arg1 arg2 -- )
   a surrounding rectangle with a specified radius if wanted. If all of the
   coordinates are out of range and not on opposite sides of the playfield,
   no messages are sent. The order of sending the messages is starting at
-  the start coordinates and ending at the end cordinates, regardless of
+  the start coordinates and ending at the end coordinates, regardless of
   which are greater than the others; if the order is true then it does
   vertical movement first and if false then horizontal movement first.
 
@@ -1942,7 +1945,7 @@ Trigger  ( obj message -- ) **
   trigger is cleared before it is sent, it is safe for objects to call the
   triggers of objects in a loop.
 
-TriggerAt  ( x ymessage -- ) **
+TriggerAt  ( x y message -- ) **
   Works like Trigger on all objects at the specified location, from the
   bottom to the top.
 
@@ -2732,7 +2735,7 @@ The following blocks are allowed in a level table definition:
   Defines a display column. The <label> is the name of the data column.
   The <width> is a number 1 to 255 or it can be * for fill width; only
   the last column is allowed to be fill width (although it is also OK if
-  no colums are fill width). The <format> is a string of exactly one or
+  no columns are fill width). The <format> is a string of exactly one or
   two characters; see the below list of possible formats. The <color> is
   the text colour, and is optional; it can be a number from 1 to 255, or
   it can be a sequence of parenthesized pairs of a number (-127 to +127)
