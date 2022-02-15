@@ -837,7 +837,10 @@ static Uint32 create(Uint32 from,Uint16 c,Uint32 x,Uint32 y,Uint32 im,Uint32 d) 
   pflink(n);
   v=send_message(from,n,MSG_CREATE,NVALUE(0),NVALUE(0),NVALUE(0));
   if(o->oflags&OF_DESTROYED) return VOIDLINK;
-  if(o->oflags&OF_BIZARRO) return n;
+  if(o->oflags&OF_BIZARRO) {
+    if(classes[objects[n]->class]->order) set_order(n);
+    return n;
+  }
   for(y=0;y<5;y++) for(x=0;x<5;x++) {
     xx=o->x+x-2; yy=o->y+y-2;
     if(xx<1 || xx>pfwidth || yy<1 || yy>pfheight) continue;
