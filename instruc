@@ -254,6 +254,7 @@ IgnoreKey
 LoseLevel
 ,Manhattan
 MaxInventory ; error if more than that many slots in inventory
+,Morton
 .,Move
 .,MovePlus "Move+" ; obj.Inertia+=Strength instead of obj.Inertia=Strength
 .,MoveTo ; the internal MoveTo() function

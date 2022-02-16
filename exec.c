@@ -2679,6 +2679,15 @@ static Uint32 convert_link(Value v,Uint32 obj,Uint16*code) {
   }
 }
 
+static Uint32 morton(Uint32 x) {
+  x&=0xFFFF;
+  x|=x<<8; x&=0x00FF00FF;
+  x|=x<<4; x&=0x0F0F0F0F;
+  x|=x<<2; x&=0x33333333;
+  x|=x<<1; x&=0x55555555;
+  return x;
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -2959,6 +2968,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_MINUSMOVE_CD: StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); defer_move(i,t1.u,0); break;
     case OP_MOD: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u%t2.u)); break;
     case OP_MOD_C: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s%t2.s)); break;
+    case OP_MORTON: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(morton(t1.u))); break;
+    case OP_MORTON_C: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(morton(t2.u)|(morton(t1.u)<<1))); break;
     case OP_MOVE: NoIgnore(); StackReq(1,1); t1=Pop(); Numeric(t1); o->inertia=o->strength; Push(NVALUE(move_dir(obj,obj,t1.u))); break;
     case OP_MOVE_C: NoIgnore(); StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else { objects[i]->inertia=o->strength; Push(NVALUE(move_dir(obj,i,t1.u))); } break;
     case OP_MOVE_D: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->inertia=o->strength; move_dir(obj,obj,t1.u); break;

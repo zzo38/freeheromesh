@@ -1655,6 +1655,15 @@ mod  ( in1 in2 -- out )
 ,mod  ( in1 in2 -- out )
   Signed divide in1 by in2 producing the remainder.
 
+Morton  ( in -- out )
+  Like ,Morton but the first input is always zero.
+
+,Morton  ( in1 in2 -- out )
+  Interleave bits of two 16-bit numbers to make a 32-bit number, like the
+  mingle operator of INTERCAL. (One use of this is if you have a class
+  with images for each combination of E/N/W/S directions and will want
+  to convert them to make the appropriate Shovable value.)
+
 Move  ( dir -- bool ) **
   Move this object in the given direction (which may be absolute or
   relative to the current direction). The result will be true if the
