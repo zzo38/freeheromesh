@@ -989,6 +989,21 @@ static void add_connection(Uint32 obj) {
   nconn++;
 }
 
+static void add_connection_shov(Object*o) {
+  int i,x,y;
+  Uint8 b=classes[o->class]->collisionLayers;
+  Uint32 n;
+  for(i=0;i<8;i++) if(o->shovable&(0x100<<i)) {
+    x=o->x+x_delta[i]; y=o->y+y_delta[i];
+    if(x<1 || x>pfwidth || y<1 || y>pfheight) continue;
+    n=playfield[x+y*64-65];
+    while(n!=VOIDLINK) {
+      if(classes[objects[n]->class]->collisionLayers==b && (objects[n]->shovable&(0x100<<(4^i)))) add_connection(n);
+      n=objects[n]->up;
+    }
+  }
+}
+
 static int fake_move_dir(Uint32 obj,Uint32 dir,Uint8 no) {
   // This is similar to move_dir, but specialized for the HIT/HITBY processing in connected_move.
   // Note that this may result in calling the real move_dir due to shoving.
@@ -1164,9 +1179,11 @@ static int connected_move(Uint32 obj,Uint8 dir) {
   add_connection(obj);
   for(i=first;i<nconn;i++) {
     loop1:
-    objects[n=conn[i].obj]->inertia=inertia;
+    o=objects[n=conn[i].obj];
+    o->inertia=inertia;
     if(v_bool(send_message(obj,n,MSG_CONNECT,NVALUE(i-first),NVALUE(dir),NVALUE(weight)))) goto fail;
-    weight+=objects[n]->weight;
+    weight+=o->weight;
+    if(o->shovable&0xFF00) add_connection_shov(o);
   }
   if(conn_option&0x01) {
     for(i=first;i<nconn;i++) {

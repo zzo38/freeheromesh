@@ -1061,8 +1061,13 @@ Sharp : int16 [c] [d]
 Shovable : int16 [c]
   Defines what directions the object may be shoved, where bit0 means east,
   bit2 means north, bit4 means west, and bit6 means south. Bit1, bit3,
-  bit5, and bit7 can be used for diagonal shoving. Higher bits are
-  reserved for future and should not be used.
+  bit5, and bit7 can be used for diagonal shoving. Higher bits are used
+  for connection movement, if the Connection flag is also set; each bit
+  which is set makes it connect to an object in that direction which has
+  the same CollisionLayers value, the bit in the Shovable high 8-bits for
+  the opposite direction, and the Connection flag. If the Connection flag
+  is not set, then you can use the high bits of Shovable for your own use,
+  since the game engine will not use them in that case.
 
 Stealthy : bool [c]
   If this flag is set, then the Arrived and Departed variables of other
