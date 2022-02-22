@@ -1461,6 +1461,19 @@ FakeMove  ( dir -- result ) **
   Works like FakeMove but you can specify a different object instead of
   the current one.
 
+FindConnection  ( link -- result ) **
+  Find all connected objects to this one, execute the link for all objects
+  in the connected group (including this one), and then pushes zero. If
+  any of the CONNECT messages return nonzero, then it will stop and then
+  the result is that value instead, and won't execute the link at all. If
+  this object doesn't have the Connection flag, or its other flags are not
+  appropriate, then it just does nothing and the result is zero.
+
+,FindConnection  ( obj link -- result ) **
+  Similar to FindConnection but uses a specified object instead of
+  necessarily using the current object. If the object is zero then it
+  will do nothing and the result is zero.
+
 Finished  ( -- number )
   Returns the value of an internal flag which tells it that the beginning
   and ending phases should be skipped. This is a 8-bit number; zero means
@@ -2239,7 +2252,9 @@ CONNECT
   automatically before calling this message; it can change the Inertia
   before returning if it wants a different value for Inertia. Arg1 is
   the number of objects in the group previously to this one, Arg2 is the
-  direction of movement, and Arg3 is the total Weight so far.
+  direction of movement, and Arg3 is the total Weight so far. If this
+  message is sent for FindConnection, then Arg3 is a mark instead, and
+  the Inertia is not automatically changed.
 
 CREATE
   Sent when the object is created by the Create instruction. This is done

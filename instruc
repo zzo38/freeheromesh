@@ -241,6 +241,7 @@ DelInventory
 Delta
 .,Destroy
 ,FakeMove
+,FindConnection
 FlushClass
 ,FlushObj
 GetInventory
