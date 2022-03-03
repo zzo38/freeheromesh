@@ -12,6 +12,8 @@ echo "x$CFLAGS" > CFLAGS
 test "x$EXE" = "x" && export EXE=~/bin/heromesh
 echo 'Flags: ' "$CFLAGS"
 echo 'Target filename: ' "$EXE"
+which node > /dev/null || echo 'Node.js not found; ignoring changes to instructions/quarks'
+which node > /dev/null || touch -cm instruc.h names.h quarks.h
 test instruc -nt instruc.h && node instruc.js > instruc.h
 test instruc.js -nt instruc.h && node instruc.js > instruc.h
 test names.js -nt names.h && node names.js > names.h
