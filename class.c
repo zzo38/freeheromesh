@@ -2171,7 +2171,7 @@ static void parse_order_block(void) {
   // 0x1000...0x10FF = Have flag
   // OP_RET = end of block
   Uint16 beg,ptr;
-  ParseError("(Not implemented yet)\n"); //TODO: remove this when it is implemented in exec.c too
+  ParseError("(Not implemented yet)\n"); //TODO: remove this when it is implemented properly in exec.c too
   orders=malloc(0x4000*sizeof(Uint16));
   if(!orders) fatal("Allocation failed\n");
   nxttok();
@@ -2219,6 +2219,7 @@ static void parse_order_block(void) {
         case OP_IMAGE: case OP_IMAGE_C:
           orders[ptr++]=tokenv;
           break;
+        default: ParseError("Unexpected token in (Order) block\n");
       }
       nxttok();
     }
@@ -2226,12 +2227,21 @@ static void parse_order_block(void) {
   }
   if(!norders) ParseError("Empty (Order) block\n");
   orders=realloc(orders,ptr*sizeof(Uint16))?:orders;
+  nxttok();
 }
 
 static void set_class_orders(void) {
   int i,j,k;
-  for(i=1;i<undef_class;i++) if(classes[i] && (classes[i]->nmsg || classes[0]->nmsg) || !(classes[i]->cflags&(CF_GROUP|CF_NOCLASS2))) {
-    for(j=1;j<norders;j++) {
+  if(main_options['C']) {
+    for(j=1;j<=norders;j++) {
+      printf("Order %d =",j);
+      k=orders[j];
+      while(orders[k]!=OP_RET) printf(" %04X",orders[k++]);
+      putchar('\n');
+    }
+  }
+  for(i=1;i<undef_class;i++) if(classes[i] && (classes[i]->nmsg || classes[0]->nmsg) && !(classes[i]->cflags&(CF_GROUP|CF_NOCLASS2))) {
+    for(j=1;j<=norders;j++) {
       k=orders[orders[j]];
       switch(k) {
         case 0x1000 ... 0x101F: if(classes[i]->misc4&(1UL<<(k&0x1F))) goto found; break;
@@ -2244,7 +2254,10 @@ static void set_class_orders(void) {
         case OP_CONTROL: if(i==control_class) goto found; break;
       }
       continue;
-      found: classes[i]->order=j; break;
+      found:
+      classes[i]->order=j;
+      if(main_options['C']) printf("Order %d : Class %d\n",j,i);
+      break;
     }
   }
 }
