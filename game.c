@@ -639,7 +639,8 @@ static void describe_at(int xy) {
   n=playfield[xy];
   if(n==VOIDLINK) return;
   while(n!=VOIDLINK && objects[n]->up!=VOIDLINK) n=objects[n]->up;
-  if(!classes[objects[n]->class]->gamehelp) return;
+  while(n!=VOIDLINK && !classes[objects[n]->class]->gamehelp) n=objects[n]->down;
+  if(n==VOIDLINK) return;
   if(classes[objects[n]->class]->gamehelp[0]==16 && !classes[objects[n]->class]->gamehelp[1]) {
     if(objects[n]->misc1.t!=TY_LEVELSTRING || objects[n]->misc1.u>=nlevelstrings) return;
     modal_draw_popup(levelstrings[objects[n]->misc1.u]);
