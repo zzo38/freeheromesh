@@ -1492,7 +1492,13 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
       }
     }
   }
-  fail: if(hit&0x1000) goto success; o->inertia=0; return 0;
+  fail:
+  if(hit&0x1000) goto success;
+  if(hit&0x10000000) {
+    v=send_message(obj,objW,MSG_NEXTWARP,NVALUE(dir),NVALUE(0),NVALUE(hit));
+    if(v.t || v.u) goto warp;
+  }
+  o->inertia=0; return 0;
   success: if(!(hit&0x4000)) o->oflags|=OF_MOVED; if(hit&0x10000000) o->dir=dir; return 1;
 }
 

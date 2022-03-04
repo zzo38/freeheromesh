@@ -677,6 +677,7 @@ Standard messages:
   LASTIMAGE
   MOVED
   MOVING
+  NEXTWARP
   PLAYERMOVING
   POSTINIT
   SUNK
@@ -2370,6 +2371,12 @@ MOVING
   in that case, if all first passes are successful then it will try again
   the second pass with From set to the first object of the group, and
   this second time they will actually be moved.
+
+NEXTWARP
+  Sent to the warp object if a warp fails. From is the same as it is for
+  HITBY, Arg1 is the direction of movement, and Arg3 is the hit value.
+  Return zero to not try again, or an object to try again with a new
+  warp object.
 
 PLAYERMOVING
   If an object with the Player flag is about to move, then after the

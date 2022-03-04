@@ -654,6 +654,7 @@ static const Op_Names op_names[]={
 {"Msg",8421502},
 {"N",9437186},
 {"NE",9437185},
+{"NEXTWARP",8389146},
 {"NW",9437187},
 {"NewX",8421566},
 {"NewXY",8421567},
@@ -848,5 +849,5 @@ static const Op_Names op_names[]={
 {"until",8683534},
 {"while",8683535},
 };
-#define N_OP_NAMES 360
+#define N_OP_NAMES 361
 #endif
