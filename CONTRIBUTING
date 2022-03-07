@@ -34,3 +34,112 @@ but you may not write to the main or mirror repository; I am the only one
 who has write access and this will not be granted to others.
 
 You can see the TODO list, NNTP, and tickets, for some ideas, too.
+
+
+=== Code improvements ===
+
+If you wish to submit code improvements, submit patches using the NNTP.
+
+If you wish to add new opcodes, configuration settings, or built-in
+messages, then you must have Node.js (or a compatible JavaScript runtime
+engine) installed, since the data for these features is compiled using
+JavaScript programs. (Node.js is not needed at run time, though.)
+
+Source code must be purely ASCII; do not use Unicode or any other
+character encoding.
+
+If it implements a new feature, it ought to be documented; see the below
+section about documentation improvements.
+
+Please provide a short description of the changes. However, this does not
+substitute for an actual code review; I will review the changes myself
+anyways, and accept (possibly with modifications) or reject it.
+
+
+=== Documentation improvements ===
+
+If you wish to submit documentation improvements, then you should submit
+them on the NNTP.
+
+Normally (unless an exception is needed, which sometimes it might), all
+documentation should be plain ASCII text files, in English, and should
+normally be wrapped to 75 characters (unless a longer line is needed for
+any purpose).
+
+You may submit translations of documentation into languages other than
+English, and they can use the appropriate character encoding for the
+language that they are written in. (However, all features must include
+documentation in English, even if those features are only applicable
+when dealing with non-English text.)
+
+
+=== Bug reports ===
+
+To make a bug report, the recommended way is to post a message on the NNTP,
+but you may also use IRC, Matrix, or the Fossil ticketing system. Before
+posting a bug report, read the following list and provide as much of these
+things as is possible:
+
+* Check if the bug has already been reported/known. (If you have further
+comments about an existing report, you can post a follow-up message.)
+
+* Use a clear title and description.
+
+* Mention the version of Free Hero Mesh used (i.e. the SHA-1 hash of the
+manifest file).
+
+* Mention what operating system, and what versions of GCC, SQLite, and
+SDL, you are using. If you are using the SDL compatibility layer, then
+please mention that, too.
+
+* Describe any changes you made to the configuration of the program (in
+the .heromeshrc file, etc), any command-line switches used, etc.
+
+* Any compiler options you used.
+
+* Steps to reproduce the unexpected behaviour. Make a minimal test case
+with as few things as possible which exhibits the bug. Include a minimal
+puzzle set with the bug, if possible.
+
+* Mention what behaviour you observed, and what behaviour is expected
+(and why, if applicable).
+
+* Screenshots should be external, not attached to the message. They
+should be in PNG format (even if it is an animation; do not use GIF),
+and should be a direct link (not a link to a HTML file, and not using
+a URL shortening service).
+
+* If it crashed, or if there is an invalid memory access, using valgrind
+and/or gdb to obtain additional information about the crash or the invalid
+memory access.
+
+* Include a patch, if you can. Patches must be public domain.
+
+(If you cannot do all of the above, that is OK; do however many of them
+as you can, and omit whatever you cannot do.)
+
+
+=== Feature requests ===
+
+To make a feature request, the recommended way is to post a message on the
+NNTP, but you may also use IRC, Matrix, or the Fossil ticketing system.
+Before posting, read the following, and provide as much of the following
+as is possible:
+
+* Check if there is already a similar request. (If you have further
+comments about an existing report, you can post a follow-up message.)
+
+* Use a clear title and description.
+
+* If it is inspired by some other game or software project, then you
+should provide a citation.
+
+* Describe how you intend it to work, even if you do not have full
+details; a discussion can be made to figure out more, if that would help.
+Include interaction with other features, syntax, interface, etc.
+
+* Include an implementation, if you can. Patches must be public domain.
+
+(If you cannot do all of the above, that is OK; do however many of them
+as you can, and omit whatever you cannot do.)
+
