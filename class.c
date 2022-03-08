@@ -2651,7 +2651,12 @@ void load_classes(void) {
   }
   done:
   fclose(classfp);
-  if(main_options['C']) dump_class(0,gloptr,glolocalhash);
+  if(main_options['C']) {
+    dump_class(0,gloptr,glolocalhash);
+    printf("<<<User-defined Messages>>>\n");
+    for(i=0;i<0x4000;i++) if(messages[i]) printf("  %d = #%s\n",i+256,messages[i]);
+    printf("---\n\n");
+  }
   if(main_options['H']) {
     for(i=0;i<HASH_SIZE;i++) if(glohash[i].id) printf("\"%s\": %04X\n",glohash[i].txt,glohash[i].id);
     for(i=0;i<LOCAL_HASH_SIZE;i++) if(glolocalhash[i].id) printf(" \"%s\": %04X\n",glolocalhash[i].txt,glolocalhash[i].id);
