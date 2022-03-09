@@ -3259,7 +3259,7 @@ static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value
   Uint32 n;
   Object*o;
   Value v;
-  if(s==2) t=0xFFFFFFFFULL;
+  if(s==2) t=1;
   if(lastobj==VOIDLINK) return t;
   n=lastobj;
   if(c && (classes[c]->cflags&CF_GROUP)) Throw("Broadcast for abstract classes is not implemented yet");
@@ -3281,7 +3281,7 @@ static Uint32 broadcast(Uint32 from,int c,Uint16 msg,Value arg1,Value arg2,Value
           break;
         case 2:
           switch(v.t) {
-            case TY_NUMBER: if(!v.u) return 0;
+            case TY_NUMBER: if(!v.u) return 0; break;
             case TY_SOUND: case TY_USOUND: Throw("Invalid return type for BroadcastAnd");
           }
           break;
