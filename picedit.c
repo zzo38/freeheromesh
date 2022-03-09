@@ -812,7 +812,7 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
           y=(ev.button.y-40)/10;
           i=y*16+x;
           pick:
-          y=SDL_GetModState();
+          y=SDL_GetModState()&0xFFF;
           switch(ev.button.button) {
             case 1: cc=i; break;
             case 2:
