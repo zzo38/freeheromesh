@@ -105,9 +105,23 @@ static void rewrite_class_def(void) {
 
 static inline void version_change(void) {
   long sz=0;
+  int n;
   unsigned char*buf=read_lump(FIL_SOLUTION,level_id,&sz);
-  if(!buf) return;
+  if(!buf) goto us;
   if(sz>2 && (buf[0]|(buf[1]<<8))==level_version) ++level_version;
+  free(buf);
+  us:
+  // Set user state to unsolved, if applicable
+  buf=read_userstate(FIL_LEVEL,level_id,&sz);
+  if(!buf) return;
+  if(sz>2) {
+    n=(buf[sz-2]<<8)|buf[sz-1];
+    if(sz-n>=6 && (buf[n+2]<<8)+buf[n+3]==level_version) {
+      buf[n+2]=(level_version-1)>>8;
+      buf[n+3]=level_version-1;
+      write_userstate(FIL_LEVEL,level_id,sz,buf);
+    }
+  }
   free(buf);
 }
 
