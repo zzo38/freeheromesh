@@ -1573,6 +1573,20 @@ static void trace_stack(Uint32 obj) {
   printf(" : %u %u : %u %u\n",t1.t,t1.u,t2.t,t2.u);
 }
 
+static void trace_stack_list(int n) {
+  int b;
+  if(!main_options['t']) return;
+  if(!traceprefix) {
+    optionquery[1]=Q_tracePrefix;
+    traceprefix=xrm_get_resource(resourcedb,optionquery,optionquery,2);
+    if(!traceprefix) traceprefix="";
+  }
+  b=vstackptr-n;
+  if(b<0) b=0;
+  n=vstackptr;
+  while(n-->b) printf("%s<%d> : %u %u\n",traceprefix,n,vstack[n].t,vstack[n].u);
+}
+
 static void flush_object(Uint32 n) {
   Object*o=objects[n];
   o->arrived=o->departed=0;
@@ -3146,6 +3160,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_TEMPERATURE_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->temperature=t1.u&0xFFFF; break;
     case OP_TMARK: StackReq(1,2); t1=Pop(); if(t1.t==TY_MARK) { Push(NVALUE(0)); } else { Push(t1); Push(NVALUE(1)); } break;
     case OP_TRACE: StackReq(3,0); trace_stack(obj); break;
+    case OP_TRACESTACK: trace_stack_list(vstackptr); break;
+    case OP_TRACESTACK_C: StackReq(1,0); t1=Pop(); Numeric(t1); trace_stack_list(t1.u); break;
     case OP_TRIGGER: NoIgnore(); StackReq(2,0); t1=Pop(); i=v_object(Pop()); if(i!=VOIDLINK) v_trigger(obj,i,t1); break;
     case OP_TRIGGERAT: NoIgnore(); StackReq(3,0); t3=Pop(); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); v_trigger_at(obj,t1.u,t2.u,t3); break;
     case OP_TUCK: StackReq(2,3); t2=Pop(); t1=Pop(); Push(t2); Push(t1); Push(t2); break;

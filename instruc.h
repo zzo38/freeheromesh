@@ -425,66 +425,68 @@
 #define OP_TARGET 32980
 #define OP_TARGET_C 35028
 #define OP_TRACE 32981
-#define OP_TRIGGER 32982
-#define OP_TRIGGERAT 32983
-#define OP_VOLUMEAT 32984
-#define OP_WINLEVEL 32985
-#define OP_XDIR 32986
-#define OP_XDIR_C 35034
-#define OP_XSTEP 32987
-#define OP_XSTEP_C 35035
-#define OP_XYDIR 32988
-#define OP_YDIR 32989
-#define OP_YDIR_C 35037
-#define OP_YSTEP 32990
-#define OP_YSTEP_C 35038
-#define OP_MARK 32991
-#define OP_TMARK 32992
-#define OP_IN 32993
-#define OP_NIN 32994
-#define OP_MBEGIN 32995
-#define OP_FLIP 32996
-#define OP_COUNT 32997
-#define OP_CLEAR 32998
-#define OP_UNIQ 32999
-#define OP_ARRAY 33000
-#define OP_GETARRAY 33001
-#define OP_INITARRAY 33002
-#define OP_SETARRAY 33003
-#define OP_ARRAYCELL 33004
-#define OP_ARRAYSLICE 33005
-#define OP_COPYARRAY 33006
-#define OP_DOTPRODUCT 33007
-#define OP_PATTERN 33008
-#define OP_PATTERN_C 35056
-#define OP_PATTERN_E 37104
-#define OP_PATTERN_EC 39152
-#define OP_PATTERNS 33009
-#define OP_PATTERNS_C 35057
-#define OP_PATTERNS_E 37105
-#define OP_PATTERNS_EC 39153
-#define OP_ROOK 33010
-#define OP_BISHOP 33011
-#define OP_QUEEN 33012
-#define OP_CUT 33013
-#define OP_BIZARRO 33014
-#define OP_BIZARRO_C 35062
-#define OP_BIZARRO_E 37110
-#define OP_BIZARRO_EC 39158
-#define OP_BIZARROSWAP 33015
-#define OP_BIZARROSWAP_D 41207
-#define OP_SWAPWORLD 33016
-#define OP_ABSTRACT 33017
-#define OP_SUPER 33018
-#define OP_SUPER_C 35066
-#define OP_FUNCTION 33019
-#define OP_LOCAL 33020
-#define OP_LABEL 33021
-#define OP_STRING 33022
-#define OP_INT16 33023
-#define OP_INT32 33024
-#define OP_DISPATCH 33025
-#define OP_USERFLAG 33026
+#define OP_TRACESTACK 32982
+#define OP_TRACESTACK_C 35030
+#define OP_TRIGGER 32983
+#define OP_TRIGGERAT 32984
+#define OP_VOLUMEAT 32985
+#define OP_WINLEVEL 32986
+#define OP_XDIR 32987
+#define OP_XDIR_C 35035
+#define OP_XSTEP 32988
+#define OP_XSTEP_C 35036
+#define OP_XYDIR 32989
+#define OP_YDIR 32990
+#define OP_YDIR_C 35038
+#define OP_YSTEP 32991
+#define OP_YSTEP_C 35039
+#define OP_MARK 32992
+#define OP_TMARK 32993
+#define OP_IN 32994
+#define OP_NIN 32995
+#define OP_MBEGIN 32996
+#define OP_FLIP 32997
+#define OP_COUNT 32998
+#define OP_CLEAR 32999
+#define OP_UNIQ 33000
+#define OP_ARRAY 33001
+#define OP_GETARRAY 33002
+#define OP_INITARRAY 33003
+#define OP_SETARRAY 33004
+#define OP_ARRAYCELL 33005
+#define OP_ARRAYSLICE 33006
+#define OP_COPYARRAY 33007
+#define OP_DOTPRODUCT 33008
+#define OP_PATTERN 33009
+#define OP_PATTERN_C 35057
+#define OP_PATTERN_E 37105
+#define OP_PATTERN_EC 39153
+#define OP_PATTERNS 33010
+#define OP_PATTERNS_C 35058
+#define OP_PATTERNS_E 37106
+#define OP_PATTERNS_EC 39154
+#define OP_ROOK 33011
+#define OP_BISHOP 33012
+#define OP_QUEEN 33013
+#define OP_CUT 33014
+#define OP_BIZARRO 33015
+#define OP_BIZARRO_C 35063
+#define OP_BIZARRO_E 37111
+#define OP_BIZARRO_EC 39159
+#define OP_BIZARROSWAP 33016
+#define OP_BIZARROSWAP_D 41208
+#define OP_SWAPWORLD 33017
+#define OP_ABSTRACT 33018
+#define OP_SUPER 33019
+#define OP_SUPER_C 35067
+#define OP_FUNCTION 33020
+#define OP_LOCAL 33021
+#define OP_LABEL 33022
+#define OP_STRING 33023
+#define OP_INT16 33024
+#define OP_INT32 33025
+#define OP_DISPATCH 33026
+#define OP_USERFLAG 33027
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486943},
@@ -497,15 +499,15 @@ static const Op_Names op_names[]={
 {"/",8486944},
 {"ANHH",8389394},
 {"ARRIVED",8389124},
-{"Abstract",8683769},
+{"Abstract",8683770},
 {"Animate",8552596},
 {"AnimateDead",8552597},
 {"Arg1",8552576},
 {"Arg2",8552577},
 {"Arg3",8552578},
-{"Array",8683752},
-{"ArrayCell",8421612},
-{"ArraySlice",8421613},
+{"Array",8683753},
+{"ArrayCell",8421613},
+{"ArraySlice",8421614},
 {"Arrivals",8618092},
 {"Arrived",8618090},
 {"Assassinate",8487062},
@@ -522,9 +524,9 @@ static const Op_Names op_names[]={
 {"BUZZER",8389420},
 {"BWEEP",8389397},
 {"Background",8683655},
-{"Bishop",8683763},
-{"Bizarro",8618230},
-{"BizarroSwap",10518775},
+{"Bishop",8683764},
+{"Bizarro",8618231},
+{"BizarroSwap",10518776},
 {"Broadcast",10518679},
 {"BroadcastAnd",8421528},
 {"BroadcastAndEx",8421529},
@@ -554,7 +556,7 @@ static const Op_Names op_names[]={
 {"Connect",8487075},
 {"Connection",8618104},
 {"Control",8421514},
-{"CopyArray",8421614},
+{"CopyArray",8421615},
 {"Create",10518692},
 {"DEEP_POP",8389417},
 {"DEPARTED",8389125},
@@ -576,7 +578,7 @@ static const Op_Names op_names[]={
 {"Dir",8618054},
 {"Distance",9142346},
 {"Done",8618103},
-{"DotProduct",8421615},
+{"DotProduct",8421616},
 {"E",9437184},
 {"END_TURN",8389139},
 {"EditorHelp",8683665},
@@ -593,7 +595,7 @@ static const Op_Names op_names[]={
 {"From",8421503},
 {"GLASS",8389379},
 {"GLISSANT",8389419},
-{"GetArray",8421609},
+{"GetArray",8421610},
 {"GetInventory",8421549},
 {"HAWK",8389425},
 {"HEARTBEAT",8389407},
@@ -609,7 +611,7 @@ static const Op_Names op_names[]={
 {"Image",8618055},
 {"InPlace",8683662},
 {"Inertia",9142344},
-{"InitArray",8421610},
+{"InitArray",8421611},
 {"Input",8683660},
 {"IntMove",10584241},
 {"Invisible",8618095},
@@ -673,15 +675,15 @@ static const Op_Names op_names[]={
 {"ObjTopAt",8421576},
 {"Order",8683657},
 {"Others",8683666},
-{"P",8880368},
-{"P*",8880369},
+{"P",8880369},
+{"P*",8880370},
 {"PLAYERMOVING",8389133},
 {"POSTINIT",8389138},
 {"POUR",8389377},
 {"POWER",8389386},
 {"Player",8487034},
 {"PopUp",8421577},
-{"Queen",8683764},
+{"Queen",8683765},
 {"Quiz",8683661},
 {"R",9437198},
 {"RATCHET1",8389418},
@@ -690,7 +692,7 @@ static const Op_Names op_names[]={
 {"RB",9437197},
 {"RF",9437199},
 {"Rel",8487115},
-{"Rook",8683762},
+{"Rook",8683763},
 {"S",9437190},
 {"SE",9437191},
 {"SMALL_POP",8389389},
@@ -704,7 +706,7 @@ static const Op_Names op_names[]={
 {"Self",8421501},
 {"Send",10584269},
 {"SendEx",10584270},
-{"SetArray",8421611},
+{"SetArray",8421612},
 {"SetInventory",8421583},
 {"Shape",8618051},
 {"ShapeDir",8618074},
@@ -713,8 +715,8 @@ static const Op_Names op_names[]={
 {"Sound",8421584},
 {"Stealthy",8618100},
 {"Strength",9142358},
-{"Super",8487162},
-{"SwapWorld",8421624},
+{"Super",8487163},
+{"SwapWorld",8421625},
 {"Sweep",8421585},
 {"SweepEx",8421586},
 {"Synchronize",8421587},
@@ -725,8 +727,9 @@ static const Op_Names op_names[]={
 {"Target",8487124},
 {"Temperature",9142337},
 {"Trace",8421589},
-{"Trigger",8421590},
-{"TriggerAt",8421591},
+{"TraceStack",8487126},
+{"Trigger",8421591},
+{"TriggerAt",8421592},
 {"UH_OH",8389382},
 {"UNCORK",8389414},
 {"UNHH",8389381},
@@ -735,21 +738,21 @@ static const Op_Names op_names[]={
 {"VACUUM",8389411},
 {"VisualOnly",8618099},
 {"Volume",9142350},
-{"VolumeAt",8421592},
+{"VolumeAt",8421593},
 {"W",9437188},
 {"WAHOO",8389400},
 {"WHACK",8389423},
 {"Weight",9142352},
-{"WinLevel",8421593},
-{"XDir",8487130},
-{"XStep",8487131},
-{"XYDir",8421596},
+{"WinLevel",8421594},
+{"XDir",8487131},
+{"XStep",8487132},
+{"XYDir",8421597},
 {"Xloc",8486980},
-{"YDir",8487133},
+{"YDir",8487134},
 {"YEEHAW",8389401},
-{"YStep",8487134},
+{"YStep",8487135},
 {"Yloc",8486981},
-{"_",8421599},
+{"_",8421600},
 {"a?",8421439},
 {"again",8683533},
 {"and",8683544},
@@ -794,22 +797,22 @@ static const Op_Names op_names[]={
 {"c?",8421433},
 {"case",8683542},
 {"chain",8421536},
-{"clear",8421606},
-{"count",8421605},
-{"cut",8683765},
+{"clear",8421607},
+{"count",8421606},
+{"cut",8683766},
 {"cz?",8421434},
 {"dup",8421377},
 {"else",8683530},
 {"eq",8421424},
 {"eq2",8421425},
 {"exec",8486940},
-{"flip",8421604},
+{"flip",8421605},
 {"for",8683537},
 {"fork",8683545},
 {"ge",8486965},
 {"gt",8486963},
 {"if",8683529},
-{"in",8421601},
+{"in",8421602},
 {"is",8421431},
 {"land",8421420},
 {"le",8486966},
@@ -821,14 +824,14 @@ static const Op_Names op_names[]={
 {"lxor",8421422},
 {"m?",8421435},
 {"max",8486948},
-{"mbegin",8683747},
+{"mbegin",8683748},
 {"min",8486947},
 {"mod",8486945},
 {"n?",8421432},
 {"ne",8421426},
 {"neg",8421410},
 {"next",8683538},
-{"nin",8421602},
+{"nin",8421603},
 {"nip",8421379},
 {"o?",8421437},
 {"or",8683543},
@@ -843,11 +846,11 @@ static const Op_Names op_names[]={
 {"s?",8421436},
 {"swap",8421378},
 {"then",8683531},
-{"tmark",8421600},
+{"tmark",8421601},
 {"tuck",8421380},
-{"uniq",8421607},
+{"uniq",8421608},
 {"until",8683534},
 {"while",8683535},
 };
-#define N_OP_NAMES 361
+#define N_OP_NAMES 362
 #endif
