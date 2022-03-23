@@ -2870,7 +2870,8 @@ match the title string of the level. Pattern codes are:
   \d   Follow by some text and then : and \ or just \ to skip to and find
         the data in the string that has the same text. If it contains a
         question mark then any single character is matched. Between : and \
-        you can have usual other matching commands such as [ and ].
+        you can have usual other matching commands such as [ and ]. It can
+        also be ; instead of : optionally.
   +    Follow by one more character, skip past any number of them.
   -    Skip past any number of digits.
   _    Skip past any number of spaces and line breaks.
@@ -2880,6 +2881,7 @@ match the title string of the level. Pattern codes are:
         from a string (parsed as decimal) to a number.
   $    Successful match; the result is the matched slice.
   %    Successful match; the result is the length of the matched slice.
+  Z    Trace (if both -t and -v switches are used).
 
 A "delimited string" in this block is delimited by any printable
 character on both sides (except a character with code less than 32).

@@ -1298,9 +1298,10 @@ static inline Sint16 ll_string(const unsigned char*str,const unsigned char*title
         pp=pt=ll_find(pt,30);
         if(!pt) goto notfound;
         for(i=0;ps[i];i++) {
-          if(ps[i]==':' || ps[i]=='\\') break;
-          if(ps[i]!=pt[i] && ps[i]!='?') {
-            pt+=i;
+          if(ps[i]==':' || ps[i]==';' || ps[i]=='\\') break;
+          if(ps[i]!=pt[i+1] && ps[i]!='?') {
+            if(!pt[i]) goto notfound;
+            pt+=i?:1;
             goto re;
           }
         }
@@ -1354,6 +1355,9 @@ static inline Sint16 ll_string(const unsigned char*str,const unsigned char*title
         stack[sp++]=NVALUE(eo-so);
         stack[sp++]=NVALUE(1);
         return sp;
+      case 'Z':
+        if(main_options['t'] && main_options['v']) printf("'' (str=%p title=%p sp=%d ps=%p pt=%p so=%p eo=%p pp=%p q=%p)\n",str,title,sp,ps,pt,so,eo,pp,q);
+        break;
       default: bad:
         if(main_options['v']) fprintf(stderr,"Invalid character (0x%02X) in string in LevelTable definition\n",ps[-1]);
         return 64;
