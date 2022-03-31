@@ -2005,6 +2005,11 @@ WinLevel  ( -- )
   game is to find a sequence of inputs that result in the execution of a
   WinLevel instruction, without causing any errors or executing LoseLevel.)
 
+,WinLevel  ( score -- )
+  Same as WinLevel but you can set the score, which is treated as a signed
+  number; lower numbers are considered to be a better score. (Currently,
+  the score is not used by anything.)
+
 XDir  ( dir -- newx )
   Finds the X coordinate of the cell in the specified direction.
 

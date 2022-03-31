@@ -431,6 +431,7 @@
 #define OP_TRIGGERAT 32984
 #define OP_VOLUMEAT 32985
 #define OP_WINLEVEL 32986
+#define OP_WINLEVEL_C 35034
 #define OP_XDIR 32987
 #define OP_XDIR_C 35035
 #define OP_XSTEP 32988
@@ -743,7 +744,7 @@ static const Op_Names op_names[]={
 {"WAHOO",8389400},
 {"WHACK",8389423},
 {"Weight",9142352},
-{"WinLevel",8421594},
+{"WinLevel",8487130},
 {"XDir",8487131},
 {"XStep",8487132},
 {"XYDir",8421597},
