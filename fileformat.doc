@@ -1,0 +1,143 @@
+This document describes the file formats of Free Hero Mesh. (Most users
+will not need this file.)
+
+A Free Hero Mesh puzzle set consists of four files, each with the same
+base name, but with a different suffix to identify its type:
+
+ .xclass     -  Class resource file
+ .class      -  Class definition file
+ .level      -  Level file
+ .solution   -  Solution file
+
+A composite puzzle set is a Hamster archive file consisting of these
+four files as the lumps stored in it.
+
+The below sections are for the lumps of the .xclass, .level, and .solution
+files (which are Hamster archive files).
+
+
+=== level/*.LVL ===
+
+This lump containts the definition of a single level.
+
+The lump name is the level ID number followed by ".LVL".
+
+(TODO)
+
+
+=== level/CLASS.DEF ===
+
+Associates class names and user-defined message names with numbers, which
+are used to refer to them in the other "*.LVL" lumps (all classes and
+user-defined messages used must be listed here, but there may also be
+classes and messages that are used only in the class definition file,
+which is OK). This lump is mandatory.
+
+First is the list of classes. Each one is the small-endian 16-bit class
+number (which must be at least one), followed by the null-terminated class
+name (excluding the $ prefix). This is terminated by a small-endian number
+zero (and no name).
+
+Next is the list of messages. Each one is the small-endian 16-bit message
+number (which must be at least 256), followed by the null-terminated
+message name (excluding the # prefix).
+
+Standard messages are not included in this list.
+
+
+=== level/DIVISION.IDX ===
+
+Contains the list of level divisions. This lump is optional.
+
+Each record consists of a small-endian 16-bit level order number followed
+by the null-terminated title of this division.
+
+
+=== level/LEVEL.IDX ===
+
+Defines the order of the levels. This lump is mandatory.
+
+Consists of a sequence of small-endian 16-bit level ID numbers.
+
+
+=== solution/*.SOL ===
+
+This lump contains the recorded solution for a single level.
+
+The name of this lump is the level ID number followed by ".SOL". The data
+of this lump has the following format:
+
+* Level version number (16-bits small-endian): If this does not match the
+level version number in the .LVL lump, then the solution is considered to
+be invalid.
+
+* Flags (8-bits): Specifies which other fields are present.
+
+* Comment (null-terminated; only present if flag bit0 set): Normally
+contains a user name, but may be any arbitrary text.
+
+* Timestamp (64-bits small-endian; only present if flag bit1 set): The
+UNIX timestamp when the solution was recorded.
+
+* Move list: One byte per turn, being the key codes. (Use of numbers 0-7
+here is reserved for future use; they are not valid key codes.)
+
+(Free Hero Mesh currently ignores the comment and time stamp, although
+this might change in a future version of Free Hero Mesh.)
+
+
+=== xclass/*.DEP ===
+
+A dependent picture (defined by transforming one or more other pictures);
+the part of the name before the dot is the picture name.
+
+It starts with the base picture name (which must be a IMG lump, and cannot
+be another DEP lump). Any byte in range 0 to 31 is not considered to be a
+part of the name and is considered to be the code of the first filter,
+instead. After the base name is zero or more filters.
+
+Each filter starts with one byte indicating the filter type:
+
+* 0 to 7 = Mirror/flip/transpose (zero means no change). No additional
+data for this filter follows (but other filters might follow).
+
+* 8 to 10 = Change colours. Follow by one byte being the number of colours
+listed, and then one byte colour code per colour. The filter code means
+the type of colour changing: 8 means it is a list of pairs, replacing the
+first in each pair with the second; 9 means each one in the list is changed
+to the next one; 10 means pairs where each one is changed to the other one
+in that pair.
+
+* 11 = Overlay. Follow by a picture name (which must be a IMG lump and not
+a DEP lump); it is terminated in the same way as the base name is.
+
+* 12 to 15 = Shift. The filter code is the direction: 12=up, 13=down,
+14=right, 15=left. Follow by a list of pairs of shift amounts. The first
+byte of each pair is the shift amount; the high bit is set if this is the
+last pair. The second byte of each pair is the picture size that the shift
+amount is based on.
+
+
+=== xclass/*.IMG ===
+
+A picture; the part of the name before the dot is the picture name.
+
+(TODO)
+
+
+=== xclass/*.WAV ===
+
+A user-defined sound effect. The part of the lump name before the dot is
+the name used to refer to it in a class definition file; the exclamation
+mark is not included in the lump name.
+
+The format is a RIFF WAVE file.
+
+
+=== xclass/PICEDIT.CFG ===
+
+Stores the default picture sizes when adding new pictures to this puzzle
+set. Consists of one byte per picture size (up to fifteen sizes). If there
+is any null byte, then it and anything after it is ignored (in future, the
+extra data may be used for something; currently, it is meaningless).
+

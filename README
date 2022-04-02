@@ -119,6 +119,9 @@ file has a more elaborate description.
 * export.doc: The level export format is described in this file; it can
 be used for importing as well as exporting.
 
+* fileformat.doc: Documents the file formats. Most users will not need
+this document.
+
 * game.doc: Describes the game play and the controls for the game play.
 
 * man6/heromesh.6: Man page; includes information about command-line

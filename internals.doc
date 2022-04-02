@@ -121,26 +121,3 @@ The control codes for text formatting are:
 Codes 32-255 are displayed as is, but characters 1-31 cannot be displayed
 as a graphic unless a \x escape is present.
 
-
-=== Solution format ===
-
-The .SOL lumps have the following format:
-
-* Level version number (16-bits small-endian): If this does not match the
-level version number in the .LVL lump, then the solution is considered to
-be invalid.
-
-* Flags (8-bits): Specifies which other fields are present.
-
-* Comment (null-terminated; only present if flag bit0 set): Normally
-contains a user name, but may be any arbitrary text.
-
-* Timestamp (64-bits small-endian; only present if flag bit1 set): The
-UNIX timestamp when the solution was recorded.
-
-* Move list: One byte per turn, being the key codes. (Use of numbers 0-7
-here is reserved for future use; they are not valid key codes.)
-
-(Free Hero Mesh currently ignores the comment and time stamp, although
-this might change in a future version of Free Hero Mesh.)
-
