@@ -22,7 +22,72 @@ This lump containts the definition of a single level.
 
 The lump name is the level ID number followed by ".LVL".
 
-(TODO)
+The header is six bytes:
+
+* Level version number (small-endian 16-bits).
+
+* Level code number (small-endian 16-bits).
+
+* Width (one byte): The low 6-bits are one less than the playfield width.
+(The high 2-bits are reserved for future use.)
+
+* Height (one byte): The low 6-bits are one less than the playfield height.
+(The high 2-bits are reserved for future use.)
+
+The null-terminated title follows, and may include formatting codes.
+
+After the title is the objects. Start with X=0 and Y=1 (the coordinates are
+1-based). Each one starts by the flag byte:
+
+* If it is 0xFF then there are no more objects.
+
+* If it is 0xFE then start over from the beginning (X=0 and Y=1), but any
+further objects will be in the bizarro world.
+
+* The bit6, bit5, bit4 are used to determine the coordinates. If bit6 is
+set then advance the X coordinate by 1. If bit5 is set then one byte with
+the X coordinate follows. If bit4 is set then one byte with the Y
+coordinate follows. (Bit4 and bit6 should not both be set.)
+
+* If bit7 is set then it is MRU. In this case, the low 4-bits are the
+run count. There are two MRUs; one of them is stored and retrieved if
+any of bit6/bit5/bit4 are set, and the other is used if none of them are.
+If the run count is nonzero, then that is the number of further objects
+after the first one; each one advances the X coordinate by one (leaving
+off for the next command at that object's location), and they always use
+the MRU for the bit6/bit5/bit4 set instead of clear.
+
+* If bit7 is clear then it is a single non-MRU object (which will be
+stored in the appropriate MRU slot, as mentioned, and will also be
+placed in the level playfield). In this case, bit3 is set if any of
+the Misc1/Misc2/Misc3 are used or clear if they are all zero, and the
+low 3-bits are the Dir variable of this object (0=east).
+
+Objects within a cell should be ordered bottom to top, and otherwise
+should be ordered starting from top left and going right.
+
+A non-MRU object has the following data:
+
+* Class number: Only the low 14-bits are used for the class number. If
+the high bit is set, then it uses the lowest numbered default image for
+this class, otherwise the image number is specified explicitly.
+
+* Image number: One byte; not present if bit15 of the class number is
+set. (Zero is the first image number.)
+
+* If the bit3 of the flag byte is set, then the next byte specifies
+the types of the Misc values. The high two bits specify how many Misc
+values are used; if this is zero, then Misc2 and Misc3 are used but
+Misc1 is not used. The low 2-bits are the type of Misc1, the next are
+type of Misc2, and then type of Misc3. The types are: 0=number, 1=class,
+2=message, 3=string.
+
+* The Misc values follow (according to the Misc type byte); each
+one that exists is a small-endian 16-bit number.
+
+After the objects is zero or more level strings, each of which is
+null-terminated, and may have formatting codes. The first level string
+is numbered zero (for the purpose of referencing by Misc values).
 
 
 === level/CLASS.DEF ===
@@ -122,7 +187,39 @@ amount is based on.
 
 A picture; the part of the name before the dot is the picture name.
 
-(TODO)
+The beginning of this lump data specifies how many variants and their
+formats and sizes, as follows:
+
+* The first byte has the number of variants in the low nybble, and the
+format of the first variant in the high nybble.
+
+* Next is bytes for variants other than the first. The second variant
+has the low nybble, the third variant has the high nybble, etc.
+
+* Next is the sizes (one byte each) for each variant, in order. The
+size can be any number from 1 to 255; the width and height of the
+picture are both this number.
+
+The format numbers are 0 to 7 for compressed format, where the number
+indicates the order of the pixels (horizontally or vertically, up, down,
+left, right). If the format number is 15 then it is uncompressed and
+the pixels are stored in the usual order (starting from top left).
+
+After that is the data for each picture variant.
+
+A compressed picture is stored by the sequence of bytes as follows:
+
+* 0 to 84 = Homogeneous run (2 or more pixels). Follow by one byte being
+the pixel value. If the previous command is also a homogeneous run and
+is the same colour, then the run count is 85 times one more than the first
+byte, otherwise the run count is two plus the first byte.
+
+* 85 to 169 = Heterogeneous run (1 to 85 pixels). Follow by that many
+bytes being the pixel values (palette index).
+
+* 170 to 254 = Copy-above run (1 to 85 pixels). Copies the specified
+number of pixels from the previous scanline. (If this crosses multiple
+scanlines, it continues copying it.)
 
 
 === xclass/*.WAV ===
