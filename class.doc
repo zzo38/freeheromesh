@@ -418,6 +418,11 @@ Connection
   the level (placed in the editor). If () is used, then this class
   is not available in the editor. If there is no (DefaultImage) block,
   all images are available. The (Image) block must come before this one.
+  The list can also contain the token "mod" followed by a positive number;
+  in this case, it will also add any images whose numbers are that many
+  more than the ones already specified and will repeat; for example, if
+  you write "(DefaultImage 1 mod 5)" then images 1, 6, 11, 16, 21, etc
+  are added to the list of default images.
 
 (Density <number>)
   Define the Density variable for this class. If you want the Density to

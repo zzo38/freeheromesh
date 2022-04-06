@@ -1892,6 +1892,11 @@ static void class_def_defaultimage(int cla) {
     } else if(tokent==TF_INT) {
       if(tokenv<0 || tokenv>=cl->nimages) ParseError("Image number out of range\n");
       cl->images[tokenv]|=0x8000;
+    } else if(Tokenf(TF_NAME) && !Tokenf(TF_MACRO) && tokenv==OP_MOD) {
+      nxttok();
+      if(tokent!=TF_INT) ParseError("Expected ( or ) or number\n");
+      if(tokenv<=0) ParseError("Zero or negative modulus is not allowed\n");
+      for(i=0;i<cl->nimages-tokenv;i++) if(cl->images[i]&0x8000) cl->images[i+tokenv]|=0x8000;
     } else {
       ParseError("Expected ( or ) or number\n");
     }
