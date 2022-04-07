@@ -110,6 +110,25 @@ and/or some changes were required.
  it also might not. (However, I think it is unlikely that newer versions
  of SQLite will break it.)
 
+** Which non-core features of JavaScript does it use?
+
+ Only the following non-core features (built-in to Node.js) are used:
+
+ - console.log (to emit a string)
+
+ - require("fs")
+
+ - fs.readFileSync (to read a file as ASCII text)
+
+ (These are in addition to core JavaScript features.) If you are using a
+ different JavaScript runtime program that is not compatible, then I
+ might be able to add a check for it to use its functions if needed.)
+
+ Note that JavaScript is only used during compiling; no JavaScript code
+ is used at run time. Furthermore, the output of those programs is included
+ in the repository, and running the JavaScript programs will only be needed
+ if you wish to modify Free Hero Mesh.
+
 
 === Errors (other than compile errors) ===
 
@@ -221,6 +240,11 @@ number of words will ever substitute for an image.
 
  You are probably correct. Once suitable screenshots are available, I can
  do this, and also add other information if needed.
+
+ A non-Fossil web page for Free Hero Mesh is now available (but as of this
+ writing, it is incomplete):
+
+   http://zzo38computer.org/freeheromesh/
 
 
 === Miscellaneous ===
