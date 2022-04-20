@@ -89,7 +89,8 @@ See bindings.doc for key/mouse bindings.
   delay and then the key repeating interval.
 
 .level
-  Specifies the 1-based order number of the level to start at.
+  Specifies the 1-based order number of the level to start at. If the -+
+  switch is specified, then it is a 0-based ID number instead.
 
 .listColumns
   Number of columns in the wide mode of the list of levels. If zero or not

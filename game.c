@@ -1464,6 +1464,10 @@ void run_auto_test(void) {
   t=xrm_get_resource(resourcedb,optionquery,optionquery,2);
   pro=t?strtol(t,0,10):0;
   if(main_options['t']) pro=0;
+  if(main_options['+']) {
+    lvl=1;
+    goto start2;
+  }
   optionquery[1]=Q_level;
   t=xrm_get_resource(resourcedb,optionquery,optionquery,2);
   if(n=lvl=t?strtol(t,0,10):0) goto start;
@@ -1476,6 +1480,7 @@ void run_auto_test(void) {
       printf(": Error during loading: %s\n",t);
       rc=1; continue;
     }
+    start2:
     load_replay();
     if(!replay_count) {
       printf(": Solution is absent, invalid, or for wrong version of this level\n");

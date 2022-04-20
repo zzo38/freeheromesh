@@ -1133,7 +1133,10 @@ int main(int argc,char**argv) {
   set_tracing();
   annihilate();
   optionquery[1]=Q_level;
-  if(level_ord=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,10)) {
+  if(main_options['+']) {
+    level_id=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,10);
+    if(log_if_error(load_level(level_id))) fatal("Cannot load level with specified ID\n");
+  } else if(level_ord=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,10)) {
     if(level_ord>level_nindex) level_ord=level_nindex;
     log_if_error(load_level(-level_ord));
   }
