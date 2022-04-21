@@ -3699,7 +3699,7 @@ const char*execute_turn(int key) {
 }
 
 const char*init_level(void) {
-  Uint32 n;
+  Uint32 n,m;
   if(setjmp(my_env)) return my_error;
   clear_inventory();
   if(main_options['t']) {
@@ -3734,8 +3734,9 @@ const char*init_level(void) {
   n=lastobj;
   while(n!=VOIDLINK && !(objects[n]->oflags&OF_ORDERED)) {
     send_message(VOIDLINK,n,MSG_INIT,NVALUE(0),NVALUE(0),NVALUE(0));
+    m=objects[n]->prev;
     if(classes[objects[n]->class]->order && !(objects[n]->oflags&OF_DESTROYED)) set_order(n);
-    n=objects[n]->prev;
+    n=m;
   }
   broadcast(VOIDLINK,0,MSG_POSTINIT,NVALUE(0),NVALUE(0),NVALUE(0),0);
   if(gameover) return 0;
