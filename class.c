@@ -2176,7 +2176,7 @@ static void parse_order_block(void) {
   // 0x1000...0x10FF = Have flag
   // OP_RET = end of block
   Uint16 beg,ptr;
-  ParseError("(Not implemented yet)\n"); //TODO: remove this when it is implemented properly in exec.c too
+  if(!main_options['U']) ParseError("(Not implemented yet)\n"); //TODO: remove this when it is implemented properly in exec.c too
   orders=malloc(0x4000*sizeof(Uint16));
   if(!orders) fatal("Allocation failed\n");
   nxttok();
