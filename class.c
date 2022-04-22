@@ -2176,7 +2176,7 @@ static void parse_order_block(void) {
   // 0x1000...0x10FF = Have flag
   // OP_RET = end of block
   Uint16 beg,ptr;
-  if(!main_options['U']) ParseError("(Not implemented yet)\n"); //TODO: remove this when it is implemented properly in exec.c too
+  if(!main_options['U']) ParseError("Experimental/unstable feature\n"); //TODO: remove this when it is implemented properly in exec.c too
   orders=malloc(0x4000*sizeof(Uint16));
   if(!orders) fatal("Allocation failed\n");
   nxttok();
@@ -2205,8 +2205,7 @@ static void parse_order_block(void) {
         break;
       default: ParseError("Unexpected token in (Order) block\n");
     }
-    nxttok();
-    while(tokent!=TF_CLOSE) {
+    while(nxttok(),tokent!=TF_CLOSE) {
       if(Tokenf(TF_MACRO|TF_EQUAL) || !Tokenf(TF_NAME)) ParseError("Unexpected token in (Order) block\n");
       if(ptr>=0x3FFE) ParseError("Out of order memory\n");
       switch(tokenv) {
@@ -2226,13 +2225,12 @@ static void parse_order_block(void) {
           break;
         default: ParseError("Unexpected token in (Order) block\n");
       }
-      nxttok();
     }
     orders[ptr++]=OP_RET;
+    nxttok();
   }
   if(!norders) ParseError("Empty (Order) block\n");
   orders=realloc(orders,ptr*sizeof(Uint16))?:orders;
-  nxttok();
 }
 
 static void set_class_orders(void) {
