@@ -3095,6 +3095,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_QO: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t>TY_MAXTYPE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_QOZ: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t>TY_MAXTYPE || (t1.t==TY_NUMBER && !t1.u)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_QS: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t==TY_STRING || t1.t==TY_LEVELSTRING) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_QUEEN: StackReq(0,1); Numeric(msgvars.arg1); i="\x06\x01\x07\x05\x03\x04\x02\x00"[msgvars.arg1.u&7]; Push(NVALUE(i)); break;
     case OP_REL: StackReq(1,1); t1=Pop(); Numeric(t1); i=resolve_dir(obj,t1.u); Push(NVALUE(i)); break;
     case OP_REL_C: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); i=v_object(t1); i=(i==VOIDLINK?t2.u:resolve_dir(i,t2.u)); Push(NVALUE(i)); break;
     case OP_RET: return;

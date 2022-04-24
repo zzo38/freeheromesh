@@ -1952,6 +1952,18 @@ static void set_super_class(Class*cl,int ptr) {
   }
 }
 
+static int make_dispatch_block(int cla,Class*cl,int ptr) {
+  int i;
+  cl->codes=realloc(cl->codes,0x10000*sizeof(Uint16));
+  if(!cl->codes) fatal("Allocation failed\n");
+  if(get_message_ptr(cla,MSG_KEY)!=0xFFFF) ParseError("Class $%s has a KEY message already\n",cl->name);
+  if(ptr>0xFDFE) ParseError("Out of code space\n");
+  set_message_ptr(cla,MSG_KEY,ptr);
+  cl->codes[ptr]=OP_DISPATCH;
+  for(i=1;i<257;i++) cl->codes[ptr+i]=0;
+  return ptr+257;
+}
+
 static void class_definition(int cla,sqlite3_stmt*vst) {
   Hash*hash=calloc(LOCAL_HASH_SIZE,sizeof(Hash));
   Class*cl=classes[cla];
@@ -1976,17 +1988,7 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
     } else if(Tokenf(TF_OPEN)) {
       nxttok();
       if(Tokenf(TF_KEY)) {
-        if(!disp) {
-          cl->codes=realloc(cl->codes,0x10000*sizeof(Uint16));
-          if(!cl->codes) fatal("Allocation failed\n");
-          if(get_message_ptr(cla,MSG_KEY)!=0xFFFF) ParseError("Class $%s has a KEY message already\n",cl->name);
-          if(ptr>0xFDFE) ParseError("Out of code space\n");
-          disp=1;
-          set_message_ptr(cla,MSG_KEY,ptr);
-          cl->codes[ptr]=OP_DISPATCH;
-          for(i=1;i<257;i++) cl->codes[ptr+i]=0;
-          ptr+=257;
-        }
+        if(!disp) disp=1,ptr=make_dispatch_block(cla,cl,ptr);
         i=tokenv&255;
         cl->codes[cl->messages[MSG_KEY]+i]=ptr;
         if(cl->cflags&CF_INPUT) {
@@ -2074,9 +2076,39 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
             if(i&~255) ParseError("CollisionLayers out of range\n");
             break;
           case OP_OTHERS:
-            if(!disp) ParseError("Others block without key dispatch block\n");
+            if(!disp) disp=1,ptr=make_dispatch_block(cla,cl,ptr);
             if(!(cl->cflags&CF_INPUT)) ParseError("Others block without Input flag\n");
             cl->codes[cl->messages[MSG_KEY]+256]=ptr;
+            ptr=parse_instructions(cla,ptr,hash,compat);
+            break;
+          case OP_ROOK:
+            if(!disp) disp=1,ptr=make_dispatch_block(cla,cl,ptr);
+            if(ptr>=0xFFED) ParseError("Out of code space\n");
+            for(i=37;i<=40;i++) {
+              cl->codes[cl->messages[MSG_KEY]+i]=ptr;
+              if(cl->cflags&CF_INPUT) keymask[i>>3]|=1<<(i&7);
+            }
+            cl->codes[ptr++]=OP_QUEEN;
+            ptr=parse_instructions(cla,ptr,hash,compat);
+            break;
+          case OP_BISHOP:
+            if(!disp) disp=1,ptr=make_dispatch_block(cla,cl,ptr);
+            if(ptr>=0xFFED) ParseError("Out of code space\n");
+            for(i=33;i<=36;i++) {
+              cl->codes[cl->messages[MSG_KEY]+i]=ptr;
+              if(cl->cflags&CF_INPUT) keymask[i>>3]|=1<<(i&7);
+            }
+            cl->codes[ptr++]=OP_QUEEN;
+            ptr=parse_instructions(cla,ptr,hash,compat);
+            break;
+          case OP_QUEEN:
+            if(!disp) disp=1,ptr=make_dispatch_block(cla,cl,ptr);
+            if(ptr>=0xFFED) ParseError("Out of code space\n");
+            for(i=33;i<=40;i++) {
+              cl->codes[cl->messages[MSG_KEY]+i]=ptr;
+              if(cl->cflags&CF_INPUT) keymask[i>>3]|=1<<(i&7);
+            }
+            cl->codes[ptr++]=OP_QUEEN;
             ptr=parse_instructions(cla,ptr,hash,compat);
             break;
           case 0x0200 ... 0x02FF:

@@ -386,6 +386,11 @@ Abstract
   of five numbers each, making a 5x5 matrix, where the centre means this
   object's location.
 
+(Bishop <code...>)
+  Same as four key dispatch blocks: 'PGUP, 'PGDN, 'HOME, and 'END; the
+  corresponding direction will be pushed to the stack before the code
+  will be executed.
+
 Bizarro
   Means that objects of this class created using the Create instruction
   will be created in the bizarro world by default. (This has no effect on
@@ -488,20 +493,26 @@ Invisible
   Define the Misc7 variable for this class; see Misc4 above for details.
 
 (Others <code...>)
-  This block must be preceded by another key dispatch block (although not
-  necessarily directly preceded), and it is only allowed in classes with
-  the Input flag. If no key dispatch block matches and it is not a key
-  which is implicitly ignored, and Arg3 is both zero, then it will execute
-  this block instead.
+  This block is only allowed in classes with the Input flag. If no key
+  dispatch block matches and it is not a key which is implicitly ignored,
+  and Arg3 is both zero, then it will execute this block instead.
 
 Player
   Set the Player flag for this class.
+
+(Queen <code...>)
+  Combines the effects of the (Rook) and (Queen) blocks.
 
 Quiz
   If specified, the internal variables of objects of this class cannot
   normally be examined by the player. However, the player can override
   this definition at run time; you cannot rely on it. Class codes cannot
   read the value of this flag.
+
+(Rook <code...>)
+  Same as four key dispatch blocks: 'UP, 'LEFT, 'DOWN, and 'RIGHT; the
+  corresponding direction will be pushed to the stack before the code
+  will be executed.
 
 (Shape <number>)
   Define the shape of this object on all four sides, where 0 means flat,
