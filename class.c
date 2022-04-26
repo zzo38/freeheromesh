@@ -2199,6 +2199,7 @@ static void load_class_numbers(void) {
     if(messages[n]) fatal("Duplicate message number %d\n",n+256);
     messages[n]=strdup(p);
     if(!messages[n]) fatal("Allocation failed\n");
+    if(n>=undef_message) undef_message=n+1;
   }
   free(data);
 }
