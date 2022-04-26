@@ -2015,6 +2015,17 @@ uniq  ( mark ... value -- mark ... value true | mark ... false )
 VolumeAt  ( x y -- volume )
   Finds the greatest volume among objects at the specified location.
 
+Walkable  ( x y -- bool )
+  Tells if the current object could walk on the specified coordinates,
+  according to Height, Climb, and CollisionLayers. This object is not
+  counted, even if it is at the specified coordinates. Shoving, hit bits,
+  Volume, etc are not checked.
+
+,Walkable  ( obj x y -- bool )
+  Similar to Walkable but for a specified object instead of this one. You
+  may also specify a class, in which case it uses the default values of
+  that class instead of the current values of an object.
+
 WinLevel  ( -- )
   Ends all execution and accepts the input sequence that resulted in the
   current game state as a valid solution. (In other words, the goal of the

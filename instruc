@@ -289,6 +289,7 @@ Trace
 Trigger
 TriggerAt
 VolumeAt
+,Walkable
 ,WinLevel
 ,XDir
 ,XStep

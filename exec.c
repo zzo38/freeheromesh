@@ -2742,6 +2742,49 @@ static Value v_find_connection(Uint32 xobj,Uint32 lnk,Uint32 obj,Uint16*code) {
   return v;
 }
 
+static Uint32 v_walkable(Uint32 obj,Uint32 x,Uint32 y) {
+  Uint32 r=0;
+  Object*o;
+  Uint32 n;
+  Uint8 lay;
+  if(obj==VOIDLINK) return 0;
+  o=objects[obj];
+  if(o->oflags&OF_DESTROYED) return 0;
+  lay=classes[o->class]->collisionLayers;
+  if(x<1 || x>pfwidth || y<1 || y>pfheight) return 0;
+  n=playfield[x+y*64-65];
+  while(n!=VOIDLINK) {
+    if(n!=obj) {
+      if(lay&classes[objects[n]->class]->collisionLayers) return 0;
+      if(!(objects[n]->oflags&(OF_VISUALONLY|OF_DESTROYED))) {
+        if(o->climb<objects[n]->height) return 0;
+        r=1;
+      }
+    }
+    n=objects[n]->up;
+  }
+  return r;
+}
+
+static Uint32 v_walkable_c(Uint32 c,Uint32 x,Uint32 y) {
+  Class*cl=classes[c];
+  Uint32 r=0;
+  Uint8 lay=cl->collisionLayers;
+  Uint32 n;
+  if(cl->cflags&CF_NOCLASS2) Throw("Invalid class number");
+  if(x<1 || x>pfwidth || y<1 || y>pfheight) return 0;
+  n=playfield[x+y*64-65];
+  while(n!=VOIDLINK) {
+    if(lay&classes[objects[n]->class]->collisionLayers) return 0;
+    if(!(objects[n]->oflags&(OF_VISUALONLY|OF_DESTROYED))) {
+      if(cl->climb<objects[n]->height) return 0;
+      r=1;
+    }
+    n=objects[n]->up;
+  }
+  return r;
+}
+
 // Here is where the execution of a Free Hero Mesh bytecode subroutine is executed.
 #define NoIgnore() do{ changed=1; }while(0)
 #define GetVariableOf(a,b) (i=v_object(Pop()),i==VOIDLINK?NVALUE(0):b(objects[i]->a))
@@ -3187,6 +3230,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_VOLUME_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->volume=t1.u; break;
     case OP_VOLUME_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->volume=t1.u&0xFFFF; break;
     case OP_VOLUMEAT: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(volume_at(t1.u,t2.u))); break;
+    case OP_WALKABLE: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); i=v_walkable(obj,t1.u,t2.u); Push(NVALUE(i)); break;
+    case OP_WALKABLE_C: StackReq(3,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); t3=Pop(); i=(t3.t==TY_CLASS?v_walkable_c(t3.u,t1.u,t2.u):v_walkable(v_object(t3),t1.u,t2.u)); Push(NVALUE(i)); break;
     case OP_WEIGHT: StackReq(0,1); Push(NVALUE(o->weight)); break;
     case OP_WEIGHT_C: StackReq(1,1); Push(GetVariableOrAttributeOf(weight,NVALUE)); break;
     case OP_WEIGHT_E: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->weight=t1.u; break;
