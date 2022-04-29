@@ -1298,12 +1298,12 @@ static inline Sint16 ll_string(const unsigned char*str,const unsigned char*title
         pp=pt=ll_find(pt,30);
         if(!pt) goto notfound;
         for(i=0;ps[i];i++) {
-          if(ps[i]==':' || ps[i]==';' || ps[i]=='\\') break;
           if(ps[i]!=pt[i+1] && ps[i]!='?') {
             if(!pt[i]) goto notfound;
             pt+=i?:1;
             goto re;
           }
+          if(ps[i]==':' || ps[i]==';' || ps[i]=='\\') break;
         }
         ps+=i+1;
         pt+=i+2;
