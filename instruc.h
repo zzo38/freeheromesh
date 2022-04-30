@@ -454,9 +454,12 @@
 #define OP_UNIQ 33001
 #define OP_ARRAY 33002
 #define OP_GETARRAY 33003
+#define OP_GETARRAY_C 35051
 #define OP_INITARRAY 33004
 #define OP_SETARRAY 33005
+#define OP_SETARRAY_C 35053
 #define OP_ARRAYCELL 33006
+#define OP_ARRAYCELL_C 35054
 #define OP_ARRAYSLICE 33007
 #define OP_COPYARRAY 33008
 #define OP_DOTPRODUCT 33009
@@ -509,7 +512,7 @@ static const Op_Names op_names[]={
 {"Arg2",8552577},
 {"Arg3",8552578},
 {"Array",8683754},
-{"ArrayCell",8421614},
+{"ArrayCell",8487150},
 {"ArraySlice",8421615},
 {"Arrivals",8618092},
 {"Arrived",8618090},
@@ -598,7 +601,7 @@ static const Op_Names op_names[]={
 {"From",8421503},
 {"GLASS",8389379},
 {"GLISSANT",8389419},
-{"GetArray",8421611},
+{"GetArray",8487147},
 {"GetInventory",8421549},
 {"HAWK",8389425},
 {"HEARTBEAT",8389407},
@@ -709,7 +712,7 @@ static const Op_Names op_names[]={
 {"Self",8421501},
 {"Send",10584269},
 {"SendEx",10584270},
-{"SetArray",8421613},
+{"SetArray",8487149},
 {"SetInventory",8421583},
 {"Shape",8618051},
 {"ShapeDir",8618074},

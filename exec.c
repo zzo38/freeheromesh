@@ -2857,6 +2857,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_ARG3: StackReq(0,1); Push(msgvars.arg3); break;
     case OP_ARG3_E: StackReq(1,0); msgvars.arg3=Pop(); break;
     case OP_ARRAYCELL: StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Push(v_array_cell(t1,t2.u,t3.u)); break;
+    case OP_ARRAYCELL_C: StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Push(v_array_cell(t1,t2.u-1,t3.u-1)); break;
     case OP_ARRAYSLICE: StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Push(v_array_slice(t1,t2.u,t3.u)); break;
     case OP_ARRIVALS: StackReq(0,1); Push(NVALUE(o->arrivals&0x1FFFFFF)); break;
     case OP_ARRIVALS_C: StackReq(1,1); Push(GetVariableOrAttributeOf(arrivals&0x1FFFFFF,NVALUE)); break;
@@ -2987,6 +2988,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_GE: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t2,t1)?0:1)); break;
     case OP_GE_C: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_signed_greater(t2,t1)?0:1)); break;
     case OP_GETARRAY: StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Push(v_get_array(t1,t2.u,t3.u)); break;
+    case OP_GETARRAY_C: StackReq(3,1); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); Push(v_get_array(t1,t2.u-1,t3.u-1)); break;
     case OP_GETINVENTORY: StackReq(2,2); t2=Pop(); t1=Pop(); v_get_inventory(t1,t2); break;
     case OP_GOTO: ptr=code[ptr]; break;
     case OP_GT: StackReq(2,1); t2=Pop(); t1=Pop(); Push(NVALUE(v_unsigned_greater(t1,t2)?1:0)); break;
@@ -3158,6 +3160,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_SENDEX_D: StackReq(4,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); v_send_self(obj,t2,t3,t4,t5); break;
     case OP_SENDEX_CD: StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_send_message(obj,t1,t2,t3,t4,t5); break;
     case OP_SETARRAY: NoIgnore(); StackReq(4,0); t4=Pop(); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); v_set_array(t1,t2.u,t3.u,t4); break;
+    case OP_SETARRAY_C: NoIgnore(); StackReq(4,0); t4=Pop(); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); t1=Pop(); v_set_array(t1,t2.u-1,t3.u-1,t4); break;
     case OP_SETINVENTORY: StackReq(3,0); t3=Pop(); t2=Pop(); t1=Pop(); v_set_inventory(t1,t2,t3); break;
     case OP_SHAPE: StackReq(0,1); Push(NVALUE(o->shape)); break;
     case OP_SHAPE_C: StackReq(1,1); Push(GetVariableOrAttributeOf(shape,NVALUE)); break;

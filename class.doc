@@ -1270,6 +1270,9 @@ ArrayCell  ( array row column -- array )
   treated as a reference to a 1x1 array, which aliases the original array.
   Coordinates are zero-based.
 
+,ArrayCell  ( array row column -- array )
+  Same as ArrayCell but using 1-based coordinates instead.
+
 ArraySlice  ( array start count -- array )
   Make a slice of an array. The new reference aliases the original array.
   Coordinates are zero-based.
@@ -1533,6 +1536,9 @@ ge  ( in1 in2 -- bool )
 
 GetArray  ( array row column -- value )
   Read a value from an array. Coordinates are zero-based.
+
+,GetArray  ( array row column -- value )
+  Same as GetArray but using 1-based coordinates instead.
 
 GetInventory  ( class image -- value true | false )
   Read from the inventory, with true if it exists or false if not.
@@ -1919,6 +1925,9 @@ SendEx  ( message arg1 arg2 -- value )
 
 SetArray  ( array row column value -- ) **
   Write a value to an array. Coordinates are zero-based.
+
+,SetArray  ( array row column value -- ) **
+  Same as SetArray but using 1-based coordinates instead.
 
 SetInventory  ( class image value -- ) **
   Sets an inventory item with the specified class and image number to the

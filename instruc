@@ -310,10 +310,10 @@ uniq
 
 ; Arrays
 -Array
-GetArray
+,GetArray
 InitArray
-SetArray
-ArrayCell
+,SetArray
+,ArrayCell
 ArraySlice
 CopyArray
 DotProduct
