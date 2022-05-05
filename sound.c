@@ -193,6 +193,11 @@ static void load_sound_set(int is_user) {
     i--;
     j=fgetc(fp)<<16; j|=fgetc(fp)<<24; j|=fgetc(fp)<<0; j|=fgetc(fp)<<8;
     l_offset=ftell(fp); l_size=j;
+    if(i>4 && nam[i-4]=='.') {
+      if(nam[i-3]>='a') nam[i-3]+='A'-'a';
+      if(nam[i-2]>='a') nam[i-2]+='A'-'a';
+      if(nam[i-1]>='a') nam[i-1]+='A'-'a';
+    }
     if(i>4 && nam[i-4]=='.' && nam[i-3]=='W' && nam[i-1]=='V' && (nam[i-2]=='A' || nam[i-2]=='Z')) {
       j=nam[i-2];
       nam[i-4]=0;
