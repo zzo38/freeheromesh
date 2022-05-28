@@ -109,6 +109,7 @@
 ?.gameKey.ctrl.E: ^E
 ?.gameKey.ctrl.I: select 'mi',:import_move_list;
 ?.gameKey.ctrl.L: ^L
+?.gameKey.ctrl.R: select 'go',id from levels order by random() limit 1;
 ?.gameKey.ctrl.X: select 'mx',:export_move_list;
 ?.gameClick.right: ^o
 ?.gameClick.shift.right: ^n
@@ -132,6 +133,7 @@
 ?.gameKey.tab: ^I
 ?.gameKey.alt.G: ^g
 ?.gameKey.alt.P: ^p
+?.gameKey.alt.R: select 'go',id from levels where not solved order by random() limit 1;
 ?.gameKey.alt.X: ^x
 ?.gameKey.alt.leftbracket: select 'rs',-5;
 ?.gameKey.alt.rightbracket: select 'rs',+5;

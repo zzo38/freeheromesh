@@ -140,6 +140,7 @@ Keyboard:
   CTRL+I      Import move list
   CTRL+L      List of levels
   CTRL+Q      Quit
+  CTRL+R      Select a level at random
   CTRL+S      Save solution
   CTRL+T      Display level title
   CTRL+X      Export move list
@@ -170,6 +171,7 @@ Keyboard:
   SHIFT+KP -  First level
   ALT+G       Inspect globals
   ALT+P       Begin slow replay
+  ALT+R       Select a unsolved level at random
   ALT+[       Increase slow replay speed
   ALT+]       Decrease slow replay speed
   INS         Toggle insertion mode
