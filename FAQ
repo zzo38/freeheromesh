@@ -281,6 +281,11 @@ number of words will ever substitute for an image.
  com.hamsterrepublic.lumped
  public.data
 
+ The unordered labels file format identification for a Free Hero Mesh
+ composite puzzle set is:
+
+ hamarc:freeheromesh.composite
+
 ** What's the X resource manager code for? Clipboard access?
 
  The user configuration settings are in X resource manager format.
