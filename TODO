@@ -16,6 +16,9 @@
   * Batch insert multiple dependent image lumps
 * Puzzle set catalog format (using with internet; a separate program)
 * Inventory/replay hybrid view
+* Scrollable playfield view
+  * Auto scroll option (using Player flag)
+  * Manual scroll option
 * Bookmarks
 * Message trace menu to enable/disable
 * Bugs
