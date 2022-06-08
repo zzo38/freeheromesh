@@ -108,6 +108,7 @@
 ?.gameKey.ctrl.D: select '^d',$key_xy;
 ?.gameKey.ctrl.E: ^E
 ?.gameKey.ctrl.I: select 'mi',:import_move_list;
+?.gameKey.ctrl.K: with a(x,y,z) as (select count() filter (where solved),count() filter (where solved or solvable),count() from levels) select ':m',x||'/'||y||' ('||(100*x/y)||'%)'||iif(z-y,' + '||(z-y),'') from a;
 ?.gameKey.ctrl.L: ^L
 ?.gameKey.ctrl.R: select 'go',id from levels order by random() limit 1;
 ?.gameKey.ctrl.X: select 'mx',:export_move_list;
