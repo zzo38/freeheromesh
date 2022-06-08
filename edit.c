@@ -904,10 +904,10 @@ static char*import_numbers(char*p,int*x,int*y) {
 }
 
 static char*import_value(char*p,Value*v) {
-  int i;
-  int n=strcspn(p," \t");
+  int i,n;
   if(!p) return 0;
   while(*p==' ' || *p=='\t') p++;
+  n=strcspn(p," \t");
   if(*p>='0' && *p<='9') {
     v->t=TY_NUMBER;
     v->u=strtol(p,&p,10)&0xFFFF;
@@ -1078,6 +1078,19 @@ static void import_level(const char*cmd) {
         annihilate();
         pfwidth=x;
         pfheight=y;
+        break;
+      case 'F':
+        if(!d) goto missd;
+        v.t=0;
+        p=import_value(p+1,&v);
+        if(v.t!=TY_CLASS) goto bad;
+        for(y=1;y<=pfheight;y++) for(x=1;x<=pfwidth;x++) {
+          v.t=objalloc(v.u);
+          if(v.t==VOIDLINK) goto bad;
+          objects[v.t]->x=x;
+          objects[v.t]->y=y;
+          pflink(v.t);
+        }
         break;
       case 'V':
         p=import_numbers(p+1,&x,0);

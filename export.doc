@@ -36,6 +36,12 @@ D width height
   The play field dimensions. The width and height must be 1 to 64. This
   line must come before any objects are listed, and is mandatory.
 
+F $class
+  This command never occurs in levels exported from Free Hero Mesh,
+  although it can optionally occur in imported levels. This command fills
+  the entire playfield with the specified class; the image number and
+  other parameters are always zero.
+
 V version
   This command never occurs in levels exported from Free Hero Mesh,
   although it can optionally occur in imported levels. If it is specified,
