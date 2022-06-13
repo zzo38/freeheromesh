@@ -641,9 +641,9 @@ static void init_usercache(void) {
   if(z=sqlite3_prepare_v2(userdb,"SELECT `ID`, `TIME` FROM `USERCACHEINDEX` WHERE `NAME` = ?1;",-1,&st,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   nam1=sqlite3_mprintf("%s.level",basefilename);
   if(!nam1) fatal("Allocation failed\n");
-  nam2=main_options['n']?strdup(nam1):realpath(nam1,0);
+  nam2=realpath(nam1,0);
   if(!nam2) fatal("Cannot find real path of '%s': %m\n",nam1);
-  levelfp=fopen(nam2,main_options['n']?"w+x":main_options['r']?"r":"r+");
+  levelfp=fopen(nam2,main_options['r']?"r":"r+");
   if(!levelfp) fatal("Cannot open '%s' for reading%s: %m\n",nam2,main_options['r']?"":"/writing");
   sqlite3_free(nam1);
   sqlite3_bind_text(st,1,nam2,-1,0);
@@ -657,13 +657,12 @@ static void init_usercache(void) {
     fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   }
   sqlite3_reset(st);
-  if(main_options['n']) write_empty_level_set(levelfp);
   nam1=sqlite3_mprintf("%s.solution",basefilename);
   if(!nam1) fatal("Allocation failed\n");
-  nam3=main_options['n']?strdup(nam1):realpath(nam1,0);
+  nam3=realpath(nam1,0);
   if(!nam3) fatal("Cannot find real path of '%s': %m\n",nam1);
   if(!strcmp(nam2,nam3)) fatal("Level and solution files seem to be the same file\n");
-  solutionfp=fopen(nam3,main_options['n']?"w+x":main_options['r']?"r":"r+");
+  solutionfp=fopen(nam3,main_options['r']?"r":"r+");
   if(!solutionfp) fatal("Cannot open '%s' for reading%s: %m\n",nam3,main_options['r']?"":"/writing");
   sqlite3_free(nam1);
   sqlite3_bind_text(st,1,nam3,-1,0);
@@ -690,6 +689,22 @@ static void init_usercache(void) {
   }
   if(z=sqlite3_exec(userdb,"COMMIT;",0,0,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   fprintf(stderr,"Done\n");
+}
+
+static void new_puzzle_set(void) {
+  char*nam1;
+  char*nam2;
+  nam1=sqlite3_mprintf("%s.level",basefilename);
+  if(!nam1) fatal("Allocation failed\n");
+  levelfp=fopen(nam1,"w+x");
+  if(!levelfp) fatal("Cannot open '%s' for reading/writing: %m\n",nam1);
+  write_empty_level_set(levelfp);
+  nam2=sqlite3_mprintf("%s.solution",basefilename);
+  if(!nam2) fatal("Allocation failed\n");
+  solutionfp=fopen(nam2,"w+x");
+  if(!solutionfp) fatal("Cannot open '%s' for reading/writing: %m\n",nam2);
+  fclose(levelfp);
+  fclose(solutionfp);
 }
 
 static void init_sql(void) {
@@ -1122,8 +1137,11 @@ int main(int argc,char**argv) {
     test_mode();
     return 0;
   }
+  if(main_options['n']) {
+    new_puzzle_set();
+    return 0;
+  }
   if(!main_options['z']) init_usercache();
-  if(main_options['n']) return 0;
   if(screen) init_sound();
   load_classes();
   load_key_bindings();
