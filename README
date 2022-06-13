@@ -161,6 +161,12 @@ only needed for code pages other than 437.
 * default.heromeshrc: An example configuration file which you can customize
 for your own use. You should at least set the proper paths to the files.
 
+* hash.c and hash.h: A library for cryptographic hash calculation. This is
+compiled into Free Hero Mesh, but as of this writing is not used. It can
+also be used in other programs independently fo Free Hero Mesh. (Note that
+some algorithms it implements are considered to be insecure, but are
+included for compatibility with formats/protocols that use them.)
+
 * imgtofhm.c: Converts pictures into the Free Hero Mesh format. The command
 line arguments are: the maximum number of pictures, the lump name prefix,
 and then the transparency colour (in hex format) (optional). It receives

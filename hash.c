@@ -9,6 +9,7 @@ exit
 */
 
 #define _GNU_SOURCE
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -636,12 +637,106 @@ static unsigned char *SHA3Final(SHA3Context *p){
   return &p->u.x[p->nRate];
 }
 
+// ######## MD5
+
+typedef struct {
+  uint8_t chunk[64];
+  uint64_t len;
+  uint32_t a,b,c,d;
+} MD5Context;
+
+static void md5_init(MD5Context*v) {
+  v->len=0;
+  v->a=0x67452301;
+  v->b=0xEFCDAB89;
+  v->c=0x98BADCFE;
+  v->d=0x10325476;
+}
+
+static void md5_step(MD5Context*v) {
+  static const uint8_t s[64]={
+    7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,
+    5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,
+    4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,
+    6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21,
+  };
+  static const uint32_t k[64]={
+    0xD76AA478, 0xE8C7B756, 0x242070DB, 0xC1BDCEEE,
+    0xF57C0FAF, 0x4787C62A, 0xA8304613, 0xFD469501,
+    0x698098D8, 0x8B44F7AF, 0xFFFF5BB1, 0x895CD7BE,
+    0x6B901122, 0xFD987193, 0xA679438E, 0x49B40821,
+    0xF61E2562, 0xC040B340, 0x265E5A51, 0xE9B6C7AA,
+    0xD62F105D, 0x02441453, 0xD8A1E681, 0xE7D3FBC8,
+    0x21E1CDE6, 0xC33707D6, 0xF4D50D87, 0x455A14ED,
+    0xA9E3E905, 0xFCEFA3F8, 0x676F02D9, 0x8D2A4C8A,
+    0xFFFA3942, 0x8771F681, 0x6D9D6122, 0xFDE5380C,
+    0xA4BEEA44, 0x4BDECFA9, 0xF6BB4B60, 0xBEBFBC70,
+    0x289B7EC6, 0xEAA127FA, 0xD4EF3085, 0x04881D05,
+    0xD9D4D039, 0xE6DB99E5, 0x1FA27CF8, 0xC4AC5665,
+    0xF4292244, 0x432AFF97, 0xAB9423A7, 0xFC93A039,
+    0x655B59C3, 0x8F0CCC92, 0xFFEFF47D, 0x85845DD1,
+    0x6FA87E4F, 0xFE2CE6E0, 0xA3014314, 0x4E0811A1,
+    0xF7537E82, 0xBD3AF235, 0x2AD7D2BB, 0xEB86D391,
+  };
+  static const uint8_t g[64]={
+    0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60,
+    4, 24, 44, 0, 20, 40, 60, 16, 36, 56, 12, 32, 52, 8, 28, 48,
+    20, 32, 44, 56, 4, 16, 28, 40, 52, 0, 12, 24, 36, 48, 60, 8,
+    0, 28, 56, 20, 48, 12, 40, 4, 32, 60, 24, 52, 16, 44, 8, 36,
+  };
+  uint32_t a,b,c,d,f,i;
+  a=v->a; b=v->b; c=v->c; d=v->d;
+  for(i=0;i<64;i++) {
+    switch(i&0x30) {
+      case 0x00: f=(b&c)|(d&~b); break;
+      case 0x10: f=(b&d)|(c&~d); break;
+      case 0x20: f=b^c^d; break;
+      case 0x30: f=c^(b|~d); break;
+    }
+    f+=a+k[i]+v->chunk[g[i]]+(v->chunk[g[i]+1]<<8)+(v->chunk[g[i]+2]<<16)+(v->chunk[g[i]+3]<<24);
+    a=d; d=c; c=b;
+    b+=(f<<s[i])|(f>>(32-s[i]));
+  }
+  v->a+=a; v->b+=b; v->c+=c; v->d+=d;
+}
+
+static void md5_write(MD5Context*v,const char*buf,size_t len) {
+  size_t n=len;
+  size_t i;
+  while(n) {
+    i=n; if(i>64-(v->len&63)) i=64-(v->len&63);
+    memcpy(v->chunk+(v->len&63),buf,i);
+    buf+=i; v->len+=i; n-=i;
+    if(!(v->len&63)) md5_step(v);
+  }
+}
+
+static void md5_finish(MD5Context*v,unsigned char*o) {
+  uint64_t n=v->len*8;
+  uint8_t buf[8];
+  buf[0]=n>>000; buf[1]=n>>010; buf[2]=n>>020; buf[3]=n>>030;
+  buf[4]=n>>040; buf[5]=n>>050; buf[6]=n>>060; buf[7]=n>>070;
+  md5_write(v,"\x80",1);
+  memset(v->chunk+(v->len&63),0,64-(v->len&63));
+  if((v->len&63)>56) {
+    md5_step(v);
+    memset(v->chunk,0,56);
+  }
+  memcpy(v->chunk+56,buf,8);
+  md5_step(v);
+  o[0]=v->a; o[1]=v->a>>8; o[2]=v->a>>16; o[3]=v->a>>24;
+  o[4]=v->b; o[5]=v->b>>8; o[6]=v->b>>16; o[7]=v->b>>24;
+  o[8]=v->c; o[9]=v->c>>8; o[10]=v->c>>16; o[11]=v->c>>24;
+  o[12]=v->d; o[13]=v->d>>8; o[14]=v->d>>16; o[15]=v->d>>24;
+}
+
 // ########
 
 typedef struct {
   union {
     SHA1Context sha1;
     SHA3Context sha3;
+    MD5Context md5;
   };
   long long alg;
   FILE*echo;
@@ -652,17 +747,32 @@ static ssize_t hash_write(void *cookie, const char *buf, size_t size) {
   HashState*hs=cookie;
   if(!size) return 0;
   if(hs->echo) fwrite(buf,1,size,hs->echo);
-  if(hs->alg==HASH_SHA1) sha1_hash_step(&hs->sha1,buf,size);
-  else SHA3Update(&hs->sha3,buf,size);
+  switch(hs->alg) {
+    case HASH_SHA1:
+      sha1_hash_step(&hs->sha1,buf,size); break;
+    case HASH_SHA3_224:
+    case HASH_SHA3_256:
+    case HASH_SHA3_384:
+    case HASH_SHA3_512:
+      SHA3Update(&hs->sha3,buf,size); break;
+    case HASH_MD5:
+      md5_write(&hs->md5,buf,size); break;
+  }
   return size;
 }
 
 static int hash_close(void *cookie) {
   HashState*hs=cookie;
-  if(hs->alg==HASH_SHA1) {
-    sha1_hash_finish(&hs->sha1,hs->out);
-  } else if(hs->alg) {
-    memcpy(hs->out,SHA3Final(&hs->sha3),hash_length(hs->alg));
+  switch(hs->alg) {
+    case HASH_SHA1:
+      sha1_hash_finish(&hs->sha1,hs->out); break;
+    case HASH_SHA3_224:
+    case HASH_SHA3_256:
+    case HASH_SHA3_384:
+    case HASH_SHA3_512:
+      memcpy(hs->out,SHA3Final(&hs->sha3),hash_length(hs->alg)); break;
+    case HASH_MD5:
+      md5_finish(&hs->md5,hs->out); break;
   }
   free(cookie);
   return 0;
@@ -675,6 +785,7 @@ long hash_length(long long alg) {
     case HASH_SHA3_256: return 256/8;
     case HASH_SHA3_384: return 384/8;
     case HASH_SHA3_512: return 512/8;
+    case HASH_MD5: return 16;
     default: return 0;
   }
 }
@@ -689,6 +800,7 @@ FILE*hash_stream(long long alg,FILE*echo,unsigned char*out) {
     case HASH_SHA3_256: SHA3Init(&hs->sha3,256); break;
     case HASH_SHA3_384: SHA3Init(&hs->sha3,384); break;
     case HASH_SHA3_512: SHA3Init(&hs->sha3,512); break;
+    case HASH_MD5: md5_init(&hs->md5); break;
     default: free(hs); return 0;
   }
   fp=fopencookie(hs,"w",(cookie_io_functions_t){.write=hash_write,.close=hash_close});

@@ -5,6 +5,7 @@
 #define HASH_SHA3_384 0x15
 #define HASH_SHA3_256 0x16
 #define HASH_SHA3_224 0x17
+#define HASH_MD5 0xD5
 
 long hash_length(long long alg);
 // Tell the length (in bytes) of the hash of the specified algorithm. If
