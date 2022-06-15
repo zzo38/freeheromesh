@@ -842,7 +842,7 @@ static int vt1_objects_filter(sqlite3_vtab_cursor*pcur,int idxNum,const char*idx
   cur->arg[0]=idxNum;
   cur->arg[1]=0;
   cur->arg[2]=cur->arg[3]=1;
-  if(!nobjects) {
+  if(idxNum==-1 || !nobjects) {
     cur->eof=1;
     return SQLITE_OK;
   }
@@ -901,6 +901,11 @@ static int vt1_objects_filter(sqlite3_vtab_cursor*pcur,int idxNum,const char*idx
         cur->unique=1;
       }
       break;
+    case 'h':
+      if(sqlite3_value_type(argv[i])==SQLITE_INTEGER) {
+        if(sqlite3_value_int64(argv[i])!=(pcur->pVtab==bizarro_vtab?1:0)) cur->eof=1;
+      }
+      break;
   }
   if(cur->unique) {
     if(cur->rowid<0 || cur->rowid>=nobjects || !objects[cur->rowid]) cur->eof=1;
@@ -915,6 +920,7 @@ static int vt1_objects_filter(sqlite3_vtab_cursor*pcur,int idxNum,const char*idx
 
 static int vt1_objects_index(sqlite3_vtab*vt,sqlite3_index_info*info) {
   sqlite3_str*str=sqlite3_str_new(0);
+  sqlite3_value*v;
   int arg=0;
   int i,j;
   info->estimatedCost=100000.0;
@@ -976,6 +982,25 @@ static int vt1_objects_index(sqlite3_vtab*vt,sqlite3_index_info*info) {
           info->aConstraintUsage[i].argvIndex=++arg;
           sqlite3_str_appendchar(str,1,'g');
           info->estimatedCost/=80.0;
+        }
+        break;
+      case 12: // BIZARRO
+        if(j==SQLITE_INDEX_CONSTRAINT_EQ || j==SQLITE_INDEX_CONSTRAINT_IS) {
+          if(!sqlite3_vtab_rhs_value(info,i,&v) && sqlite3_value_type(v)==SQLITE_INTEGER && sqlite3_value_int64(v)!=(vt==bizarro_vtab?1:0)) {
+            empty:
+            info->idxNum=-1;
+            info->aConstraintUsage[i].omit=1;
+            info->idxFlags=SQLITE_INDEX_SCAN_UNIQUE;
+            info->estimatedCost=1.0;
+            info->estimatedRows=0;
+            info->orderByConsumed=1;
+            sqlite3_free(sqlite3_str_finish(str));
+            return SQLITE_OK;
+          } else {
+            info->aConstraintUsage[i].argvIndex=++arg;
+            sqlite3_str_appendchar(str,1,'h');
+            info->estimatedCost/=20.0;
+          }
         }
         break;
     }
