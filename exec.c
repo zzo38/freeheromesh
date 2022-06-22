@@ -3251,7 +3251,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_WEIGHT_E16: NoIgnore(); StackReq(1,0); t1=Pop(); Numeric(t1); o->weight=t1.u&0xFFFF; break;
     case OP_WEIGHT_EC: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->weight=t1.u; break;
     case OP_WEIGHT_EC16: NoIgnore(); StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->weight=t1.u&0xFFFF; break;
-    case OP_WINLEVEL: key_ignored=0; gameover=1; gameover_score=move_number+1; Throw(0); break;
+    case OP_WINLEVEL: key_ignored=0; gameover=1; gameover_score=NO_SCORE; Throw(0); break;
     case OP_WINLEVEL_C: StackReq(1,0); t1=Pop(); Numeric(t1); key_ignored=0; gameover=1; gameover_score=t1.s; Throw(0); break;
     case OP_XDIR: StackReq(1,1); t1=Pop(); Numeric(t1); Push(NVALUE(o->x+x_delta[resolve_dir(obj,t1.u)])); break;
     case OP_XDIR_C: StackReq(2,1); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i==VOIDLINK) Push(NVALUE(0)); else Push(NVALUE(objects[i]->x+x_delta[resolve_dir(i,t1.u)])); break;

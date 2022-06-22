@@ -234,6 +234,7 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1);
 // == exec ==
 
 #define VOIDLINK ((Uint32)(-1))
+#define NO_SCORE ((Sint32)(0x80000000))
 
 #define ANI_STOP 0x00
 #define ANI_ONCE 0x01
@@ -319,9 +320,16 @@ void swap_world(void);
 
 // == game ==
 
-extern Uint8*replay_list;
+typedef Uint8 MoveItem;
+
+extern MoveItem*replay_list;
 extern Uint16 replay_size,replay_count,replay_pos,replay_mark;
 extern Uint8 solution_replay;
+
+int encode_move(FILE*fp,MoveItem v);
+int encode_move_list(FILE*fp);
+MoveItem decode_move(FILE*fp);
+int decode_move_list(FILE*fp);
 
 void run_game(void);
 void run_auto_test(void);

@@ -19,13 +19,13 @@ exit
 #include "cursorshapes.h"
 #include "names.h"
 
-Uint8*replay_list;
+MoveItem*replay_list;
 Uint16 replay_size,replay_count,replay_pos,replay_mark;
 Uint8 solution_replay=255;
 
 static volatile Uint8 timerflag;
 static int exam_scroll;
-static Uint8*inputs;
+static MoveItem*inputs;
 static int inputs_size,inputs_count;
 static Uint8 side_mode=255;
 static Uint8 should_record_solution;
@@ -34,6 +34,47 @@ static Uint8 replay_time;
 static Uint8 solved;
 static Uint8 inserting,saved_inserting;
 static sqlite3_stmt*autowin;
+
+int encode_move(FILE*fp,MoveItem v) {
+  // Encodes a single move and writes the encoded move to the file.
+  // Returns the number of bytes of the encoded move.
+  fputc(v,fp);
+  return 1;
+}
+
+int encode_move_list(FILE*fp) {
+  // Encodes the current replay list into the file; returns the number of bytes.
+  fwrite(replay_list,1,replay_count,fp);
+  return replay_count;
+}
+
+MoveItem decode_move(FILE*fp) {
+  // Decodes a single move from the file, and returns the move.
+  // Returns zero if there is no more moves.
+  int v=fgetc(fp);
+  return (v==EOF?0:v);
+}
+
+int decode_move_list(FILE*fp) {
+  // Decodes a move list from the file, and stores it in replay_list and replay_count.
+  // Returns the number of moves (replay_count).
+  MoveItem v;
+  size_t s=0;
+  free(replay_list);
+  replay_list=0;
+  replay_count=0;
+  FILE*o=open_memstream((char**)&replay_list,&s);
+  if(!o) fatal("Allocation failed\n");
+  while(replay_count<0xFFFD && (v=decode_move(fp))) {
+    fwrite(&v,1,sizeof(MoveItem),o);
+    replay_count++;
+  }
+  fclose(o);
+  if(replay_count && !replay_list) fatal("Allocation failed\n");
+  s/=sizeof(MoveItem);
+  replay_size=(s>0xFFFF?0xFFFF:s);
+  return replay_count;
+}
 
 static void record_solution(void);
 

@@ -329,7 +329,21 @@ static void fn_modstate(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
 }
 
 static void fn_move_list(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
-  if(replay_count) sqlite3_result_blob(cxt,replay_list,replay_count,SQLITE_TRANSIENT);
+  char*p=0;
+  size_t s=0;
+  FILE*f=open_memstream(&p,&s);
+  if(!f) {
+    sqlite3_result_error_nomem(cxt);
+    return;
+  }
+  encode_move_list(f);
+  fclose(f);
+  if(s) {
+    sqlite3_result_blob(cxt,p,s,free);
+  } else {
+    sqlite3_result_zeroblob(cxt,0);
+    free(p);
+  }
 }
 
 static void fn_movenumber(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
