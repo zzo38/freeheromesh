@@ -1556,7 +1556,7 @@ HitMe  ( dir -- bool ) **
   Checks hardness/sharpness and shoving like is done by Move, subject to
   From and Arg3. The direction is a direction relative to From, not to
   Self. The result is 1 if shoving or sharpness is successful, or 0
-  otherwise. This will update Arg3,including at least setting the low
+  otherwise. This will update Arg3, including at least setting the low
   three bits; the new value of Arg3 may then be used as the return value
   from HITBY. It is intended that this instruction is used inside of a
   HITBY block, in case you want to do some of your own processing. The

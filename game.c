@@ -20,7 +20,8 @@ exit
 #include "names.h"
 
 MoveItem*replay_list;
-Uint16 replay_size,replay_count,replay_pos,replay_mark;
+size_t replay_size;
+Uint16 replay_count,replay_pos,replay_mark;
 Uint8 solution_replay=255;
 
 static volatile Uint8 timerflag;
@@ -59,11 +60,11 @@ int decode_move_list(FILE*fp) {
   // Decodes a move list from the file, and stores it in replay_list and replay_count.
   // Returns the number of moves (replay_count).
   MoveItem v;
-  size_t s=0;
   free(replay_list);
   replay_list=0;
+  replay_size=0;
   replay_count=0;
-  FILE*o=open_memstream((char**)&replay_list,&s);
+  FILE*o=open_memstream((char**)&replay_list,&replay_size);
   if(!o) fatal("Allocation failed\n");
   while(replay_count<0xFFFD && (v=decode_move(fp))) {
     fwrite(&v,1,sizeof(MoveItem),o);
@@ -71,8 +72,6 @@ int decode_move_list(FILE*fp) {
   }
   fclose(o);
   if(replay_count && !replay_list) fatal("Allocation failed\n");
-  s/=sizeof(MoveItem);
-  replay_size=(s>0xFFFF?0xFFFF:s);
   return replay_count;
 }
 
@@ -297,7 +296,7 @@ static void save_replay(void) {
   if(sz<replay_count+6) {
     replay_list=realloc(replay_list,sz=replay_count+6);
     if(!replay_list) fatal("Allocation failed\n");
-    replay_size=(sz>0xFFFF?0xFFFF:sz);
+    replay_size=sz;
   }
   if(gameover==1) solved=1;
   sz=replay_count+6;
@@ -327,7 +326,7 @@ static void load_replay(void) {
       }
       if(replay_list[2]&2) i+=8;
       if(i>=sz || sz-i>0xFFFF) goto notfound;
-      replay_size=(sz>0xFFFF?0xFFFF:sz);
+      replay_size=sz;
       memmove(replay_list,replay_list+i,replay_count=sz-i);
       replay_mark=0;
     } else {
@@ -336,7 +335,7 @@ static void load_replay(void) {
   } else {
     replay_list=read_userstate(FIL_LEVEL,level_id,&sz);
     if(sz>=2) {
-      replay_size=(sz>0xFFFF?0xFFFF:sz);
+      replay_size=sz;
       replay_count=(replay_list[sz-2]<<8)|replay_list[sz-1];
       if(sz-replay_count>=4) replay_mark=(replay_list[replay_count]<<8)|replay_list[replay_count+1]; else replay_mark=0;
       if(sz-replay_count>=6) {
@@ -713,13 +712,8 @@ static void do_import_moves(const char*arg) {
     screen_message("Unable to open pipe for reading");
     return;
   }
-  replay_list=realloc(replay_list,0x10000);
-  if(!replay_list) fatal("Allocation failed");
   replay_mark=0;
-  replay_size=0xFFFF;
-  i=fread(replay_list,1,0xFFFD,fp);
-  if(i&~0xFFFF) i=0;
-  replay_count=i;
+  decode_move_list(fp);
   pclose(fp);
 }
 
@@ -732,7 +726,7 @@ static void do_export_moves(const char*arg) {
     screen_message("Unable to open pipe for writing");
     return;
   }
-  if(replay_count) fwrite(replay_list,1,replay_count,fp);
+  encode_move_list(fp);
   pclose(fp);
 }
 

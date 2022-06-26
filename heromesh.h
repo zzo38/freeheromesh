@@ -323,7 +323,8 @@ void swap_world(void);
 typedef Uint8 MoveItem;
 
 extern MoveItem*replay_list;
-extern Uint16 replay_size,replay_count,replay_pos,replay_mark;
+extern size_t replay_size;
+extern Uint16 replay_count,replay_pos,replay_mark;
 extern Uint8 solution_replay;
 
 int encode_move(FILE*fp,MoveItem v);
