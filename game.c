@@ -1,5 +1,5 @@
 #if 0
-gcc ${CFLAGS:--s -O2} -c -Wno-multichar game.c `sdl-config --cflags`
+gcc ${CFLAGS:--s -O2} -c -Wno-multichar -fwrapv game.c `sdl-config --cflags`
 exit
 #endif
 
@@ -45,6 +45,7 @@ int encode_move(FILE*fp,MoveItem v) {
 
 int encode_move_list(FILE*fp) {
   // Encodes the current replay list into the file; returns the number of bytes.
+  // Does not write a null terminator.
   fwrite(replay_list,1,replay_count,fp);
   return replay_count;
 }
@@ -60,13 +61,14 @@ int decode_move_list(FILE*fp) {
   // Decodes a move list from the file, and stores it in replay_list and replay_count.
   // Returns the number of moves (replay_count).
   MoveItem v;
+  FILE*o;
   free(replay_list);
   replay_list=0;
   replay_size=0;
   replay_count=0;
-  FILE*o=open_memstream((char**)&replay_list,&replay_size);
+  o=open_memstream((char**)&replay_list,&replay_size);
   if(!o) fatal("Allocation failed\n");
-  while(replay_count<0xFFFD && (v=decode_move(fp))) {
+  while(replay_count<0xFFFE && (v=decode_move(fp))) {
     fwrite(&v,1,sizeof(MoveItem),o);
     replay_count++;
   }
@@ -291,64 +293,108 @@ static void show_mouse_xy(SDL_Event*ev) {
 }
 
 static void save_replay(void) {
-  long sz=replay_size;
-  if(solution_replay || !replay_list) return;
-  if(sz<replay_count+6) {
-    replay_list=realloc(replay_list,sz=replay_count+6);
-    if(!replay_list) fatal("Allocation failed\n");
-    replay_size=sz;
-  }
+  unsigned char*buf=0;
+  size_t sz=0;
+  FILE*fp;
+  if(solution_replay || !replay_list || !replay_count) return;
   if(gameover==1) solved=1;
-  sz=replay_count+6;
-  replay_list[sz-6]=replay_mark>>8;
-  replay_list[sz-5]=replay_mark;
-  replay_list[sz-4]=(level_version+solved-1)>>8;
-  replay_list[sz-3]=level_version+solved-1;
-  replay_list[sz-2]=replay_count>>8;
-  replay_list[sz-1]=replay_count;
-  write_userstate(FIL_LEVEL,level_id,sz,replay_list);
+  fp=open_memstream((char**)&buf,&sz);
+  if(!fp) fatal("Allocation failed\n");
+  fputc(0x00,fp);
+  fputc(0x01,fp);
+  encode_move_list(fp);
+  fputc(0x00,fp);
+  if(solved) {
+    fputc(0x41,fp);
+    fputc(level_version,fp);
+    fputc(level_version>>8,fp);
+  }
+  if(replay_mark) {
+    fputc(0x42,fp);
+    fputc(replay_mark,fp);
+    fputc(replay_mark>>8,fp);
+  }
+  fclose(fp);
+  if(!buf) fatal("Allocation failed\n");
+  write_userstate(FIL_LEVEL,level_id,sz,buf);
+  free(buf);
 }
 
 static void load_replay(void) {
+  FILE*fp=0;
+  unsigned char*buf=0;
   long sz;
-  int i;
+  int i,j;
   free(replay_list);
+  replay_list=0;
+  replay_count=replay_mark=replay_size=0;
   if(solution_replay) {
-    replay_list=read_lump(FIL_SOLUTION,level_id,&sz);
-    // Solution format: version (16-bits), flag (8-bits), user name (null-terminated), timestamp (64-bits), move list
-    if(sz>3) {
-      i=replay_list[0]|(replay_list[1]<<8);
-      if(i!=level_version) goto notfound;
-      i=3;
-      if(replay_list[2]&1) {
-        while(i<sz && replay_list[i]) i++;
-        i++;
+    gameover_score=NO_SCORE;
+    if(buf=read_lump(FIL_SOLUTION,level_id,&sz)) {
+      fp=fmemopen(buf,sz,"r");
+      if(!fp) fatal("Allocation failed\n");
+      // Solution format: version (16-bits), flag (8-bits), score (32-bits), user name (null-terminated), timestamp (64-bits), move list
+      if(sz>3) {
+        i=fgetc(fp); i|=fgetc(fp)<<8;
+        if(i==level_version) {
+          j=fgetc(fp);
+          if(j&128) {
+            gameover_score=fgetc(fp);
+            gameover_score|=fgetc(fp)<<8;
+            gameover_score|=fgetc(fp)<<16;
+            gameover_score|=fgetc(fp)<<24;
+          }
+          if(j&1) while(fgetc(fp)>0);
+          if(j&2) for(i=0;i<8;i++) fgetc(fp);
+          decode_move_list(fp);
+        }
       }
-      if(replay_list[2]&2) i+=8;
-      if(i>=sz || sz-i>0xFFFF) goto notfound;
-      replay_size=sz;
-      memmove(replay_list,replay_list+i,replay_count=sz-i);
-      replay_mark=0;
-    } else {
-      goto notfound;
     }
-  } else {
-    replay_list=read_userstate(FIL_LEVEL,level_id,&sz);
-    if(sz>=2) {
-      replay_size=sz;
-      replay_count=(replay_list[sz-2]<<8)|replay_list[sz-1];
-      if(sz-replay_count>=4) replay_mark=(replay_list[replay_count]<<8)|replay_list[replay_count+1]; else replay_mark=0;
+  } else if(buf=read_userstate(FIL_LEVEL,level_id,&sz)) {
+    fp=fmemopen(buf,sz,"r");
+    if(!fp) fatal("Allocation failed\n");
+    if(sz>2 && *buf) {
+      // Old format
+      replay_count=(buf[sz-2]<<8)|buf[sz-1];
+      if(sz-replay_count>=4) replay_mark=(buf[replay_count]<<8)|buf[replay_count+1]; else replay_mark=0;
       if(sz-replay_count>=6) {
-        i=(replay_list[replay_count+2]<<8)|replay_list[replay_count+3];
+        i=(buf[replay_count+2]<<8)|buf[replay_count+3];
         if(i==level_version) solved=1;
       }
+      replay_list=malloc(replay_size=sizeof(MoveItem)*replay_count+1);
+      if(!replay_list) fatal("Allocation failed\n");
+      for(i=0;i<replay_size;i++) replay_list[i]=buf[i];
     } else {
-      notfound:
-      replay_count=replay_mark=replay_size=0;
-      free(replay_list);
-      replay_list=0;
+      // New format
+      fgetc(fp); // skip first null byte
+      while((i=fgetc(fp))!=EOF) switch(i) {
+        case 0x01: // Replay list
+          if(replay_list) goto skip;
+          decode_move_list(fp);
+          break;
+        case 0x41: // Solved version
+          i=fgetc(fp); i|=fgetc(fp)<<8;
+          if(i==level_version) solved=1;
+          break;
+        case 0x42: // Mark
+          replay_mark=fgetc(fp);
+          replay_mark|=fgetc(fp)<<8;
+          break;
+        default: skip:
+          if(i<0x40) {
+            while(fgetc(fp)>0);
+          } else if(i<0x80) {
+            fgetc(fp); fgetc(fp);
+          } else if(i<0xC0) {
+            for(i=0;i<4;i++) fgetc(fp);
+          } else {
+            for(i=0;i<8;i++) fgetc(fp);
+          }
+      }
     }
   }
+  if(fp) fclose(fp);
+  free(buf);
 }
 
 static void begin_level(int id) {
@@ -1330,7 +1376,7 @@ static Uint32 timer_callback(Uint32 n) {
 
 static inline void input_move(Uint8 k) {
   const char*t=execute_turn(k);
-  if(replay_pos==65534 && !gameover) t="Too many moves played";
+  if(replay_pos>0xFFFE && !gameover) t="Too many moves played";
   if(t) {
     screen_message(t);
     gameover=-1;
@@ -1341,7 +1387,7 @@ static inline void input_move(Uint8 k) {
       if(replay_pos>=0xFFFE || replay_pos==replay_count) {
         inserting=0;
       } else {
-        if(replay_count>=0xFFFE) replay_count=0xFFFD;
+        if(replay_count>0xFFFE) replay_count=0xFFFE;
         if(replay_size<0xFFFF) {
           replay_list=realloc(replay_list,replay_size=0xFFFF);
           if(!replay_list) fatal("Allocation failed\n");
@@ -1351,8 +1397,7 @@ static inline void input_move(Uint8 k) {
       }
     }
     if(replay_pos>=replay_size) {
-      if(replay_size>0xFDFF) replay_size=0xFDFF;
-      if(replay_size+0x200<=replay_pos) fatal("Confusion in input_move function\n");
+      if(replay_size>0xFFFF) replay_size=0xFFFF;
       replay_list=realloc(replay_list,replay_size+=0x200);
       if(!replay_list) fatal("Allocation failed\n");
     }
@@ -1364,45 +1409,58 @@ static inline void input_move(Uint8 k) {
 static void record_solution(void) {
   const char*v;
   const char*com;
-  Uint8*data;
-  Uint8*p;
-  long sz;
+  FILE*fp;
+  Uint8 flag;
+  long n;
+  unsigned char*buf=0;
+  size_t sz=0;
   if(solution_replay) return;
-  if(data=read_lump(FIL_SOLUTION,level_id,&sz)) {
-    if(sz<3 || (data[0]|(data[1]<<8))!=level_version || (data[2]&~3)) goto dontkeep;
-    sz-=3;
-    if(data[2]&1) sz-=strnlen(data+3,sz);
-    if(data[2]&2) sz-=8;
-    if(sz<=0 || sz>replay_pos) goto dontkeep;
-    free(data);
+  if(buf=read_lump(FIL_SOLUTION,level_id,&n)) {
+    if(n<3 || (buf[0]|(buf[1]<<8))!=level_version || (buf[2]&~0x83)) goto dontkeep;
+    n-=3;
+    if((buf[2]&128) && n>4) {
+      Sint32 sco=buf[3]|(buf[4]<<8)|(buf[5]<<16)|(buf[6]<<24);
+      if(gameover_score!=NO_SCORE && sco<=gameover_score) goto dontkeep;
+    } else {
+      if(buf[2]&1) n-=strnlen(buf+3,n);
+      if(buf[2]&2) n-=8;
+      if(n<=0 || n>replay_pos) goto dontkeep;
+    }
+    free(buf);
     return;
     dontkeep:
-    free(data);
+    free(buf);
+    buf=0;
   }
   optionquery[1]=Q_solutionComment;
   com=xrm_get_resource(resourcedb,optionquery,optionquery,2);
   if(com && !*com) com=0;
   optionquery[1]=Q_solutionTimestamp;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
-  data=malloc(sz=replay_pos+(boolxrm(v,0)?8:0)+(com?strlen(com)+1:0)+3);
-  if(!data) fatal("Allocation failed\n");
-  data[0]=level_version&255;
-  data[1]=level_version>>8;
-  data[2]=(boolxrm(v,0)?2:0)|(com?1:0);
-  p=data+3;
-  if(com) {
-    strcpy(p,com);
-    p+=strlen(com)+1;
+  flag=0;
+  if(com) flag|=1;
+  if(boolxrm(v,0)) flag|=2;
+  if(gameover_score!=NO_SCORE) flag|=128;
+  fp=open_memstream((char**)&buf,&sz);
+  if(!fp) fatal("Allocation failed\n");
+  fputc(level_version,fp);
+  fputc(level_version>>8,fp);
+  fputc(flag,fp);
+  if(flag&128) {
+    fputc(gameover_score,fp);
+    fputc(gameover_score>>8,fp);
+    fputc(gameover_score>>16,fp);
+    fputc(gameover_score>>24,fp);
   }
-  if(data[2]&2) {
-    time_t t=time(0);
-    p[0]=t>>000; p[1]=t>>010; p[2]=t>>020; p[3]=t>>030;
-    p[4]=t>>040; p[5]=t>>050; p[6]=t>>060; p[7]=t>>070;
-    p+=8;
-  }
-  memcpy(p,replay_list,replay_pos);
-  write_lump(FIL_SOLUTION,level_id,sz,data);
-  free(data);
+  if(flag&1) fwrite(com,1,strlen(com+1),fp);
+  n=replay_count;
+  replay_count=replay_pos;
+  encode_move_list(fp);
+  replay_count=n;
+  fclose(fp);
+  if(!buf) fatal("Allocation failed\n");
+  write_lump(FIL_SOLUTION,level_id,sz,buf);
+  free(buf);
   sqlite3_exec(userdb,"UPDATE `LEVELS` SET `SOLVABLE` = 1 WHERE `ID` = LEVEL_ID();",0,0,0);
 }
 

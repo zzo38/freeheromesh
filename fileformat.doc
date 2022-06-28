@@ -138,6 +138,9 @@ be invalid.
 
 * Flags (8-bits): Specifies which other fields are present.
 
+* Score (signed 32-bits small-endian; only present if flag bit7 is set):
+The score of this level. Lower numbers are better.
+
 * Comment (null-terminated; only present if flag bit0 set): Normally
 contains a user name, but may be any arbitrary text.
 

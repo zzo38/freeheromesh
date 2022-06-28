@@ -121,3 +121,42 @@ The control codes for text formatting are:
 Codes 32-255 are displayed as is, but characters 1-31 cannot be displayed
 as a graphic unless a \x escape is present.
 
+
+=== User state data ===
+
+The user state data for levels in the user cache database can be in the
+old format or the new format.
+
+The old format is:
+
+* The move list. Only single-byte moves are valid.
+
+* The replay mark position (a big-endian 16-bit number).
+
+* The level version number (a big-endian 16-bit number); this will match
+the actual level version number if the player has solved this level, or
+otherwise will not match.
+
+* The number of moves in the move list.
+
+The new format starts with a null byte, and then is followed by any number
+of records. The first byte of a record determines its format:
+
+* 0x01 to 0x3F = Null-terminated
+
+* 0x41 to 0x7F = Two more bytes
+
+* 0x81 to 0xBF = Four more bytes
+
+* 0xC1 to 0xFF = Eight more bytes
+
+The new format is always small-endian.
+
+Record types:
+
+* 0x01 = Replay list
+
+* 0x41 = Level version, if solved (omitted otherwise)
+
+* 0x42 = Mark position
+
