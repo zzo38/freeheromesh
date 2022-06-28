@@ -1677,6 +1677,23 @@ static void calculate_level_columns(sqlite3_stmt*st,const unsigned char*lvl,long
   }
 }
 
+static int level_is_solved(const unsigned char*d,long n,int j) {
+  if(n<=5 || !d) return 0;
+  if(*d) {
+    return (n-(d[n-2]<<8)-d[n-1]>3 && (d[n-4]<<8)+d[n-3]==j);
+  } else {
+    long i;
+    for(i=1;i<n;) {
+      if(d[i]==0x41 && n-i>2) return (d[i+1]+(d[i+2]<<8)==j);
+      else if(d[i]<0x40) i+=strnlen(d+i,n-i)+1;
+      else if(d[i]<0x80) i+=3;
+      else if(d[i]<0xC0) i+=5;
+      else i+=9;
+    }
+    return 0;
+  }
+}
+
 static int vt1_levels_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
   sqlite3_str*str;
   sqlite3_stmt*st1;
@@ -1726,7 +1743,7 @@ static int vt1_levels_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
       sqlite3_bind_int(st2,7,0);
     }
     d=sqlite3_column_blob(st1,2); n=sqlite3_column_bytes(st1,2);
-    sqlite3_bind_int(st2,6,(d && n>5 && n-(d[n-2]<<8)-d[n-1]>3 && (d[n-4]<<8)+d[n-3]==j));
+    sqlite3_bind_int(st2,6,level_is_solved(d,n,j));
     while((i=sqlite3_step(st2))==SQLITE_ROW);
     if(i!=SQLITE_DONE) goto err;
     sqlite3_bind_null(st2,5);
