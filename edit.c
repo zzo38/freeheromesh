@@ -29,11 +29,11 @@ typedef struct {
 static MRU mru[MRUCOUNT];
 static int curmru;
 static char*solution_data;
-static int solution_length;
+static size_t solution_length;
 
 static inline void discard_solution(void) {
   if(solution_data) {
-    sqlite3_free(solution_data);
+    free(solution_data);
     solution_data=0;
     solution_length=0;
   }
@@ -1010,7 +1010,7 @@ static void import_level(const char*cmd) {
   size_t size=0;
   char*buf=0;
   char*p;
-  sqlite3_str*sol=0;
+  FILE*sol=0;
   Value v;
   if(!cmd || !*cmd) return;
   fp=main_options['i']?stdin:popen(cmd,"r");
@@ -1117,8 +1117,9 @@ static void import_level(const char*cmd) {
         break;
       case '\'':
         if(!sol) {
-          sol=sqlite3_str_new(userdb);
-          sqlite3_str_appendchar(sol,3,0); // append level version (will be overwritten later) and flags
+          sol=open_memstream(&solution_data,&solution_length);
+          if(!sol) fatal("Allocation failed\n");
+          fwrite("\0\0",1,3,sol); // append level version (will be overwritten later) and flags
         }
         p=strchr(buf,' ');
         if(p) {
@@ -1130,7 +1131,7 @@ static void import_level(const char*cmd) {
         }
         for(x=8;x<256;x++) {
           if(heromesh_key_names[x] && !strcmp(buf+1,heromesh_key_names[x])) {
-            sqlite3_str_appendchar(sol,y,x);
+            while(y-->0) encode_move(sol,x);
             break;
           }
         }
@@ -1154,8 +1155,7 @@ static void import_level(const char*cmd) {
   if(!main_options['i']) pclose(fp);
   generation_number_inc=0;
   if(sol) {
-    solution_length=sqlite3_str_length(sol);
-    solution_data=sqlite3_str_finish(sol);
+    fclose(sol);
     if(!solution_data) fatal("Allocation failed");
   }
 }
