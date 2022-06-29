@@ -777,12 +777,12 @@ static void do_export_moves(const char*arg) {
 }
 
 static void do_load_moves(sqlite3_stmt*st) {
+  FILE*fp;
   int i=sqlite3_column_bytes(st,1);
-  if(i&~0xFFFF) return;
-  if(replay_size<i) replay_list=realloc(replay_list,replay_size=i);
-  if(!replay_list) fatal("Allocation failed");
-  replay_count=i;
-  if(i) memcpy(replay_list,sqlite3_column_blob(st,1),i);
+  fp=fmemopen((char*)sqlite3_column_blob(st,1)?:"",i,"r");
+  if(!fp) fatal("Allocation failed\n");
+  decode_move_list(fp);
+  fclose(fp);
 }
 
 static int copy_text_to_plain(unsigned char*out,int maxlen,const unsigned char*in) {

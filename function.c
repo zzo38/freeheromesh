@@ -463,6 +463,7 @@ static void fn_solution_move_list(sqlite3_context*cxt,int argc,sqlite3_value**ar
     free(d);
     return;
   }
+  if(d[2]&128) i+=4;
   if(d[2]&1) {
     while(i<sz && d[i]) i++;
     i++;
