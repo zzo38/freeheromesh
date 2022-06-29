@@ -308,3 +308,23 @@ number of words will ever substitute for an image.
  am aware that some people prefer a different style. Someone who is better
  at writing that different style should do so and contribute please.
 
+** How was the working of the original game engine figured out and then
+Free Hero Mesh made to emulate its behaviour?
+
+ This involved several parts.
+
+ The file format was figured out by examining existing files, and making
+ files in the original engine with minor changes of each other to find
+ which parts of the file were changed.
+
+ The working of the game play was figured out by reading the documentation
+ included with the original game engine (which has many omissions and
+ mistakes) and by making many hypotheses and scientific experiments and
+ examining what behaviour resulted from that, in order to come up with
+ theories of its working, testing them, and implementing them.
+
+ Further tests were made by replaying the included solutions in Free Hero
+ Mesh and confirming that they result in a WinLevel. (This is one of the
+ earliest features implemented in Free Hero Mesh, and helped with testing
+ the game engine.)
+
