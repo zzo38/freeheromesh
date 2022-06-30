@@ -27,7 +27,8 @@ Uint8 solution_replay=255;
 static volatile Uint8 timerflag;
 static int exam_scroll;
 static MoveItem*inputs;
-static int inputs_size,inputs_count;
+static size_t inputs_size;
+static int inputs_count;
 static Uint8 side_mode=255;
 static Uint8 should_record_solution;
 static Uint8 replay_speed;
@@ -76,6 +77,10 @@ int decode_move_list(FILE*fp) {
   if(replay_count && !replay_list) fatal("Allocation failed\n");
   return replay_count;
 }
+
+#define MSIZ (sizeof(MoveItem))
+#define memcpyM(a_,b_,c_) memcpy(a_,b_,(c_)*MSIZ);
+#define memmoveM(a_,b_,c_) memmove(a_,b_,(c_)*MSIZ);
 
 static void record_solution(void);
 
@@ -1173,8 +1178,8 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
         screen_message("You cannot play your own moves during the solution replay");
         return -3;
       }
-      if(inputs_count>=inputs_size) {
-        inputs=realloc(inputs,inputs_size+=32);
+      if(inputs_count*MSIZ>=inputs_size) {
+        inputs=realloc(inputs,inputs_size+=32*MSIZ);
         if(!inputs) fatal("Allocation failed\n");
       }
       inputs[inputs_count++]=number;
@@ -1184,11 +1189,11 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       replay_time=0;
       if(number>replay_count-replay_pos) number=replay_count-replay_pos;
       if(number<=0) return prev;
-      if(inputs_count+number>=inputs_size) {
-        inputs=realloc(inputs,inputs_size+=number+1);
+      if((inputs_count+number)*MSIZ>=inputs_size) {
+        inputs=realloc(inputs,inputs_size+=(number+1)*MSIZ);
         if(!inputs) fatal("Allocation failed\n");
       }
-      memcpy(inputs+inputs_count,replay_list+replay_pos,number);
+      memcpyM(inputs+inputs_count,replay_list+replay_pos,number);
       inputs_count+=number;
       return 0;
     case '- ': // Rewind
@@ -1200,11 +1205,11 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       begin_level(level_id);
       if(!number) return 1;
       if(number>replay_count) number=replay_count;
-      if(number>=inputs_size) {
-        inputs=realloc(inputs,inputs_size=number+1);
+      if(number*MSIZ>=inputs_size) {
+        inputs=realloc(inputs,inputs_size=(number+1)*MSIZ);
         if(!inputs) fatal("Allocation failed\n");
       }
-      memcpy(inputs,replay_list,inputs_count=number);
+      memcpyM(inputs,replay_list,inputs_count=number);
       no_dead_anim=1;
       return 1;
     case '^<': // Rewind to mark
@@ -1221,7 +1226,7 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
         return -3;
       }
       if(replay_pos==replay_count) return 0;
-      memmove(replay_list+replay_pos,replay_list+replay_pos+1,replay_count-replay_pos-1);
+      memmoveM(replay_list+replay_pos,replay_list+replay_pos+1,replay_count-replay_pos-1);
       replay_count--;
       if(replay_mark>replay_pos) replay_mark--;
       return 0;
@@ -1388,17 +1393,16 @@ static inline void input_move(Uint8 k) {
         inserting=0;
       } else {
         if(replay_count>0xFFFE) replay_count=0xFFFE;
-        if(replay_size<0xFFFF) {
-          replay_list=realloc(replay_list,replay_size=0xFFFF);
+        if(replay_size<0x10000*MSIZ) {
+          replay_list=realloc(replay_list,replay_size=0x10000*MSIZ);
           if(!replay_list) fatal("Allocation failed\n");
         }
-        memmove(replay_list+replay_pos+1,replay_list+replay_pos,replay_count-replay_pos);
+        memmoveM(replay_list+replay_pos+1,replay_list+replay_pos,replay_count-replay_pos);
         replay_count++;
       }
     }
-    if(replay_pos>=replay_size) {
-      if(replay_size>0xFFFF) replay_size=0xFFFF;
-      replay_list=realloc(replay_list,replay_size+=0x200);
+    if(replay_pos*MSIZ>=replay_size) {
+      replay_list=realloc(replay_list,replay_size+=0x200*MSIZ);
       if(!replay_list) fatal("Allocation failed\n");
     }
     replay_list[replay_pos++]=k;
