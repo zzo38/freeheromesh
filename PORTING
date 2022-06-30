@@ -107,7 +107,8 @@ system administrator).
 
 Games: Debian policy has some specifications that are specific to game
 programs. These probably apply normally to Free Hero Mesh. The set-group-id
-mechanism is not needed; Free Hero Mesh does not share scores. It is OK to
+mechanism is not needed; Free Hero Mesh does not share scores (it might be
+added in future, but would be an optional feature, anyways). It is OK to
 install binaries in /usr/games and man pages in /usr/share/man/man6 but
 the "har" program (which should probably be a separate package) should be
 installed in /usr/bin instead, probably.
@@ -148,6 +149,10 @@ in error messages (although this possibility might be added in future).
 
 === Game execution and user interface ===
 
+You may use the existing implementations for user interfaces and will not
+need to write a new implementation; but some ports might need a new user
+interface; if it does, then the below notes may be helpful.
+
 The exec.c and class.c files are the most important files, and can probably
 be used with minor changes even if porting to different systems and/or user
 interfaces. The other files could be omitted, but then those parts must be
@@ -155,7 +160,7 @@ rewritten (possibly in a different programming language); some parts of the
 existing files could be copied if needed.
 
 
-=== Character Encoding ===
+=== Character encoding ===
 
 Free Hero Mesh does not and will not use Unicode. As of this writing, it
 only supports single-byte character codes, although in future it is
@@ -221,6 +226,11 @@ It may be desirable to implement support for importing and exporting PCX
 and Dr.Halo picture formats directly, either built-in or using a separate
 program that is included with it, in the DOS version.
 
+DOS uses CRLF line endings instead of LF only like UNIX does. Free Hero
+Mesh already can read class definition files with or without carriage
+returns. The level import also can read with or without carriage returns.
+However, exports do not add carriage returns.
+
 
 === Amiga ===
 
@@ -229,7 +239,7 @@ program that is included with it, in the DOS version.
 
 === Microsoft Windows ===
 
-(TODO)
+The same consideration about line endings with DOS also applies to Windows.
 
 
 === Mac OS X ===
