@@ -162,13 +162,13 @@
 #define Q_numLock 163
 #define Q_editClick 164
 #define Q_gameClick 165
-#define Q_allowMouseWarp 166
-#define Q_middle 167
-#define Q_class 168
-#define Q_quiz 169
-#define Q_saveSolutions 170
-#define Q_solutionComment 171
-#define Q_solutionTimestamp 172
+#define Q_middle 166
+#define Q_class 167
+#define Q_quiz 168
+#define Q_saveSolutions 169
+#define Q_solutionComment 170
+#define Q_solutionTimestamp 171
+#define Q_private 172
 #define Q_picedit 173
 #define Q_macro 174
 #define Q_sqlFile 175
@@ -359,13 +359,13 @@ static const char*const global_quarks[]={
   "numLock",
   "editClick",
   "gameClick",
-  "allowMouseWarp",
   "middle",
   "class",
   "quiz",
   "saveSolutions",
   "solutionComment",
   "solutionTimestamp",
+  "private",
   "picedit",
   "macro",
   "sqlFile",

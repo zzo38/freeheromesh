@@ -187,7 +187,6 @@ numLock
 ! Mouse
 editClick
 gameClick
-allowMouseWarp
 middle
 ! (left and right are listed with keys)
 ! (the key modifiers are also valid here)
@@ -200,6 +199,7 @@ quiz
 saveSolutions
 solutionComment
 solutionTimestamp
+private
 
 ! Picture editor
 picedit

@@ -65,6 +65,14 @@ static void fn_bcat(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   }
 }
 
+static void fn_best_move_list(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  if(best_list) sqlite3_result_blob(cxt,best_list,strlen(best_list),SQLITE_TRANSIENT);
+}
+
+static void fn_best_score(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  if(best_list && best_score!=NO_SCORE) sqlite3_result_int64(cxt,best_score);
+}
+
 static void fn_byte(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   Uint8*s=malloc(argc+1);
   int i;
@@ -1778,6 +1786,8 @@ Module(vt_levels,
 void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"BASENAME",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_basename,0,0);
   sqlite3_create_function(userdb,"BCAT",-1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_bcat,0,0);
+  sqlite3_create_function(userdb,"BEST_MOVE_LIST",0,SQLITE_UTF8,0,fn_best_move_list,0,0);
+  sqlite3_create_function(userdb,"BEST_SCORE",0,SQLITE_UTF8,0,fn_best_score,0,0);
   sqlite3_create_function(userdb,"BYTE",-1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_byte,0,0);
   sqlite3_create_function(userdb,"CL",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_cl,0,0);
   sqlite3_create_function(userdb,"CLASS_DATA",2,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_class_data,0,0);

@@ -140,6 +140,11 @@ See bindings.doc for key/mouse bindings.
   than the currently recorded solution (or if no solution is already
   recorded). This has no effect in read-only mode.
 
+.saveSolutions.private
+  If true, then solutions are saved like .saveSolutions but they are saved
+  privately to the user cache database, instead of in the solution file.
+  This works even in read-only mode.
+
 .screenFlags
   SDL flags: d = double buffer, f = full screen, h = use hardware surface,
   n = no window frame, p = hardware palette, r = allow the window to be

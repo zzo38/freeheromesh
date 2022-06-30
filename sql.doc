@@ -14,6 +14,16 @@ BASENAME()
 BCAT(...)
   Concatenate several blobs. Nulls are skipped, if any.
 
+BEST_MOVE_LIST()
+  Returns the best personal move list in the user cache file (only valid if
+  .saveSolution.private is true), as a blob. If there isn't any saved, then
+  this is null.
+
+BEST_SCORE()
+  Returns the best score from the best move list (if it has been saved).
+  If no score has been explicitly specified, then this is equal to the
+  number of moves. If no score has been stored, then it is null.
+
 BYTE(...)
   Make a blob; each argument is a number, of which the low 8-bits are used
   to make the value of one byte in the blob, so the size of the blob will

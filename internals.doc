@@ -156,7 +156,11 @@ Record types:
 
 * 0x01 = Replay list
 
+* 0x02 = Best personal solution
+
 * 0x41 = Level version, if solved (omitted otherwise)
 
 * 0x42 = Mark position
+
+* 0x81 = Best personal score
 

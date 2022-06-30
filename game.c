@@ -1,5 +1,5 @@
 #if 0
-gcc ${CFLAGS:--s -O2} -c -Wno-multichar -fwrapv game.c `sdl-config --cflags`
+gcc ${CFLAGS:--s -O2} -c -Wno-unused-result -Wno-multichar -fwrapv game.c `sdl-config --cflags`
 exit
 #endif
 
@@ -23,6 +23,8 @@ MoveItem*replay_list;
 size_t replay_size;
 Uint16 replay_count,replay_pos,replay_mark;
 Uint8 solution_replay=255;
+char*best_list;
+Sint32 best_score=NO_SCORE;
 
 static volatile Uint8 timerflag;
 static int exam_scroll;
@@ -31,11 +33,13 @@ static size_t inputs_size;
 static int inputs_count;
 static Uint8 side_mode=255;
 static Uint8 should_record_solution;
+static Uint8 should_record_private_solution;
 static Uint8 replay_speed;
 static Uint8 replay_time;
 static Uint8 solved;
 static Uint8 inserting,saved_inserting;
 static sqlite3_stmt*autowin;
+static size_t dum_size; // not used by Free Hero Mesh, but needed by some C library functions.
 
 int encode_move(FILE*fp,MoveItem v) {
   // Encodes a single move and writes the encoded move to the file.
@@ -92,10 +96,13 @@ static void setup_game(void) {
   optionquery[1]=Q_replaySpeed;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
   replay_speed=strtol(v,0,10)?:16;
+  optionquery[1]=Q_saveSolutions;
+  optionquery[2]=Q_private;
+  v=xrm_get_resource(resourcedb,optionquery,optionquery,3)?:"";
+  should_record_private_solution=boolxrm(v,0);
   if(main_options['r']) {
     should_record_solution=0;
   } else {
-    optionquery[1]=Q_saveSolutions;
     v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
     should_record_solution=boolxrm(v,0);
   }
@@ -313,6 +320,15 @@ static void save_replay(void) {
     fputc(0x41,fp);
     fputc(level_version,fp);
     fputc(level_version>>8,fp);
+    if(best_list) {
+      fputc(0x02,fp);
+      fwrite(best_list,1,strlen(best_list)+1,fp);
+      fputc(0x81,fp);
+      fputc(best_score,fp);
+      fputc(best_score>>8,fp);
+      fputc(best_score>>16,fp);
+      fputc(best_score>>24,fp);
+    }
   }
   if(replay_mark) {
     fputc(0x42,fp);
@@ -333,6 +349,8 @@ static void load_replay(void) {
   free(replay_list);
   replay_list=0;
   replay_count=replay_mark=replay_size=0;
+  free(best_list);
+  best_list=0;
   if(solution_replay) {
     gameover_score=NO_SCORE;
     if(buf=read_lump(FIL_SOLUTION,level_id,&sz)) {
@@ -358,6 +376,7 @@ static void load_replay(void) {
   } else if(buf=read_userstate(FIL_LEVEL,level_id,&sz)) {
     fp=fmemopen(buf,sz,"r");
     if(!fp) fatal("Allocation failed\n");
+    best_score=NO_SCORE;
     if(sz>2 && *buf) {
       // Old format
       replay_count=(buf[sz-2]<<8)|buf[sz-1];
@@ -377,6 +396,11 @@ static void load_replay(void) {
           if(replay_list) goto skip;
           decode_move_list(fp);
           break;
+        case 0x02: // Best list
+          if(best_list) goto skip;
+          dum_size=0;
+          getdelim(&best_list,&dum_size,0,fp);
+          break;
         case 0x41: // Solved version
           i=fgetc(fp); i|=fgetc(fp)<<8;
           if(i==level_version) solved=1;
@@ -384,6 +408,12 @@ static void load_replay(void) {
         case 0x42: // Mark
           replay_mark=fgetc(fp);
           replay_mark|=fgetc(fp)<<8;
+          break;
+        case 0x81: // Best score
+          best_score=fgetc(fp);
+          best_score|=fgetc(fp)<<8;
+          best_score|=fgetc(fp)<<16;
+          best_score|=fgetc(fp)<<24;
           break;
         default: skip:
           if(i<0x40) {
@@ -395,6 +425,11 @@ static void load_replay(void) {
           } else {
             for(i=0;i<8;i++) fgetc(fp);
           }
+      }
+      if(best_list && !solved) {
+        free(best_list);
+        best_list=0;
+        best_score=NO_SCORE;
       }
     }
   }
@@ -1468,6 +1503,28 @@ static void record_solution(void) {
   sqlite3_exec(userdb,"UPDATE `LEVELS` SET `SOLVABLE` = 1 WHERE `ID` = LEVEL_ID();",0,0,0);
 }
 
+static void record_private_solution(void) {
+  FILE*fp;
+  char*buf=0;
+  int n;
+  if(solution_replay) return;
+  if(gameover_score==NO_SCORE) gameover_score=replay_pos;
+  if(best_list && best_score!=NO_SCORE && gameover_score>best_score) return;
+  dum_size=0;
+  fp=open_memstream(&buf,&dum_size);
+  if(!fp) fatal("Allocation failed\n");
+  n=replay_count;
+  replay_count=replay_pos;
+  encode_move_list(fp);
+  replay_count=n;
+  fclose(fp);
+  if(buf) {
+    free(best_list);
+    best_list=buf;
+    best_score=gameover_score;
+  }
+}
+
 void run_game(void) {
   int i;
   SDL_Event ev;
@@ -1535,6 +1592,7 @@ void run_game(void) {
           no_dead_anim=0;
           if(gameover==1) {
             if(should_record_solution) record_solution();
+            if(should_record_private_solution) record_private_solution();
             if(!solution_replay && !solved) sqlite3_exec(userdb,"UPDATE `LEVELS` SET `SOLVED` = 1 WHERE `ID` = LEVEL_ID();",0,0,0);
             if(autowin) do_autowin();
           }

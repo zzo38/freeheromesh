@@ -326,6 +326,8 @@ extern MoveItem*replay_list;
 extern size_t replay_size;
 extern Uint16 replay_count,replay_pos,replay_mark;
 extern Uint8 solution_replay;
+extern char*best_list;
+extern Sint32 best_score;
 
 int encode_move(FILE*fp,MoveItem v);
 int encode_move_list(FILE*fp);
