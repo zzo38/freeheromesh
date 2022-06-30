@@ -97,6 +97,9 @@ something in the code and want to know what file to look at.
 
 * FAQ: Frequently questions.
 
+* PORTING: Describes considerations for anyone who will distribute the
+program, include it in package managers, port it to other systems, etc.
+
 * README: This file. Describes how to find the Fossil repository, the
 installation, documentation, discussion/community.
 

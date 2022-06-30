@@ -1,0 +1,238 @@
+This file describes considerations for anyone who will distribute the
+program, include it in package managers, port it to other systems, etc.
+
+(Many of the below sections are only partially written so far, and some
+are not written at all, so far.)
+
+
+=== Distribution ===
+
+Dependencies of Free Hero Mesh include SDL1.x and SQLite.
+
+If you are making a distribution of this program for UNIX-based systems
+(including any Linux distribution), then you should ensure that you do:
+
+* Link it with a recent version of SQLite. The version included in the
+system might be too old, so ensure that you have a sufficiently new one.
+
+* Install documentation files (*.doc) in some common directory.
+
+* Edit the man6/heromesh.str file to specify the directory containing
+the documentation files, and then install the man pages.
+
+* Some GNU functions are used. If you are targeting a non-GNU system,
+then you must modify the program appropriately.
+
+* Some files may be referenced in the configuration file. When making
+a distribution, ensure they specify the correct path to installed files.
+
+Some operating system distributions have their own package conventions,
+which apply additionally than the above.
+
+The "har" program is independent and maybe it should be put into a
+separate package, which should be recommended or suggested by this one.
+It is useful in combination with Free Hero Mesh, but it is not really
+specific to it (it might be of use with some other packages too, such
+as OHRRPGCE, which "har" is also compatible with).
+
+Anything in the "misc/" directory is not part of Free Hero Mesh, so
+it should probably be excluded from the base package. You can decide
+whether or not to include it in a separate package.
+
+Free Hero Mesh uses argv[0] to determine whether to use home mode or
+portable mode. A distribution may wish to change that default (it can
+still be overridden by environment variables or by the -h switch).
+
+
+=== Debian Packaging ===
+
+Archive areas: The appropriate section should be "games", and the
+appropriate priority should be "optional".
+
+Architecture: Executable files must be compiled for a specific system (but
+source codes should be able to compile on most or all systems without much
+difficulty) (corresponding to "any" in Debian). Puzzle set files,
+documentation files, and configuration files are architecture-independent
+and are usable on any system (corresponding to "all" in Debian).
+
+Version numbers: Currently there are no version numbers; if a release
+version is made then that will be the version number.
+
+Homepage: http://zzo38computer.org/freeheromesh/
+
+Version Control: As of this writing, Fossil version control for packages
+is not supported in Debian (or does not seem to be, as far as I can tell).
+However, the web interface is available (see the home page for details).
+
+Building: Currently there is no Makefile, but it can be added.
+
+Dependencies: This program uses SDL1.x, the C standard library (with GNU
+extensions), and anything that they might depend on. It also uses SQLite,
+which can be linked either static or dynamic. Node.js (or a compatible
+JavaScript run time) is used to rebuild some of the auto-generated source
+files, and is not needed if you are not modifying Free Hero Mesh; Node.js
+is also not required at run time.
+
+Recommends/Suggests: The "har" program might be a separate package, which
+might be recommended or suggested (but not required) by Free Hero Mesh.
+(Other packages, such as OHRRPGCE, might also be capable of using it.)
+An implementation of farbfeld is also helpful if you want to import or
+export pictures (newest versions of ImageMagick have this feature, but
+other packages also include this functionality; any one will do), and if
+you want to use clipboard operations then xclip is also helpful.
+
+Configuration files: The .heromeshrc file and .heromeshsession files are
+configuration files; the latter is created automatically, but the former
+must already exist. Use the default.heromeshrc from the source code and
+customize the settings and paths as appropriate for the distribution. (The
+program might be modified to use a system-wide configuration file if the
+user-specific file does not exist, but it currently does not do that. An
+alternative is to put the file in /etc/skel so that it is automatically
+created when a user account is added.) As far as is known, no other
+packages share configuration with Free Hero Mesh. There is possibility
+that new versions of Free Hero Mesh might add new configuration settings,
+especially default key bindings. This will need to be handled somehow
+(possibly by documenting it in the upgrading system).
+
+File names: Free Hero Mesh uses only ASCII file names. This conforms with
+the requirement of Debian.
+
+Permissions and owners: Puzzle sets (which may be included in a separate
+package; another package might be used to install both the engine and the
+puzzle sets together) may be shareable; in this case, they must be opened
+read-only. Composite puzzle sets are probably best in this case since they
+are always opened read-only. There is no need to restrict execution of any
+file, or reading any installed file (even if the file is modified by the
+system administrator).
+
+Games: Debian policy has some specifications that are specific to game
+programs. These probably apply normally to Free Hero Mesh. The set-group-id
+mechanism is not needed; Free Hero Mesh does not share scores. It is OK to
+install binaries in /usr/games and man pages in /usr/share/man/man6 but
+the "har" program (which should probably be a separate package) should be
+installed in /usr/bin instead, probably.
+
+X Window System: This is probably not applicable, because SDL is able to
+use other video systems, although normally the X window system is used. If
+the operating system doesn't use X window system, then the program should
+still be capable of working if SDL is configured to work in such a case.
+(Free Hero Mesh has its own implementation of the X Resource Manager, which
+can run without the X window system.)
+
+Documentation: The file must be changed so that the man page specifies
+correctly where the files are stored, according to the distribution system.
+It may be OK for documentation to be a separate package, but this should be
+Recommended or Suggested, if so. Either way, the plain text documentation
+files can be installed in the appropriate subdirectory of /usr/share/doc.
+Debian seems to prefer HTML documentation. I disagree and am using plain
+text files instead (which can be viewed without installing a web browser).
+They also want UTF-8 encoding. I am using ASCII, which is a subset of UTF-8
+so that should be acceptable, too.
+
+Copyright: Free Hero Mesh is in the public domain. It depends on SQLite
+which is also public domain, and SDL1 which is LGPL. Puzzle sets might have
+any license.
+
+Also see the above section about "Distribution"; many of the things listed
+there will also apply to Debian.
+
+
+=== Testing ===
+
+Free Hero Mesh has a autotest feature which can test the game execution,
+if you have puzzle sets with valid solutions recorded. However, this only
+tests the behaviour of the game engine, and not any other features. Also,
+it only tests valid solutions, and not parts of the code that should result
+in error messages (although this possibility might be added in future).
+
+
+=== Game execution and user interface ===
+
+The exec.c and class.c files are the most important files, and can probably
+be used with minor changes even if porting to different systems and/or user
+interfaces. The other files could be omitted, but then those parts must be
+rewritten (possibly in a different programming language); some parts of the
+existing files could be copied if needed.
+
+
+=== Character Encoding ===
+
+Free Hero Mesh does not and will not use Unicode. As of this writing, it
+only supports single-byte character codes, although in future it is
+intended that multi-byte codes (e.g. EUC-JP) might also be implemented.
+
+
+=== Touch screen ===
+
+Free Hero Mesh is designed to be used with a keyboard and mouse; it is not
+meant for use with a touch screen. (On a device with both a keyboard and a
+touch screen, most functions can work as they are (changing the bindings
+as needed to avoid needing multiple mouse buttons), while some functions
+that are not configurable, might be changed (or configuration options might
+be added to support this possibility).)
+
+The small fonts are also potentially a problem with touch screens. It is
+intended that in future support will be added for arbitrary font sizes,
+but currently this is not implemented (as this document is being written).
+
+
+=== HTML5 ===
+
+If you intend to port the game engine to HTML5, then I would recommend to
+include documentation and links to the puzzle set files that will work
+even if JavaScripts and CSS are disabled (that will work with Lynx); the
+game engine may need JavaScript (and/or WebAssembly) to run to work, but
+if you want to read documentation or download puzzle sets separately, then
+it should not require such things.
+
+The MIME type for composite puzzle sets is:
+  application/freeheromesh.composite+hamarc
+
+The MIME type could, for example, be used in a <link rel="alternate">
+or <a ref="alternate"> block, the type attribute can specify the MIME
+type and the href can be the URL of the puzzle set file.
+
+Most likely, a different user interface should be written if a HTML5
+version of Free Hero Mesh is made up; the above section about game
+execution and user interfaces has some information that may be useful.
+
+
+=== TRON ===
+
+(TODO)
+
+
+=== DOS ===
+
+The lack of long file names may be a problem with DOS. Many file names may
+need to be changed (including configuration files and the files that make
+up a puzzle set), although composite puzzle sets will still work OK.
+
+Furthermore, switches in DOS are usually / instead of - and are usually
+case-insensitive; this could be changed if wanted.
+
+Also a home directory is not normally used in DOS; the home mode of Free
+Hero Mesh could be disabled, and always using portable mode instead.
+
+A DOS version of Free Hero Mesh could additionally be changed to use an
+internal clipboard, or an optional device driver for clipboard.
+
+It may be desirable to implement support for importing and exporting PCX
+and Dr.Halo picture formats directly, either built-in or using a separate
+program that is included with it, in the DOS version.
+
+
+=== Amiga ===
+
+(TODO)
+
+
+=== Microsoft Windows ===
+
+(TODO)
+
+
+=== Mac OS X ===
+
+(TODO)
+
