@@ -320,7 +320,7 @@ void swap_world(void);
 
 // == game ==
 
-typedef Uint8 MoveItem;
+typedef Uint16 MoveItem;
 
 extern MoveItem*replay_list;
 extern size_t replay_size;

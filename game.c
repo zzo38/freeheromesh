@@ -44,22 +44,34 @@ static size_t dum_size; // not used by Free Hero Mesh, but needed by some C libr
 int encode_move(FILE*fp,MoveItem v) {
   // Encodes a single move and writes the encoded move to the file.
   // Returns the number of bytes of the encoded move.
-  fputc(v,fp);
-  return 1;
+  if(v>=8 && v<256) {
+    fputc(v,fp);
+    return 1;
+  } else {
+    fatal("Unencodable move (%u)\n",(int)v);
+  }
 }
 
 int encode_move_list(FILE*fp) {
   // Encodes the current replay list into the file; returns the number of bytes.
   // Does not write a null terminator.
-  fwrite(replay_list,1,replay_count,fp);
-  return replay_count;
+  int i;
+  int c=0;
+  for(i=0;i<replay_count;i++) c+=encode_move(fp,replay_list[i]);
+  return c;
 }
 
 MoveItem decode_move(FILE*fp) {
   // Decodes a single move from the file, and returns the move.
   // Returns zero if there is no more moves.
   int v=fgetc(fp);
-  return (v==EOF?0:v);
+  if(v>=8 && v<256) {
+    return v;
+  } else if(v==EOF || !v) {
+    return 0;
+  } else {
+    fatal("Undecodable move (%u)\n",v);
+  }
 }
 
 int decode_move_list(FILE*fp) {
