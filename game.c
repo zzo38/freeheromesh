@@ -1686,6 +1686,46 @@ void run_auto_test(void) {
   exit(rc);
 }
 
+void export_private_solutions(void) {
+  int rc=0;
+  const char*t;
+  int i0,i1,i2,i,j,n;
+  unsigned char*data;
+  long sz;
+  for(n=1;n<=level_nindex;n++) {
+    level_id=level_index[n-1];
+    data=read_userstate(FIL_LEVEL,level_id,&sz);
+    if(!data) continue;
+    if(!sz || *data) {
+      free(data);
+      continue;
+    }
+    i0=i1=i2=0;
+    for(i=1;i<sz;) {
+      if(data[i]==0x02 && i+2<=sz) i0=i+1;
+      else if(data[i]==0x41 && i+3<=sz) i1=i+1;
+      else if(data[i]==0x81 && i+5<=sz) i2=i+1;
+      if(data[i]<0x40) i+=strnlen(data+i,sz-i)+1;
+      else if(data[i]<0x80) i+=3;
+      else if(data[i]<0xC0) i+=5;
+      else i+=9;
+    }
+    if(i0 && i1) {
+      i=strnlen(data+i0,sz-i0);
+      printf("%d.SOL",level_id);
+      putchar(0); // null terminator of lump name
+      j=i+(i2?7:3);
+      putchar(j>>16); putchar(j>>24); putchar(j); putchar(j>>8); // lump data size
+      putchar(data[i1]); putchar(data[i1+1]); // level version
+      putchar(i2?0x80:0x00); // flag
+      if(i2) fwrite(data+i2,1,4,stdout); // score
+      fwrite(data+i0,1,i,stdout); // move list
+    }
+    free(data);
+  }
+  exit(rc);
+}
+
 void locate_me(int x,int y) {
   Uint8 c=7;
   SDL_Rect r,rh,rv;

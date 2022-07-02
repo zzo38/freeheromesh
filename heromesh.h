@@ -336,6 +336,7 @@ int decode_move_list(FILE*fp);
 
 void run_game(void);
 void run_auto_test(void);
+void export_private_solutions(void);
 void locate_me(int x,int y);
 
 // == edit ==

@@ -21,6 +21,9 @@ and <resources> is optional resources to override.
 -M
   Write details of macro expansion to stdout.
 
+-O
+  Write a solution Hamster archive with private solutions to stdout.
+
 -T
   Mode for testing some internal functions of Free Hero Mesh and SDL. You
   probably do not need to use this mode yourself.
