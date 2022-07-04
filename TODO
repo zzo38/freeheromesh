@@ -18,6 +18,7 @@
 * Inventory/replay hybrid view
 * Scrollable playfield view
   * Auto scroll option (using Player flag)
+  * Configurable auto scroll option
   * Manual scroll option
 * Bookmarks
 * Message trace menu to enable/disable
@@ -43,6 +44,8 @@
   * Optional hypertext help
   * Compressed class definitions (?)
 * Option to auto display level titles
+* Option to use a separate solution file
+* Multiuser scoring within one computer system (optional capability)
 * Testing
   * Bizarro world
   * Connection movement (it is partially tested, already)

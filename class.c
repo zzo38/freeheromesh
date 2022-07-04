@@ -2140,6 +2140,7 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
         case OP_USERFLAG: class_user_flag(cl); break;
         case OP_ABSTRACT: cl->cflags|=CF_GROUP; break;
         case OP_CONNECTION: cl->oflags|=OF_CONNECTION; break;
+        case OP_CRUSH: cl->oflags|=OF_CRUSH; break;
         case 0x4000 ... 0x7FFF: set_super_class(cl,ptr); ptr=2; break;
         default: ParseError("Invalid directly inside of a class definition\n");
       }

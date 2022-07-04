@@ -1066,6 +1066,9 @@ static int fake_move_dir(Uint32 obj,Uint32 dir,Uint8 no) {
             if(hit&0x800000) goto restart;
           }
         }
+        if((oE->oflags&OF_CRUSH) && !(hit&0x22) && oE->x==o->x+x_delta[dir] && oE->y==o->y+y_delta[dir]) {
+          if(!v_bool(destroy(obj,objE,4))) hit|=0x8000;
+        }
         objE=obj_below(objE);
       }
       if((hit&0x48000)==0x8000) goto restart;
@@ -1139,6 +1142,9 @@ static int fake_move_dir(Uint32 obj,Uint32 dir,Uint8 no) {
           hit|=0x8000;
           if(hit&0x800000) goto restart;
         }
+      }
+      if((oE->oflags&OF_CRUSH) && !(hit&0x22) && oE->x==o->x+x_delta[dir] && oE->y==o->y+y_delta[dir]) {
+        if(!v_bool(destroy(obj,objE,4))) hit|=0x8000;
       }
       if(hit&0x400) goto fail;
       objE=obj_below(objE);
@@ -1320,6 +1326,9 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
               if(hit&0x800000) goto restart;
             }
           }
+          if((oE->oflags&OF_CRUSH) && !(hit&0x22) && obj==objW && oE->x==o->x+x_delta[dir] && oE->y==o->y+y_delta[dir]) {
+            if(!v_bool(destroy(obj,objE,4))) hit|=0x8000;
+          }
         }
         objE=obj_below(objE);
       }
@@ -1410,6 +1419,9 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
           hit|=0x8000;
           if(hit&0x800000) goto restart;
         }
+      }
+      if((oE->oflags&OF_CRUSH) && !(hit&0x22) && obj==objW && oE->x==o->x+x_delta[dir] && oE->y==o->y+y_delta[dir]) {
+        if(!v_bool(destroy(obj,objE,4))) hit|=0x8000;
       }
       if(hit&0x400) goto fail;
       objE=obj_below(objE);
@@ -2935,6 +2947,10 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_COUNT: StackReq(1,2); i=v_count(); Push(NVALUE(i)); break;
     case OP_CREATE: NoIgnore(); StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_create(obj,t1,t2,t3,t4,t5)); break;
     case OP_CREATE_D: NoIgnore(); StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_create(obj,t1,t2,t3,t4,t5); break;
+    case OP_CRUSH: StackReq(0,1); if(o->oflags&OF_CRUSH) Push(NVALUE(1)); else Push(NVALUE(0)); break;
+    case OP_CRUSH_C: StackReq(1,1); GetFlagOf(OF_CRUSH); break;
+    case OP_CRUSH_E: NoIgnore(); StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_CRUSH; else o->oflags&=~OF_CRUSH; break;
+    case OP_CRUSH_EC: NoIgnore(); StackReq(2,0); SetFlagOf(OF_CRUSH); break;
     case OP_DATA: StackReq(2,1); t2=Pop(); t1=Pop(); v_data(t1,t2); break;
     case OP_DELINVENTORY: StackReq(2,0); t2=Pop(); t1=Pop(); v_delete_inventory(t1,t2); break;
     case OP_DELTA: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u>t2.u?t1.u-t2.u:t2.u-t1.u)); break;

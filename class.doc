@@ -415,6 +415,9 @@ Compatible
 Connection
   Sets the Connection flag for this class.
 
+Crush
+  Sets the Crush flag for this class.
+
 (DefaultImage <list...>)
   Each entry is either a number of an image in this class, or two
   numbers in parentheses giving a range of images, or () to indicate
@@ -501,7 +504,7 @@ Player
   Set the Player flag for this class.
 
 (Queen <code...>)
-  Combines the effects of the (Rook) and (Queen) blocks.
+  Combines the effects of the (Rook) and (Bishop) blocks.
 
 Quiz
   If specified, the internal variables of objects of this class cannot
@@ -933,6 +936,12 @@ Connection : bool [c]
   instead of only one. This changes some of the behaviour and will
   cause additional messages to be sent, too. Deferred movement is not
   possible if this flag is set.
+
+Crush : bool [c]
+  If this flag is set, then objects that try to move into it will destroy
+  it if it is unable to shove it out of the way. Unlike sharpness checking,
+  crushing is checked after shoving instead of before. Crushing is never
+  possible if warping occurs.
 
 Density : int16/int32 [c]
   Determines the order that objects are stacked within each cell. When an
@@ -2328,8 +2337,8 @@ DESTROY
   Received when the object is about to be destroyed. Arg3 is the reason:
   0 for the Destroy or ,Destroy instruction, 1 due to this object moving
   into something sharp, 2 due to something sharp moving into this one,
-  or 3 for a conflict with CollisionLayers. The return value is false to
-  allow it to be destroyed or true to keep the object.
+  3 for a conflict with CollisionLayers, or 4 for crushing. The return
+  value is false to allow it to be destroyed or true to keep the object.
 
 DESTROYED
   Sent to all objects whose Departures care about objects in the location
@@ -2471,7 +2480,7 @@ bit0
   prevent sending the HITBY message unless the return value also has bit0.
 
 bit1
-  Do not destroy either object due to hardness/sharpness.
+  Do not destroy either object due to hardness/sharpness or crushing.
 
 bit2
   Do not attempt to shove the target object.
@@ -2486,8 +2495,9 @@ bit4
   objects at the target location.
 
 bit5
-  Do not destroy either object due to hardness/sharpness, nor should any
-  further objects at the target location be destroyed due to sharpness.
+  Do not destroy either object due to hardness/sharpness or crushing, nor
+  should any further objects at the target location be destroyed due to
+  hardness/sharpness or crushing.
 
 bit6
   Do not attempt to shove the target object, nor attempt to shove any
@@ -2506,7 +2516,7 @@ bit9
   Abort after hardness/sharpness checking.
 
 bit10
-  Abort after attempting shoving.
+  Abort after attempting shoving and crushing.
 
 bit11
   Set by the game engine if the move attempt has been restarted due to

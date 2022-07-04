@@ -190,6 +190,7 @@ qa "a?"
 ,Player
 ,Compatible
 ,CollisionLayers
+,=Crush
 Self
 Msg
 From
