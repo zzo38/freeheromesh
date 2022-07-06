@@ -397,9 +397,9 @@ static void load_replay(void) {
         i=(buf[replay_count+2]<<8)|buf[replay_count+3];
         if(i==level_version) solved=1;
       }
-      replay_list=malloc(replay_size=sizeof(MoveItem)*replay_count+1);
+      replay_list=malloc(replay_size=sizeof(MoveItem)*(replay_count+1));
       if(!replay_list) fatal("Allocation failed\n");
-      for(i=0;i<replay_size;i++) replay_list[i]=buf[i];
+      for(i=0;i<replay_count;i++) replay_list[i]=buf[i];
     } else {
       // New format
       fgetc(fp); // skip first null byte

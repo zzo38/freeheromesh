@@ -38,7 +38,8 @@ typedef struct {
 #define ValueTo64(v) (((sqlite3_int64)((v).u))|(((sqlite3_int64)((v).t))<<32))
 #define ValueEq(x,y) ((x).t==(y).t && (x).u==(y).u)
 
-#define N_MESSAGES 27
+#define N_MESSAGES 28
+#define N_STANDARD_SOUNDS 49
 extern const char*const standard_message_names[];
 extern const char*const standard_sound_names[];
 extern const char*const heromesh_key_names[256];
@@ -242,6 +243,9 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1);
 #define ANI_LOOP 0x02
 #define ANI_OSC 0x08
 #define ANI_SYNC 0x80
+
+// Special key codes; used in encoded move lists and in some cases also values for Key
+#define KEY_XY 1
 
 typedef struct {
   Uint8 flag,start,end;

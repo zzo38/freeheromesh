@@ -31,6 +31,7 @@ const standard_message_names=`
  24 = BLOCKED
  25 = CONNECT
  26 = NEXTWARP
+ 27 = CLICK
 `.split("\n").map(x=>/^ *([0-9]+) = ([^ ]*) *$/.exec(x)).filter(x=>x);
 const standard_sound_names=[];
 `
@@ -141,17 +142,22 @@ const heromesh_key_names=Object.create(null);
 [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"].forEach(x=>{
   heromesh_key_names[x.charCodeAt()]=x;
 });
+const msgkeys=Object.create(null); // In case some message names are also sound names
 console.log("// Auto-generated! Do not modify directly!");
-standard_message_names.forEach(([a,b,c])=>console.log("#define MSG_"+c+" "+b));
+standard_message_names.forEach(([a,b,c])=>{
+  msgkeys[c]=true;
+  console.log("#define MSG_"+c+" "+b);
+});
 console.log("#ifdef HEROMESH_MAIN");
 console.log("const char*const standard_message_names[]={");
 standard_message_names.forEach(([a,b,c])=>console.log(" \""+c+"\","));
 console.log("};");
-console.log("#endif");
-standard_sound_names.forEach((x,y)=>console.log("#define SND_"+x+" "+y));
-console.log("#ifdef HEROMESH_MAIN");
 console.log("const char*const standard_sound_names[]={");
-standard_sound_names.forEach(x=>console.log(" \""+x+"\","));
+standard_sound_names.forEach(x=>{
+  if(msgkeys[x]) console.log("#ifdef HEROMESH_CONV_MAIN");
+  console.log(" \""+x+"\",");
+  if(msgkeys[x]) console.log("#endif");
+});
 console.log("};");
 console.log("const char*const heromesh_key_names[256]={");
 Object.keys(heromesh_key_names).forEach(x=>console.log(" ["+x+"]=\""+heromesh_key_names[x]+"\","));

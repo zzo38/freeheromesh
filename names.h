@@ -26,6 +26,7 @@
 #define MSG_BLOCKED 24
 #define MSG_CONNECT 25
 #define MSG_NEXTWARP 26
+#define MSG_CLICK 27
 #ifdef HEROMESH_MAIN
 const char*const standard_message_names[]={
  "INIT",
@@ -55,59 +56,8 @@ const char*const standard_message_names[]={
  "BLOCKED",
  "CONNECT",
  "NEXTWARP",
+ "CLICK",
 };
-#endif
-#define SND_SPLASH 0
-#define SND_POUR 1
-#define SND_DOOR 2
-#define SND_GLASS 3
-#define SND_BANG 4
-#define SND_UNHH 5
-#define SND_UH_OH 6
-#define SND_FROG 7
-#define SND_THWIT 8
-#define SND_KLINKK 9
-#define SND_POWER 10
-#define SND_KLECK 11
-#define SND_CLICK 12
-#define SND_SMALL_POP 13
-#define SND_DINK 14
-#define SND_TICK 15
-#define SND_CHYEW 16
-#define SND_CHEEP 17
-#define SND_ANHH 18
-#define SND_BRRRT 19
-#define SND_BRRREEET 20
-#define SND_BWEEP 21
-#define SND_DRLRLRINK 22
-#define SND_FFFFTT 23
-#define SND_WAHOO 24
-#define SND_YEEHAW 25
-#define SND_OLDPHONE 26
-#define SND_RATTLE 27
-#define SND_BEEDEEP 28
-#define SND_THMP_thmp 29
-#define SND_BEDOINGNG 30
-#define SND_HEARTBEAT 31
-#define SND_LOCK 32
-#define SND_TAHTASHH 33
-#define SND_BOOOM 34
-#define SND_VACUUM 35
-#define SND_RATCHET2 36
-#define SND_DYUPE 37
-#define SND_UNCORK 38
-#define SND_BOUNCE 39
-#define SND_JAYAYAYNG 40
-#define SND_DEEP_POP 41
-#define SND_RATCHET1 42
-#define SND_GLISSANT 43
-#define SND_BUZZER 44
-#define SND_FAROUT 45
-#define SND_KEWEL 46
-#define SND_WHACK 47
-#define SND_STEAM 48
-#define SND_HAWK 49
-#ifdef HEROMESH_MAIN
 const char*const standard_sound_names[]={
  "SPLASH",
  "POUR",
@@ -121,7 +71,9 @@ const char*const standard_sound_names[]={
  "KLINKK",
  "POWER",
  "KLECK",
+#ifdef HEROMESH_CONV_MAIN
  "CLICK",
+#endif
  "SMALL_POP",
  "DINK",
  "TICK",

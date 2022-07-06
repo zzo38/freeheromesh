@@ -27,6 +27,7 @@ exit
 typedef struct {
   char a[(N_MESSAGES==sizeof(standard_message_names)/sizeof(*standard_message_names))?1:-9];
   char b[('\1\0'*'x'+'\0\1'*'y'=='xy')?1:-9];
+  char c[(N_STANDARD_SOUNDS==sizeof(standard_sound_names)/sizeof(*standard_sound_names))?1:-9];
 } ASSERTION;
 
 static const char schema[]=

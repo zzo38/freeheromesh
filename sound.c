@@ -14,8 +14,6 @@ exit
 #include "heromesh.h"
 #include "cursorshapes.h"
 
-#define N_STANDARD_SOUNDS 50
-
 typedef struct {
   Uint8*data;
   Uint32 len; // length in bytes

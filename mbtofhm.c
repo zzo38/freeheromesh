@@ -9,6 +9,7 @@ exit
 #include <stdlib.h>
 #include <string.h>
 #define HEROMESH_MAIN
+#define HEROMESH_CONV_MAIN
 #include "names.h"
 
 #define fatal(...) do{ fprintf(stderr,__VA_ARGS__); exit(1); }while(0)

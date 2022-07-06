@@ -2,11 +2,12 @@
 const fs=require("fs");
 const names_file=fs.readFileSync("names.js","ascii").split("\n");
 const data_file=fs.readFileSync("instruc","ascii").split("\n");
+const msgkeys=Object.create(null);
 const do_sound_names=x=>{
   if(!x || x[0]=="`") return;
   if(x[0]=="c") return f=()=>0;
   let y=/^ *([A-Za-z_0-9]+) *$/.exec(x);
-  if(y) return data_file.push("#"+y[1]);
+  if(y && !msgkeys[y[1]]) return data_file.push("#"+y[1]);
 };
 const do_message_names=x=>{
   if(x.startsWith("const standard_sound_names=")) {
@@ -14,7 +15,10 @@ const do_message_names=x=>{
     return f=do_sound_names;
   }
   let y=/^ *([0-9]+) = ([^ ]*) *$/.exec(x);
-  if(y) data_file.push("#"+y[2]+" ("+(Number(y[1])+0x0200).toString(16)+")");
+  if(y) {
+    msgkeys[y[2]]=true;
+    data_file.push("#"+y[2]+" ("+(Number(y[1])+0x0200).toString(16)+")");
+  }
 };
 let f=x=>{
   if(x.startsWith("const standard_message_names=")) f=do_message_names;

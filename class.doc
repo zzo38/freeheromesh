@@ -676,6 +676,7 @@ Standard messages:
   ARRIVED
   BEGIN_TURN
   BLOCKED
+  CLICK
   COLLIDE
   COLLIDEBY
   COLLIDING
@@ -800,7 +801,6 @@ Standard sound constants:
   BWEEP
   CHEEP
   CHYEW
-  CLICK
   DEEP_POP
   DINK
   DOOR
@@ -838,6 +838,10 @@ Standard sound constants:
   WAHOO
   WHACK
   YEEHAW
+
+Note: Some messages can also be used as sounds. Some sounds might later be
+changed to messages (they can still be used as sounds, although a sound
+file with that name is not guaranteed to be available).
 
 
 === Variables ===

@@ -208,6 +208,7 @@ Key
 -Order
 Control
 -LevelTable
+-InputXY
 
 ; Class definitions
 -Input
