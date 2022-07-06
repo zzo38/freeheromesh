@@ -3601,6 +3601,7 @@ const char*execute_turn(int key) {
   Object*o;
   Value v;
   int i;
+  tc=0;
   if(!key) {
     // This is part of initialization; if anything triggered, it must be executed now
     all_flushed=1;
@@ -3608,6 +3609,7 @@ const char*execute_turn(int key) {
   }
   if(setjmp(my_env)) return my_error;
   if(quiz_text) {
+    if(key>256 && !key_ignored) return 0;
     sqlite3_free(quiz_text);
     quiz_text=0;
     if(key_ignored) {
@@ -3622,8 +3624,6 @@ const char*execute_turn(int key) {
   all_flushed=0;
   lastimage_processing=0;
   vstackptr=0;
-  current_key=key;
-  tc=0;
   for(n=0;n<nobjects;n++) if(o=objects[n]) {
     o->distance=0;
     o->oflags&=~(OF_KEYCLEARED|OF_DONE|OF_MOVING);
@@ -3635,23 +3635,48 @@ const char*execute_turn(int key) {
   // Input phase
   m=VOIDLINK;
   v=NVALUE(0);
-  if(!quiz_obj.t) {
-    n=lastobj;
+  if(key>=8 && key<256) {
+    current_key=key;
+    if(!quiz_obj.t) {
+      n=lastobj;
+      while(n!=VOIDLINK) {
+        i=classes[objects[n]->class]->cflags;
+        if(i&CF_INPUT) v=send_message(VOIDLINK,n,MSG_KEY,NVALUE(key),v,NVALUE(0));
+        if(i&CF_PLAYER) m=n;
+        n=objects[n]->prev;
+      }
+    } else {
+      n=quiz_obj.u;
+      if(objects[n]->generation!=quiz_obj.t) n=VOIDLINK;
+      quiz_obj=NVALUE(0);
+      if(classes[objects[n]->class]->cflags&CF_COMPATIBLE) all_flushed=1;
+      v=send_message(VOIDLINK,n,MSG_KEY,NVALUE(key),NVALUE(0),NVALUE(1));
+    }
+  } else if(has_xy_input && key>=0x8000 && key<=0x8FFF) {
+    x=((key>>6)&63)+1; y=(key&63)+1;
+    if(x>pfwidth || y>pfheight) return "Illegal move";
+    current_key=KEY_XY;
+    if(control_obj!=VOIDLINK) {
+      quiz_obj=NVALUE(0);
+      v=send_message(VOIDLINK,control_obj,MSG_CLICK,NVALUE(x),NVALUE(y),NVALUE(0));
+      if(key_ignored) goto ignored;
+    }
+    m=n=playfield[x+y*64-65];
+    while(m!=VOIDLINK) {
+      m=objects[m]->up;
+      if(m!=VOIDLINK) n=m;
+    }
     while(n!=VOIDLINK) {
-      i=classes[objects[n]->class]->cflags;
-      if(i&CF_INPUT) v=send_message(VOIDLINK,n,MSG_KEY,NVALUE(key),v,NVALUE(0));
-      if(i&CF_PLAYER) m=n;
-      n=objects[n]->prev;
+      if(objects[n]->x!=x || objects[n]->y!=y) break;
+      if(v_bool(send_message(VOIDLINK,n,MSG_CLICK,NVALUE(x),NVALUE(y),v))) break;
+      n=objects[n]->down;
     }
   } else {
-    n=quiz_obj.u;
-    if(objects[n]->generation!=quiz_obj.t) n=VOIDLINK;
-    quiz_obj=NVALUE(0);
-    if(classes[objects[n]->class]->cflags&CF_COMPATIBLE) all_flushed=1;
-    v=send_message(VOIDLINK,n,MSG_KEY,NVALUE(key),NVALUE(0),NVALUE(1));
+    return "Illegal move";
   }
   current_key=0;
   if(key_ignored) {
+    ignored:
     quiz_obj=NVALUE(0);
     return changed?"Invalid use of IgnoreKey":0;
   }

@@ -186,6 +186,7 @@ extern Uint16 array_size;
 extern Uint16*orders;
 extern Uint8 norders;
 extern Uint16 control_class;
+extern Uint8 has_xy_input; // zero if not, nonzero if it has
 
 typedef struct {
   // Flags: 1=fill-width, 2=multi-colours, 4=built-in-data
@@ -245,6 +246,7 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1);
 #define ANI_SYNC 0x80
 
 // Special key codes; used in encoded move lists and in some cases also values for Key
+// Only numbers 1 to 7 can be used in this way.
 #define KEY_XY 1
 
 typedef struct {

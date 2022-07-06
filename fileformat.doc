@@ -153,6 +153,11 @@ here is reserved for future use; they are not valid key codes.)
 (Free Hero Mesh currently ignores the comment and time stamp, although
 this might change in a future version of Free Hero Mesh.)
 
+Special key codes are:
+
+* 1 = Coordinate input; follow by two more bytes being the X coordinate
+and Y coordinate (both in the range 1 to 64).
+
 
 === xclass/*.DEP ===
 

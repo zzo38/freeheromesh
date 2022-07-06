@@ -105,6 +105,7 @@
 ?.gameKey.alt.Z: 'CTRL
 
 ! Game key bindings
+?.gameClick.left: select 'xy',$X,$Y where has_xy_input();
 ?.gameKey.ctrl.D: select '^d',$key_xy;
 ?.gameKey.ctrl.E: ^E
 ?.gameKey.ctrl.I: select 'mi',:import_move_list;

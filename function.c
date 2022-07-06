@@ -175,6 +175,10 @@ static void fn_hash(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   sqlite3_result_blob(cxt,hash_buffer(h,u,n),m,free);
 }
 
+static void fn_has_xy_input(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  sqlite3_result_int(cxt,has_xy_input);
+}
+
 static void fn_heromesh_escape(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   const unsigned char*u=sqlite3_value_blob(*argv);
   int un=sqlite3_value_bytes(*argv);
@@ -1793,6 +1797,7 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"CLASS_DATA",2,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_class_data,0,0);
   sqlite3_create_function(userdb,"CVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_cvalue,0,0);
   sqlite3_create_function(userdb,"HASH",2,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_hash,0,0);
+  sqlite3_create_function(userdb,"HAS_XY_INPUT",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_has_xy_input,0,0);
   sqlite3_create_function(userdb,"HEROMESH_ESCAPE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_heromesh_escape,0,0);
   sqlite3_create_function(userdb,"HEROMESH_TYPE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_heromesh_type,0,0);
   sqlite3_create_function(userdb,"HEROMESH_UNESCAPE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_heromesh_unescape,0,0);

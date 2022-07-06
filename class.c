@@ -53,6 +53,7 @@ Uint16 array_size;
 Uint16*orders;
 Uint8 norders;
 Uint16 control_class;
+Uint8 has_xy_input;
 
 char*ll_head;
 DisplayColumn*ll_disp;
@@ -2678,6 +2679,11 @@ void load_classes(void) {
           break;
         case OP_LEVELTABLE:
           level_table_definition();
+          break;
+        case OP_INPUTXY:
+          has_xy_input=1;
+          nxttok();
+          if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
           break;
         default:
           ParseError("Invalid top level definition: %s\n",tokenstr);

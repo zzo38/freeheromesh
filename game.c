@@ -47,6 +47,11 @@ int encode_move(FILE*fp,MoveItem v) {
   if(v>=8 && v<256) {
     fputc(v,fp);
     return 1;
+  } else if(v>=0x8000 && v<=0x8FFF) {
+    fputc(KEY_XY,fp);
+    fputc(((v>>6)&63)+1,fp);
+    fputc((v&63)+1,fp);
+    return 3;
   } else {
     fatal("Unencodable move (%u)\n",(int)v);
   }
@@ -67,6 +72,9 @@ MoveItem decode_move(FILE*fp) {
   int v=fgetc(fp);
   if(v>=8 && v<256) {
     return v;
+  } else if(v==KEY_XY) {
+    v=0x8000|((fgetc(fp)-1)<<6);
+    return v|(fgetc(fp)-1);
   } else if(v==EOF || !v) {
     return 0;
   } else {
@@ -208,7 +216,16 @@ static void redraw_game(void) {
     for(y=44,x=replay_pos-(screen->h-68)/32;;x++) {
       y+=16;
       if(y+24>screen->h) break;
-      if(x>=0 && x<replay_count) draw_key(16,y,replay_list[x],0xF8,0xFB);
+      if(x>=0 && x<replay_count) {
+        if(replay_list[x]<256) {
+          draw_key(16,y,replay_list[x],0xF8,0xFB);
+        } else if((replay_list[x]&0xF000)==0x8000) {
+          sprintf(buf,"%02u",((replay_list[x]>>6)&63)+1);
+          draw_text(16,y,buf,0xF8,0x47);
+          sprintf(buf,"%02u",(replay_list[x]&63)+1);
+          draw_text(16,y+8,buf,0xF8,0x45);
+        }
+      }
       if(x==replay_count) draw_key(16,y,1,0xF0,0xF8);
       if(x==replay_pos) draw_text(0,y,inserting?"I~":"~~",0xF0,0xFE);
       if(x==replay_mark) draw_text(32,y,"~~",0xF0,0xFD);
@@ -1216,7 +1233,7 @@ static int list_levels(void) {
 
 static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,void*aux) {
   switch(cmd) {
-    case '\' ': // Play a move
+    case '\' ': play: // Play a move
       if(replay_time) {
         replay_time=0;
         return -3;
@@ -1352,6 +1369,13 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       if(number<1) number=1; else if(number>255) number=255;
       replay_speed=number;
       return prev;
+    case 'xy': // Coordinate input
+      if(argc<3 || !has_xy_input) break;
+      argc=sqlite3_column_int(args,1);
+      number=sqlite3_column_int(args,2);
+      if(argc<1 || argc>pfwidth || number<1 || number>pfheight) return 0;
+      number=(number-1)|((argc-1)<<6)|0x8000;
+      goto play;
     default:
       return prev;
   }
@@ -1426,7 +1450,7 @@ static Uint32 timer_callback(Uint32 n) {
   return n;
 }
 
-static inline void input_move(Uint8 k) {
+static inline void input_move(MoveItem k) {
   const char*t=execute_turn(k);
   if(replay_pos>0xFFFE && !gameover) t="Too many moves played";
   if(t) {

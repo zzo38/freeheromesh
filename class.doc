@@ -289,6 +289,11 @@ These are the global definitions in the class definition file.
   Define user flags as CollisionLayers bits; the first defined flag is
   bit0. Up to 8 flags can be defined in this way.
 
+(InputXY <options...>)
+  Enables coordinate input. Currently there are no options, so the options
+  must be left blank. See the documentation about the CLICK message for
+  more details about coordinate input.
+
 (LevelTable <definitions...>)
   Define the level table. See the section about level table definition
   for details. Can only occur once.
@@ -1614,7 +1619,8 @@ JumpTo  ( x y -- bool ) **
   successfully teleported.
 
 Key  ( -- number )
-  During the input phase, the key input. During other phases, zero.
+  During the input phase, the key input. During other phases, zero. During
+  the input phase of coordinate input, this value will be 1.
 
 land  ( in1 in2 -- out )
   Logical AND.
@@ -2261,6 +2267,15 @@ BLOCKED
   Arg2 are that object's coordinates, and Arg3 is 1 for +Move or 0 for
   -Move. Of the return value, bit0 clears the Moving flag (causing the
   move to fail), and bit1 causes it to not send any more BLOCKED messages.
+
+CLICK
+  Sent during coordinate input. It is first sent to the control object,
+  and then if IgnoreKey is not executed, to each object at the clicked
+  coordinates, from top to bottom; it will stop if any one returns nonzero
+  or if the object that received this message has moved. Arg1 and Arg2 are
+  the X and Y coordinates. Arg3 is zero for the control object, but is the
+  return value of the CLICK message from the control object when this
+  message is sent to other objects.
 
 COLLIDE
   Received when this object is trying to move into a location where there

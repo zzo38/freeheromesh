@@ -69,6 +69,10 @@ HASH(data,algorithm)
   Make the hash of the data as a binary blob. See hash.h for a list of the
   valid numbers to use as the hash algorithm numbers.
 
+HAS_XY_INPUT()
+  Returns nonzero if this puzzle set has coordinate input, or zero if it
+  does not have coordinate input.
+
 HEROMESH_ESCAPE(blob)
   Converts blob representation of a game string into escaped format.
 
