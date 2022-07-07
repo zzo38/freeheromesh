@@ -129,6 +129,9 @@ any name with : at first to ask the user for the value to use.
   Adjust replay speed by the specified number (negative to make faster, or
   positive to make slower; zero leaves it unchanged).
 
+'xy' <x> <y>
+  Input a move using coordinate input. Coordinates are 1-based.
+
 
 === Editor commands ===
 
