@@ -159,6 +159,11 @@ interfaces. The other files could be omitted, but then those parts must be
 rewritten (possibly in a different programming language); some parts of the
 existing files could be copied if needed.
 
+Free Hero Mesh uses SQLite and X resource manager. However, it would be
+possible and valid to make a implementation of Free Hero Mesh which does
+not use these things, although some parts of the code might need to be
+changed or else writing compatibility functions.
+
 
 === Character encoding ===
 
