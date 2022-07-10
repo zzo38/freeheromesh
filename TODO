@@ -49,7 +49,7 @@
   * Bizarro world
   * Connection movement (it is partially tested, already)
   * Sweep, SweepEx, HitMe
-  * Overriding order of execution
+  * Overriding order of execution (partially tested)
 * Conversion from other games
   * DOS Hero Hearts
   * Berusky

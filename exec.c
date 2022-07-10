@@ -725,16 +725,17 @@ static void set_order(Uint32 obj) {
   // To avoid confusing order of execution at the wrong time,
   // calling this function is limited to only certain times.
   Object*o=objects[obj];
-  Uint8 ord=classes[objects[obj]->class]->order;
+  Uint8 ord=classes[o->class]->order;
   Uint8 u;
   Sint32 v0,v1;
-  Uint16 p=orders[ord]+1;
+  Uint16 p;
   Uint32 n=firstobj;
   for(;;) {
     if(n==obj || n==VOIDLINK) goto notfound;
     u=classes[objects[n]->class]->order;
-    if(u<ord) goto found;
+    if(u<ord || !(objects[n]->oflags&OF_ORDERED)) goto found;
     if(u==ord) {
+      p=orders[ord]+1;
       criteria: switch(orders[p]) {
         case OP_RET: goto found;
         case OP_DENSITY: v0=o->density; v1=objects[n]->density; goto compare;
@@ -804,15 +805,12 @@ static void set_order(Uint32 obj) {
   found:
   // Now it has been found; insert this object previous to the found object, removing from its existing slot.
   // (Objects are executed in reverse order, so previous in the linked list means executed next)
-  if(firstobj==obj) firstobj=o->next;
-  if(lastobj==obj) lastobj=o->prev;
-  if(o->prev!=VOIDLINK) objects[o->prev]->next=o->next;
-  if(o->next!=VOIDLINK) objects[o->next]->prev=o->prev;
-  o->prev=objects[n]->prev;
+  if(o->prev==VOIDLINK) firstobj=o->next; else objects[o->prev]->next=o->next;
+  if(o->next==VOIDLINK) lastobj=o->prev; else objects[o->next]->prev=o->prev;
   o->next=n;
+  o->prev=objects[n]->prev;
   objects[n]->prev=obj;
-  if(o->prev==VOIDLINK) firstobj=obj;
-  if(objects[n]->next==VOIDLINK) lastobj=n;
+  if(o->prev==VOIDLINK) firstobj=obj; else objects[o->prev]->next=obj;
   notfound:
   objects[obj]->oflags|=OF_ORDERED;
 }
