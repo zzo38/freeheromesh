@@ -2229,7 +2229,7 @@ static void parse_order_block(void) {
     orders[++norders]=ptr;
     if(norders==beg) ParseError("Too many orders\n");
     switch(tokenv) {
-      case OP_INPUT: case OP_PLAYER: case OP_CONTROL:
+      case OP_INPUT: case OP_PLAYER: case OP_CONTROL: case 0x4000 ... 0x7FFF:
         orders[ptr++]=tokenv;
         break;
       case OP_USERFLAG:
@@ -2255,6 +2255,7 @@ static void parse_order_block(void) {
         case OP_XLOC: case OP_XLOC_C:
         case OP_YLOC: case OP_YLOC_C:
         case OP_IMAGE: case OP_IMAGE_C:
+        case 0xC000 ... 0xFFFF:
           orders[ptr++]=tokenv;
           break;
         default: ParseError("Unexpected token in (Order) block\n");
@@ -2268,7 +2269,7 @@ static void parse_order_block(void) {
 }
 
 static void set_class_orders(void) {
-  int i,j,k;
+  int i,j,k,m;
   if(main_options['C']) {
     for(j=1;j<=norders;j++) {
       printf("Order %d =",j);
@@ -2286,6 +2287,14 @@ static void set_class_orders(void) {
         case 0x1040 ... 0x105F: if(classes[i]->misc6&(1UL<<(k&0x1F))) goto found; break;
         case 0x1060 ... 0x107F: if(classes[i]->misc7&(1UL<<(k&0x1F))) goto found; break;
         case 0x1080 ... 0x1087: if(classes[i]->collisionLayers&(1L<<(k&0x07))) goto found; break;
+        case 0x4000 ... 0x7FFF:
+          if(i+0x4000==k) goto found;
+          m=i;
+          while(m && classes[m]->codes && classes[m]->codes[0]==OP_SUPER) {
+            if(classes[m]->codes[1]+0x4000==k) goto found;
+            m=classes[m]->codes[1];
+          }
+          break;
         case OP_PLAYER: if(classes[i]->cflags&CF_PLAYER) goto found; break;
         case OP_INPUT: if(classes[i]->cflags&CF_INPUT) goto found; break;
         case OP_CONTROL: if(i==control_class) goto found; break;

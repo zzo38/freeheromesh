@@ -103,6 +103,23 @@ Some of these numbers, including the OP_ constants, are also used during
 parsing; some of them occur only as tokens and not in the compiled P-code,
 and some only occur in the compiled P-code and not as tokens.
 
+Any class that inherits from another class starts with OP_SUPER and then
+the class number that it inherits from (which must be an abstract class).
+(Note this is the raw class number and is not the opcode number.)
+
+
+=== Orders ===
+
+The orders array is arranged as follows:
+
+* Index zero is not used.
+
+* After that, each entry, with the index being the order number, will be
+the index within the orders array where the specification starts at.
+
+* Each specification simply consists of the opcode numbers and is
+terminated by OP_RET.
+
 
 === Text encoding ===
 

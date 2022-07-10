@@ -730,6 +730,7 @@ static void set_order(Uint32 obj) {
   Sint32 v0,v1;
   Uint16 p;
   Uint32 n=firstobj;
+  Value v;
   for(;;) {
     if(n==obj || n==VOIDLINK) goto notfound;
     u=classes[objects[n]->class]->order;
@@ -790,6 +791,14 @@ static void set_order(Uint32 obj) {
         case OP_XLOC_C: v1=o->x; v0=objects[n]->x; goto compare;
         case OP_YLOC: v0=o->y; v1=objects[n]->y; goto compare;
         case OP_YLOC_C: v1=o->y; v0=objects[n]->y; goto compare;
+        case 0xC000 ... 0xFFFF: // message
+          changed=0;
+          v=send_message(obj,n,(orders[p]&0x3FFF)+256,NVALUE(o->x),NVALUE(o->y),NVALUE(0));
+          if(changed) Throw("State-changing is not allowed during ordering");
+          changed=1;
+          if((o->oflags|objects[n]->oflags)&OF_DESTROYED) Throw("Destruction during ordering");
+          if(v.t) Throw("Type mismatch in order criteria");
+          v0=0; v1=v.s; goto compare;
         compare:
           if(v0==v1) {
             p++;

@@ -2781,7 +2781,10 @@ is delimited by parentheses.
 
 Each sub-list starts with a flag name, which may be a user flag, or Input,
 or Player, or Control. This matches only classes that have that flag
-(changing that flag at run time has no effect on order of execution).
+(changing that flag at run time has no effect on order of execution). A
+sub-list can also start with a class name, in which case only objects of
+that class match; if it is an abstract class then any classes that inherit
+from it (directly or indirectly) also match.
 
 The remaining elements are optional; if they are present, they are used to
 break ties. First, the second item breaks ties if there is one, and then
@@ -2792,6 +2795,16 @@ Image. If there is no comma, they are lowest to highest, but a comma
 reverses the order to be highest to lowest instead. These values are
 treated as signed, and the values after INIT or CREATE message returns is
 used. If any of the values is not a number, then it is an error.
+
+Custom criteria are also possible. In this case, any of the items in the
+list (other than the first one) can be a user-defined message name (but not
+a built-in message). In this case, the message is sent to other objects that
+match the first element of the current list to compare them. From is the
+object that needs to be inserted into the list (which has just been created
+or initialized), and Arg1 and Arg2 are the coordinates of that object. The
+return value is negative or positive for the result of the comparison, or
+zero if the result is a tie. State-changing effects are not allowed during
+the processing of this message.
 
 The order of execution is then first all objects not listed in the (Order)
 block, and then for each sub-list in the (Order) block, the objects that
