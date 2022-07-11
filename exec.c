@@ -2217,8 +2217,10 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
   Uint32 m;
   Uint16 g;
   Value v;
-  static ChoicePoint cp[MAXCHOICE];
+  ChoicePoint cp[MAXCHOICE];
   Uint8 cpi=0;
+  Uint16 ccl=objects[obj]->class;
+  Uint8 cim=objects[obj]->image;
   if(!x) return VOIDLINK;
   cp->depth=vstackptr;
   again: switch(code[ptr++]) {
@@ -2375,6 +2377,20 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
       cp[cpi].depth=vstackptr;
       cp[cpi].ptr=code[ptr++];
       break;
+    case OP_IMAGE:
+      if(n!=VOIDLINK && ccl==objects[n]->class && cim==objects[n]->image) break;
+      n=playfield[x+y*64-65];
+      while(n!=VOIDLINK) {
+        if(objects[n]->class==ccl && objects[n]->image==cim && !(objects[n]->oflags&OF_DESTROYED)) break;
+        m=objects[n]->up;
+      }
+      if(n==VOIDLINK) goto fail;
+      break;
+    case OP_IMAGE_C:
+      if(n==VOIDLINK) Throw("No object specified in pattern");
+      ccl=objects[n]->class;
+      cim=objects[n]->image;
+      break;
     case OP_LOC:
       if(vstackptr>=VSTACKSIZE-2) Throw("Stack overflow");
       Push(NVALUE(x));
@@ -2394,16 +2410,20 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
     case OP_OBJABOVE:
       if(n==VOIDLINK) Throw("No object specified in pattern");
       n=obj_above(n);
+      if(n==VOIDLINK) goto fail;
       break;
     case OP_OBJBELOW:
       if(n==VOIDLINK) Throw("No object specified in pattern");
       n=obj_below(n);
+      if(n==VOIDLINK) goto fail;
       break;
     case OP_OBJBOTTOMAT:
       n=obj_bottom_at(x,y);
+      if(n==VOIDLINK) goto fail;
       break;
     case OP_OBJTOPAT:
       n=obj_top_at(x,y);
+      if(n==VOIDLINK) goto fail;
       break;
     case OP_QUEEN:
       if(cpi>=MAXCHOICE-8) Throw("Choice overflow");

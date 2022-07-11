@@ -2733,6 +2733,18 @@ Climb
 cut
   Discards the most recent choice point.
 
+Dir
+  Set the direction to the origin object's direction.
+
+,Dir
+  Set the direction to the matched object's direction.
+
+=Dir
+  Change the origin object's direction to the current direction.
+
+=,Dir
+  Change the matched object's direction to the current direction.
+
 else
   Delimits alternatives within a block.
 
@@ -2744,6 +2756,13 @@ Height
 
 if
   Begin a block that can optionally match.
+
+Image
+  Match an object with the remembered class and image (if none is
+  remembered, use the origin object's class and image).
+
+,Image
+  Remember the class and image of the currently matched object.
 
 next
   Unconditionally fail the current attempt and try the next choice.
