@@ -12,6 +12,12 @@ echo "x$CFLAGS" > CFLAGS
 test "x$EXE" = "x" && export EXE=~/bin/heromesh
 echo 'Flags: ' "$CFLAGS"
 echo 'Target filename: ' "$EXE"
+if test \! \( -f sqlite3.o -a -f sqlite3.h \); then
+  echo '**ERROR**'
+  echo 'SQLite files are not found.'
+  echo 'Please read the installation/compilation instructions in the README file.'
+fi
+test -f sqlite3.o -a -f sqlite3.h
 which node > /dev/null || echo 'Node.js not found; ignoring changes to instructions/quarks'
 which node > /dev/null || touch -cm instruc.h names.h quarks.h
 test instruc -nt instruc.h && node instruc.js > instruc.h

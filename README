@@ -31,10 +31,11 @@ Requirements:
 untested; it might use some Linux-specific functions and/or GNU-specific
 functions; I may be willing to accept contributions if this can be fixed).
 
-* SQLite version 3 (a recent version). Add a symlink to the sqlite3.o file
-into the same directory with the source files (or you can compile it from
-source with the desired options; the default options will do, although it
-is safe to omit the deprecated functions and to set SQLITE_DQS=0).
+* SQLite version 3 (a recent version). Add a symlink to the sqlite3.h and
+sqlite3.o files into the same directory with the source files (or you can
+compile it from source with the desired options; the default options will
+do, although it is safe (and is recommended) to omit the deprecated
+functions and to set SQLITE_DQS=0).
 
 * SDL1.x (the compatibility layers have not been tested with this
 software; if you have tested it please report it, and you may contribute
@@ -46,10 +47,6 @@ tested with Clang, but I expect it to work; report it if it doesn't work).
 * If you wish to alter some of the files, Node.js or a compatible
 JavaScript runtime is required for compiling these files (you do not need
 this if you do not wish to modify Free Hero Mesh).
-
-* The smallxrm is required. It is included with this package; you must
-compile smallxrm.c as smallxrm.o (one way is "bash smallxrm.c", or you
-can use gcc or clang with the options you want).
 
 * Colour display, with resolution at least 640x480 (preferably more), and
 at least 256 colours.
