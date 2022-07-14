@@ -13,11 +13,15 @@ test "x$EXE" = "x" && export EXE=~/bin/heromesh
 echo 'Flags: ' "$CFLAGS"
 echo 'Target filename: ' "$EXE"
 if test \! \( -f sqlite3.o -a -f sqlite3.h \); then
-  echo '**ERROR**'
-  echo 'SQLite files are not found.'
-  echo 'Please read the installation/compilation instructions in the README file.'
+  if test \! \( -f sqlite3.c -a -f sqlite3.h \); then
+    echo '**ERROR**'
+    echo 'SQLite files are not found.'
+    echo 'Please read the installation/compilation instructions in the README file.'
+    exit 1
+  fi
+  echo '* sqlite3'
+  gcc -s -O2 -c -DSQLITE_OMIT_DEPRECATED -DHAVE_MALLOC_USABLE_SIZE -DHAVE_USLEEP -DSQLITE_DQS=0 sqlite3.c
 fi
-test -f sqlite3.o -a -f sqlite3.h
 which node > /dev/null || echo 'Node.js not found; ignoring changes to instructions/quarks'
 which node > /dev/null || touch -cm instruc.h names.h quarks.h
 test instruc -nt instruc.h && node instruc.js > instruc.h
