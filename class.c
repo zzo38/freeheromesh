@@ -125,6 +125,7 @@ static MacroStack*macstack;
 static TokenList**macros;
 static LabelStack*labelstack;
 static Uint16*labelptr;
+static Uint8 dense[8];
 
 #define ParseError(a,...) fatal("On line %d: " a,linenum,##__VA_ARGS__)
 
@@ -2154,6 +2155,12 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
   }
   end_label_stack(cl->codes,hash);
   if(!cl->nimages && !(cl->cflags&CF_GROUP)) cl->oflags|=OF_INVISIBLE;
+  if(cl->collisionLayers && *dense && !cl->density) {
+    for(i=0;i<8;i++) if(dense[i] && ((1<<i)&cl->collisionLayers)) {
+      cl->density=dense[i];
+      break;
+    }
+  }
   if(main_options['C']) dump_class(cla,ptr,hash);
   if(main_options['H']) {
     for(i=0;i<LOCAL_HASH_SIZE;i++) if(hash[i].id) printf(" \"%s\": %04X\n",hash[i].txt,hash[i].id);
@@ -2521,6 +2528,17 @@ static void level_table_definition(void) {
   }
 }
 
+static void parse_density_block(void) {
+  int i;
+  for(i=0;i<8;i++) {
+    nxttok();
+    if(tokent==TF_CLOSE) return;
+    if(tokent!=TF_INT || tokenv<1 || tokenv>255) ParseError("Number 1-255 or close parenthesis expected\n");
+    dense[i]=tokenv;
+  }
+  ParseError("Too many global density numbers are specified\n");
+}
+
 void load_classes(void) {
   int i;
   int gloptr=0;
@@ -2693,6 +2711,9 @@ void load_classes(void) {
           has_xy_input=1;
           nxttok();
           if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
+          break;
+        case OP_DENSITY:
+          parse_density_block();
           break;
         default:
           ParseError("Invalid top level definition: %s\n",tokenstr);

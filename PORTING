@@ -251,3 +251,21 @@ The same consideration about line endings with DOS also applies to Windows.
 
 (TODO)
 
+
+=== Sandboxing ===
+
+Many sandbox systems have problems, such as:
+
+* Assumes all text is Unicode.
+
+* Cannot request a command to use with popen (or from configuration files).
+
+* When asking for a file, cannot also include certain other files whose
+names are done by adding additional text onto the end of the name (this is
+needed for SQLite to work, and also for non-composite puzzle sets in Free
+Hero Mesh).
+
+* Assumes a desktop environment.
+
+Therefore, if it is to be used, a better one should be made up.
+

@@ -289,6 +289,12 @@ These are the global definitions in the class definition file.
   Define user flags as CollisionLayers bits; the first defined flag is
   bit0. Up to 8 flags can be defined in this way.
 
+(Density <numbers...>)
+  Define the default Density settings for classes that use the collision
+  layers. Each number must be in range 1 to 255, and there cannot be more
+  than eight density numbers defined. Their order is the same as the order
+  of the user flags in the (CollisionLayers) block.
+
 (InputXY <options...>)
   Enables coordinate input. Currently there are no options, so the options
   must be left blank. See the documentation about the CLICK message for
