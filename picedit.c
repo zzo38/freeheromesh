@@ -211,7 +211,8 @@ static int load_picture_file(void) {
     nam[i]=0;
     sqlite3_reset(st);
     sqlite3_bind_text(st,1,nam,i,SQLITE_TRANSIENT);
-    sqlite3_bind_int(st,2,j=(i>4 && !memcmp(".IMG",nam+i-4,4)?1:!memcmp(".DEP",nam+i-4,4)?2:0));
+    if(i>4) j=(!memcmp(".IMG",nam+i-4,4)?1:!memcmp(".DEP",nam+i-4,4)?2:0); else j=0;
+    sqlite3_bind_int(st,2,j);
     if(j) r++;
     i=fgetc(fp)<<16;
     i|=fgetc(fp)<<24;

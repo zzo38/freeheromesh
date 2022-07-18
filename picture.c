@@ -705,7 +705,7 @@ void load_pictures(void) {
     }
     nam[i]=0;
     if(i>4 && (!memcmp(".IMG",nam+i-4,4) || !memcmp(".DEP",nam+i-4,4))) {
-      if(nam[i-3]=='D') j=0; else j=1;
+      if(nam[i-3]=='I') j=1; else j=0;
       if(n++==32768) fatal("Too many pictures\n");
       sqlite3_reset(st);
       sqlite3_bind_int(st,1,n);
@@ -769,7 +769,7 @@ nomore1:
       fatal("SQL error (%d): %s\n",j,sqlite3_errmsg(userdb));
     }
     fseek(fp,sqlite3_column_int64(st,1)-4,SEEK_SET);
-    load_dependent_picture(fp,sqlite3_column_int(st,0),altImage);
+    load_dependent_picture(fp,sqlite3_column_int(st,0),0);
   }
   sqlite3_finalize(st);
   fclose(fp);
