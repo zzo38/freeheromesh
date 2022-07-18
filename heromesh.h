@@ -2,6 +2,8 @@
   This file is part of Free Hero Mesh and is public domain.
 */
 
+#include "comconfig.h"
+
 // == main ==
 
 #define fatal(...) do{ fprintf(stderr,"FATAL: " __VA_ARGS__); exit(1); }while(0)
@@ -58,7 +60,7 @@ extern char level_changed; // 1 if solution is potentially invalidated by edits
 extern FILE*levelfp;
 extern FILE*solutionfp;
 
-#ifdef __GNUC__
+#ifdef CONFIG_WITH_STACK_PROTECTION
 extern char stack_protect_mode;
 extern void*stack_protect_mark;
 extern void*stack_protect_low;

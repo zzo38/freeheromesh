@@ -1528,6 +1528,15 @@ static void record_solution(void) {
     fputc(gameover_score>>24,fp);
   }
   if(flag&1) fwrite(com,1,strlen(com+1),fp);
+  if(flag&2) {
+    time_t t=time(0);
+    fputc(t>>000,fp); fputc(t>>010,fp); fputc(t>>020,fp); fputc(t>>030,fp);
+#ifdef CONFIG_USING_32BIT_TIMESTAMPS
+    fputc(0,fp); fputc(0,fp); fputc(0,fp); fputc(0,fp);
+#else
+    fputc(t>>040,fp); fputc(t>>050,fp); fputc(t>>060,fp); fputc(t>>070,fp);
+#endif
+  }
   n=replay_count;
   replay_count=replay_pos;
   encode_move_list(fp);

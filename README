@@ -68,6 +68,14 @@ the source files are) and installs "bin/current.heromeshrc" as well (if it
 does not already exist; it won't overwrite an existing file). In this case,
 it can be used as a "portable app" mode.
 
+If compiled with "./compile" without "p", then it is installed in the "bin"
+subdirectory of your home directory, by default. You can set the EXE
+environment variable to override this.
+
+You may edit comconfig.h (based on details on comconfig.doc) if you wish to
+customize some of the compile options (other than those which are part of
+the compiler itself, and the options mentioned above).
+
 There are optional runtime features that may require other programs in
 order to use them, but that you can ignore if you do not use them. Such
 optional features include:
@@ -107,6 +115,8 @@ language. Read this if you want to define your own classes of objects.
 
 * codepage.doc: Describes the use of code pages and the file format of the
 codepage.har file.
+
+* comconfig.doc: Compile-time configuration options.
 
 * commandline.doc: Describes the command-line arguments. The man page
 also describes the command-line arguments, although the commandline.doc

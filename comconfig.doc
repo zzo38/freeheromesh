@@ -1,0 +1,94 @@
+This file describes options that you can specify in comconfig.h (by the
+#define command), in order to customize the compiled code. All of these
+definitions are optional; default values will be used otherwise. (You can
+also use -D switches for compiling to control them, too)
+
+
+=== Implemented options ===
+
+CONFIG_APPLICATION_ID
+  Application ID for SQLite database files (if not defined, then the
+  default value will be used). Should be a 32-bit integer represented in
+  decimal notation, as a string token (not as a numeric token).
+
+CONFIG_DEFAULT_RESOURCES
+  If defined, read resource configuration from the specified file if
+  it cannot find the configuration file in the home directory.
+
+CONFIG_GLOBAL_HASH_SIZE
+  Size of global hash table when reading class definition file.
+
+CONFIG_LOCAL_HASH_SIZE
+  Size of local hash table when reading class definition file.
+
+CONFIG_NO_PORTABLE
+  If defined, then portable mode by checking argv[0] is disabled. (It is
+  still possible to use portable mode by HEROMESH_PREFIX)
+
+CONFIG_USING_32BIT_TIMESTAMPS
+  If defined, force use of 32-bit timestamps. (This is needed in order to
+  avoid compiler warnings on some systems, such as some versions of the
+  Raspberry Pi system. This option will be deprecated in year 2038, so
+  you should upgrade your system before that if possible.)
+
+CONFIG_WITH_STACK_PROTECTION
+  If defined, allow stack protection to be included in the compiled code.
+  (Otherwise, the configuration options dealing with stack protection
+  will be ignored and will have no effect.) This requires that the GNU
+  __builtin_frame_address function is available. (Note: This feature does
+  not seem to work properly at this time. If you are able to fix it, then
+  please provide a patch.)
+
+
+=== Unimplemented options ===
+
+The below options are not implemented and are subject to being changed
+in future when they are implemented.
+
+CONFIG_ERROR_CHECKING
+  Define error checking level, where 9 is maximum. Lower numbers might
+  improve speed but may make the program crash in some cases and may also
+  cause security vulnerabilities.
+
+CONFIG_MULTIUSER_SCORES
+  (Meant for storing scores on a multiuser system, somehow)
+
+CONFIG_PRIVATE_USERCACHE
+  If defined as a octal number, set the default file permissions of the
+  user cache database when creating it. (The user can still change them
+  afterward by using chmod.)
+
+CONFIG_RANDOM_SOURCE
+  Device to read random numbers from instead of using the random number
+  generator built in to SQLite. (This will override the definition of the
+  SQL RANDOM() function if it is defined.)
+
+CONFIG_USING_APPIMAGE
+  If defined, it will check the environment variables having to do with
+  AppImage and will be able to load the default resources from there, as
+  well as allow the configuration file to reference the AppImage directory.
+
+CONFIG_USING_BSD_FUNCTIONS
+  If defined, use BSD functions (such as funopen) instead of GNU functions
+  (such as fopencookie), by adding emulations into the program. (It is
+  still necessary to use a C compiler with GNU extensions though, even if
+  the GNU library is not available.)
+
+CONFIG_USING_SDL12_COMPAT
+  Define this if the program is to be compiled for use with the
+  "sdl12-compat" SDL compatibility layer.
+
+CONFIG_USING_SDLCL
+  Define this if the program is to be compiled for use with the "sdlcl"
+  SDL compatibility layer.
+
+CONFIG_USING_X86_BMI2
+  If defined, use PDEP and PEXT instructions. This only works on x86 and
+  only on some processor models. (Apparently this is fast on Intel but slow
+  on AMD, so it should not be used on AMD, even if it is available.)
+
+CONFIG_WITH_VIDEO_RECORDING
+  If defined, then include code to implement video recording, which will
+  override some of the SDL functions (and some other functions), and might
+  make them more slowly even if the video recording is not enabled.
+

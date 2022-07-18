@@ -63,8 +63,17 @@ Uint8 ll_ndata;
 Uint8 ll_naggregate;
 Uint16*ll_code;
 
+#ifdef CONFIG_GLOBAL_HASH_SIZE
+#define HASH_SIZE CONFIG_GLOBAL_HASH_SIZE
+#else
 #define HASH_SIZE 8888
+#endif
+#ifdef CONFIG_LOCAL_HASH_SIZE
+#define LOCAL_HASH_SIZE CONFIG_LOCAL_HASH_SIZE
+#else
 #define LOCAL_HASH_SIZE 5555
+#endif
+
 typedef struct {
   Uint16 id;
   char*txt;

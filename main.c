@@ -30,9 +30,12 @@ typedef struct {
   char c[(N_STANDARD_SOUNDS==sizeof(standard_sound_names)/sizeof(*standard_sound_names))?1:-9];
 } ASSERTION;
 
+#ifndef CONFIG_APPLICATION_ID
+#define CONFIG_APPLICATION_ID "1296388936"
+#endif
 static const char schema[]=
   "BEGIN;"
-  "PRAGMA APPLICATION_ID(1296388936);"
+  "PRAGMA APPLICATION_ID("CONFIG_APPLICATION_ID");"
   "PRAGMA RECURSIVE_TRIGGERS(1);"
   "CREATE TABLE IF NOT EXISTS `USERCACHEINDEX`(`ID` INTEGER PRIMARY KEY, `NAME` TEXT, `TIME` INT);"
   "CREATE TABLE IF NOT EXISTS `USERCACHEDATA`(`ID` INTEGER PRIMARY KEY, `FILE` INT, `LEVEL` INT, `NAME` TEXT COLLATE NOCASE, `OFFSET` INT, `DATA` BLOB, `USERSTATE` BLOB);"
@@ -58,7 +61,7 @@ char level_changed;
 FILE*levelfp;
 FILE*solutionfp;
 
-#ifdef __GNUC__
+#ifdef CONFIG_WITH_STACK_PROTECTION
 char stack_protect_mode=0;
 void*stack_protect_mark;
 void*stack_protect_low;
@@ -773,12 +776,16 @@ static void set_path(const char*arg) {
     sprintf(hpath,"%s.heromeshrc",s);
     return;
   }
+#ifndef CONFIG_NO_PORTABLE
+#ifndef CONFIG_USING_APPIMAGE
   if(s=strrchr(arg,'/')) {
     hpath=malloc(s+64-arg);
     if(!hpath) fatal("Allocation failed\n");
     sprintf(hpath,"%.*s/current.heromeshrc",(int)(s-arg),arg);
     return;
   }
+#endif
+#endif
   home:
   s=getenv("HOME")?:".";
   hpath=malloc(strlen(s)+32);
@@ -787,8 +794,10 @@ static void set_path(const char*arg) {
 }
 
 static void load_options(void) {
-  FILE*fp;
-  fp=fopen(hpath,"r");
+  FILE*fp=fopen(hpath,"r");
+#ifdef CONFIG_DEFAULT_RESOURCES
+  if(!fp) fp=fopen(CONFIG_DEFAULT_RESOURCES,"r");
+#endif
   if(!fp) fatal("Failed to open %s (%m)\n",hpath);
   if(xrm_load(resourcedb,fp,1)) fatal("Error while loading .heromeshrc\n");
   fclose(fp);
@@ -1029,7 +1038,7 @@ static void do_sql_mode(void) {
   free(txt);
 }
 
-#ifdef __GNUC__
+#ifdef CONFIG_WITH_STACK_PROTECTION
 static void test_stack_protection(void) {
   fprintf(stderr,"Stack protection final values: %p %p %p\n",stack_protect_mark,stack_protect_low,stack_protect_high);
 }
@@ -1115,7 +1124,7 @@ int main(int argc,char**argv) {
   }
   if(argc>optind) read_options(argc-optind,argv+optind);
   *optionquery=xrm_make_quark(globalclassname,0)?:xrm_anyq;
-#ifdef __GNUC__
+#ifdef CONFIG_WITH_STACK_PROTECTION
   stack_protect_mark=__builtin_frame_address(0);
   set_stack_protection();
 #endif
