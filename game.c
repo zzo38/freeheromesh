@@ -885,7 +885,7 @@ static inline void levels_column(int x,int y,int n,int bg,sqlite3_stmt*st,char*b
   if(dc->flag&1) w=255;
   if(t==SQLITE_BLOB || t==SQLITE_TEXT) {
     blob:
-    i=snprintf(buf,w,"%s",sqlite3_column_text(st,nc));
+    if(p=sqlite3_column_text(st,nc)) i=snprintf(buf,w,"%s",p); else *buf=i=0;
     if(dc->form[0]=='R' && i<w) a=w-i;
     if(dc->flag&2) co=0xFF;
   } else {
