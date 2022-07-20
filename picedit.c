@@ -211,7 +211,7 @@ static int load_picture_file(void) {
     nam[i]=0;
     sqlite3_reset(st);
     sqlite3_bind_text(st,1,nam,i,SQLITE_TRANSIENT);
-    if(i>4) j=(!memcmp(".IMG",nam+i-4,4)?1:!memcmp(".DEP",nam+i-4,4)?2:0); else j=0;
+    if(i>4) j=(!memcmp(".IMG",nam+i-4,4)?1:!memcmp(".DEP",nam+i-4,4)?2:!memcmp(".MUL",nam+i-4,4)?3:0); else j=0;
     sqlite3_bind_int(st,2,j);
     if(j) r++;
     i=fgetc(fp)<<16;
@@ -1547,7 +1547,8 @@ static int add_picture(int t) {
   const char*s=screen_prompt("Enter name of new picture:");
   int i;
   if(!s || !*s) return 0;
-  if(sqlite3_prepare_v2(userdb,"INSERT INTO `PICEDIT`(`NAME`,`TYPE`,`DATA`) SELECT VALID_NAME(?1)||CASE ?2 WHEN 1 THEN '.IMG' ELSE '.DEP' END,?2,X'';",-1,&st,0)) {
+  if(*s=='+' && s[1]) t=3,s++;
+  if(sqlite3_prepare_v2(userdb,"INSERT INTO `PICEDIT`(`NAME`,`TYPE`,`DATA`) SELECT VALID_NAME(?1)||CASE ?2 WHEN 1 THEN '.IMG' WHEN 2 THEN '.DEP' ELSE '.MUL' END,?2,X'';",-1,&st,0)) {
     screen_message(sqlite3_errmsg(userdb));
     return 0;
   }
@@ -1568,7 +1569,7 @@ static int delete_picture(void) {
   const char*s=screen_prompt("Enter name of picture to delete:");
   int i;
   if(!s || !*s) return 0;
-  if(sqlite3_prepare_v2(userdb,"DELETE FROM `PICEDIT` WHERE `NAME`=?1||'.IMG' OR `NAME`=?1||'.DEP';",-1,&st,0)) {
+  if(sqlite3_prepare_v2(userdb,"DELETE FROM `PICEDIT` WHERE `NAME`=?1||'.IMG' OR `NAME`=?1||'.DEP' OR (SUBSTR(?1,1,1)='+' AND `NAME`=SUBSTR(?1,2)||'.MUL');",-1,&st,0)) {
     screen_message(sqlite3_errmsg(userdb));
     return 0;
   }
@@ -1587,16 +1588,26 @@ static void rename_picture(void) {
   const char*s=screen_prompt("Old name:");
   int i;
   if(!s || !*s) return;
-  if(sqlite3_prepare_v2(userdb,"UPDATE `PICEDIT` SET `NAME`=VALID_NAME(?2)||SUBSTR(`NAME`,-4) WHERE `NAME`=?1||'.IMG' OR `NAME`=?1||'.DEP';",-1,&st,0)) {
-    screen_message(sqlite3_errmsg(userdb));
-    return;
+  if(*s=='+' && s[1]) {
+    i=1;
+    if(sqlite3_prepare_v2(userdb,"UPDATE `PICEDIT` SET `NAME`=VALID_NAME(?2)||'.MUL' WHERE `NAME`=?1||'.MUL';",-1,&st,0)) {
+      screen_message(sqlite3_errmsg(userdb));
+      return;
+    }
+  } else {
+    i=0;
+    if(sqlite3_prepare_v2(userdb,"UPDATE `PICEDIT` SET `NAME`=VALID_NAME(?2)||SUBSTR(`NAME`,-4) WHERE `NAME`=?1||'.IMG' OR `NAME`=?1||'.DEP';",-1,&st,0)) {
+      screen_message(sqlite3_errmsg(userdb));
+      return;
+    }
   }
-  sqlite3_bind_text(st,1,s,-1,SQLITE_TRANSIENT);
+  sqlite3_bind_text(st,1,s+i,-1,SQLITE_TRANSIENT);
   s=screen_prompt("New name:");
   if(!s || !*s) {
     sqlite3_finalize(st);
     return;
   }
+  if(i && *s=='+') s++;
   sqlite3_bind_text(st,2,s,-1,SQLITE_TRANSIENT);
   i=sqlite3_step(st);
   sqlite3_finalize(st);
@@ -1606,21 +1617,24 @@ static void rename_picture(void) {
 static sqlite3_int64 copy_picture(void) {
   sqlite3_stmt*st;
   const char*s=screen_prompt("Copy from:");
-  int i;
+  int i=0;
   sqlite3_set_last_insert_rowid(userdb,0);
   if(!s || !*s) return 0;
   if(sqlite3_prepare_v2(userdb,"INSERT INTO `PICEDIT`(`NAME`,`TYPE`,`DATA`) SELECT VALID_NAME(?2)||SUBSTR(`NAME`,-4),`TYPE`,`DATA` "
-   "FROM `PICEDIT` WHERE SUBSTR(`NAME`,1,LENGTH(`NAME`)-4)=?1 AND `TYPE`<>0;",-1,&st,0)) {
+   "FROM `PICEDIT` WHERE SUBSTR(`NAME`,1,LENGTH(`NAME`)-4)=?1 AND IIF(?3,`TYPE`=3,`TYPE`<>0 AND `TYPE`<>3);",-1,&st,0)) {
     screen_message(sqlite3_errmsg(userdb));
     return 0;
   }
+  if(*s=='+' && s[1]) s++,i=1;
   sqlite3_bind_text(st,1,s,-1,SQLITE_TRANSIENT);
   s=screen_prompt("Copy to:");
   if(!s || !*s) {
     sqlite3_finalize(st);
     return 0;
   }
+  if(i && *s=='+') s++;
   sqlite3_bind_text(st,2,s,-1,SQLITE_TRANSIENT);
+  sqlite3_bind_int(st,3,i);
   i=sqlite3_step(st);
   sqlite3_finalize(st);
   if(i==SQLITE_DONE) {
@@ -1697,7 +1711,9 @@ void run_picture_editor(void) {
   n=0;
   while((i=sqlite3_step(st))==SQLITE_ROW) {
     ids[n++]=sqlite3_column_int64(st,0);
-    draw_text(16,8*n,sqlite3_column_text(st,1),0xF0,sqlite3_column_int(st,2)==1?0xF7:0xF2);
+    i=sqlite3_column_int(st,2);
+    draw_text(i==3?24:16,8*n,sqlite3_column_text(st,1),0xF0,"\xF7\xF2\xF6"[i-1]);
+    if(i==3) draw_text(16,8*n,"+",0xF0,0xFC);
     if(8*n+8>screen->h-8) break;
   }
   SDL_UnlockSurface(screen);
