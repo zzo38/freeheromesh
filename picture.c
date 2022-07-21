@@ -508,19 +508,14 @@ static void pic_orientation(SDL_Rect*r,Uint8 m) {
   free(d);
 }
 
-static void load_dependent_picture(FILE*fp,Uint16 img,int alt) {
+static void load_dependent_picture(FILE*fp,Sint32 sz,Uint16 img,int alt) {
   SDL_Rect src={0,0,picture_size,picture_size};
   SDL_Rect dst={(img&15)*picture_size,(img>>4)*picture_size,picture_size,picture_size};
   sqlite3_stmt*st;
-  Sint32 sz;
   int c,i,x,y;
   char nam[128];
   Uint8 buf[512];
   Uint8*p;
-  sz=fgetc(fp)<<16;
-  sz|=fgetc(fp)<<24;
-  sz|=fgetc(fp);
-  sz|=fgetc(fp)<<8;
   if(sqlite3_prepare_v2(userdb,"SELECT `ID` FROM `PICTURES` WHERE `NAME` = ?1 AND NOT `DEPENDENT`;",-1,&st,0))
    fatal("Unable to prepare SQL statement while loading pictures: %s\n",sqlite3_errmsg(userdb));
   i=0;
@@ -531,21 +526,25 @@ static void load_dependent_picture(FILE*fp,Uint16 img,int alt) {
     sz--;
   }
   if(sz) ungetc(c,fp);
-  sqlite3_bind_text(st,1,nam,i,0);
-  i=sqlite3_step(st);
-  if(i==SQLITE_DONE) {
-    fprintf(stderr,"Cannot find base picture for a dependent picture; ignoring\n");
-    sqlite3_finalize(st);
-    return;
-  } else if(i!=SQLITE_ROW) {
-    fatal("SQL error (%d): %s\n",i,sqlite3_errmsg(userdb));
+  if(i) {
+    sqlite3_bind_text(st,1,nam,i,0);
+    i=sqlite3_step(st);
+    if(i==SQLITE_DONE) {
+      fprintf(stderr,"Cannot find base picture for a dependent picture; ignoring\n");
+      sqlite3_finalize(st);
+      return;
+    } else if(i!=SQLITE_ROW) {
+      fatal("SQL error (%d): %s\n",i,sqlite3_errmsg(userdb));
+    }
+    i=sqlite3_column_int(st,0);
+    sqlite3_reset(st);
+    src.x=(i&15)*picture_size;
+    src.y=(i>>4)*picture_size;
+    SDL_SetColorKey(picts,0,0);
+    SDL_BlitSurface(picts,&src,picts,&dst);
+  } else {
+    SDL_FillRect(picts,&dst,0);
   }
-  i=sqlite3_column_int(st,0);
-  sqlite3_reset(st);
-  src.x=(i&15)*picture_size;
-  src.y=(i>>4)*picture_size;
-  SDL_SetColorKey(picts,0,0);
-  SDL_BlitSurface(picts,&src,picts,&dst);
   while(sz-->0) switch(c=fgetc(fp)) {
     case 0 ... 7: // Flip/rotate
       pic_orientation(&dst,c);
@@ -662,6 +661,84 @@ static void load_dependent_picture(FILE*fp,Uint16 img,int alt) {
   done: sqlite3_finalize(st);
 }
 
+static int find_multidependent(sqlite3_stmt*st,FILE*fp,int len,int npic) {
+  sqlite3_stmt*s1;
+  int at=4;
+  long rew=ftell(fp);
+  Uint8*mem=malloc(len+1);
+  int i,j,zt;
+  if(!mem) fatal("Allocation failed\n");
+  fread(mem,1,len,fp);
+  mem[len]=0;
+  fseek(fp,rew+len,SEEK_SET);
+  if(sqlite3_exec(userdb,"CREATE TEMPORARY TABLE IF NOT EXISTS `_MUL`(`X`,`Y`,`N`,`Z`);",0,0,0))
+   fatal("SQL error: %s\n",sqlite3_errmsg(userdb));
+  if(sqlite3_prepare_v2(userdb,"INSERT INTO `_MUL`(`X`,`Y`,`N`,`Z`) VALUES(?1,?2,SUBSTR('._-',?5,1)||?3,?4);",-1,&s1,0))
+   fatal("Unable to prepare SQL statement while loading pictures: %s\n",sqlite3_errmsg(userdb));
+  sqlite3_bind_int(s1,2,0);
+  sqlite3_bind_text(s1,3,"",0,0);
+  sqlite3_bind_int(s1,5,4);
+  for(i=0;i<4;i++) if((mem[i]&128) || !mem[i]) {
+    sqlite3_reset(s1);
+    sqlite3_bind_int(s1,1,i);
+    sqlite3_bind_blob(s1,4,"",i?0:1,0);
+    while(sqlite3_step(s1)==SQLITE_ROW);
+  }
+  sqlite3_reset(s1);
+  sqlite3_bind_int(s1,1,0);
+  for(i=0;i<(*mem&63);i++) {
+    if(at>=len) fatal("Malformed multidependent picture lump\n");
+    sqlite3_reset(s1);
+    sqlite3_bind_int(s1,2,i+1);
+    j=strlen(mem+at);
+    sqlite3_bind_text(s1,3,mem+at,j,0);
+    sqlite3_bind_blob(s1,4,mem+at,j+1,0);
+    at+=j+1;
+    while(sqlite3_step(s1)==SQLITE_ROW);
+  }
+  zt=at;
+  for(j=1;j<3;j++) for(i=0;i<(mem[j]&63);i++) {
+    if(zt+2>=len) fatal("Malformed multidependent picture lump\n");
+    zt+=((mem[zt+1]>>3)&7)+2;
+  }
+  for(j=1;j<3;j++) for(i=0;i<(mem[j]&63);i++) {
+    sqlite3_reset(s1);
+    sqlite3_bind_int(s1,1,j);
+    sqlite3_bind_int(s1,2,i+1);
+    sqlite3_bind_text(s1,3,mem+at+2,(mem[at+1]>>3)&7,0);
+    if(zt+mem[at]+((mem[at+1]&7)<<8)>len) fatal("Malformed multidependent picture lump\n");
+    sqlite3_bind_blob(s1,4,mem+zt,mem[at]|((mem[at+1]&7)<<8),0);
+    sqlite3_bind_int(s1,5,4-(mem[at+1]>>6));
+    zt+=mem[at]|((mem[at+1]&7)<<8);
+    at+=((mem[at+1]>>3)&7)+2;
+    while(sqlite3_step(s1)==SQLITE_ROW);
+  }
+  sqlite3_finalize(s1);
+  free(mem);
+  if(sqlite3_prepare_v2(userdb,"SELECT A.N||B.N||C.N||D.N,BCAT(A.Z,B.Z,C.Z,D.Z) FROM _MUL A,_MUL B,_MUL C,_MUL D WHERE A.X=0 AND B.X=1 AND C.X=2 AND D.X=3 AND B.Y+C.Y+D.Y<>0;",-1,&s1,0))
+   fatal("Unable to prepare SQL statement while loading pictures: %s\n",sqlite3_errmsg(userdb));
+  while((j=sqlite3_step(s1))==SQLITE_ROW) {
+    if(npic++==32768) fatal("Too many pictures\n");
+    sqlite3_reset(st);
+    sqlite3_bind_int(st,1,npic);
+    sqlite3_bind_value(st,2,sqlite3_column_value(s1,0));
+    sqlite3_bind_value(st,5,sqlite3_column_value(s1,1));
+    while(sqlite3_step(st)==SQLITE_ROW);
+  }
+  if(j!=SQLITE_DONE) fatal("SQL error (%d): %s\n",j,sqlite3_errmsg(userdb));
+  sqlite3_finalize(s1);
+  if(sqlite3_exec(userdb,"DELETE FROM `_MUL`;",0,0,0))
+   fatal("SQL error: %s\n",sqlite3_errmsg(userdb));
+  return npic;
+}
+
+static void load_multidependent(int n,const char*data,int len) {
+  FILE*fp=fmemopen((char*)data,len,"r");
+  if(!fp) fatal("Allocation failed\n");
+  load_dependent_picture(fp,len,n,0);
+  fclose(fp);
+}
+
 void load_pictures(void) {
   sqlite3_stmt*st=0;
   FILE*fp;
@@ -691,7 +768,7 @@ void load_pictures(void) {
     v+=j;
   }
   if(n=sqlite3_exec(userdb,"BEGIN;",0,0,0)) fatal("SQL error (%d): %s\n",n,sqlite3_errmsg(userdb));
-  if(sqlite3_prepare_v2(userdb,"INSERT INTO `PICTURES`(`ID`,`NAME`,`OFFSET`,`DEPENDENT`) VALUES(?1,?2,?3,?4);",-1,&st,0))
+  if(sqlite3_prepare_v2(userdb,"INSERT INTO `PICTURES`(`ID`,`NAME`,`OFFSET`,`DEPENDENT`,`MISC`) VALUES(?1,?2,?3,?4,?5);",-1,&st,0))
    fatal("Unable to prepare SQL statement while loading pictures: %s\n",sqlite3_errmsg(userdb));
   nam=malloc(256);
   if(!nam) fatal("Allocation failed\n");
@@ -712,8 +789,11 @@ void load_pictures(void) {
       sqlite3_bind_text(st,2,nam,i-4,SQLITE_TRANSIENT);
       sqlite3_bind_int64(st,3,ftell(fp)+4);
       sqlite3_bind_int(st,4,j^1);
+      sqlite3_bind_null(st,5);
       while((i=sqlite3_step(st))==SQLITE_ROW);
       if(i!=SQLITE_DONE) fatal("SQL error (%d): %s\n",i,sqlite3_errmsg(userdb));
+    } else if(i>4 && !memcmp(".MUL",nam+i-4,4)) {
+      j=2;
     } else {
       j=0;
     }
@@ -721,13 +801,18 @@ void load_pictures(void) {
     i|=fgetc(fp)<<24;
     i|=fgetc(fp)<<0;
     i|=fgetc(fp)<<8;
-    if(j) {
+    if(j==1 && i>1) {
       memset(havesize1,0,256);
       i-=j=fgetc(fp)&15;
       while(j--) havesize1[fgetc(fp)&255]=1;
       fseek(fp,i-1,SEEK_CUR);
       for(i=1;i<256;i++) if(havesize1[i]) for(j=i+i;j<256;j+=i) havesize1[j]=1;
       for(j=1;j<256;j++) havesize[j]+=havesize1[j];
+    } else if(j==2 && i>4) {
+      sqlite3_reset(st);
+      sqlite3_bind_int64(st,3,ftell(fp));
+      sqlite3_bind_int(st,4,1);
+      n=find_multidependent(st,fp,i,n);
     } else {
       fseek(fp,i,SEEK_CUR);
     }
@@ -761,15 +846,25 @@ nomore1:
     load_one_picture(fp,sqlite3_column_int(st,0),altImage);
   }
   sqlite3_finalize(st);
-  if(sqlite3_prepare_v2(userdb,"SELECT `ID`, `OFFSET` FROM `PICTURES` WHERE `DEPENDENT`;",-1,&st,0))
+  if(sqlite3_prepare_v2(userdb,"SELECT `ID`, `OFFSET`, `MISC` FROM `PICTURES` WHERE `DEPENDENT`;",-1,&st,0))
    fatal("Unable to prepare SQL statement while loading pictures: %s\n",sqlite3_errmsg(userdb));
   for(i=0;i<n;i++) {
     if((j=sqlite3_step(st))!=SQLITE_ROW) {
       if(j==SQLITE_DONE) break;
       fatal("SQL error (%d): %s\n",j,sqlite3_errmsg(userdb));
     }
-    fseek(fp,sqlite3_column_int64(st,1)-4,SEEK_SET);
-    load_dependent_picture(fp,sqlite3_column_int(st,0),0);
+    if(sqlite3_column_type(st,2)==SQLITE_NULL) {
+      fseek(fp,sqlite3_column_int64(st,1)-4,SEEK_SET);
+      j=fgetc(fp)<<16;
+      j|=fgetc(fp)<<24;
+      j|=fgetc(fp);
+      j|=fgetc(fp)<<8;
+      load_dependent_picture(fp,j,sqlite3_column_int(st,0),0);
+    } else {
+      v=sqlite3_column_blob(st,2);
+      j=sqlite3_column_bytes(st,2);
+      load_multidependent(sqlite3_column_int(st,0),v,j);
+    }
   }
   sqlite3_finalize(st);
   fclose(fp);
