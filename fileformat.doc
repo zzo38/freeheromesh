@@ -230,6 +230,34 @@ number of pixels from the previous scanline. (If this crosses multiple
 scanlines, it continues copying it.)
 
 
+=== xclass/*.MUL ===
+
+This lump is a "multidependent" lump. The lump name is ignored except for
+the MUL suffix, but it is displayed in the picture editor.
+
+The first four bytes are the number of bases and the number of filters in
+each of the three filter lists. All of these bytes have the number in the
+low 6-bits, and bit7 is set if it is nullable; bit6 is unused and it must
+be clear.
+
+After that is the list of bases, each being a null-terminated string,
+which must be the name of a .IMG lump without the .IMG suffix.
+
+After the list of bases is the information for each filter chain; first
+all chains in the first list, and then the second, and then the third;
+null chains are not listed. These records have the format:
+
+* A small-endian 16-bit number, where bit10-bit0 is the length of this
+filter chain in bytes, bit13-bit11 is the length of the name in bytes
+(not counting the ._- prefix), and bit15-bit14 is the prefix character
+(0 if none, 1 if a hyphen, 2 if a underscore, or 3 if a dot).
+
+* The name, not counting the prefix, with no terminator.
+
+After that will be the list of filters in each chain, in the same format
+as for DEP lumps but without the base name.
+
+
 === xclass/*.WAV ===
 
 A user-defined sound effect. The part of the lump name before the dot is

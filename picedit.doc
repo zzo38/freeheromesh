@@ -16,7 +16,8 @@ which can be defined by the end user.
 === Main menu ===
 
 The main menu displays the list of the names of all pictures. This list is
-sorted by name.
+sorted by name. Grey means a normal picture, green means dependent, and
+brown with a red plus sign in front means multidepenent.
 
 You can push escape to quit and save, or shift+escape quits without saving.
 
@@ -41,6 +42,10 @@ The F7 key copies a picture.
 
 The F12 key allows entering a SQL statement. If there are any result rows,
 only the first row and first column are displayed.
+
+Any of the prompts for picture names can start the picture name with a
+plus sign in order to affect a multidependent picture; see the below
+section about multidependent pictures for details.
 
 
 === Drawing ===
@@ -216,7 +221,7 @@ will be used as the base; all other filters are applied to alter it.
 * Flip/rotation: Flip/rotate the picture. "Identity" also belongs to this
 category, but has no effect.
 
-* Replace colors: A list of pairs of colours. The first of each pair is
+* Replace colours: A list of pairs of colours. The first of each pair is
 the old colour, and next the colour to replace it with.
 
 * Advance colours: A list of colours; change each colour mentioned in the
@@ -231,4 +236,35 @@ picture, showing through wherever it is transparent.
 * Shift: Shift the picture. Specify the sizes and shift amounts in the
 format "size: shift"; each size also affects all multiples of that size,
 in which case the shift amount is also multiplied by the same amount.
+
+
+=== Multidependent pictures ===
+
+(This section describes a feature of which the editor is implemented, but
+it is not implemented in the game yet, as of this writing.)
+
+A multidependent picture lump defines several pictures which are formed
+from one or more independent pictures and filters, using common sets of
+base pictures and filter chains.
+
+You can define a list of up to 63 bases and up to three lists of filter
+chains each of which may contain up to 63 filter chains; all pictures are
+generated which take all combinations of one item from each list.
+
+Each list may be nullable. In this case, you can omit to choose an item
+from that list for forming a picture. Empty lists are automatically
+nullable, even if they have not been defined as nullable.
+
+Each picture is made from a base, followed by a filter chain in the first
+list, and then the second list, and then the third.
+
+The bases are names of independent pictures. The filter chains may have
+any names, up to seven characters; if the first character is a dot or
+underscore or hyphen, then they may be up to eight characters. The name
+of the resulting picture is then the name of the selected item of each
+list, in order, concatenated together (the name of the multidependent
+picture lump itself is not used).
+
+Each filter chain is defined in the same way as for dependent pictures,
+although you cannot specify a base name, because there isn't any.
 

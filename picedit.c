@@ -52,10 +52,33 @@ typedef struct {
 } Filter;
 
 typedef struct {
-  char basename[64];
+  union {
+    char basename[64];
+    struct {
+      // This nested struct is only used for multidependent pictures.
+      char name[10];
+      Uint16 size;
+    };
+  };
   Filter filters[64];
   Uint8 nfilters;
 } DependentPicture;
+
+typedef struct {
+  char basename[64];
+} BaseName;
+
+typedef struct {
+  union {
+    struct {
+      Uint8 nbases;
+      Uint8 nchains[3];
+    };
+    Uint8 nitems[4];
+  };
+  BaseName bases[63];
+  DependentPicture chains[3*63];
+} MultiDependent;
 
 typedef struct {
   sqlite3_vtab_cursor super;
@@ -287,7 +310,7 @@ static sqlite3_int64 ask_picture_id(const char*t) {
   int i;
   sqlite3_int64 id=0;
   if(!r || !*r) return 0;
-  i=sqlite3_prepare_v2(userdb,"SELECT `ID`, `TYPE` FROM `PICEDIT` WHERE `NAME` = (?1 || '.IMG') OR `NAME` = (?1 || '.DEP');",-1,&st,0);
+  i=sqlite3_prepare_v2(userdb,"SELECT `ID`, `TYPE` FROM `PICEDIT` WHERE `NAME`=?1||'.IMG' OR `NAME`=?1||'.DEP' OR (SUBSTR(?1,1,1)='+' AND `NAME`=SUBSTR(?1,2)||'.MUL');",-1,&st,0);
   if(i) {
     screen_message(sqlite3_errmsg(userdb));
     return 0;
@@ -1111,11 +1134,12 @@ static inline void edit_picture_1(Picture**pict,const char*name) {
   }
 }
 
-static void load_dependent_picture(const Uint8*data,int size,DependentPicture*dp) {
+static void load_dependent_picture(const Uint8*data,int size,DependentPicture*dp,int mode) {
   FILE*fp;
   int i,j,k;
-  memset(dp,0,sizeof(DependentPicture));
+  if(!mode) memset(dp,0,sizeof(DependentPicture));
   if(!size) {
+    if(mode) return;
     const char*s=screen_prompt("Name of base picture:");
     if(s) strncpy(dp->basename,s,63);
     return;
@@ -1123,7 +1147,7 @@ static void load_dependent_picture(const Uint8*data,int size,DependentPicture*dp
   fp=fmemopen((Uint8*)data,size,"r");
   if(!fp) fatal("Error with fmemopen\n");
   i=0;
-  for(;;) {
+  if(!mode) for(;;) {
     j=fgetc(fp);
     if(j<32) {
       if(j>0) ungetc(j,fp);
@@ -1163,9 +1187,9 @@ static void load_dependent_picture(const Uint8*data,int size,DependentPicture*dp
   fclose(fp);
 }
 
-static void save_dependent_picture(FILE*fp,DependentPicture*dp) {
+static void save_dependent_picture(FILE*fp,DependentPicture*dp,int mode) {
   int i,j;
-  fwrite(dp->basename,1,strlen(dp->basename)+(dp->filters[0].code<32?0:1),fp);
+  if(!mode) fwrite(dp->basename,1,strlen(dp->basename)+(dp->filters[0].code<32?0:1),fp);
   for(i=0;i<dp->nfilters;i++) {
     fputc(dp->filters[i].code,fp);
     switch(dp->filters[i].code) {
@@ -1371,12 +1395,17 @@ static void edit_dependent_picture(DependentPicture*dp,const char*name) {
   r.x=r.y=0; r.w=screen->w; r.h=screen->h;
   SDL_LockSurface(screen);
   SDL_FillRect(screen,&r,0xF0);
-  draw_text(0,0,"Dependent Image:",0xF0,0xF7);
-  draw_text(136,0,name,0xF0,0xF5);
+  if(name) {
+    draw_text(0,0,"Dependent Image:",0xF0,0xF7);
+    draw_text(136,0,name,0xF0,0xF5);
+    draw_text(16,16,"Base:",0xF0,0xF7);
+    draw_text(64,16,dp->basename,0xF0,0xFE);
+  } else {
+    draw_text(0,0,"Filter Chain",0xF0,0xF7);
+    draw_text(16,16,"<Base>",0xF0,0xF8);
+  }
   draw_text(0,8,"<ESC> Exit  <\x18/\x19> Cursor  <SP> Edit  <INS> Insert  <DEL> Delete",0xF0,0xFB);
   draw_text(0,16,c<0?"\x1A":"\xFA",0xF0,c<0?0xFA:0xF2);
-  draw_text(16,16,"Base:",0xF0,0xF7);
-  draw_text(64,16,dp->basename,0xF0,0xFE);
   for(i=0,y=24;i<dp->nfilters;i++) {
     draw_text(0,y,c==i?"\x1A":"\xFA",0xF0,c==i?0xFA:0xF2);
     switch(j=dp->filters[i].code) {
@@ -1433,6 +1462,7 @@ static void edit_dependent_picture(DependentPicture*dp,const char*name) {
             if(add_filter(dp,txt,c)) // maybe fallthrough
           case SDLK_SPACE:
             if(c==-1) {
+              if(!name) break;
               s=screen_prompt("Name of base picture:");
               if(s && *s) strncpy(dp->basename,s,63);
             } else if(c<dp->nfilters) {
@@ -1465,10 +1495,158 @@ static void edit_dependent_picture(DependentPicture*dp,const char*name) {
   }
 }
 
+static void load_multidependent(const Uint8*data,int size,MultiDependent*mp) {
+  Uint32 at=4;
+  int i,j,k;
+  memset(mp,0,sizeof(MultiDependent));
+  if(size<4) return;
+  memcpy(mp->nitems,data,4);
+  for(i=0;i<(mp->nbases&63);i++) {
+    for(k=0;k<63 && at<size && data[at];k++) mp->bases[i].basename[k]=data[at++];
+    at++;
+  }
+  for(j=0;j<3;j++) for(i=0;i<(mp->nchains[j]&63) && at<size-2;i++) {
+    k=data[at++]; k|=data[at++]<<8;
+    mp->chains[j*63+i].size=k&0x07FF;
+    mp->chains[j*63+i].name[0]="\x00-_."[k>>14];
+    k>>=11;
+    if(at+(k&7)>size) break;
+    memcpy(mp->chains[j*63+i].name+(k&~7?1:0),data+at,k&7);
+    at+=k&7;
+  }
+  for(j=0;j<3;j++) for(i=0;i<(mp->nchains[j]&63) && at+mp->chains[j*63+i].size<=size;i++) {
+    load_dependent_picture(data+at,mp->chains[j*63+i].size,mp->chains+j*63+i,1);
+    at+=mp->chains[j*63+i].size;
+  }
+}
+
+static void save_multidependent(FILE*fp,MultiDependent*mp) {
+  Uint8*buf=0;
+  size_t size=0;
+  FILE*f=open_memstream((char**)&buf,&size);
+  Uint32 at;
+  int i,j,k,c;
+  if(!f) fatal("Cannot open memory stream\n");
+  fwrite(mp->nitems,1,4,fp);
+  for(i=0;i<(mp->nbases&63);i++) fwrite(mp->bases[i].basename,1,strlen(mp->bases[i].basename)+1,fp);
+  for(j=0;j<3;j++) for(i=0;i<(mp->nchains[j]&63);i++) {
+    at=ftell(f);
+    save_dependent_picture(f,mp->chains+j*63+i,1);
+    //TODO: This should check if it is too long, but unfortunately it does not do that.
+    k=(ftell(f)-at)&0x07FF;
+    c=mp->chains[j*63+i].name[0];
+    if(c=='-') k|=0x4000;
+    if(c=='_') k|=0x8000;
+    if(c=='.') k|=0xC000;
+    k|=strlen(mp->chains[j*63+i].name+(k>>14?1:0))<<11;
+    fputc(k,fp); fputc(k>>8,fp);
+    if((k>>11)&7) fwrite(mp->chains[j*63+i].name+(k>>14?1:0),1,(k>>11)&7,fp);
+  }
+  fputc(0,f);
+  fclose(f);
+  if(!buf || !size) fatal("Allocation failed\n");
+  if(size) fwrite(buf,1,size-1,fp);
+  free(buf);
+}
+
+static void edit_multidependent(MultiDependent*mp,const char*name) {
+  const char*s;
+  char row=0;
+  char col=0;
+  int i,j;
+  SDL_Rect r;
+  SDL_Event ev;
+  set_cursor(XC_arrow);
+  redraw:
+  r.x=r.y=0; r.w=screen->w; r.h=screen->h;
+  SDL_LockSurface(screen);
+  SDL_FillRect(screen,&r,0xF0);
+  draw_text(0,0,"Multidependent:",0xF0,0xF7);
+  draw_text(136,0,name,0xF0,0xF5);
+  draw_text(0,8,"<ESC> Exit  <\x18/\x19/\x1A/\x1B> Cursor  <SP> Edit  <TAB> Name  <BKSP> Toggle Null  <INS> Add  <DEL> Delete",0xF0,0xFB);
+  draw_text(4,20,"BASE ",col==0?0xF2:0xF0,0xFE);
+  if(mp->nbases&0x80) draw_text(4,28,"<Null>",0xF0,0xF7);
+  draw_text(4+8*64,20,"I   ",col==1?0xF2:0xF0,0xFE);
+  if(mp->nchains[0]&0x80) draw_text(4+8*64,28,"<Null>",0xF0,0xF7);
+  draw_text(4+8*74,20,"II  ",col==2?0xF2:0xF0,0xFE);
+  if(mp->nchains[1]&0x80) draw_text(4+8*74,28,"<Null>",0xF0,0xF7);
+  draw_text(4+8*84,20,"III ",col==3?0xF2:0xF0,0xFE);
+  if(mp->nchains[2]&0x80) draw_text(4+8*84,28,"<Null>",0xF0,0xF7);
+  if(row>=(mp->nitems[col]&63)) row=(mp->nitems[col]&63?:1)-1;
+  for(i=0;i<(mp->nbases&63);i++) draw_text(4,8*i+36,mp->bases[i].basename,(col==0 && row==i)?0xF1:0xF0,0xF7);
+  for(j=0;j<3;j++) for(i=0;i<(mp->nchains[j]&63);i++) draw_text(4+8*(10*j+64),8*i+36,mp->chains[j*63+i].name,(col==j+1 && row==i)?0xF1:0xF0,0xF7);
+  SDL_UnlockSurface(screen);
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) {
+    switch(ev.type) {
+      case SDL_QUIT:
+        exit(0);
+        break;
+      case SDL_KEYDOWN:
+        switch(ev.key.keysym.sym) {
+          case SDLK_ESCAPE: case SDLK_q: return;
+          case SDLK_BACKSPACE: case SDLK_t: mp->nitems[col]^=0x80; break;
+          case SDLK_LEFT: case SDLK_KP4: case SDLK_h: if(col) --col; break;
+          case SDLK_RIGHT: case SDLK_KP6: case SDLK_l: if(col<3) ++col; break;
+          case SDLK_UP: case SDLK_KP8: case SDLK_k: if(row) --row; break;
+          case SDLK_DOWN: case SDLK_KP2: case SDLK_j: ++row; break;
+          case SDLK_HOME: case SDLK_KP7: row=0; break;
+          case SDLK_END: case SDLK_KP1: row=64; break;
+          case SDLK_INSERT: case SDLK_KP0: case SDLK_a:
+            if((mp->nitems[col]&63)==63) break;
+            row=mp->nitems[col]&63;
+            s=screen_prompt(col?"Add filter chain:":"Add base item:");
+            if(!s || !*s) break;
+            if(col) {
+              strncpy(mp->chains[(col-1)*63+row].name,s,8);
+              if(*s!='.' && *s!='_' && *s!='-') mp->chains[(col-1)*63+row].name[8]=0;
+              mp->chains[(col-1)*63+row].nfilters=0;
+              ++mp->nitems[col];
+              goto edit;
+            } else {
+              strncpy(mp->bases[row].basename,s,63);
+              ++mp->nbases;
+            }
+            break;
+          case SDLK_SPACE: case SDLK_e: edit:
+            if(!mp->nitems[col]) break;
+            if(!col) goto rename;
+            edit_dependent_picture(mp->chains+(col-1)*63+row,0);
+            break;
+          case SDLK_DELETE: case SDLK_KP_PERIOD: case SDLK_d:
+            if(!mp->nitems[col]) break;
+            --mp->nitems[col];
+            if(col) {
+              for(i=row;i<mp->nitems[col];i++) mp->chains[(col-1)*63+i]=mp->chains[(col-1)*63+i+1];
+            } else {
+              for(i=row;i<mp->nbases;i++) mp->bases[i]=mp->bases[i+1];
+            }
+            break;
+          case SDLK_TAB: case SDLK_n: rename:
+            if(!mp->nitems[col]) break;
+            s=screen_prompt("Rename:");
+            if(!s || !*s) break;
+            if(col) {
+              strncpy(mp->chains[(col-1)*63+row].name,s,8);
+              if(*s!='.' && *s!='_' && *s!='-') mp->chains[(col-1)*63+row].name[8]=0;
+              mp->chains[(col-1)*63+row].nfilters=0;
+            } else {
+              strncpy(mp->bases[row].basename,s,63);
+            }
+            break;
+        }
+        goto redraw;
+      case SDL_VIDEOEXPOSE:
+        goto redraw;
+    }
+  }
+}
+
 static void edit_picture(sqlite3_int64 id) {
   sqlite3_stmt*st;
   Picture*pict[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   DependentPicture*dpict;
+  MultiDependent*mpict;
   char*name;
   const unsigned char*data;
   Uint8*buf=0;
@@ -1520,11 +1698,22 @@ static void edit_picture(sqlite3_int64 id) {
   } else if(i==2) {
     dpict=malloc(sizeof(DependentPicture));
     if(!dpict) fatal("Allocation failed\n");
-    load_dependent_picture(data,n,dpict);
+    load_dependent_picture(data,n,dpict,0);
     fp=open_memstream((char**)&buf,&size);
     if(!fp) fatal("Cannot open memory stream\n");
     edit_dependent_picture(dpict,name);
-    save_dependent_picture(fp,dpict);
+    save_dependent_picture(fp,dpict,0);
+    free(dpict);
+    fclose(fp);
+    if(!buf || !size) fatal("Allocation failed\n");
+  } else if(i==3) {
+    mpict=malloc(sizeof(MultiDependent));
+    if(!mpict) fatal("Allocation failed\n");
+    load_multidependent(data,n,mpict);
+    fp=open_memstream((char**)&buf,&size);
+    if(!fp) fatal("Cannot open memory stream\n");
+    edit_multidependent(mpict,name);
+    save_multidependent(fp,mpict);
     free(dpict);
     fclose(fp);
     if(!buf || !size) fatal("Allocation failed\n");

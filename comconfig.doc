@@ -50,8 +50,24 @@ CONFIG_ERROR_CHECKING
   improve speed but may make the program crash in some cases and may also
   cause security vulnerabilities.
 
+CONFIG_LAUNCHER_PATH
+  If defined, then it is the full path to a file to execute if Free Hero
+  Mesh has been invoked with no command-line arguments, or if it is given
+  the flag to run the launcher program instead.
+
 CONFIG_MULTIUSER_SCORES
   (Meant for storing scores on a multiuser system, somehow)
+
+CONFIG_OMIT_EDITOR
+  If defined, omit the level editor and picture editor.
+
+CONFIG_OMIT_MUSIC
+  If defined, omit background music playback capabilities. (Even if this
+  is not defined, it can still be disabled at runtime.
+
+CONFIG_OMIT_SOUND
+  If defined, omit all sound capabilities (including music). (Even if it
+  is not defined, it can still be disabled at runtime.)
 
 CONFIG_PRIVATE_USERCACHE
   If defined as a octal number, set the default file permissions of the
@@ -76,11 +92,13 @@ CONFIG_USING_BSD_FUNCTIONS
 
 CONFIG_USING_SDL12_COMPAT
   Define this if the program is to be compiled for use with the
-  "sdl12-compat" SDL compatibility layer.
+  "sdl12-compat" SDL compatibility layer. (This does not affect linking,
+  but it may change some parts of the program to improve compatibility.)
 
 CONFIG_USING_SDLCL
   Define this if the program is to be compiled for use with the "sdlcl"
-  SDL compatibility layer.
+  SDL compatibility layer. (This does not affect linking, but it may change
+  some parts of the program to improve compatibility.)
 
 CONFIG_USING_X86_BMI2
   If defined, use PDEP and PEXT instructions. This only works on x86 and
