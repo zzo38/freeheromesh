@@ -29,6 +29,7 @@ Uint32 codepage;
 static SDL_Surface*picts;
 static Uint8*curpic;
 static const unsigned char*fontdata;
+static const Uint8 bytewidth[32];
 
 static const char default_palette[]=
   "C020FF "
@@ -156,6 +157,24 @@ void draw_text(int x,int y,const unsigned char*t,int bg,int fg) {
   }
 }
 
+void draw_text_v(int x,int y,const unsigned char*t,int bg,int fg) {
+  // Draw text using sizes other than 8x8 and possible multibyte encodings.
+  // To be called only when screen is locked!
+  //TODO
+}
+
+int measure_text_v(const unsigned char*t,int len) {
+  // Returns number of character cells of text (t).
+  // If len is positive then it is the maximum number of bytes to measure.
+  int r=0;
+  int c;
+  while((len<0 || len--) && (c=*t++)) {
+    r++;
+    if(c&0x80) r-=(bytewidth[(c&0x7C)>>2]>>((c&3)<<1))&3;
+  }
+  return r>0?r:0;
+}
+
 int draw_text_line(int x,int y,unsigned char*t,int cur,Uint8**cp) {
   // To be called only when screen is locked!
   int len=strlen(t);
@@ -202,6 +221,14 @@ int draw_text_line(int x,int y,unsigned char*t,int cur,Uint8**cp) {
     t++;
     pix+=8;
   }
+}
+
+int draw_text_line_v(int x,int y,unsigned char*t,int cur,Uint8**cp) {
+  //TODO
+}
+
+int measure_text_line_v(unsigned char*t,int len,Uint8**cp) {
+  //TODO
 }
 
 void draw_key(int x,int y,int k,int bg,int fg) {
