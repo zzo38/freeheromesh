@@ -1225,6 +1225,12 @@ used on the same turn as the IgnoreKey instruction.
 ,/  ( in1 in2 -- out )
   Signed divide in1 by in2 producing the quotient.
 
+/mod  ( in1 in2 -- quotient remainder )
+  Like / and mod together.
+
+,/mod  ( in1 in2 -- quotient remainder )
+  Like ,/ and ,mod together.
+
 _  ( -- mark )
   Add a mark to the stack.
 

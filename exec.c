@@ -3012,6 +3012,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_DISTANCE_EC: StackReq(2,0); t1=Pop(); Numeric(t1); i=v_object(Pop()); if(i!=VOIDLINK) objects[i]->distance=t1.u; break;
     case OP_DIV: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u/t2.u)); break;
     case OP_DIV_C: StackReq(2,1); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s/t2.s)); break;
+    case OP_DIVMOD: StackReq(2,2); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u/t2.u)); Push(NVALUE(t1.u%t2.u)); break;
+    case OP_DIVMOD_C: StackReq(2,2); t2=Pop(); DivideBy(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.s/t2.s)); Push(NVALUE(t1.s%t2.s)); break;
     case OP_DONE: StackReq(0,1); if(o->oflags&OF_DONE) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_DONE_C: StackReq(1,1); GetFlagOf(OF_DONE); break;
     case OP_DONE_E: StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_DONE; else o->oflags&=~OF_DONE; break;
