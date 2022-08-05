@@ -1714,7 +1714,7 @@ static void edit_picture(sqlite3_int64 id) {
     if(!fp) fatal("Cannot open memory stream\n");
     edit_multidependent(mpict,name);
     save_multidependent(fp,mpict);
-    free(dpict);
+    free(mpict);
     fclose(fp);
     if(!buf || !size) fatal("Allocation failed\n");
   }
