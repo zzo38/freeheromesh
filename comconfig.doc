@@ -16,10 +16,12 @@ CONFIG_DEFAULT_RESOURCES
   it cannot find the configuration file in the home directory.
 
 CONFIG_GLOBAL_HASH_SIZE
-  Size of global hash table when reading class definition file.
+  Size of global hash table when reading class definition file. This must
+  be less than 65535.
 
 CONFIG_LOCAL_HASH_SIZE
-  Size of local hash table when reading class definition file.
+  Size of local hash table when reading class definition file. This must
+  be less than 65535.
 
 CONFIG_NO_PORTABLE
   If defined, then portable mode by checking argv[0] is disabled. (It is

@@ -419,6 +419,7 @@ static void nxttok1(void) {
       if(main_options['M']) printf("M^ %d\n",tl?1:0);
       goto magain;
     }
+    if(tokent==TF_MACRO+TF_ABNORMAL) goto magain; // denotes a empty macro
     return;
   }
   fl=n=pr=0;
@@ -623,6 +624,13 @@ static void define_macro(Uint16 name,Uint8 q) {
     t=&(*t)->next;
   }
   if(main_options['M']) printf("M> %04X %04X %p\n",name,glohash[name].id,macros[glohash[name].id-0xC000]);
+  if(!macros[glohash[name].id-0xC000]) {
+    // The macro is empty, so add a token which denotes a empty macro.
+    // This token will be skipped during macro expansion.
+    tokent=TF_MACRO+TF_ABNORMAL;
+    *tokenstr=0;
+    macros[glohash[name].id-0xC000]=add_macro();
+  }
 }
 
 static void begin_include_file(const char*name) {
@@ -651,27 +659,6 @@ static void begin_macro(TokenList*mac) {
   int b=0;
   int c=0;
   if(StackProtection()) fatal("Stack overflow\n");
-  if(!mac) {
-    // In case of a empty macro
-    free(ms);
-    for(;;) {
-      nxttok1();
-      if(tokent&TF_EOF) ParseError("Unexpected end of file in macro argument\n");
-      if(tokent&TF_OPEN) {
-        ++a;
-        if(tokent&TF_MACRO) ++c;
-      }
-      if(tokent&TF_CLOSE) {
-        --a;
-        if(tokent&TF_MACRO) --c;
-      }
-      if(c==-1) {
-        if(a!=-1 && !b) ParseError("Misnested macro argument\n");
-        return;
-      }
-    }
-    return;
-  }
   ref_macro(mac);
   if(!ms) fatal("Allocation failed\n");
   ms->tok=mac;
