@@ -633,7 +633,7 @@ static void begin_include_file(const char*name) {
   inpstack->linenum=linenum;
   inpstack->next=nxt;
   linenum=1;
-  if(*name=='.' || *name=='_' || *name=='-' || !*name || name[strspn(name,"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-")])
+  if(*name=='.' || *name=='_' || *name=='-' || !*name || name[strspn(name,"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-abcdefghijklmnopqrstuvwxyz.")])
    ParseError("Improper name of include file \"%s\"\n",name);
   if(main_options['z']) {
     if(strlen(name)<9 || memcmp(name-strlen(name),".include",8)) ParseError("Include file name doesn't end with .include\n");
@@ -651,6 +651,27 @@ static void begin_macro(TokenList*mac) {
   int b=0;
   int c=0;
   if(StackProtection()) fatal("Stack overflow\n");
+  if(!mac) {
+    // In case of a empty macro
+    free(ms);
+    for(;;) {
+      nxttok1();
+      if(tokent&TF_EOF) ParseError("Unexpected end of file in macro argument\n");
+      if(tokent&TF_OPEN) {
+        ++a;
+        if(tokent&TF_MACRO) ++c;
+      }
+      if(tokent&TF_CLOSE) {
+        --a;
+        if(tokent&TF_MACRO) --c;
+      }
+      if(c==-1) {
+        if(a!=-1 && !b) ParseError("Misnested macro argument\n");
+        return;
+      }
+    }
+    return;
+  }
   ref_macro(mac);
   if(!ms) fatal("Allocation failed\n");
   ms->tok=mac;
