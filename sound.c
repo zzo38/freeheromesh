@@ -14,6 +14,8 @@ exit
 #include "heromesh.h"
 #include "cursorshapes.h"
 
+#ifndef CONFIG_OMIT_SOUND
+
 typedef struct {
   Uint8*data;
   Uint32 len; // length in bytes
@@ -503,3 +505,12 @@ void sound_test(void) {
     }
   }
 }
+
+#else
+// CONFIG_OMIT_SOUND is defined
+void init_sound(void) {}
+void set_sound_effect(Value v1,Value v2) {}
+Uint16 find_user_sound(const char*name) { return 0x03FF; }
+void set_sound_on(int on) {}
+void sound_test(void) {}
+#endif

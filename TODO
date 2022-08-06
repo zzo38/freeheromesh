@@ -39,6 +39,7 @@
 * Branching replay recording
 * Slow movement displaying state between triggers
 * Warning if file changed when uncommited data exists in the cache database
+* Cache database option to be keyed by hash
 * Composite puzzle set format (implemented)
   * Optional hypertext help
   * Compressed class definitions (?)

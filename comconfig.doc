@@ -27,6 +27,10 @@ CONFIG_NO_PORTABLE
   If defined, then portable mode by checking argv[0] is disabled. (It is
   still possible to use portable mode by HEROMESH_PREFIX)
 
+CONFIG_OMIT_SOUND
+  If defined, omit all sound capabilities (including music). (Even if it
+  is not defined, it can still be disabled at runtime.)
+
 CONFIG_USING_32BIT_TIMESTAMPS
   If defined, force use of 32-bit timestamps. (This is needed in order to
   avoid compiler warnings on some systems, such as some versions of the
@@ -66,10 +70,6 @@ CONFIG_OMIT_EDITOR
 CONFIG_OMIT_MUSIC
   If defined, omit background music playback capabilities. (Even if this
   is not defined, it can still be disabled at runtime.
-
-CONFIG_OMIT_SOUND
-  If defined, omit all sound capabilities (including music). (Even if it
-  is not defined, it can still be disabled at runtime.)
 
 CONFIG_PRIVATE_USERCACHE
   If defined as a octal number, set the default file permissions of the
