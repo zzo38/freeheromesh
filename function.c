@@ -1718,7 +1718,7 @@ static int vt1_levels_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
   int txn=sqlite3_get_autocommit(userdb)?sqlite3_exec(userdb,"BEGIN;",0,0,0):1;
   if(!levels_schema) return SQLITE_CORRUPT_VTAB;
   if(screen) set_cursor(XC_coffee_mug);
-  fprintf(stderr,"Loading level table...\n");
+  printStatus("Loading level table...\n");
   if(sqlite3_exec(userdb,levels_schema,0,0,0)) {
     err: fatal("SQL error while loading LEVELS table: %s\n",sqlite3_errmsg(userdb));
   }
@@ -1777,7 +1777,7 @@ static int vt1_levels_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
   sqlite3_finalize(st2);
   sqlite3_exec(userdb,"CREATE UNIQUE INDEX `LEVELS_ORD` ON `LEVELS`(`ORD`) WHERE `ORD` NOT NULL;",0,0,0);
   if(!txn) sqlite3_exec(userdb,"COMMIT;",0,0,0);
-  fprintf(stderr,"Done\n");
+  printStatus("Done\n");
   if(screen) set_cursor(XC_arrow);
   return SQLITE_SCHEMA;
 }

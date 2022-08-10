@@ -2562,7 +2562,7 @@ void load_classes(void) {
   Hash*glolocalhash;
   char*nam=sqlite3_mprintf("%s.class",basefilename);
   sqlite3_stmt*vst=0;
-  fprintf(stderr,"Loading class definitions...\n");
+  printStatus("Loading class definitions...\n");
   if(!nam) fatal("Allocation failed\n");
   classfp=main_options['z']?composite_slice(".class",1):fopen(nam,"r");
   sqlite3_free(nam);
@@ -2782,5 +2782,5 @@ void load_classes(void) {
     if(!array_data) fatal("Array allocation failed\n");
   }
   if(norders) set_class_orders();
-  fprintf(stderr,"Done\n");
+  printStatus("Done\n");
 }

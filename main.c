@@ -568,12 +568,12 @@ static void flush_usercache_1(int sol) {
 static void flush_usercache(void) {
   int e;
   if(main_options['r']) return;
-  fprintf(stderr,"Flushing user cache...\n");
+  printStatus("Flushing user cache...\n");
   if(e=sqlite3_exec(userdb,"BEGIN;",0,0,0)) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
   flush_usercache_1(FIL_LEVEL);
   flush_usercache_1(FIL_SOLUTION);
   if(e=sqlite3_exec(userdb,"COMMIT;",0,0,0)) fatal("SQL error (%d): %s\n",e,sqlite3_errmsg(userdb));
-  fprintf(stderr,"Done\n");
+  printStatus("Done\n");
 }
 
 static void init_composite(void) {
@@ -583,7 +583,7 @@ static void init_composite(void) {
   int z;
   struct stat fst;
   if(!fp) fatal("Cannot open '%s' for reading: %m\n",basefilename);
-  fprintf(stderr,"Loading puzzle set...\n");
+  printStatus("Loading puzzle set...\n");
   if(z=sqlite3_exec(userdb,"BEGIN;",0,0,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   if(z=sqlite3_prepare_v2(userdb,"SELECT `ID`, `TIME` FROM `USERCACHEINDEX` WHERE `NAME` = CHAR(?2)||'//'||?1;",-1,&st,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   basefilename=realpath(basefilename,0);
@@ -628,7 +628,7 @@ static void init_composite(void) {
     fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   }
   if(z=sqlite3_exec(userdb,"COMMIT;",0,0,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
-  fprintf(stderr,"Done\n");
+  printStatus("Done\n");
 }
 
 static void init_usercache(void) {
@@ -639,7 +639,7 @@ static void init_usercache(void) {
   char*nam2;
   char*nam3;
   struct stat fst;
-  fprintf(stderr,"Initializing user cache...\n");
+  printStatus("Initializing user cache...\n");
   if(z=sqlite3_exec(userdb,"BEGIN;",0,0,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   if(z=sqlite3_prepare_v2(userdb,"SELECT `ID`, `TIME` FROM `USERCACHEINDEX` WHERE `NAME` = ?1;",-1,&st,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   nam1=sqlite3_mprintf("%s.level",basefilename);
@@ -691,7 +691,7 @@ static void init_usercache(void) {
     fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
   }
   if(z=sqlite3_exec(userdb,"COMMIT;",0,0,0)) fatal("SQL error (%d): %s\n",z,sqlite3_errmsg(userdb));
-  fprintf(stderr,"Done\n");
+  printStatus("Done\n");
 }
 
 static void new_puzzle_set(void) {
@@ -1093,7 +1093,7 @@ int main(int argc,char**argv) {
     for(i=1;s[i];i++) main_options[s[i]&127]=1;
   }
   setbuf(stderr,0);
-  if(!main_options['c']) fprintf(stderr,"FREE HERO MESH\n");
+  if(!main_options['c']) printStatus("FREE HERO MESH\n");
   if(argc<=optind) fatal("usage: %s [switches] [--] basename [options...]\n",argc?argv[0]:"heromesh");
   if(xrm_init(realloc)) fatal("Failed to initialize resource manager\n");
   if(xrm_init_quarks(global_quarks)) fatal("Failed to initialize resource manager\n");
@@ -1181,7 +1181,7 @@ int main(int argc,char**argv) {
       flush_usercache();
       return 0;
     }
-    fprintf(stderr,"Ready for executing SQL statements.\n");
+    printStatus("Ready for executing SQL statements.\n");
     no_dead_anim=1;
     do_sql_mode();
     return 0;

@@ -213,7 +213,7 @@ static int load_picture_file(void) {
   if(i) fatal("SQL error (%d): %s\n",i,sqlite3_errmsg(userdb));
   nam=sqlite3_mprintf("%s.xclass",basefilename);
   if(!nam) fatal("Allocation failed\n");
-  fprintf(stderr,"Loading pictures...\n");
+  printStatus("Loading pictures...\n");
   fp=fopen(nam,"r");
   sqlite3_free(nam);
   if(!fp) {
@@ -259,7 +259,7 @@ done:
   if(fp) fclose(fp);
   free(nam);
   free(buf);
-  fprintf(stderr,"Done\n");
+  printStatus("Done\n");
   sqlite3_exec(userdb,
     "CREATE TRIGGER `PICEDIT_T1` BEFORE INSERT ON `PICEDIT` BEGIN"
     "  SELECT RAISE(FAIL,'Duplicate name') FROM `PICEDIT` WHERE REPLACE(`NAME`||'*','.IMG*','.DEP*')=REPLACE(NEW.`NAME`||'*','.IMG*','.DEP*');"
@@ -279,7 +279,7 @@ static void save_picture_file(void) {
   const char*nam;
   const char*buf;
   if(!s) fatal("Allocation failed\n");
-  fprintf(stderr,"Saving pictures...\n");
+  printStatus("Saving pictures...\n");
   fp=fopen(s,"w");
   if(!fp) fatal("Cannot open picture file for writing: %m\n");
   sqlite3_free(s);
@@ -301,7 +301,7 @@ static void save_picture_file(void) {
 done:
   if(st) sqlite3_finalize(st);
   if(fp) fclose(fp);
-  fprintf(stderr,"Done\n");
+  printStatus("Done\n");
 }
 
 static sqlite3_int64 ask_picture_id(const char*t) {

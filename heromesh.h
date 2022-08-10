@@ -6,6 +6,12 @@
 
 // == main ==
 
+#ifdef CONFIG_NO_STATUS
+#define printStatus(...) do{ if(main_options['v']) fprintf(stderr,__VA_ARGS__); }while(0)
+#else
+#define printStatus(...) fprintf(stderr,__VA_ARGS__)
+#endif
+
 #define fatal(...) do{ fprintf(stderr,"FATAL: " __VA_ARGS__); exit(1); }while(0)
 #define boolxrm(a,b) (*a=='1'||*a=='y'||*a=='t'||*a=='Y'||*a=='T'?1:*a=='0'||*a=='n'||*a=='f'||*a=='N'||*a=='F'?0:b)
 

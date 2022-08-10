@@ -120,7 +120,7 @@ static void*cb_1(xrm_db*db,void*usr) {
 }
 
 void load_key_bindings(void) {
-  fprintf(stderr,"Loading key bindings...\n");
+  printStatus("Loading key bindings...\n");
   cur_modifiers=loose_modifiers=0;
   optionquery[1]=Q_editKey;
   xrm_search(resourcedb,optionquery,optionquery,2,cb_1,editor_bindings);
@@ -130,7 +130,7 @@ void load_key_bindings(void) {
   xrm_search(resourcedb,optionquery,optionquery,2,cb_1,editor_mouse_bindings);
   optionquery[1]=Q_gameClick;
   xrm_search(resourcedb,optionquery,optionquery,2,cb_1,game_mouse_bindings);
-  fprintf(stderr,"Done\n");
+  printStatus("Done\n");
 }
 
 const UserCommand*find_key_binding(SDL_Event*ev,int editing) {

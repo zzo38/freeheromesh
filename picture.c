@@ -778,7 +778,7 @@ void load_pictures(void) {
   const char*v;
   int i,j,n;
   if(!nam) fatal("Allocation failed\n");
-  fprintf(stderr,"Loading pictures...\n");
+  printStatus("Loading pictures...\n");
   fp=main_options['z']?composite_slice(".xclass",1):fopen(nam,"r");
   if(!fp) fatal("Failed to open xclass file (%m)\n");
   sqlite3_free(nam);
@@ -898,7 +898,7 @@ nomore1:
   SDL_SetColorKey(picts,SDL_SRCCOLORKEY|SDL_RLEACCEL,0);
 done:
   if(n=sqlite3_exec(userdb,"COMMIT;",0,0,0)) fatal("SQL error (%d): %s\n",n,sqlite3_errmsg(userdb));
-  fprintf(stderr,"Done\n");
+  printStatus("Done\n");
 }
 
 void init_screen(void) {

@@ -27,6 +27,10 @@ CONFIG_NO_PORTABLE
   If defined, then portable mode by checking argv[0] is disabled. (It is
   still possible to use portable mode by HEROMESH_PREFIX)
 
+CONFIG_NO_STATUS
+  If defined, then most status output is omitted unless -v is specified.
+  (Some status output, such as most error messages, are still displayed.)
+
 CONFIG_OMIT_SOUND
   If defined, omit all sound capabilities (including music). (Even if it
   is not defined, it can still be disabled at runtime.)
@@ -51,10 +55,18 @@ CONFIG_WITH_STACK_PROTECTION
 The below options are not implemented and are subject to being changed
 in future when they are implemented.
 
+CONFIG_DOUBLE_PRECISION_AUDIO
+  If defined, use double precision for some math calculations in audio
+  processing. Some calculations are not affected by this option.
+
 CONFIG_ERROR_CHECKING
   Define error checking level, where 9 is maximum. Lower numbers might
   improve speed but may make the program crash in some cases and may also
   cause security vulnerabilities.
+
+CONFIG_EXTRA_SCREEN_INIT
+  Can be a C code to be executed after the video mode is set, but before
+  any other screen initialization is done.
 
 CONFIG_LAUNCHER_PATH
   If defined, then it is the full path to a file to execute if Free Hero
@@ -65,26 +77,39 @@ CONFIG_MULTIUSER_SCORES
   (Meant for storing scores on a multiuser system, somehow)
 
 CONFIG_OMIT_EDITOR
-  If defined, omit the level editor and picture editor.
+  If defined, omit the level editor and picture editor, as well as the
+  ability to import and export levels and pictures.
+
+CONFIG_OMIT_GUI
+  If defined, omit the GUI. Autotest mode can still be used, and the
+  batch import/export works if CONFIG_OMIT_EDITOR is not defined. Any
+  other feature which does not require the GUI also can still be used.
+
+CONFIG_OMIT_MBCS
+  If defined, omit the capability of multibyte character encodings. (This
+  only affects displaying text, not the behaviour of the game.)
 
 CONFIG_OMIT_MUSIC
   If defined, omit background music playback capabilities. (Even if this
-  is not defined, it can still be disabled at runtime.
-
-CONFIG_PRIVATE_USERCACHE
-  If defined as a octal number, set the default file permissions of the
-  user cache database when creating it. (The user can still change them
-  afterward by using chmod.)
+  is not defined, it can still be disabled at runtime.)
 
 CONFIG_RANDOM_SOURCE
   Device to read random numbers from instead of using the random number
   generator built in to SQLite. (This will override the definition of the
   SQL RANDOM() function if it is defined.)
 
+CONFIG_USERCACHE_PERMISSIONS
+  If defined as a octal number, set the default file permissions of the
+  user cache database when creating it. (The user can still change them
+  afterward by using chmod.)
+
 CONFIG_USING_APPIMAGE
   If defined, it will check the environment variables having to do with
   AppImage and will be able to load the default resources from there, as
   well as allow the configuration file to reference the AppImage directory.
+
+CONFIG_USING_ARM_NEON
+  If defined, use ARM NEON extensions. This only works on ARM.
 
 CONFIG_USING_BSD_FUNCTIONS
   If defined, use BSD functions (such as funopen) instead of GNU functions
@@ -106,6 +131,11 @@ CONFIG_USING_X86_BMI2
   If defined, use PDEP and PEXT instructions. This only works on x86 and
   only on some processor models. (Apparently this is fast on Intel but slow
   on AMD, so it should not be used on AMD, even if it is available.)
+
+CONFIG_WITH_NETWORK
+  If defined, include code for network/internet access. Even if this is
+  defined, it must still be enabled by the end user; it will not connect
+  to any remote services unless the user explicitly commands it to do so.
 
 CONFIG_WITH_VIDEO_RECORDING
   If defined, then include code to implement video recording, which will

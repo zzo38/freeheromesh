@@ -251,7 +251,7 @@ void init_sound(void) {
   if(!v) return;
   spec.samples=strtol(v,0,10);
   if(!spec.freq || !spec.samples) return;
-  fprintf(stderr,"Initializing audio...\n");
+  printStatus("Initializing audio...\n");
   spec.channels=1;
   spec.format=AUDIO_S16SYS;
   spec.callback=audio_callback;
@@ -287,7 +287,7 @@ void init_sound(void) {
     // Convert quarter notes per minute to samples per sixty-fourth note
     mmltempo=(spec.freq*60)/(i*16);
   }
-  fprintf(stderr,"Done.\n");
+  printStatus("Done.\n");
   wavesound=0;
   mmlpos=0;
   SDL_PauseAudio(0);

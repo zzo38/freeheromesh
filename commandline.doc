@@ -132,3 +132,6 @@ where the executable file is allegedly found.
 
 4. Otherwise, home mode is used.
 
+Determining portable mode by argv[0] can be disabled at compile-time. Even
+if it is disabled, HEROMESH_PREFIX environment variable can still be used.
+
