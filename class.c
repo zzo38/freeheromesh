@@ -368,6 +368,12 @@ static Uint16 look_hash_mac(void) {
   }
 }
 
+static int check_improper_name(void) {
+  unsigned char*p=tokenstr;
+  while(*p) if(*p++<=32) return 1;
+  return 0;
+}
+
 #define ReturnToken(x,y) do{ tokent=x; tokenv=y; return; }while(0)
 
 static void nxttok1(void) {
@@ -937,10 +943,12 @@ static void nxttok(void) {
             case 0x0011: // =%
               ReturnToken(TF_NAME|TF_ABNORMAL|TF_EQUAL,OP_LOCAL);
             case 0x0020: // #
+              if(check_improper_name()) ParseError("Improper message name in {make}\n");
               tokent=TF_NAME;
               tokenv=look_message_name()+0xC000;
               return;
             case 0x0040: // $
+              if(!*tokenstr || *tokenstr=='(' || check_improper_name()) ParseError("Improper class name in {make}\n");
               tokent=TF_NAME;
               tokenv=look_class_name()+0x4000;
               return;
