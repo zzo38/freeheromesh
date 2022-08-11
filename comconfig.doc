@@ -15,6 +15,10 @@ CONFIG_DEFAULT_RESOURCES
   If defined, read resource configuration from the specified file if
   it cannot find the configuration file in the home directory.
 
+CONFIG_EXTRA_SCREEN_INIT
+  Can be a C code to be executed after the video mode is set, but before
+  any other screen initialization is done.
+
 CONFIG_GLOBAL_HASH_SIZE
   Size of global hash table when reading class definition file. This must
   be less than 65535.
@@ -64,14 +68,12 @@ CONFIG_ERROR_CHECKING
   improve speed but may make the program crash in some cases and may also
   cause security vulnerabilities.
 
-CONFIG_EXTRA_SCREEN_INIT
-  Can be a C code to be executed after the video mode is set, but before
-  any other screen initialization is done.
-
 CONFIG_LAUNCHER_PATH
   If defined, then it is the full path to a file to execute if Free Hero
   Mesh has been invoked with no command-line arguments, or if it is given
-  the flag to run the launcher program instead.
+  the flag to run the launcher program instead. (Maybe this should not be
+  implemented; you can run the separate launcher program directly instead.
+  Maybe it will be the other way around, if compiled to use AppImage.)
 
 CONFIG_MULTIUSER_SCORES
   (Meant for storing scores on a multiuser system, somehow)

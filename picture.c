@@ -913,6 +913,9 @@ void init_screen(void) {
   optionquery[1]=Q_screenFlags;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"";
   if(SDL_Init(SDL_INIT_VIDEO|(strchr(v,'z')?SDL_INIT_NOPARACHUTE:0)|SDL_INIT_TIMER)) fatal("Error initializing SDL: %s\n",SDL_GetError());
+#ifdef CONFIG_EXTRA_SCREEN_INIT
+  do{ CONFIG_EXTRA_SCREEN_INIT }while(0);
+#endif
   atexit(SDL_Quit);
   i=0;
   while(*v) switch(*v++) {
