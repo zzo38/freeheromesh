@@ -1115,7 +1115,7 @@ int main(int argc,char**argv) {
     if(main_options['r']) fatal("Switches -r and -%c are conflicting\n",main_options['i']?'i':'n');
     main_options['x']=1;
   }
-  if(main_options['a'] || main_options['O']) main_options['r']=main_options['x']=1;
+  if(main_options['a'] || main_options['O'] || main_options['S']) main_options['r']=main_options['x']=1;
   if(main_options['p']) main_options['r']=1;
   if(main_options['f']) main_options['x']=1;
   if(!main_options['c']) {
@@ -1171,6 +1171,7 @@ int main(int argc,char**argv) {
   max_trigger=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,10);
   if(main_options['a']) run_auto_test();
   if(main_options['O']) export_private_solutions();
+  if(main_options['S']) make_level_hashes();
   if(main_options['x']) {
     if(main_options['i']) {
       batch_import();

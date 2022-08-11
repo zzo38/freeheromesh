@@ -24,6 +24,11 @@ and <resources> is optional resources to override.
 -O
   Write a solution Hamster archive with private solutions to stdout.
 
+-S
+  Compute level hashes. The level hashes depend on the class definitions
+  and on the level itself, except for the title. It does not depend on any
+  other files, including other levels, nor the level number.
+
 -T
   Mode for testing some internal functions of Free Hero Mesh and SDL. You
   probably do not need to use this mode yourself.

@@ -647,6 +647,7 @@ static void begin_include_file(const char*name) {
   inpstack->linenum=linenum;
   inpstack->next=nxt;
   linenum=1;
+  if(main_options['S']) fatal("Cannot use {include} with level hash calculation mode\n");
   if(*name=='.' || *name=='_' || *name=='-' || !*name || name[strspn(name,"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-abcdefghijklmnopqrstuvwxyz.")])
    ParseError("Improper name of include file \"%s\"\n",name);
   if(main_options['z']) {

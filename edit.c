@@ -16,6 +16,7 @@ exit
 #include "heromesh.h"
 #include "quarks.h"
 #include "cursorshapes.h"
+#include "hash.h"
 
 EditorRect editrect;
 
@@ -852,20 +853,12 @@ static void fprint_misc(FILE*fp,Value v) {
   }
 }
 
-static void export_level(const char*cmd) {
+static void export_level_stream(FILE*fp) {
   Uint32*p=playfield;
   int i;
   Uint32 n;
   Object*o;
-  FILE*fp;
-  if(!cmd || !*cmd) return;
-  fp=popen(cmd,"w");
-  if(!fp) {
-    screen_message("Cannot open pipe");
-    return;
-  }
-  fprintf(fp,"; Free Hero Mesh exported level ID=%d ORD=%d\n",level_id,level_ord);
-  fprint_esc(fp,'@',level_title);
+  if(!main_options['S']) fprint_esc(fp,'@',level_title);
   fprintf(fp,"C %d\nD %d %d\n",level_code,pfwidth,pfheight);
   again:
   for(i=0;i<64*64;i++) {
@@ -890,6 +883,18 @@ static void export_level(const char*cmd) {
     fprintf(fp,"W\n");
   }
   for(i=0;i<nlevelstrings;i++) fprint_esc(fp,'%',levelstrings[i]);
+}
+
+static void export_level(const char*cmd) {
+  FILE*fp;
+  if(!cmd || !*cmd) return;
+  fp=popen(cmd,"w");
+  if(!fp) {
+    screen_message("Cannot open pipe");
+    return;
+  }
+  fprintf(fp,"; Free Hero Mesh exported level ID=%d ORD=%d\n",level_id,level_ord);
+  export_level_stream(fp);
   pclose(fp);
 }
 
@@ -2043,4 +2048,56 @@ void batch_import(void) {
       if(!feof(stdin)) new_level();
     }
   }
+}
+
+static inline void hexout(const unsigned char*p,int n) {
+  while(n--) printf("%02x",*p++);
+}
+
+void make_level_hashes(void) {
+  char*v;
+  FILE*in;
+  FILE*out;
+  unsigned char h1[128];
+  unsigned char h2[128];
+  long long alg;
+  int hn,c,n;
+  optionquery[1]=Q_hash;
+  alg=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"",0,0)?:HASH_SHA3_256;
+  hn=hash_length(alg);
+  if(hn<1 || hn>128) fatal("Hash algorithm not valid or too long: %llu (length %d)\n",alg,hn);
+  // Class hash
+  if(main_options['z']) {
+    in=composite_slice(".class",1);
+  } else {
+    v=sqlite3_mprintf("%s.class",basefilename);
+    if(!v) fatal("Allocation failed\n");
+    in=fopen(v,"r");
+    sqlite3_free(v);
+  }
+  if(!in) fatal("Cannot open class file\n");
+  out=hash_stream(alg,0,h1);
+  if(!out) fatal("Allocation failed\n");
+  while((c=fgetc(in))!=EOF) {
+    if(c=='\t') c=' ';
+    if(c!='\r') fputc(c,out);
+  }
+  fclose(in);
+  fclose(out);
+  printf("-1 0 %llx ",alg);
+  hexout(h1,hn);
+  putchar('\n');
+  for(n=0;n<level_nindex;n++) {
+    if(load_level(level_index[n])) fatal("Level load error\n");
+    out=hash_stream(alg,0,h2);
+    if(!out) fatal("Allocation failed\n");
+    fprintf(out,"\x01%llx %x\n",alg,hn);
+    fwrite(h1,1,hn,out);
+    export_level_stream(out);
+    fclose(out);
+    printf("%d 0 %llx ",level_id,alg);
+    hexout(h2,hn);
+    putchar('\n');
+  }
+  exit(0);
 }

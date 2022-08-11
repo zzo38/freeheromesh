@@ -78,6 +78,11 @@ See bindings.doc for key/mouse bindings.
   Gamma setting. If this is set, colours are gamma corrected by the number
   specified here. The default setting is 1.0.
 
+.hash
+  Hash algorithm to use for some features; this must be one of the numbers
+  for hash algorithms listed in the hash.h source file. Can be decimal, or
+  hexadecimal if it starts with "0x".
+
 .imageSize
   The picture size to use, up to 255. If the puzzle set contains pictures
   of the requested size, it will use those, otherwise it will try to make
