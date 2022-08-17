@@ -91,6 +91,8 @@ over
 *goto
 *CallSub
 ret
+retnz
+retz
 -case
 -or
 -and

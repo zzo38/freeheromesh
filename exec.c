@@ -3251,6 +3251,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_REPLACE: NoIgnore(); StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_replace(obj,t1,t2,t3,t4,t5)); break;
     case OP_REPLACE_D: NoIgnore(); StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_replace(obj,t1,t2,t3,t4,t5); break;
     case OP_RET: return;
+    case OP_RETNZ: StackReq(1,1); t1=Pop(); if(v_bool(t1)) { Push(t1); return; } break;
+    case OP_RETZ: StackReq(1,1); t1=Pop(); if(!v_bool(t1)) { Push(t1); return; } break;
     case OP_ROT: StackReq(3,3); t3=Pop(); t2=Pop(); t1=Pop(); Push(t2); Push(t3); Push(t1); break;
     case OP_ROTBACK: StackReq(3,3); t3=Pop(); t2=Pop(); t1=Pop(); Push(t3); Push(t1); Push(t2); break;
     case OP_RSH: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t2.u&~31?0:t1.u>>t2.u)); break;

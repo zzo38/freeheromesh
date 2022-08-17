@@ -1917,6 +1917,14 @@ ret  ( -- )
   at the end of a code block.) For a user defined function call, or a
   subroutine call, these restrictions are not applicable.
 
+retnz  ( z -- ? )
+  If true, then works like ret (the value is kept); but if false, then the
+  value is discarded and then it continues from here instead.
+
+retz  ( z -- ? )
+  If false, then works like ret (the value is kept); but if true, then the
+  value is discarded and then it continues from here instead.
+
 rot  ( x y z -- y z x )
 
 -rot  ( x y z -- z x y )
