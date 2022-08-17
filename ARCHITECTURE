@@ -49,8 +49,6 @@ which is made calls exec.c to execute the mode. It contains one function
 hash.c,hash.h: A set of functions for computing cryptographic hashes.
 These functions can be used outside of Free Hero Mesh, too. If you want
 to add new algorithms, use the multicodec table to assign the numbers.
-(Currently they are not used for anything, but some planned features may
-use it in future.)
 
 imgtofhm.c: A separate program (not compiled into Free Hero Mesh) for
 batch importing pictures into Free Hero Mesh.
