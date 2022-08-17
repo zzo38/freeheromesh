@@ -278,6 +278,7 @@ ObjTopAt
 PopUp
 *PopUpArgs ; for (PopUp [number])
 ,Rel
+.Replace
 ,Seek
 .,Send
 .,SendEx ; send with three arguments

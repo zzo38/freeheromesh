@@ -1902,6 +1902,14 @@ Rel  ( dir -- dir )
   direction of the specified object as the base. If zero is specified
   instead of a valid object, then the result is the same as the input.
 
+Replace  ( class x y image dir -- obj ) **
+  Similar to Create, except that it also destroys any objects in the
+  target location with any matching CollisionLayers bits, and clears the
+  Bizarro flag of the created object. You may also specify an object
+  instead of a class; in this case, it moves that object, but otherwise
+  acts like above. In the case of an existing object, it will update the
+  Image and Dir (which can now be relative) if the movement is successful.
+
 ret  ( -- )
   Exit the current subroutine. If this is a message block, it must either
   leave the stack as it is, or leave it but with one extra value pushed

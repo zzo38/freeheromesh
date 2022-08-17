@@ -1732,9 +1732,59 @@ static inline Value v_broadcast(Uint32 from,Value c,Value msg,Value arg1,Value a
 static inline Value v_create(Uint32 from,Value cl,Value x,Value y,Value im,Value d) {
   Uint32 n;
   if(!cl.t && !cl.u) return NVALUE(0);
-  if(cl.t!=TY_CLASS || x.t || x.t || y.t || im.t || d.t) Throw("Type mismatch");
+  if(cl.t!=TY_CLASS || x.t || y.t || im.t || d.t) Throw("Type mismatch");
   n=create(from,cl.u,x.u,y.u,im.u,d.u);
   return OVALUE(n);
+}
+
+static inline Value v_replace(Uint32 from,Value cl,Value x,Value y,Value im,Value d) {
+  Uint8 c;
+  Uint32 n;
+  Object*o;
+  if(!cl.t && !cl.u) return NVALUE(0);
+  if(x.t || y.t || im.t || d.t) Throw("Type mismatch");
+  if(x.u<1 || y.u<1 || x.u>pfwidth || y.u>pfheight) return NVALUE(0);
+  if(cl.t==TY_CLASS) {
+    if(c=classes[cl.u]->collisionLayers) {
+      n=playfield[x.u+y.u*64-65];
+      while(n!=VOIDLINK) {
+        if(!(objects[n]->oflags&OF_DESTROYED) && (classes[objects[n]->class]->collisionLayers&c)) destroy(VOIDLINK,n,3);
+        n=objects[n]->up;
+      }
+    }
+    n=create(from,cl.u,x.u,y.u,im.u,d.u);
+    set_bizarro(n,0);
+    return OVALUE(n);
+  } else if(cl.t>TY_MAXTYPE) {
+    o=objects[n=v_object(cl)];
+    if(o->oflags&OF_DESTROYED) return NVALUE(0);
+    if(o->x==x.u && o->y==y.u && !(o->oflags&OF_BIZARRO)) {
+      o->oflags&=~OF_MOVING;
+      o->image=im.u;
+      o->dir=resolve_dir(n,d.u);
+      return cl;
+    }
+    if(c=classes[o->class]->collisionLayers) {
+      n=playfield[x.u+y.u*64-65];
+      while(n!=VOIDLINK) {
+        if(!(objects[n]->oflags&OF_DESTROYED) && (classes[objects[n]->class]->collisionLayers&c)) destroy(cl.u,n,3);
+        n=objects[n]->up;
+      }
+      n=v_object(cl);
+    }
+    move_to(from,n,x.u,y.u);
+    if(o->x==x.u && o->y==y.u && !(o->oflags&OF_DESTROYED)) {
+      o->oflags&=~OF_MOVING;
+      o->image=im.u;
+      o->dir=resolve_dir(n,d.u);
+      set_bizarro(n,0);
+      return OVALUE(n);
+    } else {
+      return NVALUE(0);
+    }
+  } else {
+    Throw("Type mismatch");
+  }
 }
 
 static int v_for(Uint16*code,int ptr,Value v,Value xv,Value yv) {
@@ -3198,6 +3248,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_QUEEN: StackReq(0,1); Numeric(msgvars.arg1); i="\x06\x01\x07\x05\x03\x04\x02\x00"[msgvars.arg1.u&7]; Push(NVALUE(i)); break;
     case OP_REL: StackReq(1,1); t1=Pop(); Numeric(t1); i=resolve_dir(obj,t1.u); Push(NVALUE(i)); break;
     case OP_REL_C: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); i=v_object(t1); i=(i==VOIDLINK?t2.u:resolve_dir(i,t2.u)); Push(NVALUE(i)); break;
+    case OP_REPLACE: NoIgnore(); StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_replace(obj,t1,t2,t3,t4,t5)); break;
+    case OP_REPLACE_D: NoIgnore(); StackReq(5,0); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); v_replace(obj,t1,t2,t3,t4,t5); break;
     case OP_RET: return;
     case OP_ROT: StackReq(3,3); t3=Pop(); t2=Pop(); t1=Pop(); Push(t2); Push(t3); Push(t1); break;
     case OP_ROTBACK: StackReq(3,3); t3=Pop(); t2=Pop(); t1=Pop(); Push(t3); Push(t1); Push(t2); break;
