@@ -190,6 +190,9 @@ byte of each pair is the shift amount; the high bit is set if this is the
 last pair. The second byte of each pair is the picture size that the shift
 amount is based on.
 
+* 16 = Hue/shade. The additional data is two bytes, being the hue adjust
+(unsigned) and shade adjust (signed).
+
 
 === xclass/*.IMG ===
 

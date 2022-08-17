@@ -237,6 +237,10 @@ picture, showing through wherever it is transparent.
 format "size: shift"; each size also affects all multiples of that size,
 in which case the shift amount is also multiplied by the same amount.
 
+* Hue/Shade: Specify hue adjustment and shade adjustment. The hue
+adjustment is unsigned, and the shade adjustment is signed; any colours
+that are in range 1 to 225 are affected; other colours remain unchanged.
+
 
 === Multidependent pictures ===
 

@@ -680,6 +680,24 @@ static void load_dependent_picture(FILE*fp,Sint32 sz,Uint16 img,int alt) {
         sz-=2;
       }
       break;
+    case 16: // Hue/shade
+      fread(buf,1,2,fp);
+      c=(Sint8)buf[1];
+      sz-=2;
+      SDL_LockSurface(picts);
+      p=picts->pixels+((img&15)+picts->pitch*(img>>4))*picture_size;
+      for(y=0;y<picture_size;y++) {
+        for(x=0;x<picture_size;x++) {
+          if(p[x] && p[x]<=225) {
+            i=(p[x]-1)%15+c;
+            p[x]=15*(((p[x]-1)/15+buf[0])%15)+1;
+            if(i<0) p[x]=1; else if(i>14) p[x]=15; else p[x]+=i;
+          }
+        }
+        p+=picts->pitch;
+      }
+      SDL_UnlockSurface(picts);
+      break;
     default:
       fprintf(stderr,"Unrecognized command in dependent picture (%d)\n",c);
       goto done;

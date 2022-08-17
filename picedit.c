@@ -39,15 +39,22 @@ typedef struct {
 } ShiftFilter;
 
 typedef struct {
+  Uint8 hue;
+  Sint8 shade;
+} HueShadeFilter;
+
+typedef struct {
   Uint8 code;
   // 0-7 = flip/rotations
   // 8-10 = change colours (8 is *->* *->* *->*; 9 is *->*->*->*->*; 10 is *<->* *<->* *<->*)
   // 11 = overlay
   // 12-15 = shift (up, down, right, left)
+  // 16 = hue/shade
   union {
     ColorFilter color;
     OverlayFilter overlay;
     ShiftFilter shift;
+    HueShadeFilter hueshade;
   };
 } Filter;
 
@@ -1182,6 +1189,10 @@ static void load_dependent_picture(const Uint8*data,int size,DependentPicture*dp
         }
         dp->filters[i].shift.nshift=k+1;
         break;
+      case 16:
+        dp->filters[i].hueshade.hue=fgetc(fp);
+        dp->filters[i].hueshade.shade=(Sint8)fgetc(fp);
+        break;
     }
   }
   fclose(fp);
@@ -1207,6 +1218,10 @@ static void save_dependent_picture(FILE*fp,DependentPicture*dp,int mode) {
           fputc(dp->filters[i].shift.size[j],fp);
         }
         break;
+      case 16:
+        fputc(dp->filters[i].hueshade.hue,fp);
+        fputc(dp->filters[i].hueshade.shade,fp);
+        break;
     }
   }
 }
@@ -1217,12 +1232,12 @@ static int add_filter(DependentPicture*dp,const char*const*const txt,Sint8 c) {
   Uint8 f;
   char buf[4]="<?>";
   if(c<0 || dp->nfilters>63) return;
-  r.x=r.y=12; r.w=200; r.h=136;
+  r.x=r.y=12; r.w=200; r.h=144;
   set_cursor(XC_iron_cross);
   redraw:
   SDL_LockSurface(screen);
   SDL_FillRect(screen,&r,0xF8);
-  for(f=0;f<16;f++) {
+  for(f=0;f<17;f++) {
     buf[1]=f+'a';
     draw_text(16,(f+2)<<3,buf,0xF8,0xFB);
     draw_text(48,(f+2)<<3,txt[f],0xF8,0xFF);
@@ -1233,7 +1248,7 @@ static int add_filter(DependentPicture*dp,const char*const*const txt,Sint8 c) {
     case SDL_QUIT: exit(0); return 0;
     case SDL_KEYDOWN:
       if(ev.key.keysym.sym==SDLK_ESCAPE || ev.key.keysym.sym==SDLK_z) return 0;
-      if(ev.key.keysym.sym<SDLK_a || ev.key.keysym.sym>SDLK_p) break;
+      if(ev.key.keysym.sym<SDLK_a || ev.key.keysym.sym>SDLK_q) break;
       f=ev.key.keysym.sym-SDLK_a;
       goto found;
     case SDL_VIDEOEXPOSE: goto redraw;
@@ -1366,7 +1381,7 @@ static void edit_shift_filter(ShiftFilter*f) {
 }
 
 static void edit_dependent_picture(DependentPicture*dp,const char*name) {
-  static const char*const txt[16]={
+  static const char*const txt[17]={
     "Identity",
     "Flip \x1D",
     "Flip \x12",
@@ -1383,6 +1398,7 @@ static void edit_dependent_picture(DependentPicture*dp,const char*name) {
     "Shift \x19",
     "Shift \x1A",
     "Shift \x1B",
+    "Hue/Shade",
   };
   const char*s;
   char buf[64];
@@ -1437,6 +1453,12 @@ static void edit_dependent_picture(DependentPicture*dp,const char*name) {
           y+=8;
         }
         break;
+      case 16:
+        draw_text(16,y,"Hue/Shade: ",0xF0,0xF7);
+        snprintf(buf,64,"%d %+d",dp->filters[i].hueshade.hue,dp->filters[i].hueshade.shade);
+        draw_text(104,y,buf,0xF0,0xFE);
+        y+=8;
+        break;
       default:
         draw_text(16,y,"???",0xF0,0xFC);
         y+=8;
@@ -1476,6 +1498,17 @@ static void edit_dependent_picture(DependentPicture*dp,const char*name) {
                   break;
                 case 12 ... 15:
                   edit_shift_filter(&dp->filters[c].shift);
+                  break;
+                case 16:
+                  s=screen_prompt("Hue adjust:");
+                  if(s && *s) {
+                    i=strtol(s,0,10);
+                    s=screen_prompt("Shade adjust:");
+                    if(s && *s) {
+                      dp->filters[c].hueshade.hue=i;
+                      dp->filters[c].hueshade.shade=strtol(s,0,10);
+                    }
+                  }
                   break;
               }
             }
