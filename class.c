@@ -1913,6 +1913,8 @@ static void class_def_defaultimage(int cla) {
         if(tokenv<i) ParseError("Backward range in (DefaultImage) block\n");
         if(tokenv>=cl->nimages) ParseError("Image number out of range\n");
         while(i<=tokenv) cl->images[i++]|=0x8000;
+        nxttok();
+        if(tokent!=TF_CLOSE) ParseError("Close parenthesis expected\n");
       } else if(tokent!=TF_CLOSE) {
         ParseError("Number expected\n");
       }
