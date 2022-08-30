@@ -1548,7 +1548,7 @@ FlushClass  ( class -- ) **
   skips the beginning and ending phases if the class is -1.
 
 FlushObj  ( -- ) **
-  Resets this object's Arrived, Departed, Inertia, Moved, and UserSignal.
+  Resets this object's Arrived, Busy, Departed, Inertia, Moved, UserSignal.
 
 ,FlushObj  ( obj -- ) **
   Resets the Arrived, Busy, Departed, Inertia, Moved, and UserSignal flags

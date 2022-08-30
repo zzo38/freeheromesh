@@ -137,7 +137,9 @@ F12
   "GRAPH". It has columns "X" and "Y" which are the coordinates of the
   pixel, and "C" which is the colour of the pixel. It may also be a SELECT
   statement in order to query it, and the response is then displayed
-  (which must be a single row and single column only).
+  (which must be a single row and single column only). This table also has
+  a column "S" which is the same for all rows, and is the size of the
+  picture, which can be used in macros (see config.doc).
 
 ` or =
   Exchange the current picture with the spare page. (The spare page is not

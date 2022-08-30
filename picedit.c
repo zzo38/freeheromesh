@@ -125,7 +125,7 @@ static int vt_graph_open(sqlite3_vtab*vt,sqlite3_vtab_cursor**cur) {
 static int vt_graph_connect(sqlite3*db,void*aux,int argc,const char*const*argv,sqlite3_vtab**vt,char**ex) {
   *vt=sqlite3_malloc(sizeof(sqlite3_vtab));
   if(!*vt) return SQLITE_NOMEM;
-  sqlite3_declare_vtab(db,"CREATE TABLE `GRAPH`(`X` INT, `Y` INT, `C` INT);");
+  sqlite3_declare_vtab(db,"CREATE TABLE `GRAPH`(`X` INT, `Y` INT, `C` INT, `S` INT);");
   return SQLITE_OK;
 }
 
@@ -146,7 +146,12 @@ static int vt_graph_index(sqlite3_vtab*vt,sqlite3_index_info*inf) {
 
 static int vt_graph_column(sqlite3_vtab_cursor*cc,sqlite3_context*cxt,int n) {
   Cursor*cur=(void*)cc;
-  sqlite3_result_int(cxt,n==0?cur->pos%cur_pic->size:n==1?cur->pos/cur_pic->size:cur_pic->data[cur->pos+cur_pic->size]);
+  switch(n) {
+    case 0: sqlite3_result_int(cxt,cur->pos%cur_pic->size); break;
+    case 1: sqlite3_result_int(cxt,cur->pos/cur_pic->size); break;
+    case 2: sqlite3_result_int(cxt,cur_pic->data[cur->pos+cur_pic->size]); break;
+    case 3: sqlite3_result_int(cxt,cur_pic->size); break;
+  }
   return SQLITE_OK;
 }
 
@@ -164,7 +169,7 @@ static int vt_graph_rowid(sqlite3_vtab_cursor*cc,sqlite3_int64*p) {
 
 static int vt_graph_update(sqlite3_vtab*vt,int argc,sqlite3_value**argv,sqlite3_int64*rowid) {
   int x,y;
-  if(argc!=5) return SQLITE_CONSTRAINT_VTAB;
+  if(argc!=6) return SQLITE_CONSTRAINT_VTAB;
   if(sqlite3_value_type(argv[0])==SQLITE_NULL) {
     x=sqlite3_value_int(argv[2]);
     y=sqlite3_value_int(argv[3]);
