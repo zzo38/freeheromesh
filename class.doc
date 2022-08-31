@@ -2263,6 +2263,24 @@ the stack instead.
 %%
   Display a percentage sign; does not consume an argument.
 
+%(
+  Begin a conditional block, of the form "%(true-part%|false-part%)" or
+  "%(true-part%)". Consumes one argument; if zero then the false-part is
+  used (or nothing, if there is no false-part), or if nonzero then the
+  true-part is used. Conditional blocks cannot be nested.
+
+%|
+  Else part of a conditional block. See above about conditional blocks.
+
+%)
+  End of a conditional block. See above about conditional blocks.
+
+%<
+  Unconsume one argument. (Does not produce any output.)
+
+%>
+  Skip one argument. (Does not produce any output.)
+
 
 === Messages ===
 

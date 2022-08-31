@@ -2078,6 +2078,29 @@ static void v_set_popup(Uint32 from,int argc) {
           case '%':
             sqlite3_str_appendchar(s,1,'%');
             break;
+          case '(':
+            if(argi==argc) break;
+            v=vstack[vstackptr+argi++];
+            if(v.t || v.u) break;
+            // otherwise fall through
+          case '|':
+            while(u=strchr(t,'%')) {
+              t=u+(u[1]?2:1);
+              if(u[1]==')' || u[1]=='|') break;
+            }
+            break;
+          case ')':
+            // no effect
+            break;
+          case '<':
+            if(argi>0) --argi;
+            break;
+          case '>':
+            if(argi<argc) ++argi;
+            break;
+          default:
+            if(main_options['t'] || main_options['v']) fprintf(stderr,"Unrecognized %% code in (PopUp)\n");
+            break;
         }
       } else {
         sqlite3_str_appendall(s,t);
