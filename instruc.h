@@ -300,6 +300,7 @@
 #define OP_MOVENUMBER_E 36999
 #define OP_LEVEL 32904
 #define OP_KEY 32905
+#define OP_KEY_C 34953
 #define OP_FINISHED 32906
 #define OP_FINISHED_E 37002
 #define OP_BACKGROUND 32907
@@ -310,6 +311,7 @@
 #define OP_INPUTXY 32912
 #define OP_INPUT 32913
 #define OP_QUIZ 32914
+#define OP_QUIZ_C 34962
 #define OP_INPLACE 32915
 #define OP_DEFAULTIMAGE 32916
 #define OP_HELP 32917
@@ -642,7 +644,7 @@ static const Op_Names op_names[]={
 {"KEY",8389129},
 {"KLECK",8389387},
 {"KLINKK",8389385},
-{"Key",8421513},
+{"Key",8487049},
 {"KeyCleared",8618099},
 {"L",9437194},
 {"LASTIMAGE",8389126},
@@ -704,7 +706,7 @@ static const Op_Names op_names[]={
 {"Player",8487037},
 {"PopUp",8421582},
 {"Queen",8683772},
-{"Quiz",8683666},
+{"Quiz",8487058},
 {"R",9437198},
 {"RATCHET1",8389417},
 {"RATCHET2",8389411},

@@ -202,7 +202,7 @@ From
 =Arg3
 =MoveNumber
 Level
-Key
+,Key
 =Finished
 
 ; Top level definitions
@@ -215,7 +215,7 @@ Control
 
 ; Class definitions
 -Input
--Quiz
+,Quiz
 -InPlace
 -DefaultImage
 -Help

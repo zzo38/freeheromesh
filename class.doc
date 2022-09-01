@@ -1634,6 +1634,10 @@ Key  ( -- number )
   During the input phase, the key input. During other phases, zero. During
   the input phase of coordinate input, this value will be 1.
 
+,Key  ( -- number true | false )
+  If the key (as for Key command) is '1 to '9 or 'A to 'Z then it will be
+  the corresponding array index (as for %Q) and true, otherwise false.
+
 land  ( in1 in2 -- out )
   Logical AND.
 
@@ -1893,6 +1897,18 @@ PopUp  ( value -- )
   substitution codes are allowed in popup messages. Each substitution code
   consumes some number of arguments, from bottom to top. The number of
   arguments must be 0 to 32.
+
+Quiz  ( -- ) **
+  If used after PopUp, makes dismissing the popup message to send a KEY
+  message to this object instead of any other one.
+
+,Quiz  ( any -- ) **
+  If used after PopUp, makes dismissing the popup message to send a KEY
+  message to the specified object instead of any other one. If you specify
+  a class, then it will create an object of that class and use that one.
+  If you specify a message, then it will send that message to the Control
+  object, similar to specifying the Control object itself but will use the
+  specified message instead of KEY.
 
 Rel  ( dir -- dir )
   Resolves a relative direction to an absolute direction.
@@ -2244,6 +2260,11 @@ the stack instead.
   picture may take up multiple lines of space; the lines will be moved
   farther apart to make room if necessary.
 
+%Q
+  Display a quiz button from 1 to 9 or A to Z, depending on the current
+  array index. This is only valid inside of a %[ ... %] block, and it does
+  not itself consume any argument.
+
 %R
   Display a roman number.
 
@@ -2280,6 +2301,18 @@ the stack instead.
 
 %>
   Skip one argument. (Does not produce any output.)
+
+%[
+  Consumes one argument, which must be an array; no further arguments can
+  be accessible in this case. If it is not an array then all further output
+  is suppressed (even past the end of this block, too). This cannot occur
+  more than once. The second dimension is the number of records, and the
+  first is the fields within that record; all further data accessed by the
+  substitution codes are the data within the array.
+
+%]
+  End of an array block; if there are any more records in the array then it
+  will access the next record and go back to the beginning of this block.
 
 
 === Messages ===

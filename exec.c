@@ -1986,6 +1986,9 @@ static void v_set_popup(Uint32 from,int argc) {
   sqlite3_str*s;
   Value v;
   int argi=1;
+  const unsigned char*at=0;
+  int ax;
+  Value av;
   if(argc>32 || argc<0) Throw("Too many arguments");
   vstackptr-=argc;
   v=Pop();
@@ -2029,6 +2032,11 @@ static void v_set_popup(Uint32 from,int argc) {
               if(n<c->nimages) sqlite3_str_appendf(s,"\x0E\x07:%d\\",c->images[n]&0x7FFF);
             }
             argi+=2;
+            break;
+          case 'Q':
+            if(!at) break;
+            sqlite3_str_appendchar(s,1,16);
+            sqlite3_str_appendchar(s,1,ax<10?ax+'0':ax+'A'-10);
             break;
           case 'R':
             if(argi==argc) break;
@@ -2098,6 +2106,27 @@ static void v_set_popup(Uint32 from,int argc) {
           case '>':
             if(argi<argc) ++argi;
             break;
+          case '[':
+            if(at) break;
+            ax=0;
+            if(argi==argc) break;
+            av=vstack[vstackptr+argi++];
+            if(av.t!=TY_ARRAY) goto end;
+            argc=((av.u>>26)&0x3F)+1;
+            if(vstackptr+argc>=VSTACKSIZE) {
+              sqlite3_free(sqlite3_str_finish(s));
+              Throw("Stack overflow");
+            }
+            at=t;
+            // fall through
+          case ']':
+            if(!at) break;
+            if(ax>((av.u>>16)&0x3FF)) break;
+            for(argi=0;argi<argc;argi++) vstack[vstackptr+argi]=array_data[(av.u&0xFFFF)+argi+ax+((av.u>>26)&0x3F)*ax];
+            t=at;
+            argi=0;
+            ax++;
+            break;
           default:
             if(main_options['t'] || main_options['v']) fprintf(stderr,"Unrecognized %% code in (PopUp)\n");
             break;
@@ -2107,6 +2136,7 @@ static void v_set_popup(Uint32 from,int argc) {
         break;
       }
     }
+    end:
     sqlite3_str_appendchar(s,1,0);
     quiz_text=sqlite3_str_finish(s);
   } else {
@@ -2135,6 +2165,17 @@ static void v_set_popup(Uint32 from,int argc) {
       quiz_obj.u=from;
     }
     if(*t==31 && t[1]) t+=2; else t+=1;
+  }
+}
+
+static void v_set_quiz(Uint32 from,Value v) {
+  if(v.t==TY_CLASS) {
+    from=create(from,v.u,objects[from]->x?:1,objects[from]->y?:1,0,objects[from]->dir);
+    if(from==VOIDLINK) Throw("Error creating object");
+    quiz_obj=OVALUE(from);
+  } else {
+    if(v.t!=TY_MESSAGE) v_object(v);
+    quiz_obj=v;
   }
 }
 
@@ -3163,6 +3204,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_JUMPTO_D: NoIgnore(); StackReq(2,0); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); jump_to(obj,obj,t2.u,t3.u); break;
     case OP_JUMPTO_CD: NoIgnore(); StackReq(3,0); t3=Pop(); Numeric(t3); t2=Pop(); Numeric(t2); i=v_object(Pop()); jump_to(obj,i,t2.u,t3.u); break;
     case OP_KEY: StackReq(0,1); Push(NVALUE(current_key)); break;
+    case OP_KEY_C: StackReq(0,2); i=current_key; if((i>='1' && i<='9') || (i>='A' && i<='Z')) Push(NVALUE(i&64?i+9-'A':i-'1')),Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_KEYCLEARED: StackReq(0,1); if(o->oflags&OF_KEYCLEARED) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_KEYCLEARED_C: StackReq(1,1); GetFlagOf(OF_KEYCLEARED); break;
     case OP_KEYCLEARED_E: StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_KEYCLEARED; else o->oflags&=~OF_KEYCLEARED; break;
@@ -3269,6 +3311,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_QOZ: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t>TY_MAXTYPE || (t1.t==TY_NUMBER && !t1.u)) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_QS: StackReq(1,1); t1=Pop(); NotSound(t1); if(t1.t==TY_STRING || t1.t==TY_LEVELSTRING) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_QUEEN: StackReq(0,1); Numeric(msgvars.arg1); i="\x06\x01\x07\x05\x03\x04\x02\x00"[msgvars.arg1.u&7]; Push(NVALUE(i)); break;
+    case OP_QUIZ: NoIgnore(); if(quiz_text) quiz_obj=OVALUE(obj); break;
+    case OP_QUIZ_C: NoIgnore(); StackReq(1,0); t1=Pop(); if(quiz_text) v_set_quiz(obj,t1); break;
     case OP_REL: StackReq(1,1); t1=Pop(); Numeric(t1); i=resolve_dir(obj,t1.u); Push(NVALUE(i)); break;
     case OP_REL_C: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); i=v_object(t1); i=(i==VOIDLINK?t2.u:resolve_dir(i,t2.u)); Push(NVALUE(i)); break;
     case OP_REPLACE: NoIgnore(); StackReq(5,1); t5=Pop(); t4=Pop(); t3=Pop(); t2=Pop(); t1=Pop(); Push(v_replace(obj,t1,t2,t3,t4,t5)); break;
@@ -3751,12 +3795,20 @@ const char*execute_turn(int key) {
         if(i&CF_PLAYER) m=n;
         n=objects[n]->prev;
       }
+    } else if(quiz_obj.t==TY_MESSAGE) {
+      n=quiz_obj.u;
+      quiz_obj=NVALUE(0);
+      if(control_obj!=VOIDLINK) v=send_message(VOIDLINK,control_obj,n,NVALUE(key),NVALUE(0),NVALUE(1));
     } else {
       n=quiz_obj.u;
-      if(objects[n]->generation!=quiz_obj.t) n=VOIDLINK;
-      quiz_obj=NVALUE(0);
-      if(classes[objects[n]->class]->cflags&CF_COMPATIBLE) all_flushed=1;
-      v=send_message(VOIDLINK,n,MSG_KEY,NVALUE(key),NVALUE(0),NVALUE(1));
+      if(!objects[n] || objects[n]->generation!=quiz_obj.t) {
+        quiz_obj=NVALUE(0);
+        all_flushed=1;
+      } else {
+        quiz_obj=NVALUE(0);
+        if(classes[objects[n]->class]->cflags&CF_COMPATIBLE) all_flushed=1;
+        v=send_message(VOIDLINK,n,MSG_KEY,NVALUE(key),NVALUE(0),NVALUE(1));
+      }
     }
   } else if(has_xy_input && key>=0x8000 && key<=0x8FFF) {
     x=((key>>6)&63)+1; y=(key&63)+1;
