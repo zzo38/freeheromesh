@@ -6,13 +6,12 @@
   * A ,PopUp command to use a popup with arguments starting from a mark
   * Returning a class from COLLIDE/COLLIDEBY to transform
   * Possibility to define auto-generation levels mode
+  * Popup inventory list (with optional possibility of choice)
 * Editor
   * Mouse dragging
-  * Level index editor
 * Deal better with allowing to skip past corrupted levels
 * Picture editor/loading
   * Allowing more altimages
-  * Batch insert multiple dependent image lumps
 * Puzzle set catalog format (using with internet; a separate program)
 * Inventory/replay hybrid view
 * Scrollable playfield view
@@ -46,6 +45,7 @@
 * Option to auto display level titles
 * Option to use a separate solution file
 * Multiuser scoring within one computer system (optional capability)
+* Launcher menu (optional; separate program)
 * Testing
   * Bizarro world
   * Connection movement (it is partially tested, already)

@@ -68,6 +68,15 @@ CONFIG_ERROR_CHECKING
   improve speed but may make the program crash in some cases and may also
   cause security vulnerabilities.
 
+CONFIG_FUNCTION_ASK_TEXT
+  Should be a function or macro taking four arguments, which will ask for
+  and accept a single line of text. The first argument is the SDL screen
+  object, the second is the prompt text, the third is the code page number
+  for the prompt text, and the fourth is the code page number for the
+  input. The result is a pointer to a buffer (which the caller need not
+  free, and will not write to) containing the null-terminated text, or a
+  null pointer if the prompt has been cancelled by the user.
+
 CONFIG_LAUNCHER_PATH
   If defined, then it is the full path to a file to execute if Free Hero
   Mesh has been invoked with no command-line arguments, or if it is given
@@ -77,6 +86,10 @@ CONFIG_LAUNCHER_PATH
 
 CONFIG_MULTIUSER_SCORES
   (Meant for storing scores on a multiuser system, somehow)
+
+CONFIG_OMIT_CODEPAGE
+  If defined, omit capability of code pages; only PC character set will
+  be available. (This also implies CONFIG_OMIT_MBCS.)
 
 CONFIG_OMIT_EDITOR
   If defined, omit the level editor and picture editor, as well as the
@@ -94,6 +107,10 @@ CONFIG_OMIT_MBCS
 CONFIG_OMIT_MUSIC
   If defined, omit background music playback capabilities. (Even if this
   is not defined, it can still be disabled at runtime.)
+
+CONFIG_OMIT_PIPE
+  If defined, then any features that use popen are omitted. Some operating
+  systems may require this; otherwise, you should avoid using this.
 
 CONFIG_RANDOM_SOURCE
   Device to read random numbers from instead of using the random number
@@ -119,6 +136,11 @@ CONFIG_USING_BSD_FUNCTIONS
   still necessary to use a C compiler with GNU extensions though, even if
   the GNU library is not available.)
 
+CONFIG_USING_DOS_FILENAMES
+  If defined, then the program only uses valid DOS file names (8.3). This
+  affects how configuration files are found by default, and it affects how
+  non-composite puzzle sets are read. Composite puzzle sets are unaffected.
+
 CONFIG_USING_SDL12_COMPAT
   Define this if the program is to be compiled for use with the
   "sdl12-compat" SDL compatibility layer. (This does not affect linking,
@@ -133,6 +155,9 @@ CONFIG_USING_X86_BMI2
   If defined, use PDEP and PEXT instructions. This only works on x86 and
   only on some processor models. (Apparently this is fast on Intel but slow
   on AMD, so it should not be used on AMD, even if it is available.)
+
+CONFIG_WITH_MENU
+  If defined, include a menu bar with commands.
 
 CONFIG_WITH_NETWORK
   If defined, include code for network/internet access. Even if this is
