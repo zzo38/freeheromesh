@@ -6,7 +6,8 @@
   * A ,PopUp command to use a popup with arguments starting from a mark
   * Returning a class from COLLIDE/COLLIDEBY to transform
   * Possibility to define auto-generation levels mode
-  * Popup inventory list (with optional possibility of choice)
+  * Popup inventory list (with optional possibility of choice) (?)
+  * Playfield array
 * Editor
   * Mouse dragging
 * Deal better with allowing to skip past corrupted levels

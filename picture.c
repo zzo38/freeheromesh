@@ -21,6 +21,10 @@ exit
 #include "cursorshapes.h"
 #include "keyicons.xbm"
 
+#define PPR 128 // pictures per row
+#define PPRM 127 // pictures per row bit mask (one less than pictures per row)
+#define PPRS 7 // pictures per row bit shift amount (log2 of pictures per row)
+
 SDL_Surface*screen;
 Uint16 picture_size;
 int left_margin;
@@ -90,7 +94,7 @@ void init_palette(void) {
 
 void draw_picture(int x,int y,Uint16 img) {
   // To be called only when screen is unlocked!
-  SDL_Rect src={(img&15)*picture_size,(img>>4)*picture_size,picture_size,picture_size};
+  SDL_Rect src={(img&PPRM)*picture_size,(img>>PPRS)*picture_size,picture_size,picture_size};
   SDL_Rect dst={x,y,picture_size,picture_size};
   SDL_BlitSurface(picts,&src,screen,&dst);
 }
@@ -453,7 +457,7 @@ static void load_one_picture(FILE*fp,Uint16 img,int alt) {
   if(meth==15) meth=0;
   SDL_LockSurface(picts);
   pitch=picts->pitch;
-  pix=picts->pixels+((img&15)+pitch*(img>>4))*picture_size;
+  pix=picts->pixels+((img&PPRM)+pitch*(img>>PPRS))*picture_size;
   for(i=0;i<size;i++) {
     for(h=0;h<zoom;h++) {
       for(j=0;j<size;j++) {
@@ -537,7 +541,7 @@ static void pic_orientation(SDL_Rect*r,Uint8 m) {
 
 static void load_dependent_picture(FILE*fp,Sint32 sz,Uint16 img,int alt) {
   SDL_Rect src={0,0,picture_size,picture_size};
-  SDL_Rect dst={(img&15)*picture_size,(img>>4)*picture_size,picture_size,picture_size};
+  SDL_Rect dst={(img&PPRM)*picture_size,(img>>PPRS)*picture_size,picture_size,picture_size};
   sqlite3_stmt*st;
   int c,i,x,y;
   char nam[128];
@@ -565,8 +569,8 @@ static void load_dependent_picture(FILE*fp,Sint32 sz,Uint16 img,int alt) {
     }
     i=sqlite3_column_int(st,0);
     sqlite3_reset(st);
-    src.x=(i&15)*picture_size;
-    src.y=(i>>4)*picture_size;
+    src.x=(i&PPRM)*picture_size;
+    src.y=(i>>PPRS)*picture_size;
     SDL_SetColorKey(picts,0,0);
     SDL_BlitSurface(picts,&src,picts,&dst);
   } else {
@@ -581,7 +585,7 @@ static void load_dependent_picture(FILE*fp,Sint32 sz,Uint16 img,int alt) {
       sz-=c+1;
       fread(buf,1,c&255,fp);
       SDL_LockSurface(picts);
-      p=picts->pixels+((img&15)+picts->pitch*(img>>4))*picture_size;
+      p=picts->pixels+((img&PPRM)+picts->pitch*(img>>PPRS))*picture_size;
       for(y=0;y<picture_size;y++) {
         for(x=0;x<picture_size;x++) {
           for(i=0;i<c;i+=2) {
@@ -600,7 +604,7 @@ static void load_dependent_picture(FILE*fp,Sint32 sz,Uint16 img,int alt) {
       sz-=c+1;
       fread(buf,1,c&255,fp);
       SDL_LockSurface(picts);
-      p=picts->pixels+((img&15)+picts->pitch*(img>>4))*picture_size;
+      p=picts->pixels+((img&PPRM)+picts->pitch*(img>>PPRS))*picture_size;
       for(y=0;y<picture_size;y++) {
         for(x=0;x<picture_size;x++) {
           for(i=0;i<c-1;i++) {
@@ -619,7 +623,7 @@ static void load_dependent_picture(FILE*fp,Sint32 sz,Uint16 img,int alt) {
       sz-=c+1;
       fread(buf,1,c&255,fp);
       SDL_LockSurface(picts);
-      p=picts->pixels+((img&15)+picts->pitch*(img>>4))*picture_size;
+      p=picts->pixels+((img&PPRM)+picts->pitch*(img>>PPRS))*picture_size;
       for(y=0;y<picture_size;y++) {
         for(x=0;x<picture_size;x++) {
           for(i=0;i<c;i+=2) {
@@ -656,8 +660,8 @@ static void load_dependent_picture(FILE*fp,Sint32 sz,Uint16 img,int alt) {
       }
       i=sqlite3_column_int(st,0);
       sqlite3_reset(st);
-      src.x=(i&15)*picture_size;
-      src.y=(i>>4)*picture_size;
+      src.x=(i&PPRM)*picture_size;
+      src.y=(i>>PPRS)*picture_size;
       SDL_BlitSurface(picts,&src,picts,&dst);
       break;
     case 12 ... 15: // Shift (up/down/right/left)
@@ -685,7 +689,7 @@ static void load_dependent_picture(FILE*fp,Sint32 sz,Uint16 img,int alt) {
       c=(Sint8)buf[1];
       sz-=2;
       SDL_LockSurface(picts);
-      p=picts->pixels+((img&15)+picts->pitch*(img>>4))*picture_size;
+      p=picts->pixels+((img&PPRM)+picts->pitch*(img>>PPRS))*picture_size;
       for(y=0;y<picture_size;y++) {
         for(x=0;x<picture_size;x++) {
           if(p[x] && p[x]<=225) {
@@ -879,7 +883,7 @@ nomore1:
   optionquery[1]=Q_screenFlags;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
   i=v&&strchr(v,'h');
-  picts=SDL_CreateRGBSurface((i?SDL_HWSURFACE:SDL_SWSURFACE)|SDL_SRCCOLORKEY,picture_size<<4,picture_size*((n+16)>>4),8,0,0,0,0);
+  picts=SDL_CreateRGBSurface((i?SDL_HWSURFACE:SDL_SWSURFACE)|SDL_SRCCOLORKEY,picture_size<<PPRS,picture_size*((n+PPR)>>PPRS),8,0,0,0,0);
   if(!picts) fatal("Error allocating surface for pictures: %s\n",SDL_GetError());
   init_palette();
   for(i=0;i<n;i++) {

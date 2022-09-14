@@ -122,6 +122,10 @@ CONFIG_USERCACHE_PERMISSIONS
   user cache database when creating it. (The user can still change them
   afterward by using chmod.)
 
+CONFIG_USING_32BIT_COORDINATES
+  If defined, allow 32-bit coordinates in SDL_Rect and in other graphics
+  functions of SDL.
+
 CONFIG_USING_APPIMAGE
   If defined, it will check the environment variables having to do with
   AppImage and will be able to load the default resources from there, as
