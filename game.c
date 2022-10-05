@@ -622,9 +622,10 @@ static void examine(Uint32 n) {
   exam_value("Inertia:",24,NVALUE(o->inertia));
   exam_hardsharp("Hardness:",25,o->hard);
   exam_hardsharp("Sharpness:",26,o->sharp);
+  exam_value("NextR:",27,o->replacement);
   while(sqlite3_step(st)==SQLITE_ROW) {
     i=sqlite3_column_int(st,1);
-    exam_value(sqlite3_column_text(st,0),i+28,o->uservars[i]);
+    exam_value(sqlite3_column_text(st,0),i+29,o->uservars[i]);
   }
   quiz:
   sqlite3_reset(st);

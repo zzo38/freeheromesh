@@ -1072,6 +1072,13 @@ Moving : bool
   object. The direction of movement is specified by the Dir variable.
   This flag is also used for connected movement, for a different purpose.
 
+NextR : any
+  This variable is normally zero, but when there is a collision by the
+  CollisionLayers, it can be programmed to destroy an object and create
+  another one which represents the combination of the two. In this case,
+  the NextR variable of the destroyed object points to the new one. (Note:
+  This feature is not yet fully implemented.)
+
 Player : bool [c] [ro]
   If this object is the player. This is used implicitly as the From of
   some messages sent by the game engine, and has a few other purposes.
@@ -1121,6 +1128,13 @@ Strength : int16/int32 [c]
 
 Temperature : int16/int32 [c]
   The game engine does not use this variable; use it for your own use.
+
+ThisR : any
+  This variable is related to NextR, and setting either variable will also
+  affect the other one. If NextR is zero, then this variable points to the
+  object itself, and setting this variable to point to itself will cause
+  NextR to be set to zero. (They are actually the same variable, but are
+  just different ways to access it.)
 
 UserSignal : bool
   This variable has the same effect as Busy; see Busy for details. It is
@@ -1640,6 +1654,13 @@ Key  ( -- number )
 
 land  ( in1 in2 -- out )
   Logical AND.
+
+LastR  ( -- obj )
+  Follows the NextR chain of this object to other objects, and the result
+  is the last object of the chain.
+
+,LastR  ( obj -- obj )
+  Similar to LastR but for a specified object instead of this one.
 
 le  ( in1 in2 -- bool )
   Test if first input is less or equal to second input (unsigned).

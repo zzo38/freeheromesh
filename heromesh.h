@@ -289,7 +289,7 @@ typedef struct {
   Uint16 hard[4];
   Uint8 x,y,dir;
   Animation*anim;
-  Value misc1,misc2,misc3,misc4,misc5,misc6,misc7;
+  Value misc1,misc2,misc3,misc4,misc5,misc6,misc7,replacement;
   Value uservars[0];
 } Object;
 

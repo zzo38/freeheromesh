@@ -205,6 +205,11 @@ Level
 ,Key
 =Finished
 
+; Standard variables related to object replacements
+,=ThisR
+,=NextR
+,LastR
+
 ; Top level definitions
 -Background
 -CodePage
