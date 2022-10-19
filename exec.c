@@ -71,6 +71,8 @@ static Uint32 control_obj=VOIDLINK;
 static Connection conn[VSTACKSIZE];
 static int nconn,pconn;
 static Uint8 conn_dir;
+static Uint16 subst_class;
+static Uint32 subst_obj;
 
 #define Throw(x) (my_error=(x),longjmp(my_env,1))
 #define StackReq(x,y) do{ if(vstackptr<(x)) Throw("Stack underflow"); if(vstackptr-(x)+(y)>=VSTACKSIZE) Throw("Stack overflow"); }while(0)
@@ -678,7 +680,7 @@ static Uint8 collisions_at(Uint32 x,Uint32 y) {
   return c;
 }
 
-static Uint8 collide_with(Uint8 b,Uint32 n,Uint8 x,Uint8 y,Uint16 c) {
+static Uint16 collide_with(Uint8 b,Uint32 n,Uint8 x,Uint8 y,Uint16 c) {
   int i,j;
   Uint8 r=0;
   Uint32 e[8]={VOIDLINK,VOIDLINK,VOIDLINK,VOIDLINK,VOIDLINK,VOIDLINK,VOIDLINK,VOIDLINK};
@@ -694,6 +696,15 @@ static Uint8 collide_with(Uint8 b,Uint32 n,Uint8 x,Uint8 y,Uint16 c) {
   }
   for(i=0;i<8;i++) if(e[i]!=VOIDLINK && !(r&0x02)) {
     v=send_message(n,e[i],MSG_COLLIDEBY,NVALUE(n==VOIDLINK?0:objects[n]->x),NVALUE(n==VOIDLINK?0:objects[n]->y),CVALUE(c));
+    if(v.t==TY_CLASS) {
+      subst_class=v.u;
+      subst_obj=e[i];
+      return 0x8001;
+    } else if(v.t>TY_MAXTYPE) {
+      subst_class=0;
+      subst_obj=v_object(v);
+      return 0x8001;
+    }
     if(v.t) Throw("Type mismatch in COLLIDEBY");
     r|=re[i]=v.u;
   }
@@ -824,6 +835,85 @@ static void set_order(Uint32 obj) {
   objects[obj]->oflags|=OF_ORDERED;
 }
 
+static Uint32 x_create(Uint32 from,Uint16 c,Uint32 x,Uint32 y,Uint32 d,Value arg1,Value arg2,Value arg3) {
+  // This function is only called if x and y and d are already verified to be valid, so need not be checked again.
+  Uint32 m,n;
+  int i,xx,yy;
+  Object*o;
+  Object*p;
+  Value v;
+  if(c==control_class || !c) return VOIDLINK;
+  // Although this function can be called recursively, StackProtection() is unnecessary,
+  // because in the case that it is called recursively, it is guaranteed to call either
+  // collide_with or execute_program (indirectly), which then calls StackProtection().
+  if((i=classes[c]->collisionLayers) && (xx=collisions_at(x,y)&i)) {
+    if((i=collide_with(xx,VOIDLINK,x,y,c))&0x01) {
+      if(i&0x8000) {
+        if(subst_class) {
+          m=subst_obj;
+          v=destroy(VOIDLINK,m,5);
+          if(v.t) return VOIDLINK;
+          n=x_create(m,subst_class,x,y,d,arg1,arg2,arg3);
+          if(n!=VOIDLINK) objects[from]->replacement=objects[m]->replacement=OVALUE(n);
+          return n;
+        } else {
+          return subst_obj;
+        }
+      }
+      return VOIDLINK;
+    }
+  }
+  n=objalloc(c);
+  if(n==VOIDLINK) Throw("Error creating object");
+  o=objects[n];
+  o->x=x;
+  o->y=y;
+  o->image=0;
+  o->dir=d;
+  o->oflags&=~OF_BIZARRO;
+  objects[from]->replacement=OVALUE(n);
+  pflink(n);
+  v=send_message(from,n,MSG_XCREATE,arg1,arg2,arg3);
+  if(v.t>TY_MAXTYPE) {
+    if(classes[objects[n]->class]->order && !(o->oflags&OF_DESTROYED)) set_order(n);
+    return v_object(v);
+  } else if(v.t) {
+    Throw("Type mismatch");
+  }
+  if(o->oflags&OF_DESTROYED) return VOIDLINK;
+  if(v.u) goto skip;
+  v=send_message(VOIDLINK,n,MSG_CREATE,NVALUE(0),NVALUE(0),NVALUE(0));
+  if(o->oflags&OF_DESTROYED) return VOIDLINK;
+  if(o->oflags&OF_BIZARRO) {
+    skip:
+    if(classes[objects[n]->class]->order) set_order(n);
+    return n;
+  }
+  for(y=0;y<5;y++) for(x=0;x<5;x++) {
+    xx=o->x+x-2; yy=o->y+y-2;
+    if(xx<1 || xx>pfwidth || yy<1 || yy>pfheight) continue;
+    i=x+5*(4-y);
+    m=playfield[xx+yy*64-65];
+    while(m!=VOIDLINK) {
+      p=objects[m];
+      if(p->arrivals&(1<<i)) if(m!=n) send_message(n,m,MSG_CREATED,NVALUE(o->x),NVALUE(o->y),v);
+      m=p->up;
+    }
+  }
+  if(o->oflags&OF_DESTROYED) return VOIDLINK;
+  if(classes[objects[n]->class]->order) set_order(n);
+  m=objects[n]->up;
+  if(m!=VOIDLINK) {
+    v=send_message(VOIDLINK,n,MSG_SUNK,NVALUE(0),NVALUE(0),v);
+    while(m!=VOIDLINK) {
+      send_message(n,m,MSG_FLOATED,NVALUE(0),NVALUE(0),v);
+      m=objects[m]->up;
+    }
+  }
+  if(o->oflags&OF_DESTROYED) return VOIDLINK;
+  return n;
+}
+
 static Uint32 create(Uint32 from,Uint16 c,Uint32 x,Uint32 y,Uint32 im,Uint32 d) {
   Uint32 m,n;
   int i,xx,yy;
@@ -833,7 +923,21 @@ static Uint32 create(Uint32 from,Uint16 c,Uint32 x,Uint32 y,Uint32 im,Uint32 d) 
   if(d>7) d=0;
   if(x<1 || y<1 || x>pfwidth || y>pfheight || c==control_class) return VOIDLINK;
   if(!(classes[c]->oflags&OF_BIZARRO) && (i=classes[c]->collisionLayers) && (xx=collisions_at(x,y)&i)) {
-    if(collide_with(xx,VOIDLINK,x,y,c)&0x01) return VOIDLINK;
+    if((i=collide_with(xx,VOIDLINK,x,y,c))&0x01) {
+      if(i&0x8000) {
+        if(subst_class) {
+          m=subst_obj;
+          v=destroy(VOIDLINK,m,5);
+          if(v.t) return VOIDLINK;
+          n=x_create(m,subst_class,x,y,d,CVALUE(c),NVALUE(im),NVALUE(0));
+          if(n!=VOIDLINK) objects[m]->replacement=OVALUE(n);
+          return n;
+        } else {
+          return subst_obj;
+        }
+      }
+      return VOIDLINK;
+    }
   }
   n=objalloc(c);
   if(n==VOIDLINK) Throw("Error creating object");
@@ -911,7 +1015,7 @@ static Value destroy(Uint32 from,Uint32 to,Uint32 why) {
 }
 
 static int move_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
-  Uint32 m;
+  Uint32 k,m;
   int i,xx,yy;
   Object*o;
   Object*p;
@@ -929,7 +1033,22 @@ static int move_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
     }
   }
   if(!(o->oflags&OF_BIZARRO) && (i=classes[o->class]->collisionLayers) && (xx=collisions_at(x,y)&i)) {
-    if((i=collide_with(xx,n,x,y,o->class))&0x01) return i&0x04?1:0;
+    if((i=collide_with(xx,n,x,y,o->class))&0x01) {
+      if(i&0x8000) {
+        m=subst_obj;
+        v=destroy(n,m,5);
+        if(v.t) return 0;
+        k=x_create(m,subst_class,x,y,o->dir,CVALUE(o->class),NVALUE(o->image),OVALUE(n));
+        if(k!=VOIDLINK) {
+          objects[m]->replacement=objects[n]->replacement=OVALUE(k);
+          destroy(m,n,6);
+          o->distance+=abs(x-o->x)+abs(y-o->y);
+          return 1;
+        }
+        return 0;
+      }
+      return i&0x04?1:0;
+    }
   }
   pfunlink(n);
   if(!(o->oflags&((classes[o->class]->cflags&CF_COMPATIBLE?OF_VISUALONLY:0)|OF_STEALTHY|OF_BIZARRO))) {

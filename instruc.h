@@ -781,6 +781,7 @@ static const Op_Names op_names[]={
 {"Walkable",8487139},
 {"Weight",9142355},
 {"WinLevel",8487140},
+{"XCREATE",8389148},
 {"XDir",8487141},
 {"XStep",8487142},
 {"XYDir",8421607},
@@ -891,5 +892,5 @@ static const Op_Names op_names[]={
 {"until",8683534},
 {"while",8683535},
 };
-#define N_OP_NAMES 372
+#define N_OP_NAMES 373
 #endif

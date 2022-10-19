@@ -712,6 +712,7 @@ Standard messages:
   PLAYERMOVING
   POSTINIT
   SUNK
+  XCREATE
 
 Input constants:
   'BACK = 8
@@ -1076,8 +1077,7 @@ NextR : any
   This variable is normally zero, but when there is a collision by the
   CollisionLayers, it can be programmed to destroy an object and create
   another one which represents the combination of the two. In this case,
-  the NextR variable of the destroyed object points to the new one. (Note:
-  This feature is not yet fully implemented.)
+  the NextR variable of the destroyed object points to the new one.
 
 Player : bool [c] [ro]
   If this object is the player. This is used implicitly as the From of
@@ -2399,7 +2399,12 @@ COLLIDEBY
   necessary, it will try to destroy this object to make room. From is the
   object attempting to move here, and Arg1 and Arg2 are its location (if
   attempting to create an object, then From, Arg1, and Arg2 are all zero).
-  Arg3 is the class of the object being moved or created.
+  Arg3 is the class of the object being moved or created. If the return
+  value is a class, then it will destroy this one, and if moving also the
+  object moving, and attempt to create an object of the specified class
+  instead and set the NextR of both old objects to the new one. If the
+  return value is an object, it is treated as 1 but creation will return
+  the specified object instead of the one which is trying to be created.
 
 COLLIDING
   Called when deferred movement is being performed if the move cannot
@@ -2439,7 +2444,9 @@ CREATE
   after the object is created, but before sending any other messages. The
   From is the object that created it. The return value will be used as the
   Arg3 of the SUNK and CREATED messages it might send if appropriate. From
-  is the object which executed the Create instruction to create it.
+  is the object which executed the Create instruction to create it, or zero
+  if it was sent after a XCREATE message due to objects being replaced
+  after a collision.
 
 CREATED
   Sent to all objects whose Arrivals care about objects in the location
@@ -2456,8 +2463,13 @@ DESTROY
   Received when the object is about to be destroyed. Arg3 is the reason:
   0 for the Destroy or ,Destroy instruction, 1 due to this object moving
   into something sharp, 2 due to something sharp moving into this one,
-  3 for a conflict with CollisionLayers, or 4 for crushing. The return
-  value is false to allow it to be destroyed or true to keep the object.
+  3 for a conflict with CollisionLayers, 4 for crushing, 5 if it was
+  destroyed due to COLLIDEBY returning a class or object to be created
+  in its place to substitute for it, or 6 if it was trying to move into
+  another place but could not and COLLIDEBY told it to create a different
+  object in its place (in which case From is the object that it collided
+  with). The return value is false to allow it to be destroyed or true to
+  keep the object.
 
 DESTROYED
   Sent to all objects whose Departures care about objects in the location
@@ -2577,6 +2589,19 @@ SUNK
   case, From is zero, and the return value is not used. For creation, Arg3
   is the return value of the corresponding CREATE message; for movement,
   Arg3 is always zero. (This has nothing to do with sinking in water.)
+
+XCREATE
+  This message is received by an object which has been just created due to
+  a COLLIDEBY message returning a class. From is the object at the target
+  location that a collision with layers occurred (which is now destroyed).
+  Arg1 is the class of the attempted creation or object trying to move
+  here, Arg2 is the image of the attempted creation or object trying to
+  move here, and Arg3 is the object trying to move here (or zero if it was
+  trying to create an object). If the return value is zero, then it will
+  continue with CREATE, CREATED, SUNK, and FLOATED messages like with a
+  usual creation, but if a number other than zero then they are skipped.
+  If the return value is an object, then the Create command will return
+  the specified object.
 
 
 === Hit values ===

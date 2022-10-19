@@ -4,7 +4,6 @@
 * Game engine features
   * String data (partially implemented)
   * A ,PopUp command to use a popup with arguments starting from a mark
-  * Returning a class from COLLIDE/COLLIDEBY to transform
   * Possibility to define auto-generation levels mode
   * Popup inventory list (with optional possibility of choice) (?)
   * Playfield array
@@ -52,6 +51,7 @@
   * Connection movement (it is partially tested, already)
   * Sweep, SweepEx, HitMe
   * Overriding order of execution (partially tested)
+  * Returning classes/objects from COLLIDEBY
 * Conversion from other games
   * DOS Hero Hearts
   * Berusky
