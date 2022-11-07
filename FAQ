@@ -63,7 +63,16 @@ another one?
 
  You can also give it a different name in the new puzzle set:
 
-   her r OLDNAME.IMG NEWNAME.IMG < oldgame.xclass >> newgame.xclass
+   har r OLDNAME.IMG NEWNAME.IMG < oldgame.xclass >> newgame.xclass
+
+** Is there REPL?
+
+ No, and it would be difficult to make it work. The code needs to be
+ compiled into P-codes, and it is executed during each game turn.
+
+ Furthermore, the replayability feature would not work if the code could
+ be arbitrarily changed at run time, and the replay feature is also needed
+ in order to recover from errors.
 
 
 === Compiling ===
@@ -178,6 +187,29 @@ nonexistent object" error when trying to move a Sliding Door.
 
 === Converted puzzle sets ===
 
+** Can the puzzles from the demo versions of Hero Hearts from Everett
+Kaser's web page work on Free Hero Mesh?
+
+ Yes. You will need to download the version for Mac OS X, and then find
+ the file named "HEARTS0.MB"; none of the other files are useful. After
+ you have extracted that file, use the "mbtofhm" program included with
+ Free Hero Mesh to convert them. (You may wish to make some corrections
+ to the class definitions, e.g. to fix the Roller animations.)
+
+** Can the puzzles from the registered versions of Everett Kaser's Hero
+Hearts work on Free Hero Mesh?
+
+ They should work. I have some of them from an older version, and most of
+ them work (a few levels do not work, as explained below; however, almost
+ all of them do work).
+
+ However, making a registration now if you are not running Windows, Mac OS
+ X, or Wine, is not something that I am sure of. None of the files from the
+ registered version other than the .MB files will be useful, and there
+ might be installers that will need to run to be able to extract the files.
+ You might have to ask Everett Kaser if it is possible to register but only
+ the puzzle set files alone.
+
 ** Hero Hearts puzzles will cause errors when a Bomb or Missile explodes,
 and won't display Roller animations correctly.
 
@@ -252,6 +284,10 @@ number of words will ever substitute for an image.
 ** Is it any good?
 
  I suppose it is a matter of opinion, isn't it?
+
+** Where does the name "Free Hero Mesh" come from?
+
+ It is a Free implementation of Everett Kaser's MESH:Hero engine.
 
 ** Are any libre puzzle sets currently available?
 
