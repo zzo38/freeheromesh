@@ -19,6 +19,15 @@ CONFIG_EXTRA_SCREEN_INIT
   Can be a C code to be executed after the video mode is set, but before
   any other screen initialization is done.
 
+CONFIG_FUNCTION_ASK_TEXT
+  Should be a function or macro taking four arguments, which will ask for
+  and accept a single line of text. The first argument is the SDL screen
+  object, the second is the prompt text, the third is the code page number
+  for the prompt text, and the fourth is the code page number for the
+  input. The result is a pointer to a buffer (which the caller need not
+  free, and will not write to) containing the null-terminated text, or a
+  null pointer if the prompt has been cancelled by the user.
+
 CONFIG_GLOBAL_HASH_SIZE
   Size of global hash table when reading class definition file. This must
   be less than 65535.
@@ -67,15 +76,6 @@ CONFIG_ERROR_CHECKING
   Define error checking level, where 9 is maximum. Lower numbers might
   improve speed but may make the program crash in some cases and may also
   cause security vulnerabilities.
-
-CONFIG_FUNCTION_ASK_TEXT
-  Should be a function or macro taking four arguments, which will ask for
-  and accept a single line of text. The first argument is the SDL screen
-  object, the second is the prompt text, the third is the code page number
-  for the prompt text, and the fourth is the code page number for the
-  input. The result is a pointer to a buffer (which the caller need not
-  free, and will not write to) containing the null-terminated text, or a
-  null pointer if the prompt has been cancelled by the user.
 
 CONFIG_LAUNCHER_PATH
   If defined, then it is the full path to a file to execute if Free Hero

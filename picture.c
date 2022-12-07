@@ -254,6 +254,9 @@ void draw_key(int x,int y,int k,int bg,int fg) {
 }
 
 const char*screen_prompt(const char*txt) {
+#ifdef CONFIG_FUNCTION_ASK_TEXT
+  return CONFIG_FUNCTION_ASK_TEXT(screen,txt,367,0);
+#else
   static char*t=0;
   int n=0;
   SDL_Rect r={0,0,screen->w,16};
@@ -342,6 +345,7 @@ const char*screen_prompt(const char*txt) {
     }
   }
   return 0;
+#endif
 }
 
 int screen_message(const char*txt) {
