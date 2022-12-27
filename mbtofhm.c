@@ -309,9 +309,11 @@ static void read_one_class(void) {
   fread(buf,1,2,stdin);
   k=buf[0]|(buf[1]<<8);
   Allocate(class[id]->subscode,k<<1);
-  class[id]->subscode[0]=i;
-  class[id]->subscode[1]=j;
-  fread(class[id]->subscode+2,2,k-1,stdin);
+  if(k) {
+    class[id]->subscode[0]=buf[0];
+    class[id]->subscode[1]=buf[1];
+    fread(class[id]->subscode+2,2,k-1,stdin);
+  }
   j=fgetc(stdin);
   j|=fgetc(stdin)<<8;
   class[id]->nmsgslbl=j;

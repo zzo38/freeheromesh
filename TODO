@@ -46,6 +46,7 @@
 * Option to use a separate solution file
 * Multiuser scoring within one computer system (optional capability)
 * Launcher menu (optional; separate program)
+* Implement the (obsolete?) ImageSeq and ImageLoop commands (used in DESERT3)
 * Testing
   * Bizarro world
   * Connection movement (it is partially tested, already)

@@ -385,9 +385,11 @@ the condition is false.
 
 [106] Else
 
-[107/3] ImageSeq (seems to do nothing?)
+[107/3] ImageSeq (seems to be a obsolete variant of Animate, for animations
+that play only once)
 
-[108/3] ImageLoop (seems to do nothing?)
+[108/3] ImageLoop (seems to be a obsolete variant of Animate, for looping
+animations)
 
 [109] PopUp. Values taken from the stack is one plus the minor code.
 
