@@ -246,17 +246,24 @@ However, exports do not add carriage returns.
 
 The same consideration about line endings with DOS also applies to Windows.
 
+You may also wish to add a menu bar in a Windows version.
+
 
 === Mac OS X ===
 
-(TODO)
+Refer to FAQ for details relating to UTI.
+
+Some keyboard commands might need to be changed; apparently some function
+keys are reserved in Mac OS X.
+
+It might also be helpful to add menus, like in Microsoft Windows.
 
 
 === Sandboxing ===
 
 Many sandbox systems have problems, such as:
 
-* Assumes all text is Unicode.
+* Assumes all text is Unicode (including file names).
 
 * Cannot request a command to use with popen (or from configuration files).
 
