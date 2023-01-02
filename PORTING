@@ -5,6 +5,23 @@ program, include it in package managers, port it to other systems, etc.
 are not written at all, so far.)
 
 
+=== Use of JavaScript in Compiling ===
+
+One note about compiling is the use of JavaScript codes. It uses Node.js
+although it uses a subset that should not be too difficult to implement
+using polyfills in other implementations.
+
+However, these JavaScript codes are short, and are only needed at compile
+time if you wish to modify the P-codes instruction set, and are not needed
+to compile Free Hero Mesh without modification. Furthermore, alternative
+implementations could avoid the use of JavaScript codes entirely.
+
+(In future, it might also be changed so that e.g. awk might be used, or
+write these programs in C as well (which reduces dependencies, but then
+they will have to be compiled too, which is less convenient for these
+kind of scripts), but currently they are using JavaScript.)
+
+
 === Distribution ===
 
 Dependencies of Free Hero Mesh include SDL1.x and SQLite.
