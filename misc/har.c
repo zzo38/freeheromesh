@@ -14,8 +14,9 @@ exit
   r = Rename
   s = Safe
   t = List
+  w = Wildcards
   u = Uppercase
-  x = Extract
+  x = Extract to files
 */
 
 #include <stdio.h>
@@ -95,6 +96,18 @@ static void process_lump(int a) {
           o=1;
           if(opt['r'] && ++n<argc) strcpy(name,argv[n]);
           break;
+        } else if(opt['w']) {
+          for(c=d=0;;c++,d++) {
+            if(argv[n][c]=='*') {
+              d+=strlen(name)-strlen(argv[n]);
+              if(d>=strlen(name) || d<c) break;
+            } else if(argv[n][c]!=name[d] && argv[n][c]!='?') {
+              break;
+            } else if(!name[d]) {
+              o=1;
+              break;
+            }
+          }
         }
         if(opt['r']) n++;
       }
