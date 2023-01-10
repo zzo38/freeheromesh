@@ -19,6 +19,14 @@ It is available in a Fossil repository; there are two sources:
 occasionally be pushed to the mirror. Contributions are not accepted at
 the mirror directly; they must be made in the main repository first.)
 
+There is also a mirror on GitHub:
+
+* Mirror: https://github.com/zzo38/freeheromesh
+
+(Note that I cannot accept pull requests on GitHub. You are free to write
+them, although they cannot be merged; however, they will be reviewed and
+then may be manually entered into the fossil repository.)
+
 
 === Installation ===
 
