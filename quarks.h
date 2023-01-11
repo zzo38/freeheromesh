@@ -194,6 +194,7 @@
 #define Q_autoWin 195
 #define Q_listMode 196
 #define Q_listColumns 197
+#define Q_ignore 198
 static const char*const global_quarks[]={
   "screenWidth",
   "screenHeight",
@@ -391,6 +392,7 @@ static const char*const global_quarks[]={
   "autoWin",
   "listMode",
   "listColumns",
+  "ignore",
 0};
 #ifdef HEROMESH_BINDINGS
 static const SDLKey quark_to_key[Q_undo+1-Q_backspace]={

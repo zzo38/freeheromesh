@@ -66,6 +66,12 @@ See bindings.doc for key/mouse bindings.
   The path to the code page file. If not specified, then code pages other
   than 437 are not available (code page 437 is built-in).
 
+.codepage.ignore
+  If true, then ignore any errors loading code pages that cannot be found.
+  This does not affect the behaviour of the game but may result in text
+  being displayed incorrectly. If false (the default setting), then it is
+  an error if a puzzle set specifies a code page that is not available.
+
 .editTitle
   The window title to use in edit mode. A tilde is replaced by the name of
   the puzzle set.

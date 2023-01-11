@@ -969,6 +969,14 @@ void init_screen(void) {
   left_margin=strtol(xrm_get_resource(resourcedb,optionquery,optionquery,2)?:"65",0,10);
 }
 
+static int ignore_code_page(void) {
+  const char*v;
+  optionquery[1]=Q_codepage;
+  optionquery[2]=Q_ignore;
+  v=xrm_get_resource(resourcedb,optionquery,optionquery,3)?:"";
+  return boolxrm(v,0);
+}
+
 void set_code_page(Uint32 n) {
   int c,i,j,s;
   const char*v;
@@ -981,7 +989,7 @@ void set_code_page(Uint32 n) {
   optionquery[1]=Q_codepage;
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
   if(!v || !*v) {
-    if(n==437) return;
+    if(n==437 || ignore_code_page()) return;
     fatal("Cannot load code page %d; code page file is not configured\n",n);
   }
   fp=fopen(v,"r");
@@ -997,7 +1005,7 @@ void set_code_page(Uint32 n) {
   for(;;) {
     c=fgetc(fp);
     if(c<0) {
-      if(n!=437) fatal("Cannot find code page %d\n",n);
+      if(n!=437 && !ignore_code_page()) fatal("Cannot find code page %d\n",n);
       goto done;
     }
     if(!c) break;
