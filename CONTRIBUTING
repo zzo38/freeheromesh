@@ -1,6 +1,14 @@
 The recommended way to contribute is to use the NNTP server, but
-the ticket system and IRC can also be used. All contributions must be
-public; private contributions will not be accepted.
+the ticket system and IRC and GitHub mirror can also be used. All
+contributions must be public; private contributions will not be accepted.
+
+(Note to GitHub users: Only people who have a GitHub account can use the
+GitHub issues and pull requests system (so other people who do not have a
+GitHub account will be unable to reply), and the GitHub terms of service
+apply to your use of GitHub. Also, pull requests cannot be accepted from
+GitHub, although you are free to submit them anyways; if you do, then
+they will be entered manually by using Fossil, and the changes that are
+made will then be mirrored to GitHub.)
 
 Any kinds of contributions may potentially be accepted or rejected.
 However, just because we accept one of your contributions does not
@@ -31,19 +39,22 @@ main documentation must be only plain ASCII text.
 
 You may fork the repository if wanted (although doing so is not required),
 but you may not write to the main or mirror repository; I am the only one
-who has write access and this will not be granted to others.
+who has write access and this will (probably) not be granted to others.
 
-You can see the TODO list, NNTP, and tickets, for some ideas, too.
+You can see the TODO list, NNTP, tickets, etc, for some ideas, too.
 
 
 === Code improvements ===
 
-If you wish to submit code improvements, submit patches using the NNTP.
+If you wish to submit code improvements, submit patches using the NNTP,
+or use GitHub pull requests (but see the important note above if you wish
+to use GitHub).
 
 If you wish to add new opcodes, configuration settings, or built-in
 messages, then you must have Node.js (or a compatible JavaScript runtime
 engine) installed, since the data for these features is compiled using
-JavaScript programs. (Node.js is not needed at run time, though.)
+JavaScript programs. (Node.js is not needed at run time, though.) (See
+PORTING and FAQ for some information about JavaScript use.)
 
 Source code must be purely ASCII; do not use Unicode or any other
 character encoding.
@@ -59,7 +70,8 @@ anyways, and accept (possibly with modifications) or reject it.
 === Documentation improvements ===
 
 If you wish to submit documentation improvements, then you should submit
-them on the NNTP.
+them on the NNTP, or using GitHub pull requests (but see the important note
+above if you wish to use GitHub).
 
 Normally (unless an exception is needed, which sometimes it might), all
 documentation should be plain ASCII text files, in English, and should
@@ -76,9 +88,9 @@ when dealing with non-English text.)
 === Bug reports ===
 
 To make a bug report, the recommended way is to post a message on the NNTP,
-but you may also use IRC, Matrix, or the Fossil ticketing system. Before
-posting a bug report, read the following list and provide as much of these
-things as is possible:
+but you may also use IRC, Matrix, or the GitHub issues. Before posting a
+bug report, read the following list and provide as much of these things as
+is possible:
 
 * Check if the bug has already been reported/known. (If you have further
 comments about an existing report, you can post a follow-up message.)
@@ -122,9 +134,9 @@ as you can, and omit whatever you cannot do.)
 === Feature requests ===
 
 To make a feature request, the recommended way is to post a message on the
-NNTP, but you may also use IRC, Matrix, or the Fossil ticketing system.
-Before posting, read the following, and provide as much of the following
-as is possible:
+NNTP, but you may also use IRC, Matrix, or the GitHub issues. Before
+posting, read the following, and provide as much of the following as
+is possible:
 
 * Check if there is already a similar request. (If you have further
 comments about an existing report, you can post a follow-up message.)

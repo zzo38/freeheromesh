@@ -42,12 +42,11 @@ The DEP lumps are dependent pictures; each one references one or more IMG
 lumps, and specifies how to modify them to produce the new picture (e.g.
 by rotating, mirroring, changing colours, etc).
 
-The WAV lumps are sound effects. Each is a RIFF WAVE file; it must be of
-a type which can be loaded by SDL. Lumps can also be WZV if it is a
-compressed audio file, but compressed audio is not currently implemented.
+The WAV lumps are sound effects. Each one must be a RIFF WAVE file with a
+type that can be loaded by SDL (PCM, MS-ADPCM, or IMA-ADPCM).
 
 The PICEDIT.CFG lump stores the configuration for the picture editor. It
-can safely be deleted.
+can safely be deleted if not needed.
 
 
 === Class definition file ===
