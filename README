@@ -1,13 +1,11 @@
-Free Hero Mesh is a puzzle game engine for grid-based puzzle games with
-levels, strictly based on changing game state due to the sequence of
-inputs, e.g. Sokoban and Hero Hearts. You can define your own classes of
-objects using the Free Hero Mesh programming language.
+Free Hero Mesh is a puzzle game engine for turn-based grid-based puzzle
+games. You can define your own classes of objects using the Free Hero
+Mesh programming language.
 
-It is also designed to be compatible with EKS Hero Mesh puzzle sets, which
+It is also designed to be compatible with MESH:Hero puzzle sets, which
 must be converted to Free Hero Mesh using the provided "mbtofhm" program.
 However, Free Hero Mesh adds a lot of new features and bug fixes compared
-with EKS Hero Mesh, many of which have already been implemented, and many
-of which have not been implemented yet.
+with MESH:Hero.
 
 It is available in a Fossil repository; there are two sources:
 

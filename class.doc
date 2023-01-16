@@ -257,7 +257,8 @@ to strings if needed.
 
 === Global definitions ===
 
-These are the global definitions in the class definition file.
+These are the global definitions in the class definition file. (All of
+these definitions are optional.)
 
 (Animate <limit>)
   Set the limit for logical animations, from 1 to 255. The default is 32.
@@ -2973,7 +2974,7 @@ Compatible objects have the following differences from the default:
 
 * VisualOnly implies Stealthy.
 
-* If the current quiz object is Compatible, The effect of "-1 FlushObj"
+* If the current quiz object is Compatible, the effect of "-1 FlushObj"
 is implied at the beginning of the turn (before the input phase), except
 that Inertia is not reset.
 
@@ -3091,7 +3092,7 @@ match the title string of the level. Pattern codes are:
   (    Set beginning of slice (same as the [ command);
   )    Set end of slice, but use the position just before the matched item
         instead of just after it.
-  \n   Skip until a line break of horizontal bar, and past it. If it is
+  \n   Skip until a line break or horizontal bar, and past it. If it is
         followed by any more consecutive line breaks without anything else
         in between, skips those ones too.
   \d   Follow by some text and then : and \ or just \ to skip to and find
