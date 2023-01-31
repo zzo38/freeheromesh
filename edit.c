@@ -1948,6 +1948,18 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
       level_version=number;
       level_changed=0;
       return 0;
+    case 'mm': // Modify MRU
+      if(curmru>=MRUCOUNT) return prev;
+      if(argc>1 && sqlite3_column_type(args,1)!=SQLITE_NULL) {
+        x=sqlite3_column_int(args,1)&0x3FFF;
+        if(x) mru[curmru].class=x;
+      }
+      if(argc>2 && sqlite3_column_type(args,2)!=SQLITE_NULL) mru[curmru].img=sqlite3_column_int(args,2)&0xFF;
+      if(argc>3 && sqlite3_column_type(args,3)!=SQLITE_NULL) mru[curmru].misc1=UVALUE(sqlite3_column_int64(args,3),sqlite3_column_int64(args,3)>>32);
+      if(argc>4 && sqlite3_column_type(args,4)!=SQLITE_NULL) mru[curmru].misc2=UVALUE(sqlite3_column_int64(args,4),sqlite3_column_int64(args,4)>>32);
+      if(argc>5 && sqlite3_column_type(args,5)!=SQLITE_NULL) mru[curmru].misc3=UVALUE(sqlite3_column_int64(args,5),sqlite3_column_int64(args,5)>>32);
+      if(argc>6 && sqlite3_column_type(args,6)!=SQLITE_NULL) mru[curmru].dir=sqlite3_column_int64(args,6)&7;
+      return prev;
     case 'mR': // Select MRU relative
       number+=curmru;
       // fall through

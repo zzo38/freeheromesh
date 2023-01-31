@@ -181,6 +181,7 @@
 ?.editClick.shift.left: ^<
 ?.editClick.shift.middle: values('^Z',null),('^<',xy($X,$Y));
 ?.editClick.shift.right: ^>
+?.editClick.alt.middle: select 'mm',null,null,null,$X,$Y,null;
 
 ! Global key bindings
 ?.?.kp_minus: select 'go',-(level()-1) where level()>1;

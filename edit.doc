@@ -251,6 +251,7 @@ Mouse (in grid):
   CTRL+LEFT     Edit Misc/Dir of object
   ALT+LEFT      Add object (allow duplicate)
   SHIFT+LEFT    Set top corner of selection rectangle
+  ALT+MIDDLE    Set Misc2/Misc3 of MRU to X/Y
   SHIFT+MIDDLE  Make 1x1 selection rectangle
   RIGHT         Delete object
   CTRL+RIGHT    Copy object to MRU

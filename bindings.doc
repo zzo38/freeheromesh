@@ -213,6 +213,9 @@ any name with : at first to ask the user for the value to use.
   set it by yourself just before saving, it will use your value rather
   than setting it automatically.
 
+'mm' <class> <image> <misc1> <misc2> <misc3> <dir>
+  Modify a MRU. Any values specified as null means no change.
+
 'mR' <number>
   Select a relative MRU. Negative numbers move up the list, and positive
   numbers move down the list.
