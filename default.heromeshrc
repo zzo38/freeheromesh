@@ -170,6 +170,7 @@
 ?.editKey.f1: select 'im',:Import_Level;
 ?.editKey.f2: select 'ex',:Export_Level;
 ?.editKey.escape: ^Z
+?.editKey.shift.B: select '^a',xy(x,y) from playfield where inrect(x,y) and (rect_x0()=x or rect_x1()=x or rect_y0()=y or rect_y1()=y);
 ?.editKey.shift.D: delete from objects where inrect(x,y);
 ?.editKey.shift.F: select '^a',xy(x,y) from playfield where inrect(x,y);
 ?.editClick.left: ^a

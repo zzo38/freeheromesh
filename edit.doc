@@ -241,16 +241,18 @@ Keyboard:
   UP/DOWN   Select previous/next MRU
   1-9       Select MRU
   ESC       Cancel selection rectangle
+  SHIFT+B   Fill border of selection rectangle with current MRU
   SHIFT+D   Delete all objects in selection rectangle
   SHIFT+F   Fill selection rectangle with current MRU
 
 Mouse (in grid):
 
-  LEFT         Add object
-  CTRL+LEFT    Edit Misc/Dir of object
-  ALT+LEFT     Add object (allow duplicate)
-  SHIFT+LEFT   Set top corner of selection rectangle
-  RIGHT        Delete object
-  CTRL+RIGHT   Copy object to MRU
-  SHIFT+RIGHT  Set bottom corner of selection rectangle
+  LEFT          Add object
+  CTRL+LEFT     Edit Misc/Dir of object
+  ALT+LEFT      Add object (allow duplicate)
+  SHIFT+LEFT    Set top corner of selection rectangle
+  SHIFT+MIDDLE  Make 1x1 selection rectangle
+  RIGHT         Delete object
+  CTRL+RIGHT    Copy object to MRU
+  SHIFT+RIGHT   Set bottom corner of selection rectangle
 
