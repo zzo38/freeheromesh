@@ -2000,7 +2000,7 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
   Class*cl=classes[cla];
   int ptr=0;
   int compat=0;
-  int i;
+  int i,j;
   char disp=0;
   if(!hash) fatal("Allocation failed\n");
   if(!cl) fatal("Confusion of class definition somehow\n");
@@ -2143,11 +2143,22 @@ static void class_definition(int cla,sqlite3_stmt*vst) {
             ptr=parse_instructions(cla,ptr,hash,compat);
             break;
           case 0x0200 ... 0x02FF:
-            set_message_ptr(cla,tokenv&255,ptr);
-            ptr=parse_instructions(cla,ptr,hash,compat);
-            break;
+            i=tokenv&255;
+            goto message;
           case 0xC000 ... 0xFFFF:
-            set_message_ptr(cla,tokenv+256-0xC000,ptr);
+            i=tokenv+256-0xC000;
+          message:
+            set_message_ptr(cla,i,ptr);
+            nxttok();
+            pushback=1;
+            if(tokenv==OP_LABEL && tokent==(TF_NAME|TF_ABNORMAL|TF_EQUAL)) {
+              j=look_hash(hash,LOCAL_HASH_SIZE,0x8000,0xFFFF,*labelptr,"labels");
+              if(!j) j=*labelptr,++*labelptr;
+              if(labelptr[j-0x8000]!=0xFFFF) {
+                set_message_ptr(cla,i,labelptr[j-0x8000]);
+                pushback=0;
+              }
+            }
             ptr=parse_instructions(cla,ptr,hash,compat);
             break;
           default: ParseError("Invalid directly inside of a class definition\n");
