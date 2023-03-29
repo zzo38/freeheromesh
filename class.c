@@ -639,6 +639,7 @@ static void define_macro(Uint16 name,Uint8 q) {
   }
 }
 
+#ifndef CONFIG_OMIT_INCLUDE
 static void begin_include_file(const char*name) {
   InputStack*nxt=inpstack;
   inpstack=malloc(sizeof(InputStack));
@@ -658,6 +659,7 @@ static void begin_include_file(const char*name) {
   }
   if(!classfp) ParseError("Cannot open include file \"%s\": %m\n",name);
 }
+#endif
 
 static void begin_macro(TokenList*mac) {
   MacroStack*ms=malloc(sizeof(MacroStack));
@@ -1021,6 +1023,9 @@ static void nxttok(void) {
           define_macro(look_hash_mac(),1);
           goto again;
         case MAC_INCLUDE:
+#ifdef CONFIG_OMIT_INCLUDE
+          ParseError("The {include} macro has been omitted from this version\n");
+#else
           if(macstack) ParseError("Cannot use {include} inside of a macro\n");
           nxttok1();
           if(tokent==TF_MACRO && tokenv==1) ReturnToken(TF_EOF,0);
@@ -1030,6 +1035,7 @@ static void nxttok(void) {
           if(tokent!=TF_MACRO+TF_CLOSE) ParseError("Too many macro arguments\n");
           begin_include_file(glohash[n].txt);
           goto again;
+#endif
         case MAC_CALL:
           nxttok();
           if(!(tokent&TF_NAME) || tokenv!=OP_STRING) ParseError("String literal expected\n");

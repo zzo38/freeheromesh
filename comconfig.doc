@@ -44,6 +44,9 @@ CONFIG_NO_STATUS
   If defined, then most status output is omitted unless -v is specified.
   (Some status output, such as most error messages, are still displayed.)
 
+CONFIG_OMIT_INCLUDE
+  If defined, then the {include} macro is not implemented.
+
 CONFIG_OMIT_SOUND
   If defined, omit all sound capabilities (including music). (Even if it
   is not defined, it can still be disabled at runtime.)
