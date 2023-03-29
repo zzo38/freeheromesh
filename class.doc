@@ -212,6 +212,9 @@ Built-in macros include:
   Expands into nothing. The number must be zero, otherwise it is an error.
   Future versions of Free Hero Mesh may change this.
 
+All arithmetic/bitwise macros also allow their arguments to be directions
+and keys, in which case they are treated as the corresponding numbers.
+
 It is possible to implement a tag system in this preprocessor, which makes
 it Turing complete. For example:
 

@@ -751,7 +751,7 @@ static void nxttok(void) {
           for(;;) {
             nxttok();
             if(tokent==TF_MACRO+TF_CLOSE) break;
-            if(tokent!=TF_INT) ParseError("Number expected\n");
+            if(tokent!=TF_INT && tokent!=TF_NAME+TF_DIR && tokent!=TF_NAME+TF_KEY) ParseError("Number expected\n");
             n+=tokenv;
           }
           tokent=TF_INT;
@@ -759,10 +759,10 @@ static void nxttok(void) {
           break;
         case MAC_SUB:
           nxttok();
-          if(tokent!=TF_INT) ParseError("Number expected\n");
+          if(tokent!=TF_INT && tokent!=TF_NAME+TF_DIR && tokent!=TF_NAME+TF_KEY) ParseError("Number expected\n");
           n=tokenv;
           nxttok();
-          if(tokent!=TF_INT) ParseError("Number expected\n");
+          if(tokent!=TF_INT && tokent!=TF_NAME+TF_DIR && tokent!=TF_NAME+TF_KEY) ParseError("Number expected\n");
           n-=tokenv;
           nxttok();
           if(tokent!=TF_MACRO+TF_CLOSE) ParseError("Too many macro arguments\n");
@@ -774,7 +774,7 @@ static void nxttok(void) {
           for(;;) {
             nxttok();
             if(tokent==TF_MACRO+TF_CLOSE) break;
-            if(tokent!=TF_INT) ParseError("Number expected\n");
+            if(tokent!=TF_INT && tokent!=TF_NAME+TF_DIR && tokent!=TF_NAME+TF_KEY) ParseError("Number expected\n");
             n*=tokenv;
           }
           tokent=TF_INT;
@@ -782,10 +782,10 @@ static void nxttok(void) {
           break;
         case MAC_DIV:
           nxttok();
-          if(tokent!=TF_INT) ParseError("Number expected\n");
+          if(tokent!=TF_INT && tokent!=TF_NAME+TF_DIR && tokent!=TF_NAME+TF_KEY) ParseError("Number expected\n");
           n=tokenv;
           nxttok();
-          if(tokent!=TF_INT) ParseError("Number expected\n");
+          if(tokent!=TF_INT && tokent!=TF_NAME+TF_DIR && tokent!=TF_NAME+TF_KEY) ParseError("Number expected\n");
           if(!tokenv) ParseError("Division by zero\n");
           n/=tokenv;
           nxttok();
@@ -795,10 +795,10 @@ static void nxttok(void) {
           break;
         case MAC_MOD:
           nxttok();
-          if(tokent!=TF_INT) ParseError("Number expected\n");
+          if(tokent!=TF_INT && tokent!=TF_NAME+TF_DIR && tokent!=TF_NAME+TF_KEY) ParseError("Number expected\n");
           n=tokenv;
           nxttok();
-          if(tokent!=TF_INT) ParseError("Number expected\n");
+          if(tokent!=TF_INT && tokent!=TF_NAME+TF_DIR && tokent!=TF_NAME+TF_KEY) ParseError("Number expected\n");
           if(!tokenv) ParseError("Division by zero\n");
           n%=tokenv;
           nxttok();
@@ -811,7 +811,7 @@ static void nxttok(void) {
           for(;;) {
             nxttok();
             if(tokent==TF_MACRO+TF_CLOSE) break;
-            if(tokent!=TF_INT) ParseError("Number expected\n");
+            if(tokent!=TF_INT && tokent!=TF_NAME+TF_DIR && tokent!=TF_NAME+TF_KEY) ParseError("Number expected\n");
             n&=tokenv;
           }
           tokent=TF_INT;
@@ -822,7 +822,7 @@ static void nxttok(void) {
           for(;;) {
             nxttok();
             if(tokent==TF_MACRO+TF_CLOSE) break;
-            if(tokent!=TF_INT) ParseError("Number expected\n");
+            if(tokent!=TF_INT && tokent!=TF_NAME+TF_DIR && tokent!=TF_NAME+TF_KEY) ParseError("Number expected\n");
             n|=tokenv;
           }
           tokent=TF_INT;
@@ -833,7 +833,7 @@ static void nxttok(void) {
           for(;;) {
             nxttok();
             if(tokent==TF_MACRO+TF_CLOSE) break;
-            if(tokent!=TF_INT) ParseError("Number expected\n");
+            if(tokent!=TF_INT && tokent!=TF_NAME+TF_DIR && tokent!=TF_NAME+TF_KEY) ParseError("Number expected\n");
             n^=tokenv;
           }
           tokent=TF_INT;
@@ -841,7 +841,7 @@ static void nxttok(void) {
           break;
         case MAC_BNOT:
           nxttok();
-          if(tokent!=TF_INT) ParseError("Number expected\n");
+          if(tokent!=TF_INT && tokent!=TF_NAME+TF_DIR && tokent!=TF_NAME+TF_KEY) ParseError("Number expected\n");
           n=~tokenv;
           nxttok();
           if(tokent!=TF_MACRO+TF_CLOSE) ParseError("Too many macro arguments\n");
@@ -877,7 +877,7 @@ static void nxttok(void) {
           for(;;) {
             nxttok();
             if(tokent==TF_MACRO+TF_CLOSE) break;
-            if(tokent!=TF_INT) ParseError("Number expected\n");
+            if(tokent!=TF_INT && tokent!=TF_NAME+TF_DIR && tokent!=TF_NAME+TF_KEY) ParseError("Number expected\n");
             if(tokenv<32) n|=1<<tokenv;
           }
           tokent=TF_INT;
@@ -1052,6 +1052,7 @@ static void nxttok(void) {
             n=tokenv-1;
             nxttok();
             if(n<0 || macstack->n<=n || !macstack->args[n]) ParseError("Cannot edit nonexistent argument %u\n",n+1);
+            if(macstack->args[n]->t&(TF_MACRO|TF_EOF)) ParseError("Invalid edit token\n");
             macstack->args[n]->t=tokent;
             macstack->args[n]->v=tokenv;
             macstack->args[n]->str=0;
