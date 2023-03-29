@@ -1047,19 +1047,33 @@ static void nxttok(void) {
         case MAC_EDIT:
           if(!macros) ParseError("Cannot edit nonexistent macro\n");
           nxttok();
-          if(!(tokent&TF_NAME) || tokenv!=OP_STRING) ParseError("String literal expected\n");
-          n=glohash[look_hash_mac()].id;
-          if(n<0xC000 || n>MAX_MACRO+0xC000-1 || !macros[n-0xC000]) ParseError("Undefined macro: {%s}\n",tokenstr);
-          nxttok();
-          n-=0xC000;
-          if(macros[n]->t&(TF_MACRO|TF_EOF)) ParseError("Invalid edit token\n");
-          free(macros[n]->str);
-          macros[n]->t=tokent;
-          macros[n]->v=tokenv;
-          macros[n]->str=0;
-          if(*tokenstr) {
-            macros[n]->str=strdup(tokenstr);
-            if(!macros[n]->str) fatal("Allocation failed\n");
+          if(tokent==TF_INT) {
+            if(!macstack) ParseError("Empty macro stack\n");
+            n=tokenv-1;
+            nxttok();
+            if(n<0 || macstack->n<=n || !macstack->args[n]) ParseError("Cannot edit nonexistent argument %u\n",n+1);
+            macstack->args[n]->t=tokent;
+            macstack->args[n]->v=tokenv;
+            macstack->args[n]->str=0;
+            if(*tokenstr) {
+              macstack->args[n]->str=strdup(tokenstr);
+              if(!macstack->args[n]->str) fatal("Allocation failed\n");
+            }
+          } else {
+            if(!(tokent&TF_NAME) || tokenv!=OP_STRING) ParseError("String literal expected\n");
+            n=glohash[look_hash_mac()].id;
+            if(n<0xC000 || n>MAX_MACRO+0xC000-1 || !macros[n-0xC000]) ParseError("Undefined macro: {%s}\n",tokenstr);
+            nxttok();
+            n-=0xC000;
+            if(macros[n]->t&(TF_MACRO|TF_EOF)) ParseError("Invalid edit token\n");
+            free(macros[n]->str);
+            macros[n]->t=tokent;
+            macros[n]->v=tokenv;
+            macros[n]->str=0;
+            if(*tokenstr) {
+              macros[n]->str=strdup(tokenstr);
+              if(!macros[n]->str) fatal("Allocation failed\n");
+            }
           }
           if(main_options['M']) {
             int i;

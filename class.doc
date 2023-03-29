@@ -184,9 +184,11 @@ Built-in macros include:
 
 {edit <string> <token>}
   Edit a macro. This changes the first token of the definition of the macro
-  (which must not be another macro) to the specified token (which also must
-  not be another macro). The token is expanded, and must be a single token
-  once it is expanded; that is what it will be replaced with.
+  (which must not be another macro) to the specified token. The token is
+  expanded, and must be a single token once it is expanded; that is what it
+  will be replaced with. There is a variant with a number in place of a
+  string; this will replace the argument of the macro which is currently
+  being expanded.
 
 {include <string>}
   Include text from another file into this one. You cannot use {include}
