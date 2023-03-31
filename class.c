@@ -1058,7 +1058,12 @@ static void nxttok(void) {
             n=tokenv-1;
             nxttok();
             if(n<0 || macstack->n<=n || !macstack->args[n]) ParseError("Cannot edit nonexistent argument %u\n",n+1);
-            if(macstack->args[n]->t&(TF_MACRO|TF_EOF)) ParseError("Invalid edit token\n");
+            if(macstack->args[n]->t&TF_OPEN) {
+              free_macro(macstack->args[n]->next);
+              macstack->args[n]->next=0;
+            } else if(macstack->args[n]->t&TF_EOF) {
+              ParseError("Invalid edit token\n");
+            }
             free(macstack->args[n]->str);
             macstack->args[n]->t=tokent;
             macstack->args[n]->v=tokenv;
