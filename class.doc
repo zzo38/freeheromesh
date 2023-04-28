@@ -116,6 +116,12 @@ string literal) and end at the next line break.
 \\
   Literal backslash.
 
+\Txxxxxx;
+  Only valid when using multibyte character encoding. Follow \T by six or
+  more hex digits and then a semicolon; this is like the "&T code" but is
+  using a backslash instead of a ampersand. (This feature is not fully
+  implemented yet.)
+
 
 === Preprocessor ===
 

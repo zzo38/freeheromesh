@@ -195,6 +195,7 @@ extern Uint16*orders;
 extern Uint8 norders;
 extern Uint16 control_class;
 extern Uint8 has_xy_input; // zero if not, nonzero if it has
+extern Uint8 has_mbcs; // nonzero if multibyte character encoding is in use
 
 typedef struct {
   // Flags: 1=fill-width, 2=multi-colours, 4=built-in-data

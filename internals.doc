@@ -132,6 +132,7 @@ The control codes for text formatting are:
 14 (\i) = Icon
 15 (\b) = Horizontal rule
 16 (\q) = Quiz button
+27 (\T) = Multibyte character escape; used only during parsing
 30 (\d) = Data
 31 (\x) = Next byte is a character to display as graphic
 

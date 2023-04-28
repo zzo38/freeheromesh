@@ -54,6 +54,7 @@ Uint16*orders;
 Uint8 norders;
 Uint16 control_class;
 Uint8 has_xy_input;
+Uint8 has_mbcs=0;
 
 char*ll_head;
 DisplayColumn*ll_disp;
@@ -209,7 +210,130 @@ static inline TokenList*step_macro(TokenList*o) {
   return p;
 }
 
+#ifndef CONFIG_OMIT_MBCS
+static inline void valid_part_of_code(Uint8 b) {
+  if(b<0x21 || b>0xFD || b==0x7F) ParseError("Improper TRON code\n");
+}
+
+static Uint32 read_euc_tron_1(const Uint8*s,int*p) {
+  Uint32 r=0;
+  Uint8 h=0;
+  int i=*p;
+  int c=s[i++];
+  if(c==0x90 || c==0x91) h=c,c=s[i++];
+  while(c==0x80) r+=0x1000000,c=s[i++];
+  if(c<0xA1) ParseError("Improper TRON code\n");
+  if(h) {
+    if(h==0x90) c-=0x40;
+    r|=c<<16;
+  } else {
+    r|=(c-0x80)<<16;
+  }
+  c=s[i++];
+  if(c<0xA0) ParseError("Improper TRON code\n");
+  r|=(c<<8)|s[i++];
+  *p=i;
+  return r;
+}
+
+static void convert_euctron_to_tron8(void) {
+  static const Uint8 jisx[0x80]={
+    0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0xA1, 0xA3,0xA4,0xA5,0xA8, 0xAC,0xAD,0xAE,0xAF,
+    0xEE,0xEF,0xF0,0xF1, 0xF2,0xF3,0xF4,0xF5, 0xF6,0xF7,0xF8,0xF9, 0xFA,0xFB,0xFC,0xFD,
+    0xFE,0x87,0x00,0x88, 0x89,0x8A,0x00,0x00, 0x8B,0x00,0x00,0x00, 0x8C,0x8D,0x8E,0x8F,
+    0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x90,0x91,
+    0x92,0x93,0x94,0x95, 0x96,0x97,0x98,0x99, 0x9A,0x9B,0x9C,0x9D, 0x9E,0x9F,0xA0,0x00,
+  };
+  Uint8 s[0x2000];
+  int i,o,p,x,y;
+  Uint32 c;
+  strcpy(s,tokenstr);
+  i=o=p=0;
+  if(*s<=0x20) tokenstr[0]=0xFE,tokenstr[1]=p=0x21,o=2;
+  while(i<0x1FFF && s[i] && o<0x1FFD) {
+    if(s[i]==27) {
+      i++;
+      c=0;
+      for(;;) switch(x=s[i++]) {
+        case '0' ... '9': c=16*c+x-'0'; break;
+        case 'A' ... 'F': c=16*c+x+10-'A'; break;
+        case 'a' ... 'f': c=16*c+x+10-'a'; break;
+        case ';': goto code;
+        default: ParseError("Invalid \\T escape\n");
+      }
+    } else if(s[i]<=32) {
+      tokenstr[o++]=c=s[i++];
+      if(c==16 || c==31) {
+        if(!s[i]) ParseError("Invalid string\n");
+        tokenstr[o++]=s[i++];
+      } else if(c==14 || c==30) {
+        x=strcspn(s+i,"\\");
+        if(!s[i+x]) ParseError("Invalid string\n");
+        if(o+x+1>=0x1FFC) ParseError("Converted string too long\n");
+        memcpy(tokenstr+o,s+i,x+1);
+        o+=x+1;
+      }
+    } else if(s[i]=='%') {
+      tokenstr[o++]=0x7F;
+      i++; x=s[i++];
+      if(!x) break;
+      tokenstr[o++]=x;
+      p=0; // ensure not being shifted to the wrong code set after a substitution
+    } else if(s[i]<127) {
+      // Note that the non-official plane 0x70 is used, rather than conversion to JIS or Unicode.
+      // This might be changed in future to convert to JIS.
+      c=0x702200+s[i++];
+      goto code;
+    } else if(s[i]>=0x88 && s[i]<=0x8D) {
+      x=s[i++];
+      c=read_euc_tron_1(s,&i);
+      y=(c>>8)&0xFF;
+      switch(x) {
+        case 0x88: c-=0x8080; break;
+        case 0x89: c-=0x0080; break;
+        case 0x8A: c-=0x8000; break;
+        case 0x8B: break;
+        case 0x8C: c=(y<0xC0?c-0x2080:(c&~0xFFFF)+((c>>8)&0xFF)+(y<<8)-0x8040); break;
+        case 0x8D: c=(y<0xC0?c-0x2000:y<0xE0?(c&~0xFFFF)+((c>>8)&0xFF)+(y<<8)-0x0040:c-0x6060); break;
+      }
+      goto code;
+    } else if(s[i]==0x8E) {
+      // Half width katakana; see comments in the (s[i]<127) block
+      c=0x702300+s[i++];
+      goto code;
+    } else if(s[i]==0x8F) {
+      i++;
+      if(!s[i] || !s[i+1]) break;
+      x=s[i++];
+      if(!x) ParseError("Invalid TRON code\n");
+      c=s[i++]^((jisx[x&0x7F]?:x)<<8)^0x210080;
+      goto code;
+    } else {
+      c=0x210000+(s[i++]<<8);
+      if(s[i]<0x80) ParseError("Invalid EUC-JP character\n");
+      c+=s[i++]-0x8080;
+      code:
+      valid_part_of_code(c&0xFF);
+      valid_part_of_code((c>>8)&0xFF);
+      valid_part_of_code((c>>16)&0xFF);
+      if((c>>16)!=p) {
+        if(o+(c>>24)>=0x1FFB) ParseError("Converted string too long\n");
+        memset(tokenstr+o,0xFE,x=(c>>24)+1);
+        o+=x;
+        tokenstr[o++]=c>>16;
+      }
+      tokenstr[o++]=c>>8; tokenstr[o++]=c;
+    }
+  }
+  tokenstr[o]=0;
+}
+#endif // CONFIG_OMIT_MBCS
+
 static void read_quoted_string(void) {
+  char y=0;
   int c,i,n;
   int isimg=0;
   for(i=0;i<0x1FFD;) {
@@ -245,15 +369,29 @@ static void read_quoted_string(void) {
           if(n<32) tokenstr[i++]=31;
           tokenstr[i++]=n?:255;
           break;
+#ifndef CONFIG_OMIT_MBCS
+        case 'T':
+          if(has_mbcs) {
+            y=1;
+            tokenstr[i++]=27;
+            break;
+          } // else fall through
+#endif
         default: ParseError("Invalid string escape: \\%c\n",c);
       }
     } else if(c=='"') {
       if(isimg) ParseError("Unterminated \\i escape in string literal\n");
       tokenstr[i]=0;
+#ifndef CONFIG_OMIT_MBCS
+      if(y) convert_euctron_to_tron8();
+#endif
       return;
     } else if(c!='\r') {
       tokenstr[i++]=c;
       if(c=='\n') ++linenum;
+#ifndef CONFIG_OMIT_MBCS
+      if((c&0x80) && has_mbcs) y=1;
+#endif
     }
   }
   ParseError("Too long string literal\n");
@@ -2744,6 +2882,7 @@ void load_classes(void) {
         case OP_CODEPAGE:
           nxttok();
           if(tokent!=TF_INT || tokenv<1 || tokenv>0x7FFFFF) ParseError("Number from 1 to 8388607 expected\n");
+          if(tokenv==460800 || tokenv==954) has_mbcs=1;
           set_code_page(tokenv);
           nxttok();
           if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");

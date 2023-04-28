@@ -47,6 +47,10 @@ CONFIG_NO_STATUS
 CONFIG_OMIT_INCLUDE
   If defined, then the {include} macro is not implemented.
 
+CONFIG_OMIT_MBCS
+  If defined, omit the capability of multibyte character encodings. (This
+  only affects displaying text, not the behaviour of the game.)
+
 CONFIG_OMIT_SOUND
   If defined, omit all sound capabilities (including music). (Even if it
   is not defined, it can still be disabled at runtime.)
@@ -102,10 +106,6 @@ CONFIG_OMIT_GUI
   If defined, omit the GUI. Autotest mode can still be used, and the
   batch import/export works if CONFIG_OMIT_EDITOR is not defined. Any
   other feature which does not require the GUI also can still be used.
-
-CONFIG_OMIT_MBCS
-  If defined, omit the capability of multibyte character encodings. (This
-  only affects displaying text, not the behaviour of the game.)
 
 CONFIG_OMIT_MUSIC
   If defined, omit background music playback capabilities. (Even if this
