@@ -2306,6 +2306,11 @@ the stack instead.
   Display a string. If the value is not a string, it will display it as
   whatever type it is.
 
+%T
+  Only valid if this puzzle set uses MBCS. This is like %c but uses all of
+  the bits to make a TRON-32 character code. If the code is less than 256
+  then this is the same as %c. (This is not fully implemented or tested.)
+
 %u
   Display a unsigned decimal number.
 

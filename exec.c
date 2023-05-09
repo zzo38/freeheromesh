@@ -2100,6 +2100,7 @@ static Value v_dot_product(Value a1,Value a2) {
 }
 
 static void v_set_popup(Uint32 from,int argc) {
+  unsigned char y='%';
   const unsigned char*t;
   const unsigned char*u;
   sqlite3_str*s;
@@ -2117,10 +2118,16 @@ static void v_set_popup(Uint32 from,int argc) {
     if(v.t!=TY_STRING && v.t!=TY_LEVELSTRING) Throw("Type mismatch");
     s=sqlite3_str_new(userdb);
     t=value_string_ptr(v);
+#ifndef CONFIG_OMIT_MBCS
+    if(has_mbcs && *t==0xFE) y=0x7F;
+#endif
     while(*t) {
-      if(u=strchr(t,'%')) {
+      if(u=strchr(t,y)) {
         sqlite3_str_append(s,t,u-t);
         t=u+2;
+#ifndef CONFIG_OMIT_MBCS
+        if(y==0x7F) sqlite3_str_appendchar(s,1,0xFF);
+#endif
         switch(u[1]) {
           case 0:
             t=u+1;
@@ -2129,6 +2136,7 @@ static void v_set_popup(Uint32 from,int argc) {
             if(argi==argc) break;
             v=vstack[vstackptr+argi++];
             if(v.t==TY_NUMBER) {
+              ascii:
               sqlite3_str_appendchar(s,1,31);
               sqlite3_str_appendchar(s,1,v.u&255?:255);
             }
@@ -2187,6 +2195,22 @@ static void v_set_popup(Uint32 from,int argc) {
                 break;
             }
             break;
+#ifndef CONFIG_OMIT_MBCS
+          case 'T':
+            if(argi==argc) break;
+            v=vstack[vstackptr+argi++];
+            if(v.t==TY_NUMBER) {
+              if(v.u<256) goto ascii;
+              if(((v.u>>16)&0xFF)<0x21 || ((v.u>>16)&0xFF)==0x7F || ((v.u>>16)&0xFF)>0xFD) break;
+              if(((v.u>>8)&0xFF)<0x21 || ((v.u>>8)&0xFF)==0x7F || ((v.u>>8)&0xFF)>0xFD) break;
+              if(((v.u>>0)&0xFF)<0x21 || ((v.u>>0)&0xFF)==0x7F || ((v.u>>0)&0xFF)>0xFD) break;
+              sqlite3_str_appendchar(s,((v.u)>>24)+1,0xFE);
+              sqlite3_str_appendchar(s,1,v.u>>16);
+              sqlite3_str_appendchar(s,1,v.u>>8);
+              sqlite3_str_appendchar(s,1,v.u>>0);
+            }
+            break;
+#endif
           case 'u':
             if(argi==argc) break;
             v=vstack[vstackptr+argi++];

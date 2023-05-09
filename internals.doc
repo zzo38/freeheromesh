@@ -132,12 +132,18 @@ The control codes for text formatting are:
 14 (\i) = Icon
 15 (\b) = Horizontal rule
 16 (\q) = Quiz button
-27 (\T) = Multibyte character escape; used only during parsing
 30 (\d) = Data
 31 (\x) = Next byte is a character to display as graphic
 
 Codes 32-255 are displayed as is, but characters 1-31 cannot be displayed
 as a graphic unless a \x escape is present.
+
+A few additional codes are only used in MBCS mode:
+
+27 (\T) = Multibyte character escape; used only during parsing
+127 = Internal representation of %
+254 = Plane shift
+255 = Switch to ASCII until the next plane shift (internal only)
 
 
 === User state data ===
