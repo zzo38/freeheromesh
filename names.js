@@ -33,6 +33,7 @@ const standard_message_names=`
  26 = NEXTWARP
  27 = CLICK
  28 = XCREATE
+ 29 = WARPED
 `.split("\n").map(x=>/^ *([0-9]+) = ([^ ]*) *$/.exec(x)).filter(x=>x);
 const standard_sound_names=[];
 `

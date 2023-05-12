@@ -777,6 +777,7 @@ static const Op_Names op_names[]={
 {"VolumeAt",8421602},
 {"W",9437188},
 {"WAHOO",8389399},
+{"WARPED",8389149},
 {"WHACK",8389422},
 {"Walkable",8487139},
 {"Weight",9142355},
@@ -892,5 +893,5 @@ static const Op_Names op_names[]={
 {"until",8683534},
 {"while",8683535},
 };
-#define N_OP_NAMES 373
+#define N_OP_NAMES 374
 #endif

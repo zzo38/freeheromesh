@@ -1638,7 +1638,14 @@ static int move_dir(Uint32 from,Uint32 obj,Uint32 dir) {
     if(v.t || v.u) goto warp;
   }
   o->inertia=0; return 0;
-  success: if(!(hit&0x4000)) o->oflags|=OF_MOVED; if(hit&0x10000000) o->dir=dir; return 1;
+  success:
+  if(!(hit&0x4000)) o->oflags|=OF_MOVED;
+  if(hit&0x10000000) {
+    o->dir=dir;
+    v=send_message(objW,obj,MSG_WARPED,NVALUE(0),NVALUE(0),NVALUE(hit));
+    if(v_bool(v)) return 0;
+  }
+  return 1;
 }
 
 static int jump_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {

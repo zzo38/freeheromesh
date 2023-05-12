@@ -46,7 +46,7 @@ typedef struct {
 #define ValueTo64(v) (((sqlite3_int64)((v).u))|(((sqlite3_int64)((v).t))<<32))
 #define ValueEq(x,y) ((x).t==(y).t && (x).u==(y).u)
 
-#define N_MESSAGES 29
+#define N_MESSAGES 30
 #define N_STANDARD_SOUNDS 49
 extern const char*const standard_message_names[];
 extern const char*const standard_sound_names[];

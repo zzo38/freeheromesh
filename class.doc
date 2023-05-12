@@ -725,6 +725,7 @@ Standard messages:
   PLAYERMOVING
   POSTINIT
   SUNK
+  WARPED
   XCREATE
 
 Input constants:
@@ -2608,6 +2609,12 @@ SUNK
   is the return value of the corresponding CREATE message; for movement,
   Arg3 is always zero. (This has nothing to do with sinking in water.)
 
+WARPED
+  Sent to an object that has been moved by a warp. From is the warp
+  object, Self is the object that has just been moved, and Arg3 is the hit
+  value. If the return value is true, then whatever tried to move it
+  believes that the move failed.
+
 XCREATE
   This message is received by an object which has been just created due to
   a COLLIDEBY message returning a class. From is the object at the target
@@ -2759,7 +2766,8 @@ bit28 *
   This bit is set by the game engine if a warp has occurred. See the below
   description of warping. You can also set this bit by yourself, and it
   persists across restarts. If this bit is set, the moving object's
-  direction is updated after the movement if it is successful.
+  direction is updated after the movement if it is successful; this will
+  also allow the NEXTWARP and WARPED messages to be sent.
 
 bit29 *
   Reserved for future.

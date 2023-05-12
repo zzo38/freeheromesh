@@ -28,6 +28,7 @@
 #define MSG_NEXTWARP 26
 #define MSG_CLICK 27
 #define MSG_XCREATE 28
+#define MSG_WARPED 29
 #ifdef HEROMESH_MAIN
 const char*const standard_message_names[]={
  "INIT",
@@ -59,6 +60,7 @@ const char*const standard_message_names[]={
  "NEXTWARP",
  "CLICK",
  "XCREATE",
+ "WARPED",
 };
 const char*const standard_sound_names[]={
  "SPLASH",
