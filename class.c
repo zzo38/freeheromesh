@@ -323,7 +323,7 @@ static void convert_euctron_to_tron8(void) {
         if(o+(c>>24)>=0x1FFB) ParseError("Converted string too long\n");
         memset(tokenstr+o,0xFE,x=(c>>24)+1);
         o+=x;
-        tokenstr[o++]=c>>16;
+        tokenstr[o++]=p=c>>16;
       }
       tokenstr[o++]=c>>8; tokenstr[o++]=c;
     }
@@ -2882,7 +2882,9 @@ void load_classes(void) {
         case OP_CODEPAGE:
           nxttok();
           if(tokent!=TF_INT || tokenv<1 || tokenv>0x7FFFFF) ParseError("Number from 1 to 8388607 expected\n");
+#ifndef CONFIG_OMIT_MBCS
           if(tokenv==460800 || tokenv==954) has_mbcs=1;
+#endif
           set_code_page(tokenv);
           nxttok();
           if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
