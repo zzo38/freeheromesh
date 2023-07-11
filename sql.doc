@@ -65,6 +65,10 @@ CVALUE(number)
   Makes a game value of type 'class', given the class number. You can also
   specify the class name instead of the number.
 
+GAMEOVER()
+  Returns +1 if you win, -1 if you lose, or 0 otherwise. This value is not
+  meaningful in the editor.
+
 HASH(data,algorithm)
   Make the hash of the data as a binary blob. See hash.h for a list of the
   valid numbers to use as the hash algorithm numbers.
@@ -93,11 +97,17 @@ LEVEL()
 LEVEL_CACHEID()
   The user cache ID of the level file.
 
+LEVEL_CODE()
+  The level code number of the current level.
+
 LEVEL_ID()
   The ID number of the current level.
 
 LEVEL_TITLE()
   The title of the current level, as a blob.
+
+LEVEL_VERSION()
+  The version number of the current level.
 
 LOAD_LEVEL(level_id)
   Only valid when Free Hero Mesh is invoked with the -x switch. Loads

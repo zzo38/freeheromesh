@@ -166,6 +166,10 @@ static void fn_cvalue(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   found: sqlite3_result_int64(cxt,a|((sqlite3_int64)TY_CLASS<<32));
 }
 
+static void fn_gameover(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
+  sqlite3_result_int(cxt,gameover);
+}
+
 static void fn_hash(sqlite3_context*cxt,int argc,sqlite3_value**argv) {
   const unsigned char*u=sqlite3_value_blob(*argv);
   int n=sqlite3_value_bytes(*argv);
@@ -1796,6 +1800,7 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"CL",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_cl,0,0);
   sqlite3_create_function(userdb,"CLASS_DATA",2,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_class_data,0,0);
   sqlite3_create_function(userdb,"CVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_cvalue,0,0);
+  sqlite3_create_function(userdb,"GAMEOVER",0,SQLITE_UTF8,0,fn_gameover,0,0);
   sqlite3_create_function(userdb,"HASH",2,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_hash,0,0);
   sqlite3_create_function(userdb,"HAS_XY_INPUT",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_has_xy_input,0,0);
   sqlite3_create_function(userdb,"HEROMESH_ESCAPE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_heromesh_escape,0,0);
@@ -1804,8 +1809,10 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"INRECT",2,SQLITE_UTF8,0,fn_inrect,0,0);
   sqlite3_create_function(userdb,"LEVEL",0,SQLITE_UTF8,&level_ord,fn_level,0,0);
   sqlite3_create_function(userdb,"LEVEL_CACHEID",0,SQLITE_UTF8|SQLITE_DETERMINISTIC,ptr0,fn_cacheid,0,0);
+  sqlite3_create_function(userdb,"LEVEL_CODE",0,SQLITE_UTF8,&level_code,fn_level,0,0);
   sqlite3_create_function(userdb,"LEVEL_ID",0,SQLITE_UTF8,&level_id,fn_level,0,0);
   sqlite3_create_function(userdb,"LEVEL_TITLE",0,SQLITE_UTF8,0,fn_level_title,0,0);
+  sqlite3_create_function(userdb,"LEVEL_VERSION",0,SQLITE_UTF8,&level_version,fn_level,0,0);
   sqlite3_create_function(userdb,"LOAD_LEVEL",1,SQLITE_UTF8,0,fn_load_level,0,0);
   sqlite3_create_function(userdb,"MAX_LEVEL",0,SQLITE_UTF8,0,fn_max_level,0,0);
   sqlite3_create_function(userdb,"MODSTATE",0,SQLITE_UTF8,0,fn_modstate,0,0);
