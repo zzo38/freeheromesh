@@ -51,6 +51,7 @@ typedef struct {
 extern const char*const standard_message_names[];
 extern const char*const standard_sound_names[];
 extern const char*const heromesh_key_names[256];
+extern const char jispunct[];
 
 extern sqlite3*userdb;
 extern xrm_db*resourcedb;
@@ -91,6 +92,8 @@ void write_lump(int sol,int lvl,long sz,const unsigned char*data);
 void write_userstate(int sol,int lvl,long sz,const unsigned char*data);
 const char*load_level(int lvl);
 void set_cursor(int id);
+Uint32*tron8to32(const Uint8*);
+Uint8*tron32to8(const Uint32*);
 const char*log_if_error(const char*t);
 
 #define FIL_SOLUTION 1

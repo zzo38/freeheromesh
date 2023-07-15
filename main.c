@@ -47,6 +47,15 @@ static const char schema[]=
   "COMMIT;"
 ;
 
+const char jispunct[0x60]=
+  "  ,.,. :;?!  '` "
+  "^~_         ---/"
+  "\\~||  ''\"\"()  []"
+  "{}<>        +-  "
+  " = <>       '\" \\"
+  "$ #%#&*@        "
+;
+
 sqlite3*userdb;
 xrm_db*resourcedb;
 const char*basefilename;
@@ -767,6 +776,148 @@ void set_cursor(int id) {
   SDL_SetCursor(cursor[id]);
 }
 
+Uint32*tron8to32(const Uint8*si) {
+  // This function does not interpret the internal-only 0xFF code, which will be implemented in picture.c instead.
+  Uint16 cs=0;
+  int n=0;
+  Uint32*so=0;
+  int k=0;
+  if(*si==0xFE) {
+    // TRON
+    for(k=0;si[k];k++) {
+      if(si[k]==31 && si[k+1]) {
+        n+=2;
+        k++;
+      } else if(si[k]==14 || si[k]==30) {
+        while(si[k] && si[k]!='\\') {
+          n+=2;
+          k++;
+        }
+        n+=2;
+      } else if(si[k]==0xFE) {
+        n--;
+        while(si[k+1]==0xFE) k++;
+      } else {
+        n++;
+        if(si[k]<=0x20) n++;
+      }
+    }
+    so=calloc(sizeof(Uint32),(n>>=1)+2);
+    if(!so) fatal("Allocation failed\n");
+    n++; k=0;
+    while(*si && k<n) {
+      if(*si==0xFE) {
+        cs=-0x100;
+        while(*si==0xFE) cs+=0x100,si++;
+        if(*si) cs|=*si++;
+      } else if((*si==16 || *si==31 || *si==127) && si[1]) {
+        so[k++]=(si[0]<<8)|si[1];
+        si+=2;
+      } else if(*si==14 || *si==30) {
+        while(*si && *si!='\\' && *si!=0xFE) so[k++]=*si++;
+        if(*si=='\\') so[k++]=*si++;
+      } else if(*si<=0x20) {
+        so[k++]=*si++;
+      } else if(*si<0xFE && si[1]<0xFE && si[1]>0x20) {
+        so[k++]=(si[0]<<8)|si[1]|(cs<<16);
+        si+=2;
+      } else {
+        si++;
+      }
+    }
+  } else {
+    // ASCII
+    so=calloc(sizeof(Uint32),(n=strlen(si))+1);
+    if(!so) fatal("Allocation failed\n");
+    while(*si) {
+      if(*si==16 || *si==31 || *si==127) {
+        if(!si[1]) break;
+        so[k++]=(si[0]<<8)|si[1];
+        si+=2;
+      } else {
+        so[k++]=*si++;
+      }
+    }
+  }
+  return so;
+}
+
+Uint8*tron32to8(const Uint32*si) {
+  Uint16 cs=0;
+  int i;
+  Uint8*so=0;
+  size_t sz=0;
+  FILE*f=open_memstream((char**)&so,&sz);
+  if(!f) fatal("Allocation failed\n");
+  for(i=0;si[i];i++) if(si[i]>0x200000) goto nonascii;
+  while(*si) {
+    if(*si<0x7F) {
+      fputc(*si++,f);
+    } else if(*si>=0x1000 && *si<=0x10FF) {
+      fputc(16,f);
+      fputc((*si++&0xFF)?:0x20,f);
+    } else if(*si>=0x1F00 && *si<=0x1FFF) {
+      fputc(31,f);
+      fputc((*si++&0xFF)?:0xFF,f);
+    } else if(*si>=0x7F20 && *si<0x7F7F) {
+      fputc('%',f);
+      fputc(*si++&0xFF,f);
+    }
+  }
+  nonascii:
+  while(*si) {
+    if(*si>0x200000) {
+      if(cs!=(*si>>16)) {
+        cs=*si>>16;
+        for(i=cs>>8;i>=0;i--) fputc(0xFE,f);
+        fputc(cs,f);
+      }
+      fputc(*si>>8,f);
+      fputc(*si++,f);
+    } else if(*si<0x21) {
+      fputc(i=*si++,f);
+      if(i==14 || i==30) while(*si) {
+        if(*si=='\\') {
+          fputc(*si++,f);
+          break;
+        } else if(*si<0xFE || (*si>=0x702221 && *si<0x70227F) || (*si>=0x212330 && *si<0x21237B)) {
+          fputc(*si++,f);
+        } else if(*si>=0x212121 && *si<0x21217F) {
+          fputc(jispunct[*si++-0x212120],f);
+        } else if(*si<0xFE) {
+          fputc(*si++,f);
+        } else {
+          fputc(' ',f);
+          si++;
+        }
+      }
+    } else if(*si<0x7F) {
+      if(cs!=0x70) {
+        cs=0x70;
+        fputc(0xFE,f);
+        fputc(0x70,f);
+      }
+      fputc(0x22,f);
+      fputc(*si++,f);
+    } else if(*si>=0x1000 && *si<=0x10FF) {
+      fputc(16,f);
+      fputc(*si++?:0x20,f);
+    } else if(*si>=0x1F00 && *si<=0x1FFF) {
+      fputc(31,f);
+      fputc(*si++?:0xFF,f);
+    } else if(*si>=0x7F20 && *si<0x7F7F) {
+      fputc(127,f);
+      fputc(*si++,f);
+    } else {
+      si++;
+    }
+  }
+  fputc(0,f);
+  fclose(f);
+  if(!so) fatal("Allocation failed\n");
+  return so;
+}
+
 static void set_path(const char*arg) {
   const char*s;
   if(main_options['h']) goto home;
@@ -854,18 +1005,23 @@ static void test_mode(void) {
       switch(ev.key.keysym.sym) {
         case SDLK_BACKSPACE:
           n/=10;
-          snprintf(buf,30,"%u",n);
-          SDL_WM_SetCaption(buf,buf);
-          break;
+          goto setnum;
         case SDLK_SPACE:
           n=0;
           SDL_WM_SetCaption("0","0");
           break;
         case SDLK_0 ... SDLK_9:
           n=10*n+ev.key.keysym.sym-SDLK_0;
+        setnum:
           snprintf(buf,30,"%u",n);
           SDL_WM_SetCaption(buf,buf);
           break;
+        case SDLK_KP_MINUS:
+          if(n) n--;
+          goto setnum;
+        case SDLK_KP_PLUS:
+          n++;
+          goto setnum;
         case SDLK_c:
           SDL_FillRect(screen,0,n);
           SDL_Flip(screen);
@@ -884,6 +1040,20 @@ static void test_mode(void) {
             draw_picture(picture_size*i,picture_size*j,n++);
           }
           SDL_Flip(screen);
+          break;
+        case SDLK_o:
+          if(n<0x4000 && classes[n] && classes[n]->gamehelp) {
+            Uint32*a=tron8to32(classes[n]->gamehelp);
+            Uint8*b=tron32to8(a);
+            for(i=0;classes[n]->gamehelp[i];i++) printf("%02X ",classes[n]->gamehelp[i]&0xFF);
+            puts(";");
+            for(i=0;a[i];i++) printf("%08X ",a[i]);
+            puts(";");
+            for(i=0;b[i];i++) printf("%02X ",b[i]);
+            puts(".");
+            free(a);
+            free(b);
+          }
           break;
         case SDLK_p:
           sqlite3_exec(userdb,"SELECT * FROM `PICTURES`;",test_sql_callback,0,0);
@@ -1143,6 +1313,7 @@ int main(int argc,char**argv) {
   if(main_options['T']) {
     printf("argv[0] = %s\n",argv[0]);
     init_sound();
+    if(main_options['+']) load_classes();
     test_mode();
     return 0;
   }

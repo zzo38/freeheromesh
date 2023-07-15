@@ -1,6 +1,7 @@
 * Sound effects
   * Compressed wave sounds (?)
   * Numeric sounds (?)
+  * Band limited synthesis
 * Game engine features
   * String data (partially implemented)
   * A ,PopUp command to use a popup with arguments starting from a mark

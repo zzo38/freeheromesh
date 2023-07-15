@@ -145,6 +145,24 @@ A few additional codes are only used in MBCS mode:
 254 = Plane shift
 255 = Switch to ASCII until the next plane shift (internal only)
 
+Internally a variant of TRON-32 may be used during text editing (N.B.: this
+feature is not implemented yet). In addition to TRON-32 characters, it also
+uses the following codes:
+
+* Control codes, with the same values and meanings listed above except 16,
+27, 31, 254, and 255.
+
+* ASCII codes 0x20 to 0x7E. (These may sometimes be converted to/from the
+corresponding TRON characters, but are usually used within the text of a
+\i or \d escape, and as the terminator.)
+
+* Codes 0x1000 to 0x10FF for quiz buttons.
+
+* Codes 0x1F00 to 0x1FFF for graphic characters.
+
+* Codes 0x7F20 to 0x7F7E for substitution codes (which converts to the
+internal variant of TRON-8 as 127 and then the ASCII character).
+
 
 === User state data ===
 

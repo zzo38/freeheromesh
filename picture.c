@@ -990,11 +990,13 @@ void set_code_page(Uint32 n) {
   v=xrm_get_resource(resourcedb,optionquery,optionquery,2);
   if(!v || !*v) {
     if(n==437 || ignore_code_page()) return;
+    if(main_options['T']) goto done;
     fatal("Cannot load code page %d; code page file is not configured\n",n);
   }
   fp=fopen(v,"r");
   if(!fp) {
     perror(0);
+    if(main_options['T']) goto done;
     fatal("Cannot open code page file\n");
   }
   fontdata=d=malloc(0x800);
@@ -1005,6 +1007,7 @@ void set_code_page(Uint32 n) {
   for(;;) {
     c=fgetc(fp);
     if(c<0) {
+      if(main_options['T']) goto done;
       if(n!=437 && !ignore_code_page()) fatal("Cannot find code page %d\n",n);
       goto done;
     }
