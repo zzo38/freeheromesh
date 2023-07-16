@@ -782,7 +782,7 @@ Uint32*tron8to32(const Uint8*si) {
   int n=0;
   Uint32*so=0;
   int k=0;
-  if(*si==0xFE) {
+  if(has_mbcs && *si==0xFE) {
     // TRON
     for(k=0;si[k];k++) {
       if(si[k]==31 && si[k+1]) {
