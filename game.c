@@ -1367,6 +1367,8 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       return 0;
     case 'rs': // Replay speed
       number+=replay_speed;
+      // fall through
+    case 'rS': // Replay speed (absolute)
       if(number<1) number=1; else if(number>255) number=255;
       replay_speed=number;
       return prev;
