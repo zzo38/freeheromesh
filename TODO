@@ -66,3 +66,4 @@
   * Puzzle Boy
   * Pitman/Catrap
 * Improve build system
+  * Use C instead of JavaScript for auto-generated files

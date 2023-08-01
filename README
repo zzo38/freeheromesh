@@ -248,11 +248,10 @@ are available at:
 
   https://logs.esolangs.org/libera-freeheromesh/
 
-There is also a Matrix chat, which is linked with the IRC. It is:
-
-  https://matrix.to/#/#freeheromesh:libera.chat
-
-(Note: I have not tried the Matrix chat and I do not know if it works.)
+(There was previously a Matrix chat as well, but Libera has removed the
+Matrix chat for now. If someone else who uses Matrix sets up a plumbed
+Matrix chat to connect to the IRC (please contact me for details), then
+I will mention that here.)
 
 
 === License ===

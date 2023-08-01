@@ -88,9 +88,8 @@ when dealing with non-English text.)
 === Bug reports ===
 
 To make a bug report, the recommended way is to post a message on the NNTP,
-but you may also use IRC, Matrix, or the GitHub issues. Before posting a
-bug report, read the following list and provide as much of these things as
-is possible:
+but you may also use IRC or the GitHub issues. Before posting a bug report,
+read the following list and provide as much of these things as is possible:
 
 * Check if the bug has already been reported/known. (If you have further
 comments about an existing report, you can post a follow-up message.)
@@ -134,9 +133,8 @@ as you can, and omit whatever you cannot do.)
 === Feature requests ===
 
 To make a feature request, the recommended way is to post a message on the
-NNTP, but you may also use IRC, Matrix, or the GitHub issues. Before
-posting, read the following, and provide as much of the following as
-is possible:
+NNTP, but you may also use IRC or the GitHub issues. Before posting, read
+the following, and provide as much of the following as is possible:
 
 * Check if there is already a similar request. (If you have further
 comments about an existing report, you can post a follow-up message.)
