@@ -2237,6 +2237,10 @@ or <body> then  ( any -- any )
   Takes a value from the stack. If it is true, leaves it there and skips the
   body, otherwise removes it and executes the body.
 
+Any of the keywords "if", "while", and "until" in the above constructions
+can optionally have a comma prefix; if they do, then the value remains on
+the top of the stack if it is true, and is only popped if it is zero.
+
 
 === Case blocks ===
 

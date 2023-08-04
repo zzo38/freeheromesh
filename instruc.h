@@ -16,12 +16,15 @@
 #define OP_PICK 32775
 #define OP_OVER 32776
 #define OP_IF 32777
+#define OP_IF_C 34825
 #define OP_ELSE 32778
 #define OP_THEN 32779
 #define OP_BEGIN 32780
 #define OP_AGAIN 32781
 #define OP_UNTIL 32782
+#define OP_UNTIL_C 34830
 #define OP_WHILE 32783
+#define OP_WHILE_C 34831
 #define OP_REPEAT 32784
 #define OP_FOR 32785
 #define OP_NEXT 32786
@@ -850,7 +853,7 @@ static const Op_Names op_names[]={
 {"fork",8683547},
 {"ge",8486968},
 {"gt",8486966},
-{"if",8683529},
+{"if",8749065},
 {"in",8421612},
 {"is",8421434},
 {"land",8421423},
@@ -890,8 +893,8 @@ static const Op_Names op_names[]={
 {"tmark",8421611},
 {"tuck",8421380},
 {"uniq",8421618},
-{"until",8683534},
-{"while",8683535},
+{"until",8749070},
+{"while",8749071},
 };
 #define N_OP_NAMES 374
 #endif

@@ -78,13 +78,13 @@ pick
 over
 
 ; Flow controls
--if
+-,if
 -else
 -then
 -begin
 -again
--until
--while
+-,until
+-,while
 -repeat
 -for
 -next

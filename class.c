@@ -1635,7 +1635,7 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
             labelstack=s;
           }
           break;
-        case OP_IF: case OP_OR: case OP_AND: case OP_FORK:
+        case OP_IF: case OP_IF_C: case OP_OR: case OP_AND: case OP_FORK:
           AddInst(tokenv);
           FlowPush(OP_IF);
           peep=++ptr;
@@ -1663,8 +1663,17 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
           FlowPop(OP_BEGIN);
           AddInst2(OP_IF,flowptr[flowdepth]);
           break;
+        case OP_UNTIL_C:
+          FlowPop(OP_BEGIN);
+          AddInst2(OP_IF_C,flowptr[flowdepth]);
+          break;
         case OP_WHILE:
           AddInst(OP_IF);
+          FlowPush(OP_WHILE);
+          peep=++ptr;
+          break;
+        case OP_WHILE_C:
+          AddInst(OP_IF_C);
           FlowPush(OP_WHILE);
           peep=++ptr;
           break;

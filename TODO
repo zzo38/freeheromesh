@@ -8,6 +8,8 @@
   * Possibility to define auto-generation levels mode
   * Popup inventory list (with optional possibility of choice) (?)
   * Playfield array
+  * Replacement patterns
+  * MID_TURN message / custom trigger phase
 * Editor
   * Mouse dragging
 * Deal better with allowing to skip past corrupted levels
@@ -34,8 +36,8 @@
   * Allow multiple SQL statements in one binding
 * Fonts/text
   * More code pages
-  * Large fonts (possibly: width 8 or 16, height 8-32)
-  * Multibyte encodings (e.g. EUC-JP)
+  * Large fonts
+  * Multibyte encodings (TRON code)
 * Branching replay recording
 * Slow movement displaying state between triggers
 * Warning if file changed when uncommited data exists in the cache database
@@ -43,8 +45,12 @@
 * Composite puzzle set format (implemented)
   * Optional hypertext help
   * Compressed class definitions (?)
-* Option to auto display level titles
-* Option to use a separate solution file
+* User interface options
+  * Auto display level titles
+  * Separate solution file
+  * Start on level select screen
+  * Start on most recently accessed level
+  * Start on first unsolved level
 * Multiuser scoring within one computer system (optional capability)
 * Launcher menu (optional; separate program)
 * Implement the (obsolete?) ImageSeq and ImageLoop commands (used in DESERT3)

@@ -3347,6 +3347,7 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_HEIGHTAT: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(height_at(t1.u,t2.u))); break;
     case OP_HITME: NoIgnore(); StackReq(1,1); t1=Pop(); Numeric(t1); i=v_hitme(obj,t1.u); break;
     case OP_IF: StackReq(1,0); if(v_bool(Pop())) ptr++; else ptr=code[ptr]; break;
+    case OP_IF_C: StackReq(1,1); t1=Pop(); if(v_bool(t1)) { ptr++; Push(t1); } else ptr=code[ptr]; break;
     case OP_IGNOREKEY: if(current_key) key_ignored=all_flushed=1; break;
     case OP_IMAGE: StackReq(0,1); Push(NVALUE(o->image)); break;
     case OP_IMAGE_C: StackReq(1,1); Push(GetVariableOf(image,NVALUE)); break;
