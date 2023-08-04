@@ -2477,6 +2477,7 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
   Uint8 x=objects[obj]->x;
   Uint8 y=objects[obj]->y;
   Uint8 d=objects[obj]->dir;
+  Uint32 un=VOIDLINK;
   Uint32 n=VOIDLINK;
   Uint32 m;
   Uint16 g;
@@ -2601,6 +2602,13 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
       changed=1;
       objects[n]->dir=d;
       break;
+    case OP_DIV:
+      un=(n==VOIDLINK?obj_bottom_at(x,y):n);
+      if(un==VOIDLINK) un=obj;
+      break;
+    case OP_DIV_C:
+      un=VOIDLINK;
+      break;
     case OP_ELSE:
       ptr--;
       while(code[ptr]==OP_ELSE) ptr=code[ptr+2];
@@ -2712,8 +2720,10 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
         if(n==VOIDLINK) n=obj_bottom_at(x,y);
         Push(OVALUE(n));
         goto fail;
-      } else {
+      } else if(un==VOIDLINK) {
         return n==VOIDLINK?obj_bottom_at(x,y):n;
+      } else {
+        return VOIDLINK;
       }
       break;
     case OP_ROOK:
@@ -2752,7 +2762,7 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
     if(vstackptr<cp->depth) Throw("Stack underflow in pattern matching");
     vstackptr=cp[cpi].depth;
   }
-  if(!cpi) return VOIDLINK;
+  if(!cpi) return un;
   x=cp[cpi].x;
   y=cp[cpi].y;
   d=cp[cpi].dir;

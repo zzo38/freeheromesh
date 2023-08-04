@@ -1352,7 +1352,7 @@ static int parse_pattern(int cla,int ptr,Hash*hash) {
         case OP_DIR: case OP_DIR_C: case OP_DIR_E: case OP_DIR_EC:
         case OP_OBJTOPAT: case OP_OBJBOTTOMAT: case OP_CUT: case OP_MUL:
         case OP_OBJABOVE: case OP_OBJBELOW: case OP_TRACE: case OP_NEXT:
-        case OP_IMAGE: case OP_IMAGE_C:
+        case OP_IMAGE: case OP_IMAGE_C: case OP_DIV: case OP_DIV_C:
         case 0x0200 ... 0x02FF: // message
         case 0x4000 ... 0x7FFF: // class
         case 0xC000 ... 0xFFFF: // message

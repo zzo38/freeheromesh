@@ -2860,6 +2860,17 @@ with P* or ,P* or =P*):
 *
   Update the current choice point with the location and direction.
 
+/
+  Succeeds only if the pattern prior to this command succeeds but the
+  pattern after this command (which still has the same state as the
+  prior pattern) fails. This should not be used inside of loops and
+  should not be used in a (P*) or (,P*) or (=P*) block. If this command
+  occurs more than once, then the most recent / that is successfully
+  matched determines the return value if the final match fails.
+
+,/
+  Undoes the effect of the / command.
+
 _
   Push a mark to the stack.
 
