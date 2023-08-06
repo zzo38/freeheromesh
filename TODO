@@ -25,7 +25,6 @@
 * Message trace menu to enable/disable
 * Bugs
   * Figure out why the $SeekerCloser class doesn't seem to work properly
-  * Level 232 of SUPERHRO puzzle set (the Lava shouldn't expand? why?)
   * Animation stopping unexpectedly (until a key is pushed)
   * ObjLF.Volume+ObjRF.Volume+obj.Volume if ObjLF and/or ObjRF doesn't exist?
 * Display solution comments/timestamp

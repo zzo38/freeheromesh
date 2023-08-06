@@ -1654,6 +1654,10 @@ static int jump_to(Uint32 from,Uint32 n,Uint32 x,Uint32 y) {
   xx=objects[n]->x;
   yy=objects[n]->y;
   if(!move_to(from,n,x,y)) return 0;
+  if(classes[objects[n]->class]->cflags&CF_COMPATIBLE) {
+    objects[n]->arrived2=objects[n]->departed2=0;
+    objects[n]->oflags&=~OF_MOVED2;
+  }
   send_message(VOIDLINK,n,MSG_JUMPED,NVALUE(xx),NVALUE(yy),OVALUE(from));
   return 1;
 }

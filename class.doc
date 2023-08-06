@@ -3030,6 +3030,9 @@ that Inertia is not reset.
 
 * Diagonal shoving is not possible.
 
+* The JumpTo instruction has an additional effect that rarely matters,
+having to do with the timing of ARRIVED, DEPARTED, and MOVED messages.
+
 
 === Level table definition ===
 
