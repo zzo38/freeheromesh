@@ -2939,6 +2939,28 @@ static void v_trigger_at(Uint32 from,Uint32 x,Uint32 y,Value v) {
   }
 }
 
+static Uint32 cancel_triggers(Uint32 obj) {
+  Object*o=objects[obj];
+  Uint8 r=0;
+  if(o->oflags&(OF_MOVED|OF_MOVED2)) r|=0x01,o->oflags&=~(OF_MOVED|OF_MOVED2);
+  if(o->departed2 || o->departed) r|=0x02,o->departed2=o->departed=0;
+  if(o->arrived2 || o->arrived) r|=0x04,o->arrived2=o->arrived=0;
+  return r;
+}
+
+static void defer_triggers(Uint32 obj) {
+  Object*o=objects[obj];
+  if(classes[o->class]->cflags&CF_COMPATIBLE) {
+    o->arrived2=o->departed2=1;
+    o->oflags|=OF_MOVED2;
+  } else {
+    o->arrived|=o->arrived2;
+    o->departed|=o->departed2;
+    o->arrived2=o->departed2=0;
+    if(o->oflags&OF_MOVED2) o->oflags=(o->oflags|OF_MOVED)&~OF_MOVED2;
+  }
+}
+
 static void v_sweep(Uint32 from,Value arg3) {
   Value arg2=Pop();
   Value arg1=Pop();
@@ -3234,6 +3256,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_BUSY_EC: NoIgnore(); StackReq(2,0); SetFlagOf(OF_BUSY); break;
     case OP_BXOR: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u^t2.u)); break;
     case OP_CALLSUB: execute_program(code,code[ptr++],obj); break;
+    case OP_CANCELTRIGGERS: NoIgnore(); StackReq(0,1); i=cancel_triggers(obj); Push(NVALUE(i)); break;
+    case OP_CANCELTRIGGERS_C: NoIgnore(); StackReq(1,1); i=v_object(Pop()); if(i!=VOIDLINK) i=cancel_triggers(i); Push(NVALUE(i)); break;
     case OP_CASE: StackReq(1,1); t1=Pop(); ptr=v_case(code,ptr,t1); break;
     case OP_CHAIN: StackReq(1,1); t1=Pop(); i=v_chain(t1,o->class); if(i==VOIDLINK) { Push(NVALUE(1)); } else { o=objects[obj=i]; Push(NVALUE(0)); } break;
     case OP_CHEBYSHEV: StackReq(1,1); t1=Pop(); i=chebyshev(obj,v_object(t1)); Push(NVALUE(i)); break;
@@ -3269,6 +3293,8 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_CRUSH_E: NoIgnore(); StackReq(1,0); if(v_bool(Pop())) o->oflags|=OF_CRUSH; else o->oflags&=~OF_CRUSH; break;
     case OP_CRUSH_EC: NoIgnore(); StackReq(2,0); SetFlagOf(OF_CRUSH); break;
     case OP_DATA: StackReq(2,1); t2=Pop(); t1=Pop(); v_data(t1,t2); break;
+    case OP_DEFERTRIGGERS: NoIgnore(); defer_triggers(obj); break;
+    case OP_DEFERTRIGGERS_C: NoIgnore(); StackReq(1,0); i=v_object(Pop()); if(i!=VOIDLINK) defer_triggers(i); break;
     case OP_DELINVENTORY: StackReq(2,0); t2=Pop(); t1=Pop(); v_delete_inventory(t1,t2); break;
     case OP_DELTA: StackReq(2,1); t2=Pop(); Numeric(t2); t1=Pop(); Numeric(t1); Push(NVALUE(t1.u>t2.u?t1.u-t2.u:t2.u-t1.u)); break;
     case OP_DENSITY: StackReq(0,1); Push(NVALUE(o->density)); break;

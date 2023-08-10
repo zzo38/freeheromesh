@@ -241,12 +241,14 @@ BroadcastList ; Broadcast, pushing results to stack
 BroadcastListEx
 BroadcastSum ; Broadcast, but result is sum of return values
 BroadcastSumEx
+,CancelTriggers
 chain
 ,Chebyshev
 ,Coloc
 ,Connect
 .Create
 Data
+,DeferTriggers
 DelInventory
 Delta
 .,Destroy

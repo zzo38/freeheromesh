@@ -1408,6 +1408,14 @@ c?  ( any -- bool )
   True if the value is a class, or false if it is any other type. Error if
   it is a sound.
 
+CancelTriggers  ( -- bits ) **
+  Cancel all triggers for this object, including Moved, Departed, and
+  Arrived. The return value has bit0 set for Moved, bit1 set for Departed,
+  and bit2 set for Arrived, according to which triggers have been pending.
+
+,CancelTriggers  ( obj -- bits ) **
+  Like CancelTriggers but for a specified object instead of this one.
+
 (case <cases...>)  ( any -- ??? )
   A case block. Read one value from stack; find which case it matches, and
   then push or jump to the result for that case. See the section below
@@ -1482,6 +1490,17 @@ Data  ( string index -- ... )
   is pushed to the stack. If there isn't enough data blocks, then nothing
   will be pushed to the stack. If the index is the KEY message, then all
   of the key codes of the quiz buttons in the string are push to stack.
+
+DeferTriggers  ( -- ) **
+  Any triggers that would be executed during the current loop of triggers
+  is deferred until the next such loop; the Arrived, Departed, and Moved
+  variables are updated with the triggers that would have been done so
+  that they will be set to be executed during the next trigger loop. If
+  the Compatible flag is set then the meaning is a bit different and the
+  Arrived, Departed, and Moved variables are unchanged.
+
+,DeferTriggers  ( obj -- ) **
+  Like DeferTriggers but for a specified object instead of this one.
 
 DelInventory  ( class image -- ) **
   Delete an item from the inventory; see SetInventory for more details.
