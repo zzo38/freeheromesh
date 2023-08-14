@@ -164,6 +164,8 @@ tables that are available. This is not relevant to programming the rules
 of the game; it is used for user customization, and for performing batch
 operations when editing, and for producing reports.
 
+* tutorial.doc: Tutorial documentation.
+
 
 === Other files ===
 

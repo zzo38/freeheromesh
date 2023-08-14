@@ -1,0 +1,78 @@
+This document is a tutorial of the use of Free Hero Mesh.
+
+(NOTE: This tutorial is incomplete.)
+
+
+=== Installation ===
+
+1. Compile it (if it is not already compiled). See README file for details
+about compilation. I will assume it called "heromesh" and is in the PATH.
+
+2. Copy "default.heromeshrc" into a file in the home directory called
+".heromeshrc" (if in portable mode, instead put it in the same directory
+as the executable file and call it "current.heromeshrc".
+
+3. (Optional) Customize the configuration file. (This document assumes
+the default key/mouse bindings, but you may customize them if desired.)
+This file is a plain text file and can be edited in any text editor; see
+config.doc and bindings.doc for details about the configuration file.
+
+4. Make up puzzle set (using the instructions below).
+
+5. You can edit and test levels, classes, etc.
+
+6. You can publish the composite puzzle set file if desired.
+
+
+=== Making the puzzle set ===
+
+1. Decide the base name of the puzzle set, which should not include a dot,
+nor should spaces be included (underscores and hyphens are OK, if it does
+not start with a hyphen). The names of the four files of this puzzle set
+will then be that base name followed by ".xclass", ".class", ".level",
+and ".solution".
+
+2. Make the picture file and class definition file, in either order.
+
+  a. Write the class definition file in any text editor (e.g. vi or emacs).
+  See class.doc for details of this format, or see sokoban.class for a
+  simple example.
+
+  b. Make the pictures; use "heromesh -p" and then the base name of the
+  puzzle set. This brings up the picture editor.
+
+3. Run "heromesh -n" and the base name, to create an empty level file and
+empty solution file.
+
+4. Run "heromesh -e" and the base name, to load the level editor, to make
+up a level. You can then save by CTRL+S and test by CTRL+P to play this
+level; if you solve it, push CTRL+S to record the solution. This only
+saves the puzzles in the user cache database and not to the puzzle set
+files (unless the .autoSave option is set).
+
+5. (You can skip this step if the .autoSave option is set.) Run "heromesh
+-f" and the base name, to write the changes to the puzzle set files.
+
+6. (Optional) Once you have finished, you may wish to make a composite
+puzzle set file. Use "har c" and then the names of the files that make up
+the puzzle set and then ">" and the file name for the composite puzzle set,
+to make up the composite puzzle set file. You can then use "heromesh -z"
+and the full file name of the composite puzzle set, to load it. Note that
+a composite puzzle set is read-only; to edit it, you must split them into
+separate files again.
+
+
+=== Picture editing ===
+
+(TODO)
+
+
+=== Class editing ===
+
+(TODO)
+
+
+=== Level editing ===
+
+(TODO)
+

@@ -312,7 +312,7 @@ runtime it is replaced by the relevant 32-bit number.
 
 [60*] Sound constant (see section about user sounds)
 
-[61] 0=ClassCount/1* (I don't know what this does), 1=GetArray
+[61] 0=ClassCount/1*, 1=GetArray
 
 [64/3*] SendMessage (to Self)
 
