@@ -1,4 +1,10 @@
-This document is a tutorial of the use of Free Hero Mesh.
+This document is a tutorial of the use of Free Hero Mesh. (It is provided
+for the benefit of users who want it; some people have requested it. My
+own opinion is that the other documentation is better. If you have any
+concerns about this documentation or how to improve it, please do so.)
+
+(If you have used MESH:Hero before, then you may wish to read the section
+entitled "For users of MESH:Hero".)
 
 (NOTE: This tutorial is incomplete.)
 
@@ -61,18 +67,276 @@ and the full file name of the composite puzzle set, to load it. Note that
 a composite puzzle set is read-only; to edit it, you must split them into
 separate files again.
 
+The below sections describe them more elaborately, with examples. For the
+purpose of this example, the new puzzle set will be called "example".
+
 
 === Picture editing ===
 
-(TODO)
+Enter the command at the UNIX shell:
+
+  heromesh -p example
+
+This will load the list of pictures in the puzzle set (for the purpose of
+editing), which is initially empty.
+
+By default, it will use the same default picture size that you have set in
+the configuration file. However, you may set the picture size yourself
+instead for all pictures. To do this, push F6. For this example, push F6
+and then enter 24 at the prompt and push enter. You can specify multiple
+sizes; for this example there aren't any so just push enter again.
+
+Push F1 to add a new picture, and then enter its name. For example, name
+it HERO by typing in HERO and push enter.
+
+Now the picture editing screen is displayed. Push D for drawing, and then
+you can draw the picture in the grid by the mouse. Click in the colour
+palette with the left button to select the colour to use for drawing,
+and click in the picture grid with the left button to draw pixels (you
+can hold down the button to draw many pixels). The right button erases.
+Once you are finished, push escape to return to the list.
+
+For this example, add two more pictures named BOX and BACKGROUND in the
+same way as above.
+
+Once you are finished all of them, push escape again to save and quit.
+(If you want to edit again later, follow all of the same steps as above,
+but push F3 instead of F1 if you want to edit an existing picture instead
+of adding a new one.)
+
+See picedit.doc for further details about the working of picture editor.
 
 
 === Class editing ===
 
-(TODO)
+Create a plain ASCII text file with the puzzle set name and ".class"
+suffix. (Use any text editor of your choice. Ensure that the file format
+is plain text, and do not include a byte order mark.) For this example,
+it will be named "example.class", and will contain the following text:
+
+  ; Example class definitions.
+
+  ($Hero
+    (Image "HERO")
+    Player
+    Input
+    (Density 25)
+    (Height 10)
+    (Strength 1)
+    (Rook Move)
+  )
+
+  ($Background
+    (Image "BACKGROUND")
+    (Density 100)
+  )
+
+  ($Box
+    (Image "BOX")
+    (Density 30)
+    (Height 10)
+    Shovable
+    (Weight 1)
+  )
+
+This defines three classes, named $Hero, $Background, and $Box.
+
+Explanation:
+
+* A semicolon denotes a comment until the end of the line. (This is allowed
+anywhere outside of string literals.)
+
+* Each block in parentheses starts with the class name; the
+class name always starts with a dollar sign.
+
+* The (Image) blocks specify the name of the picture of that class, which
+are the same names as specified in the picture editor.
+
+For the $Hero class:
+
+* "Player" means that an object of this class is the "player" object.
+
+* "Input" means that key input will be sent to objects of this class.
+
+* "(Density 25)" means that the stacking level of objects within a grid
+cell is 25 for this class. Higher numbers are lower stacking levels, and
+are drawn behind objects with lower density numbers. (If you do not specify
+the density number, then it will be zero by default).
+
+* "(Height 10)" means that other objects cannot move on top of it unless
+their Climb is at least 10 (in this example, the Climb is not specified for
+any class, giving them the default value of zero).
+
+* "(Strength 1)" means that the total Weight of all objects that it moves
+(including itself) cannot exceed 1.
+
+* "(Rook Move)" defines the keyboard message for the cases of the four
+arrow keys; if any one is pushed, "Move" is executed after pushing the
+direction on the stack. This will cause the Hero to move in the direction
+of the arrow pushed.
+
+For the $Background class:
+
+* "(Density 100)" makes it drawn behind the $Hero and $Box classes.
+
+* The Height is left at the default of zero so that other objects can move
+into its location.
+
+For the $Box class:
+
+* "(Density 30)" defines the Density between $Hero and $Background. (It is
+also acceptable to be the same as $Hero.)
+
+* "(Height 10)" works like it does for the $Hero class.
+
+* "Shovable" allows other objects that move into it to attempt to push it
+out of the way.
+
+* "(Weight 1)" sets its Weight to 1, as described above for Strength. In
+this case, it prevents the Hero from moving multiple Boxes at once.
+
+(A note about movement: A grid cell that contains no objects at all acts
+like a wall for most purposes, so for this simple example there is no
+$Wall class. If you wanted one, you could define one with a large Height
+so that other objects cannot move there.)
+
+See class.doc for further details about class definitions.
 
 
 === Level editing ===
+
+First you must create the empty level and solution files. To do this, enter
+at the UNIX shell:
+
+  heromesh -n example
+
+This creates files named "example.level" and "example.solution". There will
+be initially a single blank level.
+
+To start the level editor:
+
+  heromesh -e example
+
+Now the level editor screen is displayed.
+
+Initially, the grid dimensions is 1x1, which is too small. You must resize
+the grid; push R and then type the new size. For this example, type 16x16
+and push enter, to set the grid size to 16x16.
+
+Now, push the space bar to display the class selection menu. Select the
+Background class and push enter.
+
+For this example, let's assume we want the entire grid filled with the
+background, so push F to fill with the selected class. (You can click with
+the right button to delete some if you want to add walls.)
+
+Now you can add the Hero. Push space bar again and select Hero.
+
+Add the Hero by clicking with the left button on the appropriate grid cell.
+
+Now add some boxes, by pushing space bar, select Box, and enter, and you
+can click wherever you want to put the boxes.
+
+Next, set the title of the level. Push CTRL+T and enter some text, and
+push F2 to save the title.
+
+Once you are finished, push CTRL+S to save, and then CTRL+P to switch to
+the game play. Now you can push arrows and it should move. You can push
+CTRL+E to go back into the editor, ESCAPE to restart the level, or CTRL+Q
+to quit Free Hero Mesh.
+
+See edit.doc for further details about use of the level editor.
+
+
+=== Composite puzzle sets ===
+
+(To follow these instructions, you will need to compile the "har" program,
+which is the file "misc/har.c" in the source code repository.)
+
+A puzzle set can be a "composite puzzle set", which puts everything into
+a single file. If you want to do this, then:
+
+  heromesh -f example
+  har c example.xclass example.class example.level example.solution > example.fhm
+
+Now, to run the composite puzzle set:
+
+  heromesh -z example.fhm
+
+You only need to distribute example.fhm and not the other four files.
+
+A composite puzzle set is read-only. If you want to edit it then you must
+decompose it. This can be done by typing:
+
+  cat example.fhm | har x example.xclass example.class example.level example.solution
+
+Now it can be used like a noncomposite puzzle set, again.
+
+
+=== For users of MESH:Hero ===
+
+Free Hero Mesh was designed to be compatible with most puzzle sets for
+MESH:Hero, although many improvements have also been made.
+
+The class editing is now done in a text file, so any formatting you do
+will be preserved and will not be lost, and you can use any functions of
+your text editor. However, the syntax is different.
+
+Some of the significant differences of class codes in Free Hero Mesh
+compared to MESH:Hero include the following:
+
+* Sigils are now used to indicate the kind of name (e.g. $ for classes,
+and # for user-defined messages, etc). You need not worry about any names
+you have defined interfering with new features added to future versions,
+nor do you need to worry about class names interfering with variable names.
+
+* It is now case-sensitive. Furthermore, variable names are not limited to
+seven letters, and some characters are now allowed in names which were not
+previously allowed.
+
+* The syntax is very different. It is now RPN-based; for example, instead
+of "o.Height = p.Height+1", you will write "%o %p ,Height 1 + =,Height".
+Also, many instructions no longer need explicitly mentioning "Self"; for
+example, you can write "%dir Move" instead of "Move(Self, dir)" (you would
+write "%obj %dir ,Move" if you wanted "Move(obj, dir)"; note the comma to
+indicate working on an object other than Self).
+
+* Some names of existing instructions have been changed (there are also
+many new instructions). For example, "MsgArg1" is now called "Arg1",
+"CurImage" is now called "Image", "DirN" is now "N", "MSG_INIT" is now
+"INIT", etc.
+
+* There is now signed arithmetic as well as unsigned arithmetic. (Most
+instructions are unsigned by default, but many instructions can have a
+comma in front to make them signed instead.)
+
+* A few instructions have been removed, but are not very important anyways.
+
+* Local variables and user-defined messages need not be declared; there is
+no VARS block.
+
+* Values now have types. Attempting to use a value of the wrong type will
+result in a "Type mismatch" error. This is harmless; it will result only
+in the loss of game, and will not segfault. You can restart or rewind the
+level or play a different level.
+
+* It detects errors with accessing objects that no longer exist. This will
+display an error message like above, and will not segfault; you can restart
+or rewind like any other error.
+
+* Several other errors are detected and/or prevented too, e.g. you can no
+longer inadvertently affect the game state with IgnoreKey.
+
+* You can now access the attributes of classes without needing to create an
+object of that class. For example, if Misc1 refers to a class, then you can
+write "Misc1 ,Temperature" to read the Temperature attribute of that class.
+
+* You can name the bits of Misc4-Misc7, if you wish, rather than having to
+always refer to them by number. (Using the numbers works too.)
+
+* There are some differrences in behaviour, including increasing some
+fields to 32-bits; if you define a class with the "Compatible" flag then
+this will revert some of the behaviours to be closer to MESH:Hero.
 
 (TODO)
 
