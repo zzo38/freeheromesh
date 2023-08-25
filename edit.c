@@ -162,7 +162,7 @@ static void save_obj(sqlite3_str*s,const Object*o,const Object**m,Uint8 x,Uint8 
   r=0;
   if(!o) return;
   if(o->misc1.t|o->misc1.u|o->misc2.t|o->misc2.u|o->misc3.t|o->misc3.u) b|=0x08;
-  if(p && o->class==p->class && o->image==p->image && ValueEq(o->misc1,p->misc1) && ValueEq(o->misc2,p->misc2) && ValueEq(o->misc3,p->misc3)) {
+  if(p && o->class==p->class && o->image==p->image && ValueEq(o->misc1,p->misc1) && ValueEq(o->misc2,p->misc2) && ValueEq(o->misc3,p->misc3) && o->dir==p->dir) {
     // Use RLE
     r=0x80|b&0xF0;
     rx=o->x;
