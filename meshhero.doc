@@ -1,0 +1,92 @@
+This document is for users of MESH:Hero and explains many of the
+significant differences of Free Hero Mesh than MESH:Hero.
+
+Free Hero Mesh was designed to be compatible with most puzzle sets for
+MESH:Hero, although many improvements have also been made.
+
+
+=== Class editing ===
+
+The class editing is now done in a text file, so any formatting you do
+will be preserved and will not be lost, and you can use any functions of
+your text editor. However, the syntax is different.
+
+Some of the significant differences of class codes in Free Hero Mesh
+compared to MESH:Hero include the following:
+
+* Sigils are now used to indicate the kind of name (e.g. $ for classes,
+and # for user-defined messages, etc). You need not worry about any names
+you have defined interfering with new features added to future versions,
+nor do you need to worry about class names interfering with variable names.
+
+* It is now case-sensitive. Furthermore, variable names are not limited to
+seven letters, and some characters are now allowed in names which were not
+previously allowed.
+
+* The syntax is very different. It is now RPN-based; for example, instead
+of "o.Height = p.Height+1", you will write "%o %p ,Height 1 + =,Height".
+Also, many instructions no longer need explicitly mentioning "Self"; for
+example, you can write "%dir Move" instead of "Move(Self, dir)" (you would
+write "%obj %dir ,Move" if you wanted "Move(obj, dir)"; note the comma to
+indicate working on an object other than Self).
+
+* Some names of existing instructions have been changed (there are also
+many new instructions). For example, "MsgArg1" is now called "Arg1",
+"CurImage" is now called "Image", "DirN" is now "N", "MSG_INIT" is now
+"INIT", etc.
+
+* There is now signed arithmetic as well as unsigned arithmetic. (Most
+instructions are unsigned by default, but many instructions can have a
+comma in front to make them signed instead.)
+
+* A few instructions have been removed, but are not very important anyways.
+
+* Local variables and user-defined messages need not be declared; there is
+no VARS block.
+
+* Values now have types. Attempting to use a value of the wrong type will
+result in a "Type mismatch" error. This is harmless; it will result only
+in the loss of game, and will not segfault. You can restart or rewind the
+level or play a different level.
+
+* It detects errors with accessing objects that no longer exist. This will
+display an error message like above, and will not segfault; you can restart
+or rewind like any other error.
+
+* Several other errors are detected and/or prevented too, e.g. you can no
+longer inadvertently affect the game state with IgnoreKey.
+
+* You can now access the attributes of classes without needing to create an
+object of that class. For example, if Misc1 refers to a class, then you can
+write "Misc1 ,Temperature" to read the Temperature attribute of that class.
+
+* You can name the bits of Misc4-Misc7, if you wish, rather than having to
+always refer to them by number. (Using the numbers works too.)
+
+* There are some differrences in behaviour, including increasing some
+fields to 32-bits; if you define a class with the "Compatible" flag then
+this will revert some of the behaviours to be closer to MESH:Hero.
+
+* There are now three message arguments instead of two (although most
+commands will still only use two; use the "Ex" variants if you want three).
+
+* The SUBS block is no longer necessary (and is deprecated). You can start
+a block directly with a label if desired. Furthermore, such subroutines can
+now have inputs and return values if wanted; they are simply values in the
+stack, like in Forth, PostScript, etc.
+
+* Arrays are now global and can be accessed from any class, and do not need
+to be defined for one class only. Furthermore, initializing them to zero is
+not necessary; they are automatically initialized to all zero (it is still
+possible to reinitialize them with zero or other values).
+
+
+=== Pictures ===
+
+(TODO)
+
+
+=== Levels ===
+
+(TODO)
+
