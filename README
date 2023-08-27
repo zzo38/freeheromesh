@@ -149,6 +149,10 @@ man6/heromesh.6 file. The distributor should change this to point to
 the correct directories where the files are stored; these directories
 will be mentioned in the man page
 
+* misc/compare/*.doc: Comparison with other puzzle game engines, such as
+Everett Kaser's MESH:Hero engine. (Read these files if you are used to
+other game engines and want to know the differences.)
+
 * misc/mbform.doc: Describes the .mb file format for Hero Mesh. (Not
 directly relevant to Free Hero Mesh. It contains information that was
 used for writing the converter, and may be of interest to some readers

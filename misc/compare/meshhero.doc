@@ -1,0 +1,364 @@
+This document is for users of MESH:Hero and explains many of the
+significant differences of Free Hero Mesh than MESH:Hero.
+
+Free Hero Mesh was designed to be compatible with most puzzle sets for
+MESH:Hero, although many improvements have also been made. (One improvement
+is that many limits are not as limited; the number of classes, pictures,
+etc, is larger than they are MESH:Hero.)
+
+
+=== Conversion ===
+
+Use the "mbtofhm" program to do conversion of the .MB files into a
+non-composite Free Hero Mesh puzzle set.
+
+A few things might need to be manually fixed in a converted puzzle set.
+See FAQ for details about some of these things. Note that you can speed
+up the game greatly by removing the Hero animations.
+
+
+=== Game play ===
+
+Mostly this is like the original MESH:Hero. However, there are some new
+features, such as:
+
+* You can view the internal status of any object; nothing is hidden. This
+can be used for debugging as well as for game play, e.g. to avoid having
+to try all of the Switches just to see what it controls.
+
+* You can make a "mark" in the replay list, and rewind to or replay up to
+the mark. The mark will be saved when you quit or access a different level
+for when you go back to that level again later.
+
+* There is a level select menu (by default, CTRL+L displays this). This
+displays titles of levels as well as the level numbers and indicates
+whether or not you have solved it and whether or not a solution has been
+recorded in the puzzle set. This way you can easily find which levels you
+have solved.
+
+* It no longer automatically records your solution in the puzzle set by
+default (although it can be configured to do so). (You can push CTRL+S to
+do so, if you want to do it manually.)
+
+* Many more operations work using the keyboard, rather than by mouse. For
+example, you can push F1,F2,F3,F4 together with SHIFT key to rewind,
+instead of having to use the mouse to click on the toolbar. You can also
+select levels by keyboard, such as CTRL+G to enter a level number.
+
+* The animation for LocateMe is different, although this is a purely visual
+feature which does not affect game play. (If you like the older one, you
+could modify the source code to do so.)
+
+* The replay list and inventory are not displayed at the same time; you
+can push TAB to switch the view. (In future, a hybrid mode might also be
+implemented, but currently it isn't.)
+
+A few features work differently; for example, viewing descriptions of
+objects is bound to the middle button by default instead of the right
+button, although it can be reconfigured. Currently, clicking with the
+left button to make many moves at once is not implemented, although it
+may be possible to implement it in SQL (which does not require recompiling
+the program, since SQL code is compiled at run time).
+
+
+=== Class editing ===
+
+The class editing is now done in a text file, so any formatting you do
+will be preserved and will not be lost, and you can use any functions of
+your text editor. However, the syntax is different.
+
+Some of the significant differences of class codes in Free Hero Mesh
+compared to MESH:Hero include the following:
+
+* Sigils are now used to indicate the kind of name (e.g. $ for classes,
+and # for user-defined messages, etc). You need not worry about any names
+you have defined interfering with new features added to future versions,
+nor do you need to worry about class names interfering with variable names.
+
+* It is now case-sensitive. Furthermore, variable names are not limited to
+seven letters, and some characters are now allowed in names which were not
+previously allowed.
+
+* The syntax is very different. It is now RPN-based; for example, instead
+of "o.Height = p.Height+1", you will write "%o %p ,Height 1 + =,Height".
+Also, many instructions no longer need explicitly mentioning "Self"; for
+example, you can write "%dir Move" instead of "Move(Self, dir)" (you would
+write "%obj %dir ,Move" if you wanted "Move(obj, dir)"; note the comma to
+indicate working on an object other than Self).
+
+* Some names of existing instructions have been changed (there are also
+many new instructions). For example, "MsgArg1" is now called "Arg1",
+"CurImage" is now called "Image", "DirN" is now "N", "MSG_INIT" is now
+"INIT", etc.
+
+* There is now signed arithmetic as well as unsigned arithmetic. (Most
+instructions are unsigned by default, but many instructions can have a
+comma in front to make them signed instead.)
+
+* A few instructions have been removed, but are not very important anyways.
+
+* Local variables and user-defined messages need not be declared; there is
+no VARS block.
+
+* Values now have types. Attempting to use a value of the wrong type will
+result in a "Type mismatch" error. This is harmless; it will result only
+in the loss of game, and will not segfault. You can restart or rewind the
+level or play a different level.
+
+* It detects errors with accessing objects that no longer exist. This will
+display an error message like above, and will not segfault; you can restart
+or rewind like any other error.
+
+* Several other errors are detected and/or prevented too, e.g. you can no
+longer inadvertently affect the game state with IgnoreKey, and you cannot
+cause race conditions with improper use of MSG_END_TURN and other messages.
+
+* Some flags can now be specified for classes that previously could not be
+specified in this way and needed to be set in MSG_INIT, MSG_CREATE, etc.
+This includes Invisible (the object is still visible in the level editor),
+UserState, VisualOnly, and Stealthy.
+
+* You can now access the attributes of classes without needing to create an
+object of that class. For example, if Misc1 refers to a class, then you can
+write "Misc1 ,Temperature" to read the Temperature attribute of that class.
+
+* You can name the bits of Misc4-Misc7, if you wish, rather than having to
+always refer to them by number. (Using the numbers works too. Using names
+makes it much easier to keep track of, though.)
+
+* There are some differrences in behaviour, including increasing some
+fields to 32-bits; if you define a class with the "Compatible" flag then
+this will revert some of the behaviours to be closer to MESH:Hero.
+
+* There are now three message arguments instead of two (although most
+commands will still only use two; use the "Ex" variants if you want three).
+
+* The SUBS block is no longer necessary (and is deprecated). You can start
+a block directly with a label if desired. Furthermore, such subroutines can
+now have inputs and return values if wanted; they are simply values in the
+stack, like in Forth, PostScript, etc.
+
+* Arrays are now global and can be accessed from any class, and do not need
+to be defined for one class only. Furthermore, initializing them to zero is
+not necessary; they are automatically initialized to all zero (it is still
+possible to reinitialize them with zero or other values).
+
+* Some variables and flags which were internal only in MESH:Hero (such as
+the OF_DONE flag) are now readable and writable directly.
+
+* There are now global user-defined functions, which can be called by any
+object of any class. There are also macros which are also global, and can
+be used anywhere (not only inside of an imperative code).
+
+* Animation timing is different. This usually is only visual, though, so
+the game will still run correctly.
+
+* Some additional structured flow controls are available (GOTO and GOSUB
+are still available too). The looping structures include "begin ... again",
+"begin ... while ... repeat", and "begin ... until".
+
+Some of the removed (and changed) commands and what to do instead:
+
+* AltImage: Removed because it can affect game behaviour. (In converted
+puzzle sets, this will always be zero.) Instead, you can use multiple
+picture variants of the same size and use the .altImage user setting to
+select them.
+
+* ExplainDeath: Removed because it can affect game behaviour (and I have
+made puzzles which demonstrate this in Hero Defiant). (In converted puzzle
+sets this is always 1.)
+
+* GlobalBool: Removed because it can affect game behaviour. (In converted
+puzzle sets this is always zero.)
+
+* GotoLevel: The class codes can no longer go to a specific level. Use
+LoseLevel to stop execution if you lose, or WinLevel to stop execution if
+you win. (In converted puzzle sets, this becomes LoseLevel. In the cases
+where it is preceded by WinLevel, then WinLevel will now stop execution,
+so LoseLevel is never reached.)
+
+* Level: This still exists, but it is now the level code number rather than
+the zero-based level order number. This is normally zero, but can be
+changed to an arbitrary 16-bit number in the level editor. (In converted
+puzzle sets, this will be set to the zero-based level order number, but in
+new puzzle sets you can use this for whatever purpose you want.)
+
+* LevelCount: Removed because it is no longer necessary nor useful. (In
+converted puzzle sets, this is changed to -1; using the unsigned comparison
+operators this will always be greater than any 16-bit number.)
+
+* Link: This has been removed. Originally it was used to select a different
+puzzle set by name. However, now different puzzle sets cannot interact with
+each other; the user must manually select a puzzle set. (In converted
+puzzle sets this becomes LoseLevel but will probably never be reached.)
+
+* PopupColor: Not implemented and there is no alternative.
+
+* PopupLoc: Not implemented and there is no alternative.
+
+* PopupMisc: Use "Misc1 Misc2 Misc3 (PopUp 2)" instead, which has the same
+effect (and is what PopupMisc is converted to). (The "LevelString" function
+doesn't exist but is not needed since each value has a type associated so
+it knows it is a string anyways.)
+
+* PuzzleSetNumber: Removed because it is not that useful. (In converted
+puzzle sets, this gets converted to a macro whose expansion is the original
+value of PuzzleSetNumber in the original puzzle set.)
+
+* WinLevel: This still exists, but now stops execution as well, so you no
+longer need to put GotoLevel, Link, etc afterward. (Advancing to the next
+level automatically is now done by user settings; see FAQ and config.doc
+for details.)
+
+Some commands with additional behaviours and variants, as well as some of
+the new commands which may be of interest:
+
+* AnimateDead: Create a one-shot animation without an associated object.
+
+* Arg1 and Arg2: These (as well as Arg3) are now read/write instead of
+read-only. This way it can be used as local variables.
+
+* (bit): Make a number with the specified bits set only. Useful in HIT
+and HITBY.
+
+* BroadcastEx, BroadcastAnd, BroadcastSum, etc: There are new variants of
+Broadcast. The "Ex" variants allow three instead of two message arguments,
+while the "And" and "Sum" variants affect how the return value is made.
+
+* (case): Similar to "switch" in C and "SELECT CASE" in BASIC. The result
+can be either a value or a branch to a label.
+
+* Chebyshev and Manhattan: Computes distance (in two different ways)
+between two objects.
+
+* Coloc: A short way to check whether or not two objects are in the same
+place as each other.
+
+* Loc: A shortcut for both Xloc and Yloc together, since it is common.
+
+* LocateMe: Can now optionally specify an object other than Self (if you
+use the instruction variant with the comma).
+
+* LoseLevel: Used if you lose (like WinLevel is used if you win). Both
+LoseLevel and WinLevel will stop execution.
+
+* Morton: Interleaves the bits of two numbers. Mainly useful if a class
+has images for each combination of directions (except diagonals), to
+easily convert this to the value to use for Shovable, as in "(INIT Image
+Morton =Shovable)".
+
+* Move: There is a bug in MESH:Hero with "Move(Self,constant)" which is
+not normally emulated in Free Hero Mesh. However, you can use the "Move+"
+command instead of "Move" if you want to emulate that bug.
+
+* MoveNumber: This is now read/write instead of read-only.
+
+* NewXY: NewX and NewY together.
+
+* PopUp: Several new % substitution codes are now available.
+
+* Rel: Resolves a relative directio to an absolute direction.
+
+* Seek: The direction toward a specified object.
+
+* SendEx: Like Send but you can have three message arguments.
+
+* SetInventory: No longer limited to five items. However, you can use the
+"MaxInventory" command to check against a specified limit and error if it
+exceeds the limit (the converter automatically adds this).
+
+* Sound: In addition to standard sounds and user-defined sounds, you can
+also specify a string specifying the sequence of notes to play (in which
+case you do not need to add a sound file).
+
+* Synchronize: Makes synchronized animations. An example is the Rollers
+in Hero Hearts. This is much simpler than the complicated method used in
+Hero Hearts, which does not even work in Free Hero Mesh, so it must be
+changed if you want the animation to be displayed correctly.
+
+* XStep and YStep: Tells the -1, 0, or +1 of the step amount for a
+specified direction in the specified axis.
+
+See class.doc for further details and many additional features too; they
+are too many to list in this document.
+
+
+=== Pictures ===
+
+The pictures and sounds are stored in the ".xclass" file. Some of the
+features of pictures are:
+
+* The palette is extended with a few additional colours. (All of the
+original colours remain available.)
+
+* Pictures are no longer limited to exactly three predefined sizes; you
+can now define your own sizes (and can be different for each picture).
+(It seems that the MESH:Hero file format has this feature too, although
+there is no way to use this feature in the user interface.)
+
+* Pictures can now be named.
+
+* You can define "dependent pictures", which is based on another picture
+but with transformations applied (e.g. rotation, flip, change colours).
+This way, you do not have to define each picture independently and you
+only have to change one picture and all of the dependent pictures which
+depend on it will automatically be changed. For example, this can be
+used for objects that can be in four directions, you might only need to
+draw one of them and the others are made automatically.
+
+* Pictures are now stored compressed so they take up less disk space.
+
+* You can use the same picture for multiple classes (or multiple image
+numbers of the same class can also refer to the same picture), without
+needing to duplicate the picture.
+
+Note that the picture editor works differently, and has some additional
+features that MESH:Hero doesn't have, such as flood fills and macros.
+
+
+=== Levels ===
+
+The level editor is different from Everett Kaser's implementation. Use
+the space bar to display the list of classes, and move arrows or click
+to select one and push ENTER to select the wanted object.
+
+The MRU list is on the left; you can select one with number keys or with
+arrow keys, or by clicking. You can push ENTER to edit the Misc vars for
+the selected MRU item.
+
+See edit.doc for details about the editor working.
+
+Levels are no longer limited to 29x21; they can be any size from 1x1 up
+to 64x64. There is also a "bizarro world", which is not used for Hero
+Hearts but you might find a use in your own puzzle sets.
+
+Each level has four 16-bit numbers associated with it, including:
+
+* ID number: The unique zero-based ID number of this level within this
+puzzle set (automatically assigned).
+
+* Order number: The one-based order number, which is also unique within
+the puzzle set, but you can reorder them in the index editor. If you
+change the order, the ID number remains unchanged, but the order number
+is changed.
+
+* Code number: A number which has no inherent use and you can use it for
+your own use. The "Level" command in class codes can read this value (the
+other three numbers are not accessible to class codes at all). It need not
+be unique; multiple levels can have the same code number.
+
+* Version number: Used to mark solutions as invalid if changes are made.
+You do not normally need to touch this; it is handled automatically.
+
+
+=== Missing features ===
+
+There are a few features not implemented yet, such as:
+
+* Background music.
+
+* Click to make several moves.
+
+* User names for solutions. (It is implemented but it is not currently
+displayed anywhere.)
+
