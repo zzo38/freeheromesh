@@ -1,0 +1,320 @@
+This document compares Free Hero Mesh with ZZT and MegaZeux and may be of
+use to users of those other game engines.
+
+It does not really compare because ZZT/MegaZeux are primarily designed for
+a different type of games than Free Hero Mesh is, but there is some
+overlap, since many ZZT/MegaZeux worlds have similar kind of puzzles too.
+
+Free Hero Mesh is a game of complete information, so there are no dark
+rooms like in ZZT.
+
+One significant difference is that in Free Hero Mesh, you can define your
+own classes of objects, while ZZT and MegaZeux have several built-in pieces
+but also programmable objects (which are individually programmable). In
+Free Hero Mesh they are not programmed individually; you define them in
+the class definition file and then use them multiple times; however, it is
+possible for individual objects to have Misc vars in case you need any
+parameters to specify further details than only the class (although usually
+the Misc vars are not needed).
+
+However, like in ZZT and MegaZeux the programming is mainly working by
+sending messages to each other, and by receiving messages from the game
+engine; but these are executed synchronously, at the time of being sent.
+Furthermore, after a message is sent it is possible to return from the
+message, to what was executing before, even if it is the same object,
+unlike in ZZT which doesn't do that.
+
+Another difference is that you can have multiple objects in one grid cell.
+You can use CollisionLayers to make some or all objects mutually exclusive,
+or you can use Climb, Height, etc to block movement. Note also that any
+cell that does not contain any objects count as a wall; if you want floors
+then you must define it as an object. (If you want an object to get rid of
+others in the same location when it moves there, then one way to do this is
+to use CollisionLayers and use the COLLIDE and COLLIDEBY messages to get
+rid of the objects that were there before to make room for it to move. In
+this way, it will be similar to statless pieces removing fake walls that
+they pass over in ZZT.)
+
+There is no single "the player"; you can define a class with the Player and
+Input flags to make it like the player, although it is then possible to add
+multiple objects of that class (or none at all) into the level (but usually
+you would only put exactly one, anyways).
+
+Diagonal moves are possible in Free Hero Mesh, although nothing will move
+diagonally unless you explicitly program it to do so.
+
+
+=== Attributes ===
+
+Some of the attributes which may be meaningful to ZZT/MegaZeux users are:
+
+* Crush = Allows objects moving into it to crush it if it cannot be moved,
+like gems and many creatures in ZZT.
+
+* Density = Defines the stacking order of objects (higher numbers are
+in back and lower numbers are in front). So, walls and most other objects
+would have low Density, and floors would have high Density.
+
+* Height = Set to a positive number to block objects from moving into it
+if it does not have enough Climb.
+
+* Input = Allows it to receive keyboard input (like the PLAYER in ZZT).
+
+* Player = Defines this object as the "player" object, which has some
+special meanings in the game engine, such as sending a reference to it
+(and its coordinates) to all objects in the BEGIN_TURN message. (You can
+actually have more than one such class if you want to, but normally you
+would only have one.)
+
+* Shovable = Allows objects to be pushed. You can also specify the
+directions it can be pushed, e.g. (Shovable N S) and (Shovable E W). (If
+the Strength and Weight are left at the default of zero, then you can push
+multiple objects at once, as in ZZT and MegaZeux.)
+
+* VisualOnly = Prevents interactions between this and other objects (except
+for code which explicitly does so), like overlays in MegaZeux.
+
+There are also user-defined flags which you can use for your own use.
+
+
+=== ZZT-OOP commands ===
+
+Some of the ZZT-OOP commands and what to use in Free Hero Mesh, are as
+follows. Note that many of the examples are not exactly equivalent; to do
+the exact equivalent thing would usually be more complicated.
+
+Comments = A comment starts with a semicolon and lasts until the next
+line break.
+
+Labels = A label has the same syntax as in ZZT. It may go at the beginning
+of a block or in the middle of a block. However, messages are different
+from labels; built-in messages have no prefix, and user-defined messages
+have the # prefix. A message goes at the beginning of a block only (if
+in the middle of a block, it instead refers to that message).
+
+Pop-up text boxes = In Free Hero Mesh, you can only display one text box
+per turn and it does not block execution. As in MegaZeux, you can add
+colours as well. Use the "PopUp" command. If you want to display numeric
+values taken from a calculation or something else, you can do that too.
+
+Example of pop-up text boxes:
+  ZZT  =  Hello, World!
+  MegaZeux  =  [ "Hello, World!"
+  Free Hero Mesh  =  "Hello, World!" PopUp
+
+#BECOME = An object could create a new object in its place and destroy
+itself, by using "Create" and "Destroy" commands. Note that destruction
+does not stop execution in Free Hero Mesh (although it will prevent it
+from receiving any further messages).
+
+Example of becoming something else:
+  ZZT  =  #BECOME NORMAL
+  Free Hero Mesh  =  Destroy . $Normal Loc 0 0 Create . ret
+
+#CHANGE = Free Hero Mesh does not have the #CHANGE like ZZT has, although
+you could have it broadcast a message to all objects that you want changed
+and for those messages to respond by replacing themself with others.
+
+#CLEAR = See #SET.
+
+Example of inventory:
+  ZZT  =  #CLEAR keycard
+  Free Hero Mesh  =  $Keycard 0 DelInventory
+
+#DIE = Use "Destroy" to destroy this object; put "." afterward if you want
+to ignore the return value (which is zero if it is successfully destroyed).
+
+Example of destruction:
+  ZZT  =  #DIE
+  Free Hero Mesh  =  Destroy .
+
+#END = The command is "ret", but this is unnecessary at the end of a block,
+because it is implied at the end of each block.
+
+#ENDGAME = There is no "health" but you can use "LoseLevel" to stop the
+execution and lose the game. (Unlike ZZT, no further execution occurs in
+this case.) Use "WinLevel" if you win the game instead of lose (this also
+stops execution).
+
+Example of ending the game:
+  ZZT  =  #ENDGAME
+  Free Hero Mesh  =  LoseLevel
+
+#GIVE = You can define your own global and local variables.
+
+Example of increasing variables:
+  ZZT  =  #GIVE GEMS 15
+  Free Hero Mesh  =  @gems 15 + =@gems
+
+#IF = See the section about conditions below. You can use the "if ... then"
+or "if ... else ... then" block for conditional blocks, and you can use the
+"=:" sigil for GOTO. Write the condition before "if".
+
+#PLAY = You can use the "Sound" command, which can play a MML string
+similar to ZZT and MegaZeux, or a wave sound. You cannot queue sound
+effects; you must either replace it or ignore if it is already playing.
+
+Example of sound effects:
+  ZZT  =  #PLAY tcase
+  Free Hero Mesh  =  "tcase" 0 Sound
+
+#PUT = Create objects by the use of the "Create" command. In ZZT this will
+move other objects out of the way and will not overwrite the player but can
+overwrite other objects, making it more complicated to do similar things in
+Free Hero Mesh, although it is still possible. (The example below will only
+create an object without even checking for duplicates or moving anything.)
+
+A simple example of creating an object:
+  ZZT  =  #PUT S DOOR
+  Free Hero Mesh  =  $Door S XYDir 0 0 Create .
+
+#SEND = In ZZT, it can be used like "goto" as well as to send messages to
+other objects (or to all objects or itself).
+
+Example of GOTO:
+  ZZT  =  #SEND qqq
+  Free Hero Mesh  =  =:qqq
+
+Example of sending a message to a single object (assumes that the global
+variable @spinner references an object):
+  ZZT  =  #SEND spinner:stop
+  Free Hero Mesh  =  @spinner #stop 0 0 ,Send .
+
+Example fo sending a message to all objects:
+  ZZT  =  #SEND ALL:MESS
+  Free Hero Mesh  =  0 #MESS 0 0 Broadcast .
+
+#SET = You can use a user-defined global variable. It is not limited to
+either set or clear, but can store any value. You can also use an inventory
+display if you want it to be clearly visible which flags you have.
+
+Example of global variables:
+  ZZT  =  #SET keycard
+  Free Hero Mesh  =  1 =@keycard
+
+Example of inventory:
+  ZZT  =  #SET keycard
+  Free Hero Mesh  =  $Keycard 0 1 SetInventory
+
+#TAKE = You can define your own global and local variables. Free Hero Mesh
+does not automatically limit them to zero, but you can do that by yourself.
+
+Example of decreasing variables:
+  ZZT  =  #TAKE GEMS 15 noitem
+  Free Hero Mesh  =  @gems 15 lt if =:noitem then @gems 15 - =@gems
+
+Free Hero Mesh has macros and global subroutines, so it is possible to
+define macros and/or global subroutines to shorten any common operations
+that you want to have in your puzzle set.
+
+
+=== ZZT-OOP conditions ===
+
+#IF ALLIGNED  =  ; see below
+#IF ANY KEY  =  (=P $Key)
+#IF BLOCKED N  =  N XYDir Walkable lnot
+#IF CONTACT  =  (P Rook F Player)
+#IF NOT XX  =  @xx lnot
+#IF XX  =  @xx
+
+For alignment, one way, if your code is in the BEGIN_TURN messages which
+has From set to the player object, would be to do:
+  From Seek 1 band lnot
+This will find the direction toward the player and check that the direction
+is not a diagonal direction. Another way would be:
+  Xloc From ,Xloc eq Yloc From ,Yloc eq lor
+You could also find the player by scanning the board, instead of "From":
+  (=P Player) Seek 1 band lnot
+
+
+=== Full example ===
+
+; The name of the class always starts with $ and is the beginning of each
+; class definition block; in this case, it is named "$Floor".
+($Floor
+  ; Defines the name of the picture to use. (You can define the pictures
+  ; by using the picture editor.)
+  (Image "Floor")
+  ; Sets the Density so that the Floor is drawn behind other objects.
+  (Density 100)
+  ; The Height is left at the default of zero so that other objects can
+  ; move onto the floor.
+)
+
+($Player
+  (Image "Player")
+  ; This object is the player, takes input, and is shovable.
+  Player Input Shovable
+  ; Other objects can't step on top of the player, so set its Height.
+  (Height 10)
+  ; (Rook) defines the action for the arrow keys (you can use (Queen) if
+  ; you want diagonals as well; this example doesn't use diagonals).
+  ; First it finds the object in front and sends a #TOUCH message to it;
+  ; if that message returns zero (which is the default if it is not
+  ; defined for that object) then it tries to move the player. (The
+  ; initial "dup" duplicates the direction so that it is used twice.
+  ; "ObjDir" finds the topmost object in the specified direction.
+  ; User-defined message names always start with # (as shown here). The
+  ; two arguments follow, in this case both zero since they are unused.
+  ; After that, ",Send" sends the message, and will have the return value;
+  ; "lnot" is logical negation, and "if ... then" is a conditional block.)
+  (Rook dup ObjDir #TOUCH 0 0 ,Send lnot if Move then )
+  ; Allow passing your turn by pushing the space bar. Free Hero Mesh is
+  ; turn-based, so if you do not want to move but want to allow other
+  ; objects to move, then you must pass your turn. This block is empty
+  ; because there is nothing to do; it merely needs to be declared.
+  ('SPACE)
+)
+
+; This object is simple since it does nothing.
+($Wall
+  (Image "Wall")
+  (Height 10)
+)
+
+($Boulder
+  (Image "Boulder")
+  (Height 10)
+  Shovable
+)
+
+($SliderNS
+  (Image "SliderNS")
+  (Height 10)
+  ; You can specify the direction it can be pushed.
+  (Shovable N S)
+)
+
+($SliderEW
+  (Image "SliderEW")
+  (Height 10)
+  (Shovable E W)
+)
+
+($Pusher
+  ; You can define multiple images for a class; you will select one for
+  ; each instance, in the level editor, and this can control the behaviour
+  ; of the game by the "Image" command (explained below).
+  (Image "Pusher_E" "Pusher_N" "Pusher_S" "Pusher_W")
+  (Height 10)
+  ; Every turn it receives the BEGIN_TURN message, which is what it is
+  ; doing here. "Image 1 lsh" left shifts the Image number (zero-based)
+  ; by one, to make the direction to move. Directions are 0 for east, 1
+  ; for northeast, etc, up to 7 for southeast. So, this will cause the
+  ; Pusher to move once per turn.
+  (BEGIN_TURN Image 1 lsh Move .)
+)
+
+($Gem
+  (Image "Gem")
+  ; Here, "Crush" means it can be crushed by movement, like in ZZT.
+  Crush Shovable
+  (Height 10)
+  ; This is the user-defined #TOUCH message mentioned above. First, it will
+  ; add 1 to the global @gems variable (since its initial value has not
+  ; been specified anywhere, it will be zero). And then plays the sound,
+  ; and then destroys itself. After that then it will return to the caller,
+  ; and since no return value is specified it will be zero.
+  (#TOUCH @gems 1 + =@gems "t+c-gec" 0 Sound Destroy .)
+)
+
