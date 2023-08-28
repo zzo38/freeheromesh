@@ -17,6 +17,20 @@ See FAQ for details about some of these things. Note that you can speed
 up the game greatly by removing the Hero animations.
 
 
+=== Limits ===
+
+ Description                      EKS MESH:Hero      Free Hero Mesh
+ ------------------------------------------------------------------
+ Classes                               256 ?             16383
+ Pictures                              512               32768
+ User messages                        1004               16384
+ Level grid size                     29x21               64x64
+ Levels                               1024               32768
+ Inventory items                         5                var.
+ User sounds                       unknown ?               256
+ Images per class                       32                 128
+
+
 === Game play ===
 
 Mostly this is like the original MESH:Hero. However, there are some new
@@ -157,6 +171,11 @@ the game will still run correctly.
 are still available too). The looping structures include "begin ... again",
 "begin ... while ... repeat", and "begin ... until".
 
+* Goto and CallSub are not restricted between messages and subroutines;
+you can branch from either kind to either kind. (In fact, there is really
+no difference, except that only messages are received from others, while
+labels are used only internally by the codes for the class they are in.)
+
 Some of the removed (and changed) commands and what to do instead:
 
 * AltImage: Removed because it can affect game behaviour. (In converted
@@ -283,6 +302,39 @@ See class.doc for further details and many additional features too; they
 are too many to list in this document.
 
 
+=== Changed names ===
+
+In the below list, ? means anything matching.
+
+ EKS MESH:Hero              Free Hero Mesh
+ -----------------------------------------
+ ANI_?                      ?
+ BIT?                       bit?
+ CallSub                    ,:
+ CurImage                   Image
+ Dir?                       ?
+ ForEachObjAt               for ... next
+ goto                       =:
+ Hard?                      ? Hard
+ KEY_?                      '?
+ IsPlayer                   Player
+ LastDir                    Dir
+ MSG_?                      ?
+ MsgArg1                    Arg1
+ MsgArg2                    Arg2
+ MsgFrom                    From
+ return                     ret
+ SendMessage                Send
+ Shape?                     ? ShapeDir
+ Sharp?                     ? Sharp
+ SND_?                      ?
+
+Please see class.doc for details; the syntax does not quite match MESH:Hero
+and some other details are somewhat different as well. (For one thing, you
+can use , for objects other than Self in many cases, and = for assignment
+in many cases.)
+
+
 === Pictures ===
 
 The pictures and sounds are stored in the ".xclass" file. Some of the
@@ -310,10 +362,19 @@ draw one of them and the others are made automatically.
 
 * You can use the same picture for multiple classes (or multiple image
 numbers of the same class can also refer to the same picture), without
-needing to duplicate the picture.
+needing to duplicate the picture. (Version 3.0 of the MESH engine also
+allows this (earlier versions do not), but require that whether or not
+they can be selected in the level editor is the same for all uses of
+that picture. Free Hero Mesh does not have this restriction; the
+availability in the level editor can be different for each instance.)
 
 Note that the picture editor works differently, and has some additional
 features that MESH:Hero doesn't have, such as flood fills and macros.
+
+You may use an external picture editor if desired, and then copy them
+into Free Hero Mesh. If you wish to do this, then the Farbfeld format
+must be used; the newest versions of ImageMagick support this format,
+so in this way you can use any file format readable by ImageMagick.
 
 
 === Levels ===
@@ -349,6 +410,10 @@ be unique; multiple levels can have the same code number.
 
 * Version number: Used to mark solutions as invalid if changes are made.
 You do not normally need to touch this; it is handled automatically.
+
+One thing Free Hero Mesh does not have is border colours per level. You
+can define a global background colour for the entire puzzle set in the
+class definition file if desired, though.
 
 
 === Missing features ===

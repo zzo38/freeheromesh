@@ -1,0 +1,339 @@
+This document describes similarities and differences between PuzzleScript
+and Free Hero Mesh.
+
+Some types of games may be more suitable for one or other one, but some
+will work OK with either one.
+
+PuzzleScript works differently in many ways, so this makes some types of
+games easier to design and others more difficult or impossible.
+
+However, since both game engines are FOSS, features can be added to both
+of them if desired, so that many features may be possible with both.
+
+
+=== Conversion ===
+
+A converter from PuzzleScript to Free Hero Mesh is not currently available
+(to my knowledge). Note that some features cannot be converted, although
+most of them would be possible. Even when conversion is possible, some of
+the features may be lost in translation.
+
+Conversion in the other direction (from Free Hero Mesh to PuzzleScript) is
+probably impossible (or at least very difficult; maybe it is possible)
+because Free Hero Mesh is much more sophisticated in many ways. Even if
+conversion is possible, many of the features may be lost in translation.
+
+
+=== Rules ===
+
+The rules work differently. Free Hero Mesh uses imperative code, based on
+objects sending messages to each other, and by the game engine sending
+messages to objects, which may then react to them by doing something, and
+possibly with return values.
+
+Arithmetic, loops, subroutines, etc are all available as you might expect.
+
+Patterns are available; commands such as (P) can be used to match patterns
+of objects. Pattern matches with replacements are not currently implemented
+(but may be added in future), although 
+
+Free Hero Mesh also has many commands that can be used to control how
+movement and other features of objects are working.
+
+You can easily attach variables to objects that are kept between turns, and
+can use this for movements across multiple turns and many other purposes.
+
+Diagonal movement is implemented, although it won't move diagonally unless
+your class codes explicitly are written to do so. You can define the Volume
+of objects which can prevent objects from being moved diagonally in between
+other objects if desired.
+
+Extended rigid bodies are possible by using the Connection flag, and by
+using the Connect command within class codes.
+
+Randomness is deliberately not implemented, and will not be implemented.
+Free Hero Mesh is supposed to be consistent. The same is true of real-time;
+it is supposed to allow the player to take your time, so real-time is also
+deliberately not implemented.
+
+
+=== Commands ===
+
+Describes some of the commands of PuzzleScript+ and how they compare with
+the commands of Free Hero Mesh.
+
+Prelude commands:
+
+- author - Same considerations as "title".
+
+- color_palette - You cannot change the palette in Free Hero Mesh; you have
+a fixed palette of 255 colours plus transparency (which is more than the 16
+colours in PuzzleScript).
+
+- again_interval - Not applicable; although there are animations and some
+other things that the "again" event can be used for, no interval need be
+specified here. Animation intervals are defined for each animation.
+
+- background_color - You can set the background colour of the playfield (if
+it contains transparent objects with nothing behind them), but the colour
+of text screens cannot be changed by the puzzle set (although the colour of
+the text itself can be changed).
+
+- case_sensitive - Free Hero Mesh is always case-sensitive. This cannot be
+turned off.
+
+- continue_is_level_select - Not applicable since a title screen is not
+implemented. (Possibly such a feature may be added in future for composite
+puzzle sets (with the ability for the user to disable it), but I am not
+sure of this; it probably won't be.)
+
+- custom_font - Fonts are currently external to the puzzle set. Only bitmap
+fonts can be used, not TrueType, OpenType, and WOFF. (It is possible that
+an implementation on HTML might support such formats, but it is unlikely
+since the character set is different.)
+
+- debug - Free Hero Mesh doesn't work with rule compilation like that, but
+many debugging features are available by command-line switches (not a part
+of the puzzle set itself); see commandline.doc for details.
+
+- flickscreen - The puzzle set itself cannot define the viewport. There is
+the intention to support user-defined viewports in the user setting file in
+future, but it is not implemented yet.
+
+- font_size - Currently only 8x8 is possible. It is intended to be changed
+in future so that any font sizes can be used, but this will be a user
+setting (and dependent on the fonts the user has installed) and cannot be
+defined by the puzzle set.
+
+- homepage - Same considerations as "title".
+
+- key_repeat_interval - Use the .keyRepeat user setting, which is not a
+part of the puzzle set itself.
+
+- level_select - Level select is always available (mapped to CTRL+L by
+default); you cannot disable it in the puzzle set.
+
+- level_select_lock - You cannot lock any levels from the level select; it
+is always possible to select any level. However, Free Hero Mesh keeps track
+of which levels the player has solved, so you can still keep track of the
+progress despite this.
+
+- level_select_solve_symbol - Currently it always uses colours (red for
+unsolved and green for solved), and this cannot be changed. If it is made
+able to be changed (possibly for beneficial if you are colour blind, or
+just for preferences), it will be a user setting and not something which
+can be defined in the puzzle set.
+
+- local_radius - Not implemented, but possible (although unlikely) to be
+implemented in future. However, you may use your own code to loop over only
+the wanted radius and do stuff with it, so this may be unnecessary (and
+therefore unlikely to be implemented in future).
+
+- message_text_align - Alignment can be set individually for each text and
+for each line of text, and need not be defined globally.
+
+- mouse_drag - Not available and probably will not be implemented. (If you
+need to drag pieces, you might use the mouse to select one and then use the
+arrow keys to move it around.)
+
+- mouse_left - It is available; use the (InputXY) block and the CLICK
+message. This does not automatically create an object when clicked; you
+can define whatever functions you want.
+
+- mouse_right - Not available and will not be implemented. Only one mouse
+button is available for the game play; the others are used for user
+interface features which do not affect the game play.
+
+- mouse_up - Not available and will not be implemented. (Implementing it
+would be bad for accessibility, undo, and other reasons.)
+
+- noaction - Not applicable and not necessary. You can define which keys
+are available by the class codes, so if you do not define a specific key
+then that key is not used. You are also not limited to a single action key.
+("System keys" (such as undo, restart, level select, quit, etc) will always
+work, though.)
+
+- norepeat_action - Not applicable.
+
+- noundo - Deliberately not implemented. This is a user setting and cannot
+be controlled by the puzzle set.
+
+- norestart - Deliberately not implemented. This is a user setting and
+cannot be controlled by the puzzle set.
+
+- realtime_interval - Real-time is deliberately not implemented.
+
+- require_player_movement - This is possible to do, but not with a single
+command like this. Use such commands as IgnoreKey, Finished, or FlushClass
+to prevent further events from firing. (You should probably reserve
+IgnoreKey for the case when that key can never affect the game state in
+any circumstances, and Finished and FlushClass when sometimes it can but
+in this case it doesn't. You can use whatever criteria you want, so this
+makes it more versatile than require_player_movement.)
+
+- run_rules_on_level_start - Use the INIT and POSTINIT messages.
+
+- runtime_metadata_twiddling - Not implemented and not useful, and will not
+be implemented. As described elsewhere in this document, text colours and
+alignment can already be changed at any time, so metadata twiddling is not
+necessary in order to support these features. You cannot disable undo and
+restart; they are always available.
+
+- scanline - This effect is not currently implemented, and I have no plans
+to implement it. However, if it is implemented it would likely be a user
+setting and not a part of the puzzle set.
+
+- sitelock_hostname_whitelist - Not applicable; the same considerations
+apply as "sitelock_origin_whitelist".
+
+- sitelock_origin_whitelist - Not applicable. (If HTML-based implementation
+is made in future, you could limit it yourself by hosting it on your own
+server and do whatever you want to do, although anyone could download it
+anyways if they want to play the game, so it doesn't really help.)
+
+- skip_title_screen - There is no title screen (and probably will not be),
+so this is not applicable. (If it is implemented in future, it will be
+possible for the user to disable the title screen too, whether or not the
+puzzle set has one.)
+
+- smoothscreen - Same considerations as "flickscreen".
+
+- sprite_size - Free Hero Mesh allows using any square picture size up to
+255x255. You may even define multiple picture sizes and have them selected
+by user preferences, if you like to.
+
+- text_color - You can change the colour of text individually (and can even
+have multiple colours of text in a single popup window), and do not need to
+define it globally for the entire puzzle set.
+
+- text_controls - Not applicable; there is no title screen.
+
+- text_message_continue - Does not display any additional text in message
+boxes, so you cannot define it. (It is possible that implementations other
+than the reference implementation might, in which case it will probably
+depend on the environment, to ensure that it is correct for whatever device
+is being used to play the game.)
+
+- throttle_movement - Not applicable and not necessary; the game will work
+the same regardless of how fast the player pushes the keys.
+
+- title - Not currently implemented, but may be implemented in future in
+the catalog metadata of a composite puzzle set file. However, it does not
+affect the game play at all, anyways. (You can still add comments into the
+class definition file. You can also use file names, which (as far as I
+know) PuzzleScript does not support.)
+
+- tween_easing - Same considerations as "tween_length".
+
+- tween_length - Tweening is not currently implemented. (Even if it is,
+their controls will be user settings and can be turned off, although it
+may be possible to deliberately suppress in the class definition file.
+It is also not high priority, and not currently planned anyways.)
+
+- tween_snap - Same considerations as "tween_length".
+
+- verbose_logging - Same considerations as "debug".
+
+- youtube - The ability to play videos is not implemented and will not
+be implemented.
+
+- zoomscreen - Same considerations as "flickscreen". However, note that
+the "Player" flag can be used to indicate which object is the player,
+which can help implement viewports in future.
+
+Rule commands:
+
+- again - You can define animations using the Animate, AnimateDead, and
+Synchronize commands, and for other purposes you can use the turn sequence
+with END_TURN, etc.
+
+- cancel - Not currently implemented, but may be implemented in future.
+However, if really nothing happens, you can use Finished or IgnoreKey to
+prevent further things from happening on this turn (using IgnoreKey on a
+turn that does have other effects is an error).
+
+- checkpoint - Deliberately not implemented and won't be implemented.
+Restarting always restarts from the beginning, although the user can
+place marks manually in the replay list and rewind to them, as well as
+advance through a previously recorded the replay list, etc.
+
+- Message - Use the PopUp command. You can use (PopUp) for text with %
+substitutions too, including numbers, pictures, etc.
+
+- nosave - Use the IgnoreKey command. However, this only works if the
+current input has no effect on the game state at all; if you try to use
+IgnoreKey while there are other effects, then it is an error. However,
+it is easy for the player to undo multiple moves at once.
+
+- quit - Not implemented and will not be implemented. (If you want to port
+the game to a system without keyboard, then the version of Free Hero Mesh
+on that system should provide appropriate user interface elements; the
+puzzle set need not define them.)
+
+- restart - Not available, but you can use LoseLevel instead.
+
+- sfx0 ... sfx10 - Use the Sound command. Not limited to eleven sounds;
+you can have more than eleven sounds if desired.
+
+- undo - Not implemented, but the player can push SHIFT+F1 to undo a move.
+
+- Win - Use the WinLevel command.
+
+
+=== Other features ===
+
+Describes some of the other features of PuzzleScript+ and how they compare
+with the features of Free Hero Mesh.
+
+* Pictures: Pictures are made using the picture editor, rather than using
+a text file (although a converter would be possible for users who prefer
+to work in this way). You can have more than ten colours; you can use any
+of the colours in a palette of 255 colours, as well as transparency. (There
+is no alpha transparency, though, and there probably won't be; alpha is not
+a feature I intend to implement.)
+
+* Sprite cloning: Implemented in Free Hero Mesh, in a more versatile way
+than PuzzleScript+ does. This is called "dependent pictures" in Free Hero
+Mesh. In addition to colours, you can also define rotations, flipping, and
+some other things. You can also make groups of dependent pictures into a
+"multidependent picture", in case many of them follow the same pattern,
+then you do not have to define each one individually.
+
+* Legend: Free Hero Mesh does not use a text grid format for levels
+(although there is a text-based level import/export format, and a
+conversion for grid-based format may also be possible if it is wanted).
+However, you can define properties of objects by use of user flags; you
+can also have multiple variants of a single class with different pictures.
+
+* Sound effects: You have to use either sound files or sequences of notes;
+it does not have the synthesizer that PuzzleScript uses (although possibly
+it can be implemented in future if anyone wants such a thing and is willing
+to try to implement it, maybe). You cannot define sound events, although
+you can call any sound effects from the class codes.
+
+* Collision layers: It is available, but not necessary. There is a limit of
+eight collision layers, although you do not need to use this feature; an
+object with no collision layers can be in the same cell as other objects
+whether or not those objects have collision layers. Use Density to define
+the other that things are drawn (and they may be changed at run time for
+individual objects if desired), and you may use Height and Climb and the
+HIT and HITBY messages to prevent movement (collision layers also prevent
+movement, and you can combine these features if wanted).
+
+* Background tiles: Background tiles are not mandatory. A cell that does
+not contain any objects acts like a wall for most purposes, although it is
+still possible to create objects there and teleport objects into there.
+
+* Win conditions: You cannot currently define them in their own block;
+you must use the WinLevel command. (In future, a separate block to allow
+defining winning conditions like PuzzleScript might be implemented, but
+currently it is not implemented.)
+
+Also, some of the features listed in the GitHub issue tracker for
+PuzzleScript and PuzzleScript+ are already implemented in Free Hero Mesh,
+although some are planned to be implemented, are unnecessary (for whatever
+reasons), or are deliberately not implemented. There are also many features
+that PuzzleScript does not have.
+
+Certainly further improvements are also possible, too.
+
