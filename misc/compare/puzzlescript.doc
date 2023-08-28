@@ -331,9 +331,9 @@ currently it is not implemented.)
 
 Also, some of the features listed in the GitHub issue tracker for
 PuzzleScript and PuzzleScript+ are already implemented in Free Hero Mesh,
-although some are planned to be implemented, are unnecessary (for whatever
-reasons), or are deliberately not implemented. There are also many features
-that PuzzleScript does not have.
+although some are planned to be implemented, or are unnecessary (for
+whatever reasons), or are deliberately not implemented. There are also many
+features that PuzzleScript does not have.
 
 Certainly further improvements are also possible, too.
 

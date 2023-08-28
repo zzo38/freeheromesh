@@ -2839,6 +2839,16 @@ P*
 =P*
   Like =P but push all found objects, or pushes nothing if not found.
 
+Pc
+  Like P* but pushes only the number of matches (zero if none are found),
+  rather than all of the objects.
+
+,Pc
+  Like ,P* but pushes only the number of matches.
+
+=Pc
+  Like =P* but pushes only the number of matches.
+
 Inside the pattern, the following commands are allowed (although the
 commands that push stuff to the stack should not be used in the patterns
 with P* or ,P* or =P*):
@@ -2875,10 +2885,12 @@ with P* or ,P* or =P*):
   Fail if there are any objects having the specified flag here.
 
 +
-  Push the matched object to the stack.
+  Push the matched object to the stack. (For the counting modes, instead
+  unconditionally increments the total.)
 
 -
-  Push zero to the stack.
+  Push zero to the stack. (For the counting modes, instead unconditionally
+  decrements the total.)
 
 *
   Update the current choice point with the location and direction.

@@ -501,28 +501,32 @@
 #define OP_PATTERNS_C 35070
 #define OP_PATTERNS_E 37118
 #define OP_PATTERNS_EC 39166
-#define OP_ROOK 33023
-#define OP_BISHOP 33024
-#define OP_QUEEN 33025
-#define OP_CUT 33026
-#define OP_BIZARRO 33027
-#define OP_BIZARRO_C 35075
-#define OP_BIZARRO_E 37123
-#define OP_BIZARRO_EC 39171
-#define OP_BIZARROSWAP 33028
-#define OP_BIZARROSWAP_D 41220
-#define OP_SWAPWORLD 33029
-#define OP_ABSTRACT 33030
-#define OP_SUPER 33031
-#define OP_SUPER_C 35079
-#define OP_FUNCTION 33032
-#define OP_LOCAL 33033
-#define OP_LABEL 33034
-#define OP_STRING 33035
-#define OP_INT16 33036
-#define OP_INT32 33037
-#define OP_DISPATCH 33038
-#define OP_USERFLAG 33039
+#define OP_PATTERNC 33023
+#define OP_PATTERNC_C 35071
+#define OP_PATTERNC_E 37119
+#define OP_PATTERNC_EC 39167
+#define OP_ROOK 33024
+#define OP_BISHOP 33025
+#define OP_QUEEN 33026
+#define OP_CUT 33027
+#define OP_BIZARRO 33028
+#define OP_BIZARRO_C 35076
+#define OP_BIZARRO_E 37124
+#define OP_BIZARRO_EC 39172
+#define OP_BIZARROSWAP 33029
+#define OP_BIZARROSWAP_D 41221
+#define OP_SWAPWORLD 33030
+#define OP_ABSTRACT 33031
+#define OP_SUPER 33032
+#define OP_SUPER_C 35080
+#define OP_FUNCTION 33033
+#define OP_LOCAL 33034
+#define OP_LABEL 33035
+#define OP_STRING 33036
+#define OP_INT16 33037
+#define OP_INT32 33038
+#define OP_DISPATCH 33039
+#define OP_USERFLAG 33040
 #ifdef HEROMESH_CLASS
 static const Op_Names op_names[]={
 {"*",8486945},
@@ -536,7 +540,7 @@ static const Op_Names op_names[]={
 {"/mod",8486948},
 {"ANHH",8389393},
 {"ARRIVED",8389124},
-{"Abstract",8683782},
+{"Abstract",8683783},
 {"Animate",8552604},
 {"AnimateDead",8552605},
 {"Arg1",8552580},
@@ -561,9 +565,9 @@ static const Op_Names op_names[]={
 {"BUZZER",8389419},
 {"BWEEP",8389396},
 {"Background",8683662},
-{"Bishop",8683776},
-{"Bizarro",8618243},
-{"BizarroSwap",10518788},
+{"Bishop",8683777},
+{"Bizarro",8618244},
+{"BizarroSwap",10518789},
 {"Broadcast",10518687},
 {"BroadcastAnd",8421536},
 {"BroadcastAndEx",8421537},
@@ -724,9 +728,10 @@ static const Op_Names op_names[]={
 {"POSTINIT",8389138},
 {"POUR",8389377},
 {"POWER",8389386},
+{"Pc",8880383},
 {"Player",8487037},
 {"PopUp",8421587},
-{"Queen",8683777},
+{"Queen",8683778},
 {"Quiz",8487061},
 {"R",9437198},
 {"RATCHET1",8389417},
@@ -736,7 +741,7 @@ static const Op_Names op_names[]={
 {"RF",9437199},
 {"Rel",8487125},
 {"Replace",10518742},
-{"Rook",8683775},
+{"Rook",8683776},
 {"S",9437190},
 {"SE",9437191},
 {"SMALL_POP",8389388},
@@ -759,8 +764,8 @@ static const Op_Names op_names[]={
 {"Sound",8421595},
 {"Stealthy",8618103},
 {"Strength",9142361},
-{"Super",8487175},
-{"SwapWorld",8421637},
+{"Super",8487176},
+{"SwapWorld",8421638},
 {"Sweep",8421596},
 {"SweepEx",8421597},
 {"Synchronize",8421598},
@@ -847,7 +852,7 @@ static const Op_Names op_names[]={
 {"chain",8421545},
 {"clear",8421619},
 {"count",8421618},
-{"cut",8683778},
+{"cut",8683779},
 {"cz?",8421437},
 {"dup",8421377},
 {"else",8683530},
@@ -902,5 +907,5 @@ static const Op_Names op_names[]={
 {"until",8749070},
 {"while",8749071},
 };
-#define N_OP_NAMES 376
+#define N_OP_NAMES 377
 #endif

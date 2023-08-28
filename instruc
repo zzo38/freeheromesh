@@ -334,6 +334,7 @@ DotProduct
 ; Pattern matching
 -,=Pattern "P"
 -,=PatternS "P*"
+-,=PatternC "Pc"
 -Rook
 -Bishop
 -Queen

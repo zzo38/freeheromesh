@@ -2485,12 +2485,13 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
   Uint32 n=VOIDLINK;
   Uint32 m;
   Uint16 g;
+  Uint32 total=0;
   Value v;
   ChoicePoint cp[MAXCHOICE];
   Uint8 cpi=0;
   Uint16 ccl=objects[obj]->class;
   Uint8 cim=objects[obj]->image;
-  if(!x) return VOIDLINK;
+  if(!x) goto stop;
   cp->depth=vstackptr;
   again: switch(code[ptr++]) {
     case 0 ... 7:
@@ -2540,7 +2541,7 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
           n=v_object(v);
           x=objects[n]->x;
           y=objects[n]->y;
-          if(!x) return VOIDLINK;
+          if(!x) goto stop;
         } else {
           Throw("Type mismatch");
         }
@@ -2550,7 +2551,7 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
     case OP_ADD:
       if(vstackptr>=VSTACKSIZE-1) Throw("Stack overflow");
       m=(n==VOIDLINK?obj_bottom_at(x,y):n);
-      Push(OVALUE(m));
+      if(all==2) total++; else Push(OVALUE(m));
       break;
     case OP_AGAIN:
       if(cp[cpi].ptr!=ptr+1) {
@@ -2632,7 +2633,7 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
         n=v_object(v);
         x=objects[n]->x;
         y=objects[n]->y;
-        if(!x) return VOIDLINK;
+        if(!x) goto stop;
       } else {
         Throw("Type mismatch");
       }
@@ -2674,7 +2675,7 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
       break;
     case OP_MARK:
       if(vstackptr>=VSTACKSIZE-1) Throw("Stack overflow");
-      Push(UVALUE(0,TY_MARK));
+      if(all!=2) Push(UVALUE(0,TY_MARK));
       break;
     case OP_MUL:
       cp[cpi].x=x;
@@ -2722,7 +2723,12 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
       if(all) {
         if(vstackptr>=VSTACKSIZE-1) Throw("Stack overflow");
         if(n==VOIDLINK) n=obj_bottom_at(x,y);
-        Push(OVALUE(n));
+        if(all!=2) {
+          Push(OVALUE(n));
+        } else {
+          if(un==VOIDLINK && n!=VOIDLINK) total++;
+          else if(un!=VOIDLINK) return total+(n==VOIDLINK?1:0);
+        }
         goto fail;
       } else if(un==VOIDLINK) {
         return n==VOIDLINK?obj_bottom_at(x,y):n;
@@ -2745,7 +2751,7 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
       break;
     case OP_SUB:
       if(vstackptr>=VSTACKSIZE-1) Throw("Stack overflow");
-      Push(NVALUE(0));
+      if(all==2) total--; else Push(NVALUE(0));
       break;
     case OP_THEN:
       // This opcode does nothing
@@ -2766,7 +2772,7 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
     if(vstackptr<cp->depth) Throw("Stack underflow in pattern matching");
     vstackptr=cp[cpi].depth;
   }
-  if(!cpi) return un;
+  if(!cpi) return (all==2?total+(un==VOIDLINK?0:1):un);
   x=cp[cpi].x;
   y=cp[cpi].y;
   d=cp[cpi].dir;
@@ -2774,19 +2780,23 @@ static Uint32 v_pattern(Uint16*code,int ptr,Uint32 obj,char all) {
   n=VOIDLINK;
   cpi--;
   goto again;
+  stop:
+  return (all==2?total:VOIDLINK);
 }
 
 static Uint32 v_pattern_anywhere(Uint16*code,int ptr,char all) {
   int i;
   Uint32 n;
+  Uint32 t=0;
   for(i=0;i<pfheight*64;i++) {
     n=playfield[i];
     if(n!=VOIDLINK) {
       n=v_pattern(code,ptr,n,all);
       if(n!=VOIDLINK && !all) return n;
+      if(all==2) t+=n;
     }
   }
-  return VOIDLINK;
+  return (all==2?t:VOIDLINK);
 }
 
 static int v_case(Uint16*code,int ptr,Value v) {
@@ -3502,6 +3512,9 @@ static void execute_program(Uint16*code,int ptr,Uint32 obj) {
     case OP_PATTERNS: StackReq(0,1); i=code[ptr++]; v_pattern(code,ptr,obj,1); ptr=i; break;
     case OP_PATTERNS_C: StackReq(1,1); i=code[ptr++]; j=v_object(Pop()); if(j!=VOIDLINK) v_pattern(code,ptr,j,1); ptr=i; break;
     case OP_PATTERNS_E: StackReq(0,1); i=code[ptr++]; v_pattern_anywhere(code,ptr,1); ptr=i; break;
+    case OP_PATTERNC: StackReq(0,1); i=code[ptr++]; j=v_pattern(code,ptr,obj,2); ptr=i; Push(NVALUE(j)); break;
+    case OP_PATTERNC_C: StackReq(1,1); i=code[ptr++]; j=v_object(Pop()); if(j!=VOIDLINK) j=v_pattern(code,ptr,j,2); else j=0; Push(NVALUE(j)); ptr=i; break;
+    case OP_PATTERNC_E: StackReq(0,1); i=code[ptr++]; j=v_pattern_anywhere(code,ptr,2); ptr=i; Push(NVALUE(j)); break;
     case OP_PICK: StackReq(0,1); t1=Pop(); Numeric(t1); if(t1.u>=vstackptr) Throw("Stack index out of range"); t1=vstack[vstackptr-t1.u-1]; Push(t1); break;
     case OP_PLAYER: StackReq(0,1); if(classes[o->class]->cflags&CF_PLAYER) Push(NVALUE(1)); else Push(NVALUE(0)); break;
     case OP_PLAYER_C: StackReq(1,1); GetClassFlagOf(CF_PLAYER); break;

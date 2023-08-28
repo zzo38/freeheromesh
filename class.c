@@ -1769,9 +1769,9 @@ static int parse_instructions(int cla,int ptr,Hash*hash,int compat) {
           nxttok();
           if(tokent!=TF_CLOSE) ParseError("Unterminated (PopUp)\n");
           break;
-        case OP_PATTERN: case OP_PATTERNS:
-        case OP_PATTERN_C: case OP_PATTERNS_C:
-        case OP_PATTERN_E: case OP_PATTERNS_E:
+        case OP_PATTERN: case OP_PATTERNS: case OP_PATTERNC:
+        case OP_PATTERN_C: case OP_PATTERNS_C: case OP_PATTERNC_C:
+        case OP_PATTERN_E: case OP_PATTERNS_E: case OP_PATTERNC_E:
           AddInst(tokenv);
           cl->codes[ptr]=peep=parse_pattern(cla,ptr+1,hash);
           ptr=peep;
