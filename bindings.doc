@@ -73,6 +73,9 @@ any name with : at first to ask the user for the value to use.
   Toggle insertion mode. Insertion mode is automatically reset when
   restarting a level or when accessing a different level.
 
+'^D'
+  Delete all moves forward.
+
 '^I'
   Toggle the inventory/move-list display.
 

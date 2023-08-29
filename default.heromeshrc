@@ -140,6 +140,7 @@
 ?.gameKey.alt.leftbracket: select 'rs',-5;
 ?.gameKey.alt.rightbracket: select 'rs',+5;
 ?.gameKey.delete: ^-
+?.gameKey.ctrl.delete: ^D
 ?.gameKey.insert: ^+
 ?.gameKey.alt.kp_minus: select 'go',-ord from levels where ord<$level and not solved order by ord desc limit 1;
 ?.gameKey.alt.kp_plus: select 'go',-ord from levels where ord>$level and not solved order by ord asc limit 1;

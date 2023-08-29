@@ -176,6 +176,7 @@ Keyboard:
   ALT+]       Decrease slow replay speed
   INS         Toggle insertion mode
   DEL         Delete a move
+  CTRL+DEL    Delete all moves forward
 
 Mouse (in grid):
 

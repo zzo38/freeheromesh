@@ -1300,6 +1300,16 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       inputs_count=0;
       inserting^=1;
       return 0;
+    case '^D': // Delete all moves forward
+      inputs_count=0;
+      if(solution_replay) {
+        screen_message("You cannot delete moves during the solution replay");
+        return -3;
+      }
+      if(replay_pos==replay_count) return 0;
+      replay_count=replay_pos;
+      if(replay_mark>replay_pos) replay_mark=replay_pos;
+      return 0;
     case '^E': // Edit
       return main_options['r']?1:-2;
     case '^I': // Toggle inventory display
