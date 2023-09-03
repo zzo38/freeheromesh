@@ -106,6 +106,7 @@
 
 ! Game key bindings
 ?.gameClick.left: select 'xy',$X,$Y where has_xy_input();
+?.gameClick.shift.left: with p(x,y) as materialized (select o.x,o.y from objects o,classes c on(o.class=c.id) where c.player limit 1), n(n) as (select max(1,abs($X-x),abs($Y-y)) n from p union all select n-1 m from n where m) select ''' ',case sign($X-p.x)*3+sign($Y-p.y) when -4 then 36 when -3 then 37 when -2 then 35 when -1 then 38 when 0 then 12 when 1 then 40 when 2 then 33 when 3 then 39 when 4 then 34 end from p,n where abs($X-p.x)=abs($Y-p.y) or $X=p.x or $Y=p.y;
 ?.gameKey.ctrl.D: select '^d',$key_xy;
 ?.gameKey.ctrl.E: ^E
 ?.gameKey.ctrl.I: select 'mi',:import_move_list;
