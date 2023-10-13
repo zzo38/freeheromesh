@@ -13,7 +13,9 @@ CONFIG_APPLICATION_ID
 
 CONFIG_DEFAULT_RESOURCES
   If defined, read resource configuration from the specified file if
-  it cannot find the configuration file in the home directory.
+  it cannot find the configuration file in the home directory. (If
+  CONFIG_USING_APPIMAGE is also defined, then the path is relative to
+  AppDir; otherwise, it should be an absolute path.)
 
 CONFIG_EXTRA_SCREEN_INIT
   Can be a C code to be executed after the video mode is set, but before
@@ -106,6 +108,7 @@ CONFIG_OMIT_GUI
   If defined, omit the GUI. Autotest mode can still be used, and the
   batch import/export works if CONFIG_OMIT_EDITOR is not defined. Any
   other feature which does not require the GUI also can still be used.
+  (This implies CONFIG_OMIT_CODEPAGE, CONFIG_OMIT_SOUND, and others.)
 
 CONFIG_OMIT_MUSIC
   If defined, omit background music playback capabilities. (Even if this
@@ -123,7 +126,8 @@ CONFIG_RANDOM_SOURCE
 CONFIG_USERCACHE_PERMISSIONS
   If defined as a octal number, set the default file permissions of the
   user cache database when creating it. (The user can still change them
-  afterward by using chmod.)
+  afterward by using chmod; this only applies if the file does not already
+  exist and needs to be created.)
 
 CONFIG_USING_32BIT_COORDINATES
   If defined, allow 32-bit coordinates in SDL_Rect and in other graphics
@@ -133,6 +137,8 @@ CONFIG_USING_APPIMAGE
   If defined, it will check the environment variables having to do with
   AppImage and will be able to load the default resources from there, as
   well as allow the configuration file to reference the AppImage directory.
+  (You should probably also define CONFIG_NO_PORTABLE, since AppImage has
+  its own way of implementing portable mode.)
 
 CONFIG_USING_ARM_NEON
   If defined, use ARM NEON extensions. This only works on ARM.

@@ -1300,6 +1300,14 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       inputs_count=0;
       inserting^=1;
       return 0;
+    case '^?': // Debug information
+      printf("timerflag=%d  exam_scroll=%d  inputs_size=%d  inputs_count=%d\n",timerflag,exam_scroll,(int)inputs_size,inputs_count);
+      printf("side_mode=%d  replay_speed=%d  replay_time=%d  solved=%d\n",side_mode,replay_speed,replay_time,solved);
+      printf("should_record_solution=%d  should_record_private_solution=%d\n",should_record_solution,should_record_private_solution);
+      printf("autowin=%p  inserting=%d  saved_inserting=%d  solution_replay=%d\n",autowin,inserting,saved_inserting,solution_replay);
+      printf("replay_size=%d  replay_count=%d  replay_pos=%d  replay_mark=%d\n",(int)replay_size,replay_count,replay_pos,replay_mark);
+      printf("best_list=%p  strlen(best_list)=%d  best_score=%d\n",best_list,(int)strlen(best_list?:""),best_score);
+      return -3;
     case '^D': // Delete all moves forward
       inputs_count=0;
       if(solution_replay) {

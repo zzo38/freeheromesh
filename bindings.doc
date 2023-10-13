@@ -73,6 +73,11 @@ any name with : at first to ask the user for the value to use.
   Toggle insertion mode. Insertion mode is automatically reset when
   restarting a level or when accessing a different level.
 
+'^?'
+  Displays some debugging information. (What information is displayed and
+  how it is formatted may be changed (or possibly removed entirely) in
+  future; you should rely on it.)
+
 '^D'
   Delete all moves forward.
 
