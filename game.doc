@@ -97,6 +97,10 @@ flushed as described below. If the .saveSolution resource is true, then
 it will automatically save the solution (although not necessarily to the
 puzzle set files).
 
+There are also save state slots, which are separate for each level; you
+can have up to eight such save states recorded at once. Use SHIFT to save,
+CTRL to load, or ALT to exchange, together with a number 1 to 8.
+
 IMPORTANT NOTE: Saving the solutions here will only save them in the user
 cache database, not to the puzzle set file. To save them to the puzzle
 set file, you must invoke heromesh -f to flush the user cache. The local
@@ -157,7 +161,8 @@ Keyboard:
   F6          Rewind to mark
   F7          Replay to mark
   F8          Toggle solution replay
-  SHIFT+F8    Copy solution
+  SHIFT+F8    Load solution
+  CTRL+F8     Load personal best
   F9          Flash player position
   F10         SQL queries
   ESC         Restart level
@@ -177,6 +182,9 @@ Keyboard:
   INS         Toggle insertion mode
   DEL         Delete a move
   CTRL+DEL    Delete all moves forward
+  SHIFT+num   Save state 1 to 8
+  CTRL+num    Load state 1 to 8
+  ALT+num     Exchange state 1 to 8
 
 Mouse (in grid):
 

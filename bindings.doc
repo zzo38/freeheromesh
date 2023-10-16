@@ -121,6 +121,9 @@ any name with : at first to ask the user for the value to use.
 'lo' <location>
   Flash the specified location briefly.
 
+'ls' <slot>
+  Load save state slot (0 to 7).
+
 'mi' <command>
   Import a move list. The argument is a operating system command, that
   when executed will write the move list to stdout, with one byte per
@@ -139,6 +142,12 @@ any name with : at first to ask the user for the value to use.
 'rs' <number>
   Adjust replay speed by the specified number (negative to make faster, or
   positive to make slower; zero leaves it unchanged).
+
+'ss' <slot>
+  Save save state slot (0 to 7).
+
+'xs' <slot>
+  Exchange save state slot (0 to 7).
 
 'xy' <x> <y>
   Input a move using coordinate input. Coordinates are 1-based.

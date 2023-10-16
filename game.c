@@ -41,6 +41,15 @@ static Uint8 inserting,saved_inserting;
 static sqlite3_stmt*autowin;
 static size_t dum_size; // not used by Free Hero Mesh, but needed by some C library functions.
 
+typedef struct {
+  char*data;
+  size_t size;
+  Uint16 mark,pos;
+} SaveState;
+
+static SaveState savestates[8];
+static Uint8 has_savestates;
+
 int encode_move(FILE*fp,MoveItem v) {
   // Encodes a single move and writes the encoded move to the file.
   // Returns the number of bytes of the encoded move.
@@ -334,6 +343,7 @@ static void show_mouse_xy(SDL_Event*ev) {
 }
 
 static void save_replay(void) {
+  int i;
   unsigned char*buf=0;
   size_t sz=0;
   FILE*fp;
@@ -364,6 +374,18 @@ static void save_replay(void) {
     fputc(replay_mark,fp);
     fputc(replay_mark>>8,fp);
   }
+  if(has_savestates) for(i=0;i<8;i++) if(savestates[i].data) {
+    fputc(i+0x30,fp);
+    fputs(savestates[i].data,fp);
+    fputc(0,fp);
+    if(savestates[i].mark || savestates[i].pos) {
+      fputc(i+0xB0,fp);
+      fputc(savestates[i].mark,fp);
+      fputc(savestates[i].mark>>8,fp);
+      fputc(savestates[i].pos,fp);
+      fputc(savestates[i].pos>>8,fp);
+    }
+  }
   fclose(fp);
   if(!buf) fatal("Allocation failed\n");
   write_userstate(FIL_LEVEL,level_id,sz,buf);
@@ -380,6 +402,15 @@ static void load_replay(void) {
   replay_count=replay_mark=replay_size=0;
   free(best_list);
   best_list=0;
+  if(has_savestates) {
+    for(i=0;i<8;i++) {
+      free(savestates[i].data);
+      savestates[i].data=0;
+      savestates[i].size=0;
+      savestates[i].mark=savestates[i].pos=0;
+    }
+    has_savestates=0;
+  }
   if(solution_replay) {
     gameover_score=NO_SCORE;
     if(buf=read_lump(FIL_SOLUTION,level_id,&sz)) {
@@ -430,6 +461,11 @@ static void load_replay(void) {
           dum_size=0;
           getdelim(&best_list,&dum_size,0,fp);
           break;
+        case 0x30 ... 0x37: // Save states
+          if(savestates[i&7].data) goto skip;
+          getdelim(&savestates[i&7].data,&savestates[i&7].size,0,fp);
+          has_savestates=1;
+          break;
         case 0x41: // Solved version
           i=fgetc(fp); i|=fgetc(fp)<<8;
           if(i==level_version) solved=1;
@@ -443,6 +479,12 @@ static void load_replay(void) {
           best_score|=fgetc(fp)<<8;
           best_score|=fgetc(fp)<<16;
           best_score|=fgetc(fp)<<24;
+          break;
+        case 0xB0 ... 0xB7: // Save states
+          savestates[i&7].mark=fgetc(fp);
+          savestates[i&7].mark|=fgetc(fp)<<8;
+          savestates[i&7].pos=fgetc(fp);
+          savestates[i&7].pos|=fgetc(fp)<<8;
           break;
         default: skip:
           if(i<0x40) {
@@ -464,6 +506,45 @@ static void load_replay(void) {
   }
   if(fp) fclose(fp);
   free(buf);
+}
+
+static int exchange_state(int slot,int how) {
+  // Return value is replay position of save state (-1 if error)
+  // slot = 0 to 7
+  // how = 'l' (load), 's' (save), 'x' (exchange)
+  SaveState*ss=savestates+slot;
+  SaveState v=*ss;
+  FILE*fp;
+  if(how!='s' && !v.data) {
+    screen_message("Nonexisting save state");
+    return -1;
+  }
+  if(how!='l') {
+    if(ss->data) {
+      if(how=='s') free(ss->data);
+      ss->data=0;
+      ss->size=0;
+    }
+    if(replay_count) {
+      has_savestates=1;
+      fp=open_memstream(&ss->data,&ss->size);
+      if(!fp) fatal("Allocation failed\n");
+      encode_move_list(fp);
+      fputc(0,fp);
+      fclose(fp);
+    }
+    ss->mark=replay_mark;
+    ss->pos=replay_pos;
+  }
+  if(how!='s') {
+    fp=fmemopen(v.data,v.size,"r");
+    if(!fp) fatal("Allocation failed\n");
+    decode_move_list(fp);
+    fclose(fp);
+    if(how=='x') free(v.data);
+    replay_mark=v.mark;
+  }
+  return v.pos;
 }
 
 static void begin_level(int id) {
@@ -1369,6 +1450,14 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
     case 'lo': // Locate me
       locate_me(number&63?:64,number/64?:64);
       return prev;
+    case 'ls': // Load state
+      if(solution_replay) {
+        screen_message("You cannot load states during solution replay");
+        return -3;
+      }
+      number=exchange_state(number&7,'l');
+      if(number<0) return -3;
+      goto restart;
     case 'mi': // Move list import
       if(argc<2 || solution_replay) break;
       if(replay_pos) begin_level(level_id);
@@ -1390,6 +1479,17 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       if(number<1) number=1; else if(number>255) number=255;
       replay_speed=number;
       return prev;
+    case 'ss': // Save state
+      exchange_state(number&7,'s');
+      return prev;
+    case 'xs': // Exchange state
+      if(solution_replay) {
+        screen_message("You cannot load states during solution replay");
+        return -3;
+      }
+      number=exchange_state(number&7,'x');
+      if(number<0) return -3;
+      goto restart;
     case 'xy': // Coordinate input
       if(argc<3 || !has_xy_input) break;
       argc=sqlite3_column_int(args,1);

@@ -7,6 +7,7 @@
 ?.maxTrigger: 32767
 ?.pasteCommand: xclip -o
 ?.codepage: /home/user/freeheromesh/codepage.har
+?.saveSolutions.private: true
 
 ! Game inputs
 ?.gameKey.A: 'A
@@ -93,8 +94,8 @@
 ! Game inputs with alt
 ?.gameKey.alt.9: 'F9
 ?.gameKey.alt.0: 'F10
-?.gameKey.alt.1: 'F11
-?.gameKey.alt.2: 'F12
+?.gameKey.alt.minus: 'F11
+?.gameKey.alt.equals: 'F12
 ?.gameKey.alt.B: 'BREAK
 ?.gameKey.alt.C: 'CAPSLOCK
 ?.gameKey.alt.D: 'DELETE
@@ -132,6 +133,7 @@
 ?.gameKey.f7: ^>
 ?.gameKey.f8: ^s
 ?.gameKey.shift.f8: select 'ml',solution_move_list(1);
+?.gameKey.ctrl.f8: select 'ml',best_move_list();
 ?.gameKey.f9: select 'lo',xy(o.x,o.y) from objects o,classes c on(o.class=c.id) where c.player;
 ?.gameKey.tab: ^I
 ?.gameKey.alt.G: ^g
@@ -145,6 +147,30 @@
 ?.gameKey.insert: ^+
 ?.gameKey.alt.kp_minus: select 'go',-ord from levels where ord<$level and not solved order by ord desc limit 1;
 ?.gameKey.alt.kp_plus: select 'go',-ord from levels where ord>$level and not solved order by ord asc limit 1;
+?.gameKey.shift.1: select 'ss',0;
+?.gameKey.shift.2: select 'ss',1;
+?.gameKey.shift.3: select 'ss',2;
+?.gameKey.shift.4: select 'ss',3;
+?.gameKey.shift.5: select 'ss',4;
+?.gameKey.shift.6: select 'ss',5;
+?.gameKey.shift.7: select 'ss',6;
+?.gameKey.shift.8: select 'ss',7;
+?.gameKey.ctrl.1: select 'ls',0;
+?.gameKey.ctrl.2: select 'ls',1;
+?.gameKey.ctrl.3: select 'ls',2;
+?.gameKey.ctrl.4: select 'ls',3;
+?.gameKey.ctrl.5: select 'ls',4;
+?.gameKey.ctrl.6: select 'ls',5;
+?.gameKey.ctrl.7: select 'ls',6;
+?.gameKey.ctrl.8: select 'ls',7;
+?.gameKey.alt.1: select 'xs',0;
+?.gameKey.alt.2: select 'xs',1;
+?.gameKey.alt.3: select 'xs',2;
+?.gameKey.alt.4: select 'xs',3;
+?.gameKey.alt.5: select 'xs',4;
+?.gameKey.alt.6: select 'xs',5;
+?.gameKey.alt.7: select 'xs',6;
+?.gameKey.alt.8: select 'xs',7;
 
 ! Editor key bindings
 ?.editKey.1: select 'mr',0;

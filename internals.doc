@@ -200,9 +200,14 @@ Record types:
 
 * 0x02 = Best personal solution
 
+* 0x30 to 0x37 = Replay list of save state
+
 * 0x41 = Level version, if solved (omitted otherwise)
 
 * 0x42 = Mark position
 
 * 0x81 = Best personal score
+
+* 0xB0 to 0xB7 = Save state data; low 16-bits is mark position and high
+16-bits is current replay position
 
