@@ -1814,9 +1814,11 @@ void init_sql_functions(sqlite3_int64*ptr0,sqlite3_int64*ptr1) {
   sqlite3_create_function(userdb,"LEVEL_TITLE",0,SQLITE_UTF8,0,fn_level_title,0,0);
   sqlite3_create_function(userdb,"LEVEL_VERSION",0,SQLITE_UTF8,&level_version,fn_level,0,0);
   sqlite3_create_function(userdb,"LOAD_LEVEL",1,SQLITE_UTF8,0,fn_load_level,0,0);
+  sqlite3_create_function(userdb,"MARK",0,SQLITE_UTF8,&replay_mark,fn_level,0,0);
   sqlite3_create_function(userdb,"MAX_LEVEL",0,SQLITE_UTF8,0,fn_max_level,0,0);
   sqlite3_create_function(userdb,"MODSTATE",0,SQLITE_UTF8,0,fn_modstate,0,0);
   sqlite3_create_function(userdb,"MOVE_LIST",0,SQLITE_UTF8,0,fn_move_list,0,0);
+  sqlite3_create_function(userdb,"MOVECOUNT",0,SQLITE_UTF8,&replay_count,fn_level,0,0);
   sqlite3_create_function(userdb,"MOVENUMBER",0,SQLITE_UTF8,0,fn_movenumber,0,0);
   sqlite3_create_function(userdb,"MVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_mvalue,0,0);
   sqlite3_create_function(userdb,"NVALUE",1,SQLITE_UTF8|SQLITE_DETERMINISTIC,0,fn_zero_extend,0,0);

@@ -119,10 +119,16 @@ any name with : at first to ask the user for the value to use.
   Cancel dead animation.
 
 'lo' <location>
-  Flash the specified location briefly.
+  Flash the specified location briefly (same as the LocateMe instruction in
+  the class codes).
 
 'ls' <slot>
   Load save state slot (0 to 7).
+
+'md' <number>
+  Multiple deletion. No effect if the number is zero or negative. If the
+  number is 1 then it is the same as the '^-' binding, while a sufficiently
+  large number is the same as the '^D' binding.
 
 'mi' <command>
   Import a move list. The argument is a operating system command, that

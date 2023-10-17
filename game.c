@@ -1458,6 +1458,21 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
       number=exchange_state(number&7,'l');
       if(number<0) return -3;
       goto restart;
+    case 'md': // Delete multiple moves
+      inputs_count=0;
+      if(solution_replay) {
+        screen_message("You cannot delete moves during the solution replay");
+        return -3;
+      }
+      if(replay_pos==replay_count || number<=0) return 0;
+      if(number>replay_count-replay_pos) number=replay_count-replay_pos;
+      memmoveM(replay_list+replay_pos,replay_list+replay_pos+number,replay_count-replay_pos-number);
+      replay_count-=number;
+      if(replay_mark>replay_pos) {
+        replay_mark-=number;
+        if(replay_mark<replay_pos) replay_mark=replay_pos;
+      }
+      return 0;
     case 'mi': // Move list import
       if(argc<2 || solution_replay) break;
       if(replay_pos) begin_level(level_id);

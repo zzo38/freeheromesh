@@ -113,6 +113,9 @@ LOAD_LEVEL(level_id)
   Only valid when Free Hero Mesh is invoked with the -x switch. Loads
   the level with the specified ID number.
 
+MARK()
+  The number of moves in the replay list before the mark.
+
 MAX_LEVEL()
   The number of levels in this puzzle set (equal to the maximum valid
   level order number).
@@ -125,6 +128,9 @@ MODSTATE()
 
 MOVE_LIST()
   Return the current move list as a blob.
+
+MOVECOUNT()
+  The total number of moves in the replay list.
 
 MOVENUMBER()
   Return the number of moves executed so far since the level restarted.

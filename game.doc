@@ -182,6 +182,7 @@ Keyboard:
   INS         Toggle insertion mode
   DEL         Delete a move
   CTRL+DEL    Delete all moves forward
+  SHIFT+DEL   Delete moves up to mark
   SHIFT+num   Save state 1 to 8
   CTRL+num    Load state 1 to 8
   ALT+num     Exchange state 1 to 8
