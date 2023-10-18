@@ -197,7 +197,7 @@ static void redraw_game(void) {
   y=y/picture_size+1;
   if(x>0 && y>0 && x<=pfwidth && y<=pfheight) snprintf(buf,8,"(%2d,%2d)",x,y);
   else strcpy(buf,"       ");
-  draw_text(0,40,buf,0xF0,0xF1);
+  draw_text(0,40,buf,0xF0,0xF2);
   if(side_mode) {
     // Inventory
     x=20-(left_margin-picture_size)/8;
@@ -337,7 +337,7 @@ static void show_mouse_xy(SDL_Event*ev) {
     else strcpy(buf,"       ");
   }
   SDL_LockSurface(screen);
-  draw_text(0,40,buf,0xF0,0xF1);
+  draw_text(0,40,buf,0xF0,0xF2);
   SDL_UnlockSurface(screen);
   SDL_Flip(screen);
 }
