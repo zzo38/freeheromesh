@@ -1426,6 +1426,10 @@ static int game_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args,v
     case '^g': // Display global variables
       global_examine();
       return prev;
+    case '^l': // Draw lines from location
+      timerflag=1;
+      draw_lines(number%64?:64,number/64);
+      return prev;
     case '^n': // List objects (bizarro)
       list_objects_at(number-65,bizplayfield,"bizarro ");
       return prev;

@@ -224,6 +224,7 @@
 ?.?.ctrl.Y: ^Y
 ?.?.shift.ctrl.M: select ':s';
 ?.?.f10: select ':x';
+?.?.ctrl.middle: ^l
 
 ! Picture editor macros
 ?.picedit.macro.M: insert into graph(x,y,c) select s-x-1,y,c from graph where x<s/2;

@@ -1852,6 +1852,9 @@ static int editor_command(int prev,int cmd,int number,int argc,sqlite3_stmt*args
     case '^e': // Edit Misc/Dir of MRU slot
       mru_edit(mru+curmru);
       return 0;
+    case '^l': // Draw lines from location
+      draw_lines(number%64?:64,number/64);
+      return prev;
     case '^s': // String list/edit
       string_list();
       return 0;

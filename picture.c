@@ -388,6 +388,49 @@ int screen_message(const char*txt) {
   return -1;
 }
 
+void draw_lines(int x,int y) {
+  Uint8*pix;
+  int pitch;
+  SDL_Event ev;
+  int xx=(x-1)*picture_size+left_margin+picture_size/2;
+  int yy=(y-1)*picture_size+picture_size/2;
+  set_cursor(XC_cross_reverse);
+  if(xx>0 && yy>0 && xx<screen->w && yy<screen->h) {
+    SDL_LockSurface(screen);
+    pix=screen->pixels;
+    pitch=screen->pitch;
+    // Diagonal
+    for(y=0;y<screen->h;y++) {
+      x=xx-yy+y;
+      if(x>1 && x<screen->w-2) memcpy(pix+y*pitch+x-2,"\xF0\xF8\xF7\xF8\xF0",5);
+      x=xx+yy-y;
+      if(x>1 && x<screen->w-2) memcpy(pix+y*pitch+x-2,"\xF0\xF8\xF7\xF8\xF0",5);
+    }
+    // Vertical
+    if(xx+2<screen->w) for(y=0;y<screen->h;y++) pix[y*pitch+xx+2]=0xF0;
+    if(xx+1<screen->w) for(y=0;y<screen->h;y++) pix[y*pitch+xx+1]=0xF8;
+    for(y=0;y<screen->h;y++) pix[y*pitch+xx]=0xF7;
+    if(xx-1>0) for(y=0;y<screen->h;y++) pix[y*pitch+xx-1]=0xF8;
+    if(xx-2>0) for(y=0;y<screen->h;y++) pix[y*pitch+xx-2]=0xF0;
+    // Horizontal
+    if(yy+2<screen->h) memset(pix+(yy+2)*pitch,0xF0,screen->w);
+    if(yy+1<screen->h) memset(pix+(yy+1)*pitch,0xF8,screen->w);
+    memset(pix+yy*pitch,0xF7,screen->w);
+    if(yy-1>0) memset(pix+(yy-1)*pitch,0xF8,screen->w);
+    if(yy-2>0) memset(pix+(yy-2)*pitch,0xF0,screen->w);
+    SDL_UnlockSurface(screen);
+  }
+  SDL_Flip(screen);
+  while(SDL_WaitEvent(&ev)) switch(ev.type) {
+    case SDL_KEYDOWN: case SDL_MOUSEBUTTONDOWN:
+    case SDL_KEYUP: case SDL_MOUSEBUTTONUP:
+      return;
+    case SDL_QUIT:
+      SDL_PushEvent(&ev);
+      return;
+  }
+}
+
 static Uint16 decide_picture_size(int nwantsize,const Uint8*wantsize,const Uint16*havesize,int n) {
   int i,j;
   if(!nwantsize) fatal("Unable to determine what picture size is wanted\n");

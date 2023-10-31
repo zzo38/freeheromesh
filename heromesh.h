@@ -135,6 +135,8 @@ int scrollbar(int*cur,int page,int max,SDL_Event*ev,SDL_Rect*re);
 void draw_popup(const unsigned char*txt);
 int modal_draw_popup(const unsigned char*txt);
 
+void draw_lines(int x,int y);
+
 // == class ==
 
 #define CF_PLAYER 0x01

@@ -189,7 +189,9 @@ Keyboard:
 
 Mouse (in grid):
 
+  SHIFT+LEFT   Attempt to move player
   MIDDLE       Describe topmost object
+  CTRL+MIDDLE  Show lines
   RIGHT        Inspect objects (main world)
   SHIFT+RIGHT  Inspect objects (bizarro world)
 
