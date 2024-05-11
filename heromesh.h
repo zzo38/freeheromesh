@@ -328,6 +328,7 @@ extern Uint8 no_dead_anim;
 extern Uint32 max_trigger;
 extern Uint8 conn_option;
 extern Sint32 gameover_score;
+extern Uint32 trigmode;
 
 const unsigned char*value_string_ptr(Value v);
 void pfunlink(Uint32 n);

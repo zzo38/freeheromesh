@@ -2931,6 +2931,13 @@ void load_classes(void) {
         case OP_DENSITY:
           parse_density_block();
           break;
+        case OP_TRIGGER:
+          nxttok();
+          if(tokent!=TF_INT) ParseError("Number expected\n");
+          trigmode=tokenv;
+          nxttok();
+          if(tokent!=TF_CLOSE) ParseError("Expected close parenthesis\n");
+          break;
         default:
           ParseError("Invalid top level definition: %s\n",tokenstr);
       }

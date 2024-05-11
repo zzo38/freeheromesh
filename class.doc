@@ -343,6 +343,9 @@ these definitions are optional.)
   be 0 to 7, the length is the number of images in the sequence, and the
   speed is the number of centiseconds between frames.
 
+(Trigger <number>)
+  Not defined yet. (TODO)
+
 (Volume <number>)
   Define the maximum allowed volume for an object to move diagonally
   between two other objects. The default value is 10000.

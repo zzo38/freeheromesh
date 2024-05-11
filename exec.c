@@ -44,6 +44,7 @@ Uint8 no_dead_anim;
 Uint32 max_trigger;
 Uint8 conn_option;
 Sint32 gameover_score;
+Uint32 trigmode;
 
 typedef struct {
   Uint16 msg;
