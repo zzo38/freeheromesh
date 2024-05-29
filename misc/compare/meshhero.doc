@@ -276,7 +276,7 @@ command instead of "Move" if you want to emulate that bug.
 
 * PopUp: Several new % substitution codes are now available.
 
-* Rel: Resolves a relative directio to an absolute direction.
+* Rel: Resolves a relative direction to an absolute direction.
 
 * Seek: The direction toward a specified object.
 
@@ -421,8 +421,6 @@ class definition file if desired, though.
 There are a few features not implemented yet, such as:
 
 * Background music.
-
-* Click to make several moves.
 
 * User names for solutions. (It is implemented but it is not currently
 displayed anywhere.)
