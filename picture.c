@@ -793,11 +793,11 @@ static int find_multidependent(sqlite3_stmt*st,FILE*fp,int len,int npic) {
     while(sqlite3_step(s1)==SQLITE_ROW);
   }
   zt=at;
-  for(j=1;j<3;j++) for(i=0;i<(mem[j]&63);i++) {
+  for(j=1;j<4;j++) for(i=0;i<(mem[j]&63);i++) {
     if(zt+2>=len) fatal("Malformed multidependent picture lump\n");
     zt+=((mem[zt+1]>>3)&7)+2;
   }
-  for(j=1;j<3;j++) for(i=0;i<(mem[j]&63);i++) {
+  for(j=1;j<4;j++) for(i=0;i<(mem[j]&63);i++) {
     sqlite3_reset(s1);
     sqlite3_bind_int(s1,1,j);
     sqlite3_bind_int(s1,2,i+1);
