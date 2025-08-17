@@ -1823,11 +1823,11 @@ static Uint32 v_bizarro_swap(Value x,Value y) {
       n=objects[n]->up;
     }
     if(c) return c;
-    n=playfield[x.u+y.u*64-65];
-    while(n!=VOIDLINK) objects[n]->oflags|=OF_BIZARRO,n=objects[n]->up;
+    m=n=playfield[x.u+y.u*64-65];
+    while(m!=VOIDLINK) objects[m]->oflags|=OF_BIZARRO,m=objects[m]->up;
     m=playfield[x.u+y.u*64-65]=bizplayfield[x.u+y.u*64-65];
     bizplayfield[x.u+y.u*64-65]=n;
-    while(m!=VOIDLINK) objects[n]->oflags&=~OF_BIZARRO,m=objects[m]->up;
+    while(m!=VOIDLINK) objects[m]->oflags&=~OF_BIZARRO,m=objects[m]->up;
     return 0;
   } else {
     m=v_object(x);
