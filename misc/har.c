@@ -85,15 +85,15 @@ static void process_lump(int a) {
       if(d) name[n-1]='_';
     }
     if(opt['b']) {
-      size=fgetc(stdin)<<16;
-      size|=fgetc(stdin)<<24;
-      size|=fgetc(stdin);
-      size|=fgetc(stdin)<<8;
-    } else {
       size=fgetc(stdin)<<24;
       size|=fgetc(stdin)<<16;
       size|=fgetc(stdin)<<8;
       size|=fgetc(stdin);
+    } else {
+      size=fgetc(stdin)<<16;
+      size|=fgetc(stdin)<<24;
+      size|=fgetc(stdin);
+      size|=fgetc(stdin)<<8;
     }
     if(argc<3) {
       o=1;
