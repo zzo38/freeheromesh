@@ -7,6 +7,7 @@ exit
   Hamster archiver
   Public domain
 
+  b = Bunny
   c = Create
   d = Delete
   l = Lowercase
@@ -83,10 +84,17 @@ static void process_lump(int a) {
       if(!n) name[1]=0,n=1;
       if(d) name[n-1]='_';
     }
-    size=fgetc(stdin)<<16;
-    size|=fgetc(stdin)<<24;
-    size|=fgetc(stdin);
-    size|=fgetc(stdin)<<8;
+    if(opt['b']) {
+      size=fgetc(stdin)<<16;
+      size|=fgetc(stdin)<<24;
+      size|=fgetc(stdin);
+      size|=fgetc(stdin)<<8;
+    } else {
+      size=fgetc(stdin)<<24;
+      size|=fgetc(stdin)<<16;
+      size|=fgetc(stdin)<<8;
+      size|=fgetc(stdin);
+    }
     if(argc<3) {
       o=1;
     } else {
@@ -129,10 +137,17 @@ static void process_lump(int a) {
       fp=stdout;
       if(!opt['o']) {
         fwrite(name,1,strlen(name)+1,stdout);
-        putchar(size>>16);
-        putchar(size>>24);
-        putchar(size);
-        putchar(size>>8);
+        if(opt['b']) {
+          putchar(size>>24);
+          putchar(size>>16);
+          putchar(size>>8);
+          putchar(size);
+        } else {
+          putchar(size>>16);
+          putchar(size>>24);
+          putchar(size);
+          putchar(size>>8);
+        }
       }
     }
     while(size--) fputc(fgetc(in),fp);
